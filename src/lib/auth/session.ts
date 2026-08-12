@@ -17,8 +17,9 @@ export type SessionUser = {
   email: string;
   name: string;
   avatar: string | null;
-  freeQuestsUsed: number;
-  onboardedAt: Date | null;
+  role: "USER" | "ADMIN";
+  points: number;
+  rulesAcceptedAt: Date | null;
   createdAt: Date;
 };
 
@@ -47,8 +48,9 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
           email: true,
           name: true,
           avatar: true,
-          freeQuestsUsed: true,
-          onboardedAt: true,
+          role: true,
+          points: true,
+          rulesAcceptedAt: true,
           createdAt: true,
         },
       },

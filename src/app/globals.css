@@ -1,40 +1,40 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   SIDEQUEST design tokens
-   Earthy, high-contrast, editorial. Cream paper against near-black ink, with
-   forest and ember as the only saturated colours in the system.
+   STOPA design tokens
+   Deep forest green, cream type, one orange accent. Everything else is a
+   hairline border — the interface stays quiet so photographs and points don't
+   compete with it.
 --------------------------------------------------------------------------- */
 
 @theme {
-  --color-ink: #0b0c0a;
-  --color-ink-soft: #161814;
-  --color-bark: #22251f;
-  --color-stone: #6f6a5e;
-  --color-stone-light: #a8a296;
-  --color-sand: #e2dac9;
-  --color-paper: #f4f0e6;
-  --color-paper-dim: #eae4d6;
-  --color-moss: #2f4a38;
-  --color-moss-light: #4a6b53;
-  --color-sage: #8fa085;
-  --color-ember: #c1531f;
-  --color-ember-light: #de6a33;
+  --color-forest: #14261c;
+  --color-forest-deep: #0e1b14;
+  --color-forest-card: #1b3327;
+  --color-forest-line: #2f4a3a;
+  --color-cream: #f2efe4;
+  --color-cream-dim: #cbd6cb;
+  --color-moss: #9db3a4;
+  --color-amber: #e8a13a;
+  --color-amber-deep: #cf8a26;
+  --color-olive: #46603f;
+  --color-brick: #c0392b;
+  --color-water: #2f6fa8;
 
   --font-display: var(--font-display-face), "Arial Narrow", sans-serif;
+  --font-serif: var(--font-serif-face), Georgia, serif;
   --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-accent-face), Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
-  --radius-none: 0px;
+  --radius-card: 14px;
 
-  --animate-rise: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-fade: fade 0.5s ease both;
-  --animate-reveal: reveal 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-ticker: ticker 28s linear infinite;
+  --animate-rise: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade: fade 0.4s ease both;
+  --animate-pop: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -43,17 +43,16 @@
   to { opacity: 1; }
 }
 
-@keyframes reveal {
-  from { clip-path: inset(0 0 100% 0); transform: scale(1.06); }
-  to { clip-path: inset(0 0 0 0); transform: scale(1); }
+@keyframes pop {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes ticker {
+/* The header's contour lines drift slowly sideways, like a map being pulled. */
+@keyframes drift {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
-
-/* --------------------------------------------------------------------- */
 
 @layer base {
   html {
@@ -62,31 +61,27 @@
   }
 
   body {
-    background-color: var(--color-paper);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
-    font-feature-settings: "cv02", "cv03", "cv04";
+    background-color: var(--color-forest);
+    color: var(--color-cream);
+    font-family: var(--font-serif);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
   ::selection {
-    background: var(--color-ember);
-    color: var(--color-paper);
+    background: var(--color-amber);
+    color: var(--color-forest-deep);
   }
 
-  /* One visible focus treatment everywhere, including keyboard nav. */
   :focus-visible {
-    outline: 2px solid var(--color-ember);
+    outline: 2px solid var(--color-amber);
     outline-offset: 3px;
   }
 
-  h1, h2, h3, h4 {
-    font-family: var(--font-display);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    line-height: 0.92;
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    line-height: 1.1;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -100,65 +95,42 @@
 }
 
 @layer components {
-  /* Small uppercase label used above headings and on stat blocks. */
-  .kicker {
-    font-family: var(--font-sans);
-    font-size: 0.6875rem;
+  /* Uppercase serif section label — "VÝZVA TÝŽDŇA". */
+  .section-label {
+    font-family: var(--font-serif);
+    font-size: 0.8125rem;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-cream);
+  }
+
+  .card {
+    border: 1px solid color-mix(in srgb, var(--color-cream) 22%, transparent);
+    border-radius: var(--radius-card);
+    background: color-mix(in srgb, var(--color-forest-card) 70%, transparent);
+  }
+
+  .card-solid {
+    border: 1px solid color-mix(in srgb, var(--color-cream) 18%, transparent);
+    border-radius: var(--radius-card);
+    background: var(--color-forest-card);
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
-  .rule {
-    border-top: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
-  }
-
-  .rule-light {
-    border-top: 1px solid color-mix(in srgb, var(--color-paper) 20%, transparent);
-  }
-
-  /* Editorial display sizes — deliberately oversized, clamped for mobile. */
-  .display-xl {
-    font-size: clamp(3rem, 13vw, 11rem);
-    line-height: 0.86;
-    letter-spacing: -0.03em;
-  }
-
-  .display-lg {
-    font-size: clamp(2.5rem, 8vw, 6.5rem);
-    line-height: 0.88;
-    letter-spacing: -0.025em;
-  }
-
-  .display-md {
-    font-size: clamp(1.75rem, 4.5vw, 3.5rem);
-    line-height: 0.94;
-    letter-spacing: -0.02em;
-  }
-
-  .grain::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.35;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  }
-
-  /* Full-bleed photo scrim so white type stays legible on any image. */
-  .scrim {
-    background: linear-gradient(
-      to top,
-      color-mix(in srgb, var(--color-ink) 88%, transparent) 0%,
-      color-mix(in srgb, var(--color-ink) 55%, transparent) 38%,
-      color-mix(in srgb, var(--color-ink) 12%, transparent) 72%,
-      transparent 100%
-    );
+  .countdown {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
   }
 }
 
-/* Hide scrollbars on horizontal rails without losing the ability to scroll. */
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;

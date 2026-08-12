@@ -1,41 +1,22 @@
 import Link from "next/link";
 
-import { QuestImage } from "@/components/quest/quest-image";
-import { IMAGES } from "@/lib/images";
-import { BRAND } from "@/lib/config";
+import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { getLocale } from "@/lib/i18n";
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
-      {/* Image panel — decorative on mobile, full height on desktop. */}
-      <div className="relative hidden overflow-hidden bg-ink lg:block">
-        <QuestImage
-          src={IMAGES.forestPath.src}
-          alt={IMAGES.forestPath.alt}
-          palette={IMAGES.forestPath.palette}
-          sizes="50vw"
-          zoomOnHover={false}
-          priority
-        />
-        <div className="scrim absolute inset-0" aria-hidden="true" />
-        <div className="relative flex h-full flex-col justify-between p-10">
-          <Link href="/" className="font-display text-3xl font-extrabold text-paper">
-            {BRAND.name}
-          </Link>
-          <p className="max-w-sm font-serif text-3xl leading-tight text-paper italic">
-            Somewhere within an hour of you, there is a place you have never stood.
-          </p>
-        </div>
+    <div className="flex min-h-dvh flex-col bg-forest">
+      <div className="flex items-center justify-between px-5 py-5">
+        <Link href="/" className="wordmark text-2xl text-cream">
+          STOPA
+        </Link>
+        <LanguageToggle current={locale} tone="light" />
       </div>
 
-      <main className="flex flex-col justify-center bg-paper px-5 py-12 sm:px-12 lg:px-16">
-        <Link
-          href="/"
-          className="mb-12 font-display text-2xl font-extrabold text-ink lg:hidden"
-        >
-          {BRAND.name}
-        </Link>
-        <div className="w-full max-w-md">{children}</div>
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 pb-16">
+        {children}
       </main>
     </div>
   );

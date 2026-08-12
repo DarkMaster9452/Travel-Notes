@@ -14,9 +14,13 @@ export function formatDuration(minutes: number): string {
   return `${h}h ${m}m`;
 }
 
-/** 8.72 → "8.7 km" */
-export function formatDistance(km: number): string {
-  return `${km >= 10 ? Math.round(km * 10) / 10 : km.toFixed(1)} km`;
+/** 8.72 → "8.7 km" (English) or "8,7 km" (Slovak). */
+export function formatDistance(km: number, locale: string = "sk"): string {
+  const value = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(km);
+  return `${value} km`;
 }
 
 export function formatElevation(metres: number): string {
@@ -28,9 +32,9 @@ export function formatTravelTime(minutes: number | null | undefined): string | n
   return `${Math.round(minutes)} min from you`;
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string, locale: string = "sk"): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",

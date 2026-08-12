@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Big_Shoulders, Inter, Instrument_Serif } from "next/font/google";
+import { Big_Shoulders, Inter, Source_Serif_4 } from "next/font/google";
 
-import { BRAND } from "@/lib/config";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 import "./globals.css";
 
 const display = Big_Shoulders({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-display-face",
   weight: ["600", "700", "800", "900"],
   display: "swap",
@@ -18,28 +18,26 @@ const body = Inter({
   display: "swap",
 });
 
-const accent = Instrument_Serif({
-  subsets: ["latin"],
-  variable: "--font-accent-face",
-  weight: "400",
-  style: ["italic", "normal"],
+const serif = Source_Serif_4({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-serif-face",
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: `${BRAND.name} — ${BRAND.tagline}`,
-    template: `%s · ${BRAND.name}`,
-  },
-  description:
-    "Personalised, randomised hiking quests. Stop scrolling, start exploring — a new adventure every time, never the same one twice.",
-  openGraph: {
-    title: `${BRAND.name} — ${BRAND.tagline}`,
-    description: "Personalised, randomised adventure quests. Stop scrolling. Start exploring.",
-    type: "website",
-  },
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = getDictionary(await getLocale());
+
+  return {
+    title: { default: t.meta.title, template: "%s · STOPA" },
+    description: t.meta.description,
+    openGraph: {
+      title: t.meta.title,
+      description: t.meta.description,
+      type: "website",
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#0b0c0a",
@@ -47,9 +45,11 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${accent.variable}`}>
+    <html lang={locale} className={`${display.variable} ${body.variable} ${serif.variable}`}>
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );

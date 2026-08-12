@@ -1,200 +1,88 @@
-# SIDEQUEST
+# STOPA
 
-> "My life is boring and I want to do a side quest, but I don't know what to do."
+> Objavuj Slovensko. Zbieraj body.
 
-A production-shaped web app that generates personalised, randomised hiking and
-adventure quests — and never gives you the same one twice.
+Gamifikovaná webová aplikácia: každý pondelok nová výzva, dôkaz fotkou, admin
+schválenie, body, odznaky, rebríček a odmeny.
 
-Next.js 16 · TypeScript · Tailwind v4 · Prisma 7 · Postgres (Neon) · Stripe
+Next.js 16 · TypeScript · Tailwind v4 · Prisma 7 · Postgres (Neon)
 
 ---
 
-## Getting started
+## Spustenie
 
 ```bash
 npm install
-cp .env.example .env        # fill in DATABASE_URL, DIRECT_URL, AUTH_SECRET
-npm run db:migrate          # apply migrations
-npm run db:seed             # 20 showcase quests + a demo account
+cp .env.example .env        # DATABASE_URL, DIRECT_URL, AUTH_SECRET
+npm run db:migrate
+npm run db:seed             # výzvy + admin + traja hráči
 npm run dev
 ```
 
-`AUTH_SECRET` must be at least 32 characters — `openssl rand -hex 32`.
+Seed vytvorí `admin@stopa.app / StopaAdmin!2026` (rola ADMIN) a hráčov
+`zuzka@ | marek@ | ivana@stopa.app / StopaHrac!2026`. `SEED_DEMO_USERS=false`
+naseeduje len výzvy. Demo účty nikdy nepúšťaj do produkcie.
 
-The seed creates `demo@sidequest.app` / `SideQuest!2026` with six quests of
-history. Set `SEED_DEMO_USER=false` to seed showcase content only, and never
-run the demo seed against production.
+## Ako to funguje
 
-Useful scripts:
+```
+pondelok 8:00        admin zverejní výzvu (WeeklyQuest)
+      ↓
+hráč vyjde von       fotka + report (Submission, status PENDING)
+      ↓
+admin skontroluje    Approve/Reject + odkaz pre hráča
+      ↓
+schválené            +body → odznaky → rebríček → odmeny
+```
 
-| Command | What it does |
+Body sa pripisujú **iba pri schválení**, nikdy pri odoslaní — to je celý zmysel
+review kroku a zároveň obrana proti vygenerovaným fotkám.
+
+| Súbor | Za čo zodpovedá |
 | --- | --- |
-| `npm run quests:preview` | Prints 20 generated quests to the terminal — the fastest way to see the engine work |
-| `npm run db:studio` | Prisma Studio |
-| `npm run typecheck` | `tsc --noEmit` |
+| `src/lib/gamification.ts` | Kategórie, škála náročnosti, odznaky, odmeny, pravidlá |
+| `src/lib/stopa/data.ts` | Čítania: aktívna výzva, feed, rebríček, štatistiky, odznaky |
+| `src/app/(app)/actions.ts` | Odoslanie dôkazu, reakcie, komentáre, súhlas s pravidlami |
+| `src/app/(app)/admin/actions.ts` | Review a tvorba výziev |
 
----
+Prahy odznakov a odmien sú v kóde, nie v databáze — dajú sa ladiť pull requestom
+namiesto migrácie. `UserAchievement` drží len to, *že* niekto odznak získal.
 
-## How the quest generator works
+## Bezpečnosť
 
-The generator is the product, so it lives on its own in `src/lib/quest/` and is
-a **pure function**: same preferences + same history + same seed produces the
-same quest, with no database or network involved. That is what makes the
-interesting question — *"is this genuinely different from the last five?"* —
-testable.
+- **Roly.** `requireAdmin()` na serveri pri každom admin requeste; Admin tab sa
+  nezobrazí ani nefunguje pre bežný účet.
+- **Iba schválené je verejné.** Feed, komunitná náročnosť aj rebríček filtrujú na
+  `APPROVED` — čakajúcu ani zamietnutú fotku nevidí nikto okrem autora a adminov.
+- **Body.** Pripísanie zdieľa transakciu so zmenou stavu a `updateMany` matchuje
+  len kým je záznam `PENDING`, takže dvaja admini naraz nepripíšu body dvakrát.
+- **Jeden pokus na výzvu** — unikátny index `(user_id, quest_id)`.
+- **Pravidlá.** Bez súhlasu sa nedá odoslať dôkaz; kontroluje to server, nielen UI.
+- **Rate limity** v Postgrese (in-memory limiter sa v serverless obíde):
+  6 odoslaní/hod, 20 komentárov/10 min, 10 pokusov o prihlásenie/15 min.
+- Sessions sú odvolateľné DB záznamy za podpísanou httpOnly cookie, heslá bcrypt (12).
 
-```
-preferences
-   ↓ drawParameters()      randomised inside the user's limits, plus a wildcard
-   ↓ scoreLocations()      preference fit − history penalties + novelty bonuses
-   ↓ weighted pick         top candidates, weighted by score
-   ↓ deriveRoute()         distance, ascent, duration (Naismith), difficulty
-   ↓ buildTitle/Objective  grammars keyed to the chosen feature
-   ↓ signature check       collision → skip to the next candidate
-unique quest
-```
+## Jazyky
 
-| File | Responsibility |
-| --- | --- |
-| `locations.ts` | 37 real places described as *bands* (distance, ascent, difficulty) rather than fixed routes |
-| `taxonomy.ts` | The shared tag vocabulary: terrain, features, activities |
-| `random.ts` | Seeded RNG (mulberry32) + stable hashing |
-| `language.ts` | Title / objective / bonus / description grammars |
-| `engine.ts` | The pipeline above |
-| `service.ts` | Database orchestration, entitlement, persistence |
+Slovenčina je primárna a **predvolená pre každého** — Accept-Language zámerne
+nesledujeme, aby sa slovenská appka neotvorila po anglicky. Angličtinu zapne až
+prepínač (SK/EN v hlavičke, v profile a na landingu), ktorý si voľbu pamätá
+v cookie. `en.ts` je typovaný proti `sk.ts`, takže chýbajúci preklad je chyba
+pri kompilácii, nie prázdny text v UI.
 
-### Anti-repetition
+## Fotky
 
-Every generation reads the user's last 40 quests and scores each candidate
-location against them, with recency weighting (the last quest counts far more
-than the tenth):
+Fotky sa zmenšujú v prehliadači (1280 px, JPEG) a ukladajú ako data URL v stĺpci
+`submissions.photo`, limit 1,5 MB. Funguje to bez externej služby, ale **pred
+ostrým spustením to presuň do object storage** (S3/R2/Vercel Blob) a nechaj
+v databáze len URL.
 
-- a location the user has seen: heavy penalty; the *immediately* previous one, heavier still
-- regions and features seen recently: penalised proportionally
-- regions and features never seen: bonus
-- the same difficulty or distance bucket as the last two: small penalty
+## Čo ešte chýba
 
-The chosen quest then gets a **signature** — `location · difficulty · distance
-bucket · primary feature · timing`. If that signature is already in the user's
-history the candidate is skipped and the next one is tried. Titles, objective
-templates and bonus templates are likewise drawn from the pool the user hasn't
-been given yet.
-
-Because a location offers a *range*, the same valley can legitimately return as
-a different quest — a two-hour evening loop is not the same adventure as a
-full-day ridge traverse — but never as the same combination.
-
----
-
-## Architecture
-
-```
-src/
-  app/
-    (auth)/           login, signup, auth actions
-    (app)/            everything behind authentication
-      dashboard/ history/ saved/ profile/ upgrade/ quests/[id]/
-    onboarding/       seven-step preference flow
-    api/
-      quests/generate stripe/{checkout,portal,webhook}
-  components/
-    marketing/ quest/ app/ onboarding/ ui/ motion/
-  lib/
-    auth/ quest/ db, entitlements, billing, stripe, rate-limit, validation, geo, images
-prisma/
-  schema.prisma, migrations/, seed.ts, seed-data.ts
-```
-
-Server components do the data fetching; client components exist only where
-there is interaction (generation overlay, onboarding, toggles, forms). Prisma
-records are mapped to a `QuestSummary` projection before crossing to the
-client, so no database row is shipped to the browser.
-
----
-
-## Security
-
-Everything that matters is decided on the server, from database state:
-
-- **Sessions** — signed JWT in an httpOnly, SameSite=Lax cookie, pointing at a
-  `sessions` row so logout revokes server-side. Passwords are bcrypt (cost 12),
-  and login spends comparable time on unknown accounts so timing doesn't leak
-  whether an email is registered.
-- **Route protection** — `proxy.ts` rejects requests without a valid token, and
-  every protected page and action independently re-checks the session against
-  the database. The proxy is a fast path, not the authority.
-- **Entitlement** — `getEntitlement()` is the single source of truth for "may
-  this user generate?". The client never decides. The quota increment shares a
-  transaction with the quest insert, so a crash can't hand out a free quest
-  without recording it.
-- **Ownership** — quest mutations require a `quest_history` row linking user and
-  quest; another user's quest id changes nothing and renders as not-found.
-- **Rate limiting** — Postgres-backed fixed windows (an in-memory limiter is
-  bypassable across serverless instances): 12 generations/hour, 10 auth
-  attempts/15 min, plus a 4-second lock that collapses double submissions.
-- **Stripe** — webhook signatures verified against the raw body before parsing;
-  subscription state is only ever written from data fetched *from* Stripe.
-- **Input** — every mutation validates through Zod before touching the database;
-  `?next=` redirects are restricted to relative paths.
-
----
-
-## Configuration
-
-| Variable | Required | Notes |
-| --- | --- | --- |
-| `DATABASE_URL` | yes | Neon pooled connection |
-| `DIRECT_URL` | yes | Same host without `-pooler`. Migrations run over it: Neon's pooler multiplexes connections, which the schema engine's advisory locks don't tolerate |
-| `AUTH_SECRET` | yes | ≥ 32 chars |
-| `NEXT_PUBLIC_APP_URL` | yes | Used for Stripe redirect URLs |
-| `STRIPE_SECRET_KEY` | no | Without it, checkout is disabled and the paywall degrades gracefully instead of erroring |
-| `STRIPE_WEBHOOK_SECRET` | no | Required for the webhook to accept anything |
-| `STRIPE_PRICE_ID_EXPLORER_MONTHLY` / `_YEARLY` | no | Explorer plan prices |
-
-Pricing, plan features, the free allowance and rate limits all live in
-`src/lib/config.ts` — nothing is hardcoded in a component.
-
-### Prisma 7 notes
-
-Connection URLs live in `prisma.config.ts`, not `schema.prisma`, and the CLI no
-longer loads `.env` implicitly — the config imports `dotenv/config` to do it.
-The client connects through the **node-postgres driver adapter**, which is the
-portable choice: the same code talks to Neon's pooled endpoint and to a plain
-local Postgres. Swap `@prisma/adapter-pg` for `@prisma/adapter-neon` if you move
-to an edge runtime.
-
-### Stripe setup
-
-1. Create a recurring price for the Explorer plan and put its id in
-   `STRIPE_PRICE_ID_EXPLORER_MONTHLY`.
-2. Point a webhook at `/api/stripe/webhook` subscribing to
-   `checkout.session.completed`, `customer.subscription.*`, `invoice.paid` and
-   `invoice.payment_failed`.
-3. Locally: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
-
----
-
-## Imagery
-
-All photography is referenced through `src/lib/images.ts` — one file to swap for
-your own asset host. Each image carries a palette that renders a generated
-ridgeline *underneath* the photo, so a slow network or a dead URL degrades into
-something designed rather than a grey box. The Unsplash ids are placeholders;
-replace them with licensed assets before launch.
-
----
-
-## Known gaps before a real launch
-
-Deliberate scope edges, not oversights:
-
-- **Route data is schematic.** Waypoints are generated around the trailhead for
-  the preview sketch; they are not surveyed GPX tracks. Wire a real routing
-  provider (or curate GPX per location) before anyone navigates by this.
-- **No live weather.** The conditions panel explains the timing and links out to
-  a forecast rather than inventing data.
-- **Geocoding is a local gazetteer** (~55 towns in Slovakia and neighbours). It
-  covers the launch region; anywhere else falls back to no travel estimate.
-- **No email** — verification, password reset and receipts are unimplemented.
-- **The location catalogue is hand-curated** and Slovakia-centred. Coordinates
-  are approximate trailhead positions.
+- Object storage pre fotky (viď vyššie).
+- E-maily — potvrdenie účtu, reset hesla, notifikácia o schválení.
+- Automatické zverejnenie výzvy v pondelok o 8:00 (teraz sa dátum zadáva ručne;
+  stačí naň cron).
+- Tabuľky po pôvodnom projekte (`quests`, `subscriptions`, `user_preferences`,
+  `quest_history`, `saved_quests`, `quest_generations`) sú zatiaľ nepoužívané —
+  po odsúhlasení sa dajú zahodiť samostatnou migráciou.

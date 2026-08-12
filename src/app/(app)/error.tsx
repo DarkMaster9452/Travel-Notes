@@ -2,8 +2,7 @@
 
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
-import { Kicker } from "@/components/ui/primitives";
+import { Button } from "@/components/stopa/ui";
 
 export default function AppError({
   error,
@@ -17,24 +16,17 @@ export default function AppError({
   }, [error]);
 
   return (
-    <main className="flex min-h-[70dvh] flex-col justify-center px-5 py-16 sm:px-10">
-      <div className="max-w-xl">
-        <Kicker className="text-ember">Something went sideways</Kicker>
-        <h1 className="display-md mt-4">We couldn&apos;t find an adventure right now.</h1>
-        <p className="mt-5 text-sm leading-relaxed text-stone">
-          The trail is still there, we just lost the map for a second. Try again — nothing you had
-          saved is affected.
-        </p>
-        {error.digest && <p className="mt-3 text-xs text-stone/70">Reference: {error.digest}</p>}
-
-        <div className="mt-8 flex gap-3">
-          <Button onClick={reset} size="lg">
-            Try again
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <a href="/dashboard">Back to dashboard</a>
-          </Button>
-        </div>
+    <main className="flex min-h-[60dvh] flex-col justify-center">
+      <h1 className="font-serif text-3xl">Niečo sa pokazilo.</h1>
+      <p className="mt-3 max-w-md leading-relaxed text-moss">
+        Skús to znova — nič, čo si poslal, sa nestratilo.
+      </p>
+      {error.digest && <p className="mt-2 text-xs text-moss/70">Ref: {error.digest}</p>}
+      <div className="mt-7 flex gap-3">
+        <Button onClick={reset}>Skúsiť znova</Button>
+        <Button asChild variant="outline">
+          <a href="/home">Na domov</a>
+        </Button>
       </div>
     </main>
   );

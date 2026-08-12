@@ -1,144 +1,152 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { logoutAction } from "@/app/(auth)/actions";
-import { updatePreferencesAction } from "@/app/(app)/profile/actions";
-import { PreferencesForm } from "@/components/app/preferences-form";
-import { BillingActions } from "@/components/app/billing-actions";
-import { Button } from "@/components/ui/button";
-import { Kicker } from "@/components/ui/primitives";
-import { requireOnboardedUser } from "@/lib/auth/guards";
-import { EXPLORER_PLAN } from "@/lib/config";
-import { db } from "@/lib/db";
-import { getEntitlement } from "@/lib/entitlements";
-import { isStripeEnabled } from "@/lib/env";
-import { getUserStats } from "@/lib/quest/service";
-import { formatDate } from "@/lib/utils";
+import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { TrailRow } from "@/components/stopa/quest-card";
+import { Button, Card, SectionLabel } from "@/components/stopa/ui";
+import { requireUser } from "@/lib/auth/guards";
+import { evaluateAchievements, type QuestCategoryId } from "@/lib/gamification";
+import { fill, getTranslations } from "@/lib/i18n";
+import {
+  getMySubmissions,
+  getPlayerStats,
+  getRank,
+  getUnlockedAchievements,
+} from "@/lib/stopa/data";
+import { cn, formatDate } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Profile" };
 export const dynamic = "force-dynamic";
 
-const STATUS_COPY: Record<string, string> = {
-  ACTIVE: "Active",
-  TRIALING: "Trial",
-  PAST_DUE: "Payment failed — we're retrying",
-  CANCELED: "Cancelled",
-  INCOMPLETE: "Incomplete",
-  INCOMPLETE_EXPIRED: "Expired",
-  UNPAID: "Unpaid",
-  PAUSED: "Paused",
-};
-
 export default async function ProfilePage() {
-  const user = await requireOnboardedUser();
+  const user = await requireUser();
+  const { t, locale } = await getTranslations();
 
-  const [preferences, entitlement, stats] = await Promise.all([
-    db.userPreferences.findUnique({ where: { userId: user.id } }),
-    getEntitlement(user.id),
-    getUserStats(user.id),
+  const [stats, rank, trails, unlocked] = await Promise.all([
+    getPlayerStats(user.id),
+    getRank(user.id),
+    getMySubmissions(user.id, 10),
+    getUnlockedAchievements(user.id),
   ]);
 
-  if (!preferences) notFound();
+  const progress = evaluateAchievements(stats);
 
   return (
-    <main className="px-5 pb-16 pt-10 sm:px-8 lg:px-12 lg:pt-14">
-      <header className="border-b border-ink/12 pb-8">
-        <Kicker>Account</Kicker>
-        <h1 className="display-lg mt-4">{user.name}</h1>
-        <p className="mt-3 text-sm text-stone">
-          {user.email} · joined {formatDate(user.createdAt)}
-        </p>
-      </header>
+    <main className="space-y-9">
+      <section>
+        <SectionLabel>{t.profile.title}</SectionLabel>
+        <h1 className="mt-3 font-serif text-4xl">{user.name}</h1>
 
-      <div className="grid gap-14 py-12 lg:grid-cols-[1.3fr_1fr]">
+        <div className="mt-5 grid grid-cols-3 gap-2.5">
+          <Card solid className="px-4 py-3.5 text-center">
+            <p className="font-serif text-3xl tabular-nums">{stats.points}</p>
+            <p className="mt-1 text-xs text-moss">{t.profile.points}</p>
+          </Card>
+          <Card solid className="px-4 py-3.5 text-center">
+            <p className="font-serif text-3xl tabular-nums">{rank ?? "—"}</p>
+            <p className="mt-1 text-xs text-moss">{t.profile.rank}</p>
+          </Card>
+          <Card solid className="px-4 py-3.5 text-center">
+            <p className="font-serif text-3xl tabular-nums">{stats.approvedQuests}</p>
+            <p className="mt-1 text-xs text-moss">{t.profile.completed}</p>
+          </Card>
+        </div>
+      </section>
+
+      <section>
+        <SectionLabel>{t.profile.achievements}</SectionLabel>
+        <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          {progress.map(({ achievement, unlocked: isUnlocked, current, target }) => {
+            const copy = t.achievements[achievement.id as keyof typeof t.achievements];
+            return (
+              <li
+                key={achievement.id}
+                className={cn(
+                  "rounded-[12px] border px-3.5 py-3.5",
+                  isUnlocked
+                    ? "border-amber/60 bg-amber/10"
+                    : "border-cream/12 bg-forest-card/60 opacity-70",
+                )}
+              >
+                <span className={cn("text-2xl", !isUnlocked && "grayscale")} aria-hidden="true">
+                  {achievement.icon}
+                </span>
+                <p className="mt-2 font-serif text-base leading-tight">{copy.name}</p>
+                <p className="mt-1 text-xs leading-snug text-moss">
+                  {isUnlocked
+                    ? unlocked.has(achievement.id)
+                      ? t.profile.unlocked
+                      : t.profile.unlocked
+                    : fill(t.profile.achievementsLocked, { remaining: target - current })}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section>
+        <SectionLabel>{t.profile.myTrails}</SectionLabel>
+        {trails.length > 0 ? (
+          <ul className="mt-3 space-y-2.5">
+            {trails.map((trail) => (
+              <TrailRow
+                key={trail.id}
+                title={trail.quest.title}
+                points={trail.pointsAwarded}
+                category={trail.quest.category as QuestCategoryId}
+                status={trail.status}
+                t={t}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-moss">{t.profile.noTrails}</p>
+        )}
+      </section>
+
+      {trails.some((trail) => trail.status === "APPROVED") && (
         <section>
-          <h2 className="display-md">Preferences</h2>
-          <p className="mt-3 max-w-lg text-sm text-stone">
-            Change these any time. The generator reads them fresh on every quest.
-          </p>
-
-          <div className="mt-8">
-            <PreferencesForm
-              action={updatePreferencesAction}
-              initial={{
-                homeLocation: preferences.homeLocation,
-                maxDistance: preferences.maxDistance,
-                preferredDistance: preferences.preferredDistance,
-                interests: preferences.preferredTerrain,
-                difficulty: preferences.difficulty,
-                timeAvailable: preferences.timeAvailable,
-                transport: preferences.transport,
-                questStyle: preferences.questStyle,
-              }}
-            />
-          </div>
+          <SectionLabel>{t.profile.difficultyLog}</SectionLabel>
+          <ul className="mt-3 space-y-2">
+            {trails
+              .filter((trail) => trail.status === "APPROVED")
+              .map((trail) => (
+                <li key={trail.id} className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate font-serif text-base">{trail.quest.title}</span>
+                  <span className="shrink-0 text-moss">
+                    {t.difficulty[trail.difficulty]} · {t.comparison[trail.comparison]}
+                  </span>
+                </li>
+              ))}
+          </ul>
         </section>
+      )}
 
-        <aside className="space-y-10">
-          <section className="bg-ink p-6 text-paper sm:p-8">
-            <Kicker className="text-paper/50">Plan</Kicker>
-            <p className="mt-3 font-display text-3xl font-extrabold uppercase">
-              {entitlement.isSubscribed ? EXPLORER_PLAN.name : "Scout · free"}
-            </p>
-
-            {entitlement.isSubscribed ? (
-              <>
-                <p className="mt-3 text-sm text-paper/70">
-                  {STATUS_COPY[entitlement.status ?? ""] ?? "Active"}
-                  {entitlement.currentPeriodEnd && (
-                    <>
-                      {" · "}
-                      {entitlement.cancelAtPeriodEnd ? "ends" : "renews"}{" "}
-                      {formatDate(entitlement.currentPeriodEnd)}
-                    </>
-                  )}
-                </p>
-                <BillingActions className="mt-6" enabled={isStripeEnabled()} />
-              </>
-            ) : (
-              <>
-                <p className="mt-3 text-sm text-paper/70">
-                  {entitlement.freeQuestsRemaining} of {entitlement.freeQuestAllowance} free quests
-                  left.
-                </p>
-                <Button asChild variant="ember" size="lg" className="mt-6">
-                  <Link href="/upgrade">Unlock unlimited</Link>
-                </Button>
-              </>
-            )}
-          </section>
-
-          <section>
-            <Kicker>Your numbers</Kicker>
-            <dl className="mt-4 space-y-3 text-sm">
-              <Row label="Quests generated" value={String(stats.questCount)} />
-              <Row label="Completed" value={String(stats.completedCount)} />
-              <Row label="Kilometres walked" value={`${stats.kmExplored} km`} />
-              <Row label="Metres climbed" value={`${stats.elevation} m`} />
-              <Row label="Regions visited" value={String(stats.regions)} />
-              <Row label="Saved" value={String(stats.savedCount)} />
-            </dl>
-          </section>
-
-          <section className="border-t border-ink/12 pt-8">
+      <section>
+        <SectionLabel>{t.profile.settings}</SectionLabel>
+        <Card solid className="mt-3">
+          <p className="text-sm text-moss">
+            {user.rulesAcceptedAt
+              ? fill(t.profile.rulesAccepted, {
+                  date: formatDate(user.rulesAcceptedAt, locale),
+                })
+              : t.profile.rulesNotAccepted}
+          </p>
+          <div className="mt-4">
+            <LanguageToggle current={locale} tone="light" />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/rewards#rules">{t.profile.reviewRules}</Link>
+            </Button>
             <form action={logoutAction}>
-              <Button type="submit" variant="outline" size="lg">
-                Log out
+              <Button type="submit" variant="ghost" size="sm">
+                {t.profile.logout}
               </Button>
             </form>
-          </section>
-        </aside>
-      </div>
+          </div>
+        </Card>
+      </section>
     </main>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4 border-b border-ink/10 pb-3">
-      <dt className="text-stone">{label}</dt>
-      <dd className="font-medium tabular-nums">{value}</dd>
-    </div>
   );
 }

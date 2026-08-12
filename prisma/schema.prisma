@@ -14,12 +14,22 @@ datasource db {
 // Accounts
 // ---------------------------------------------------------------------------
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String
   avatar       String?
   passwordHash String   @map("password_hash")
+  role         Role     @default(USER)
+  /// Total approved points. Denormalised for the leaderboard.
+  points       Int      @default(0)
+  /// Rules must be accepted before anything can be submitted.
+  rulesAcceptedAt DateTime? @map("rules_accepted_at")
   freeQuestsUsed Int    @default(0) @map("free_quests_used")
   onboardedAt  DateTime? @map("onboarded_at")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -31,7 +41,14 @@ model User {
   generations   QuestGeneration[]
   history       QuestHistory[]
   savedQuests   SavedQuest[]
+  submissions   Submission[]
+  reviewed      Submission[]      @relation("reviewer")
+  createdQuests WeeklyQuest[]
+  achievements  UserAchievement[]
+  reactions     SubmissionReaction[]
+  comments      SubmissionComment[]
 
+  @@index([points])
   @@map("users")
 }
 
@@ -197,6 +214,8 @@ model Quest {
   terrain       String[]   @default([])
   features      String[]   @default([])
   mood          String?
+  /// Language the quest copy was generated in. Text is frozen at generation.
+  locale        String     @default("sk")
   coverImage    String     @map("cover_image")
   routeData     Json?      @map("route_data")
   /// Stable hash of the defining parameter combination. Powers anti-repetition.
@@ -209,7 +228,7 @@ model Quest {
   history     QuestHistory[]
   saved       SavedQuest[]
 
-  @@index([isShowcase])
+  @@index([isShowcase, locale])
   @@index([signature])
   @@map("quests")
 }
@@ -273,4 +292,146 @@ model RateLimit {
 
   @@index([windowStart])
   @@map("rate_limits")
+}
+
+
+// ---------------------------------------------------------------------------
+// STOPA — weekly quests, photo proof, review, gamification
+// ---------------------------------------------------------------------------
+
+enum QuestCategory {
+  SUMMIT
+  WATERFALL
+  CASTLE
+  MICRO
+}
+
+/// One challenge, published every Monday and open until Sunday night.
+model WeeklyQuest {
+  id          String        @id @default(cuid())
+  title       String
+  location    String
+  region      String
+  description String
+  category    QuestCategory
+  points      Int           @default(200)
+  coverImage  String?       @map("cover_image")
+  latitude    Float?
+  longitude   Float?
+  /// When it becomes the active quest.
+  publishedAt DateTime      @map("published_at")
+  /// Submissions after this are refused.
+  closesAt    DateTime      @map("closes_at")
+  createdById String?       @map("created_by_id")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  createdBy   User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  submissions Submission[]
+
+  @@index([publishedAt])
+  @@index([closesAt])
+  @@map("weekly_quests")
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Perceived difficulty, hardest to easiest.
+enum HikeDifficulty {
+  BRUTAL
+  HARD
+  MODERATE
+  EASY
+  VERY_EASY
+}
+
+/// How this hike compared to the ones the user has already done.
+enum HikeComparison {
+  HARDER
+  SIMILAR
+  EASIER
+  FIRST
+}
+
+/// Photo proof plus a short trip report. Points are only awarded on approval.
+model Submission {
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  questId     String           @map("quest_id")
+  /// Image data URL or remote URL. See README on swapping in object storage.
+  photo       String
+  caption     String?
+  difficulty  HikeDifficulty
+  comparison  HikeComparison   @default(FIRST)
+  /// Which earlier quest the comparison refers to.
+  comparedToQuestId String?    @map("compared_to_quest_id")
+  status      SubmissionStatus @default(PENDING)
+  /// Reviewer's reply, shown to the user; public ones also appear in the feed.
+  adminNote   String?          @map("admin_note")
+  adminNotePublic Boolean      @default(true) @map("admin_note_public")
+  pointsAwarded Int            @default(0) @map("points_awarded")
+  reviewedAt  DateTime?        @map("reviewed_at")
+  reviewedById String?         @map("reviewed_by_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest      WeeklyQuest @relation(fields: [questId], references: [id], onDelete: Cascade)
+  reviewedBy User?       @relation("reviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  reactions SubmissionReaction[]
+  comments  SubmissionComment[]
+
+  /// One attempt per quest per person.
+  @@unique([userId, questId])
+  @@index([status, createdAt])
+  @@index([questId, status])
+  @@map("submissions")
+}
+
+model SubmissionReaction {
+  id           String   @id @default(cuid())
+  submissionId String   @map("submission_id")
+  userId       String   @map("user_id")
+  emoji        String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, userId, emoji])
+  @@index([submissionId])
+  @@map("submission_reactions")
+}
+
+model SubmissionComment {
+  id           String   @id @default(cuid())
+  submissionId String   @map("submission_id")
+  userId       String   @map("user_id")
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, createdAt])
+  @@map("submission_comments")
+}
+
+/// Achievement definitions live in code (src/lib/gamification.ts); this only
+/// records who has unlocked what, so thresholds can be tuned without a migration.
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  achievementId String   @map("achievement_id")
+  unlockedAt    DateTime @default(now()) @map("unlocked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
 }

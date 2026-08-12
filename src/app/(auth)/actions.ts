@@ -31,6 +31,7 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    acceptRules: formData.get("acceptRules"),
   });
 
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
@@ -42,28 +43,34 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     AUTH_RATE_LIMIT.windowSeconds,
   );
   if (!limit.ok) {
-    return { errors: { form: "Too many attempts. Try again in a few minutes." } };
+    return { errors: { form: "tooMany" } };
   }
 
   const existing = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) {
-    return { errors: { email: "There's already an account with this email." } };
+    return { errors: { email: "emailTaken" } };
   }
 
   let userId: string;
   try {
     const user = await db.user.create({
-      data: { email, name, passwordHash: await hashPassword(password) },
+      data: {
+        email,
+        name,
+        passwordHash: await hashPassword(password),
+        // The signup form requires the tick, so acceptance is recorded here.
+        rulesAcceptedAt: new Date(),
+      },
       select: { id: true },
     });
     userId = user.id;
   } catch {
     // Unique constraint under a race — same message as the check above.
-    return { errors: { email: "There's already an account with this email." } };
+    return { errors: { email: "emailTaken" } };
   }
 
   await createSession(userId);
-  redirect("/onboarding");
+  redirect("/home");
 }
 
 export async function loginAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -81,27 +88,27 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     AUTH_RATE_LIMIT.windowSeconds,
   );
   if (!limit.ok) {
-    return { errors: { form: "Too many attempts. Try again in a few minutes." } };
+    return { errors: { form: "tooMany" } };
   }
 
   const user = await db.user.findUnique({
     where: { email },
-    select: { id: true, passwordHash: true, onboardedAt: true },
+    select: { id: true, passwordHash: true },
   });
 
   if (!user) {
     // Spend comparable time so a missing account isn't detectable by timing.
     await burnPasswordCycle(password);
-    return { errors: { form: "That email and password don't match." } };
+    return { errors: { form: "credentials" } };
   }
 
   const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) return { errors: { form: "That email and password don't match." } };
+  if (!valid) return { errors: { form: "credentials" } };
 
   await createSession(user.id);
 
   const next = safeNext(formData.get("next"));
-  redirect(next ?? (user.onboardedAt ? "/dashboard" : "/onboarding"));
+  redirect(next ?? "/home");
 }
 
 export async function logoutAction(): Promise<void> {

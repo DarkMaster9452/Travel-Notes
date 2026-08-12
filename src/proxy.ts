@@ -11,7 +11,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/jwt";
  * the proxy let the request through.
  */
 
-const PROTECTED = ["/dashboard", "/history", "/saved", "/profile", "/quests", "/upgrade", "/onboarding"];
+const PROTECTED = ["/home", "/submit", "/leaderboard", "/profile", "/rewards", "/admin"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function proxy(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
 
   if (claims && AUTH_PAGES.includes(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/home";
     url.search = "";
     return NextResponse.redirect(url);
   }
