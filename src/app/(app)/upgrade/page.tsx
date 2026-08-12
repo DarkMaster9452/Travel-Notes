@@ -7,11 +7,12 @@ import { QuestImage } from "@/components/quest/quest-image";
 import { Button } from "@/components/ui/button";
 import { Kicker } from "@/components/ui/primitives";
 import { requireOnboardedUser } from "@/lib/auth/guards";
-import { EXPLORER_PLAN, formatPrice } from "@/lib/config";
+import { EXPLORER_PLAN, formatPrice, ULTRA_PLAN } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
 import { IMAGES } from "@/lib/images";
 import { LOCATIONS } from "@/lib/quest/locations";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Go unlimited" };
 export const dynamic = "force-dynamic";
@@ -56,7 +57,7 @@ export default async function UpgradePage({
             )}
           </h1>
 
-          <p className="mt-7 max-w-xl font-serif text-2xl leading-snug text-paper/80 italic">
+          <p className="mt-7 max-w-xl font-serif text-2xl leading-snug font-medium text-paper/80 italic">
             But there are still {LOCATIONS.length} places in the catalogue waiting for you, and the
             generator can build thousands of different days out of them.
           </p>
@@ -69,57 +70,72 @@ export default async function UpgradePage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-5 pb-24 sm:px-10">
-        <div className="grid gap-px bg-paper/15 lg:grid-cols-[1.2fr_1fr]">
-          <div className="bg-ink p-8 sm:p-12">
-            <h2 className="font-display text-5xl font-extrabold uppercase">{EXPLORER_PLAN.name}</h2>
-            <p className="mt-4 text-sm text-paper/60">{EXPLORER_PLAN.description}</p>
+      <section className="mx-auto max-w-6xl px-5 pb-24 sm:px-10">
+        <div className="grid gap-px bg-paper/15 lg:grid-cols-2">
+          {[EXPLORER_PLAN, ULTRA_PLAN].map((plan) => (
+            <div
+              key={plan.id}
+              className={cn(
+                "bg-ink p-8 sm:p-12",
+                plan.highlight && "ring-2 ring-inset ring-ember-light",
+              )}
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="font-display text-4xl font-extrabold uppercase sm:text-5xl">
+                  {plan.name}
+                </h2>
+                {plan.badge && (
+                  <span className="kicker shrink-0 bg-ember px-2 py-1 text-paper">{plan.badge}</span>
+                )}
+              </div>
+              <p className="mt-4 text-sm text-paper/60">{plan.description}</p>
 
-            <p className="mt-8 font-display text-6xl font-extrabold">
-              {formatPrice(EXPLORER_PLAN.price.monthly, EXPLORER_PLAN.currency)}
-              <span className="ml-2 font-sans text-sm font-medium tracking-normal text-paper/50 normal-case">
-                / month
-              </span>
-            </p>
+              <p className="mt-8 font-display text-5xl font-extrabold sm:text-6xl">
+                {formatPrice(plan.price.monthly, plan.currency)}
+                <span className="ml-2 font-sans text-sm font-medium tracking-normal text-paper/50 normal-case">
+                  / month
+                </span>
+              </p>
 
-            <ul className="mt-8 space-y-3 border-t border-paper/15 pt-8">
-              {EXPLORER_PLAN.features.map((feature) => (
-                <li key={feature} className="flex gap-3 text-sm text-paper/80">
-                  <span aria-hidden="true" className="text-ember-light">
-                    —
-                  </span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
+              <ul className="mt-8 space-y-3 border-t border-paper/15 pt-8">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex gap-3 text-sm text-paper/80">
+                    <span aria-hidden="true" className="text-ember-light">
+                      —
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
 
-            <CheckoutButton enabled={isStripeEnabled()} className="mt-10" />
+              <CheckoutButton
+                enabled={isStripeEnabled()}
+                label={`Unlock ${plan.name}`}
+                className="mt-10"
+              />
+            </div>
+          ))}
+        </div>
 
-            <p className="mt-6 text-xs text-paper/45">
-              Cancel any time from your profile. Your history and saved quests stay yours either
-              way.
+        <p className="mt-8 text-xs text-paper/45">
+          Cancel any time from your profile. Your history and saved quests stay yours either way.
+        </p>
+
+        <div className="mt-16 flex flex-col items-start gap-6 border-t border-paper/15 pt-10 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Kicker className="text-paper/50">Still yours on the free plan</Kicker>
+            <p className="mt-3 max-w-md text-sm text-paper/70">
+              Everything you&apos;ve already been sent, your saved quests, your full history, and
+              marking quests as completed.
             </p>
           </div>
-
-          <div className="flex flex-col justify-between bg-ink p-8 sm:p-12">
-            <div>
-              <Kicker className="text-paper/50">Still yours on the free plan</Kicker>
-              <ul className="mt-6 space-y-3 text-sm text-paper/70">
-                <li>Everything you&apos;ve already been sent</li>
-                <li>Your saved quests</li>
-                <li>Your full quest history</li>
-                <li>Marking quests as completed</li>
-              </ul>
-            </div>
-
-            <div className="mt-10 flex flex-col gap-3">
-              <Button asChild variant="outlineLight" size="lg">
-                <Link href="/history">Browse your history</Link>
-              </Button>
-              <Button asChild variant="ghostLight" size="lg">
-                <Link href="/dashboard">Back to dashboard</Link>
-              </Button>
-            </div>
+          <div className="flex shrink-0 gap-3">
+            <Button asChild variant="outlineLight" size="lg">
+              <Link href="/history">Browse your history</Link>
+            </Button>
+            <Button asChild variant="ghostLight" size="lg">
+              <Link href="/dashboard">Back to dashboard</Link>
+            </Button>
           </div>
         </div>
       </section>

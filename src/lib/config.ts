@@ -29,7 +29,7 @@ export const AUTH_RATE_LIMIT = {
 export type BillingInterval = "monthly" | "yearly";
 
 export type PlanDefinition = {
-  id: "free" | "explorer";
+  id: "free" | "explorer" | "ultra";
   name: string;
   kicker: string;
   description: string;
@@ -37,22 +37,26 @@ export type PlanDefinition = {
   price: Record<BillingInterval, number>;
   currency: "EUR";
   features: string[];
+  /** Short label shown as a badge on the plan card, e.g. "Most popular". */
+  badge?: string;
   highlight?: boolean;
 };
 
 export const PLANS: PlanDefinition[] = [
   {
     id: "free",
-    name: "Scout",
+    name: "Free",
     kicker: `${FREE_QUEST_ALLOWANCE} quests`,
     description: "Enough to find out whether leaving the house is your thing.",
     price: { monthly: 0, yearly: 0 },
     currency: "EUR",
     features: [
-      "3 personalised quests",
-      "Basic preferences",
-      "Quest history",
-      "Saved quests",
+      "Only in your country",
+      "Sticker only online",
+      "Max 3 free quests",
+      "Everything you've already been sent",
+      "Your saved quests",
+      "Marking quests as completed",
     ],
   },
   {
@@ -61,22 +65,46 @@ export const PLANS: PlanDefinition[] = [
     kicker: "Unlimited quests",
     description: "For people who keep running out of weekends, not ideas.",
     // Placeholder pricing — change here, or override with Stripe price data.
-    price: { monthly: 700, yearly: 6000 },
+    price: { monthly: 1100, yearly: 9400 },
     currency: "EUR",
     features: [
+      "World wide",
+      "Sticker within post in mail — real",
       "Unlimited quest generation",
       "Advanced filters",
-      "Personalised recommendations",
+      "Personalised recommendations — chat with admin",
       "Saved quests & history",
       "More adventure types",
-      "Richer objectives and bonus challenges",
-      "Location-based recommendations",
+      "Richer objectives and bonus challenges + custom quest only for Explorer package",
     ],
+    badge: "Most popular",
+  },
+  {
+    id: "ultra",
+    name: "Ultra Explorer",
+    kicker: "Everything, priority",
+    description: "The full package — priority access, real mail, nothing capped.",
+    // Placeholder pricing — change here, or override with Stripe price data.
+    price: { monthly: 3100, yearly: 26400 },
+    currency: "EUR",
+    features: [
+      "World wide",
+      "Sticker within post in mail — real",
+      "Custom list from owners (certificate)",
+      "Unlimited quest generation",
+      "Advanced filters+",
+      "Personalised recommendations — chat with admin (priority)",
+      "Saved quests & history",
+      "More adventure types (same as Explorer)",
+      "Richer objectives and bonus challenges + custom quest only for Ultra Explorer package",
+    ],
+    badge: "Best value",
     highlight: true,
   },
 ];
 
 export const EXPLORER_PLAN = PLANS.find((p) => p.id === "explorer")!;
+export const ULTRA_PLAN = PLANS.find((p) => p.id === "ultra")!;
 
 export function formatPrice(minorUnits: number, currency: PlanDefinition["currency"] = "EUR") {
   if (minorUnits === 0) return "Free";

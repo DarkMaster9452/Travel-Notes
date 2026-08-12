@@ -28,7 +28,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         </h1>
 
         <div className="mt-10 flex flex-col gap-8 border-t border-paper/25 pt-8 lg:flex-row lg:items-end lg:justify-between">
-          <p className="max-w-md font-serif text-xl leading-snug text-paper/85 italic sm:text-2xl">
+          <p className="max-w-md font-script text-2xl leading-relaxed text-paper/85 sm:text-3xl">
             Stop scrolling. Start exploring.
           </p>
 

@@ -6,8 +6,9 @@ import { QuestImage } from "@/components/quest/quest-image";
 import CarouselStacked from "@/components/ui/carousel-07";
 import { Button } from "@/components/ui/button";
 import { Kicker, SectionHeading } from "@/components/ui/primitives";
-import { EXPLORER_PLAN, formatPrice, PLANS } from "@/lib/config";
+import { formatPrice, PLANS } from "@/lib/config";
 import { IMAGES } from "@/lib/images";
+import { cn } from "@/lib/utils";
 import type { QuestSummary } from "@/types/quest";
 
 // ---------------------------------------------------------------------------
@@ -133,7 +134,7 @@ export function Randomness() {
           <h2 className="display-lg max-w-[14ch]">
             You don&apos;t need an itinerary.
           </h2>
-          <p className="mt-8 max-w-lg font-serif text-2xl leading-snug text-ink/70 italic sm:text-3xl">
+          <p className="mt-8 max-w-lg font-script text-3xl leading-relaxed text-ink/70 sm:text-4xl">
             You need a reason to leave the house.
           </p>
         </Reveal>
@@ -218,57 +219,66 @@ export function Pricing({ signedIn }: { signedIn: boolean }) {
           lede="No trial countdown, no card up front. Use your three, and if you're still bored, there are a few hundred more places waiting."
         />
 
-        <div className="mt-16 grid gap-px bg-paper/15 lg:grid-cols-2">
-          {PLANS.map((plan) => (
-            <div key={plan.id} className="flex flex-col bg-ink p-8 sm:p-12">
-              <div className="flex items-baseline justify-between gap-4">
-                <h3 className="font-display text-4xl font-extrabold uppercase text-paper sm:text-5xl">
-                  {plan.name}
-                </h3>
-                {plan.highlight && (
-                  <span className="kicker bg-ember px-2 py-1 text-paper">Unlimited</span>
+        <div className="mt-16 grid gap-px bg-paper/15 lg:grid-cols-3">
+          {PLANS.map((plan) => {
+            const isPaid = plan.price.monthly > 0;
+            return (
+              <div
+                key={plan.id}
+                className={cn(
+                  "flex flex-col bg-ink p-8 sm:p-10",
+                  plan.highlight && "ring-2 ring-inset ring-ember-light",
                 )}
-              </div>
-
-              <p className="mt-4 text-sm text-paper/60">{plan.description}</p>
-
-              <p className="mt-8 font-display text-6xl font-extrabold text-paper">
-                {formatPrice(plan.price.monthly, plan.currency)}
-                {plan.price.monthly > 0 && (
-                  <span className="ml-2 font-sans text-sm font-medium tracking-normal text-paper/50 normal-case">
-                    / month
-                  </span>
-                )}
-              </p>
-
-              <ul className="mt-8 flex flex-1 flex-col gap-3 border-t border-paper/15 pt-8">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex gap-3 text-sm text-paper/75">
-                    <span aria-hidden="true" className="text-ember-light">
-                      —
-                    </span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                asChild
-                variant={plan.highlight ? "ember" : "outlineLight"}
-                size="lg"
-                className="mt-10"
               >
-                <Link href={signedIn ? (plan.highlight ? "/upgrade" : "/dashboard") : "/signup"}>
-                  {plan.highlight ? "Unlock unlimited" : "Start free"}
-                </Link>
-              </Button>
-            </div>
-          ))}
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="font-display text-3xl font-extrabold uppercase text-paper sm:text-4xl">
+                    {plan.name}
+                  </h3>
+                  {plan.badge && (
+                    <span className="kicker shrink-0 bg-ember px-2 py-1 text-paper">{plan.badge}</span>
+                  )}
+                </div>
+
+                <p className="mt-4 text-sm text-paper/60">{plan.description}</p>
+
+                <p className="mt-8 font-display text-5xl font-extrabold text-paper">
+                  {formatPrice(plan.price.monthly, plan.currency)}
+                  {isPaid && (
+                    <span className="ml-2 font-sans text-sm font-medium tracking-normal text-paper/50 normal-case">
+                      / month
+                    </span>
+                  )}
+                </p>
+
+                <ul className="mt-8 flex flex-1 flex-col gap-3 border-t border-paper/15 pt-8">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex gap-3 text-sm text-paper/75">
+                      <span aria-hidden="true" className="text-ember-light">
+                        —
+                      </span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  asChild
+                  variant={isPaid ? "ember" : "outlineLight"}
+                  size="lg"
+                  className="mt-10"
+                >
+                  <Link href={signedIn ? (isPaid ? "/upgrade" : "/dashboard") : "/signup"}>
+                    {isPaid ? `Unlock ${plan.name}` : "Start free"}
+                  </Link>
+                </Button>
+              </div>
+            );
+          })}
         </div>
 
         <p className="mt-8 text-xs text-paper/45">
           Prices are configured centrally and billed through Stripe. Cancel any time from your
-          profile — {EXPLORER_PLAN.name} stays active until the end of the period you paid for.
+          profile — your plan stays active until the end of the period you paid for.
         </p>
       </div>
     </section>
