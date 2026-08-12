@@ -1,6 +1,7 @@
 import { Hero } from "@/components/marketing/hero";
 import { MarketingNav } from "@/components/marketing/nav";
 import {
+  Destinations,
   Features,
   FinalCta,
   Footer,
@@ -27,6 +28,7 @@ export default async function LandingPage() {
       <main id="main">
         <Hero signedIn={signedIn} />
         <HowItWorks />
+        <Destinations />
         <QuestPreview quests={quests} />
         <Randomness />
         <Features />

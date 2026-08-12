@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Reveal } from "@/components/motion/reveal";
 import { QuestCard } from "@/components/quest/quest-card";
 import { QuestImage } from "@/components/quest/quest-image";
+import CarouselStacked from "@/components/ui/carousel-07";
 import { Button } from "@/components/ui/button";
 import { Kicker, SectionHeading } from "@/components/ui/primitives";
 import { EXPLORER_PLAN, formatPrice, PLANS } from "@/lib/config";
@@ -46,6 +47,26 @@ export function HowItWorks() {
             </Reveal>
           ))}
         </ol>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/** Drag-to-browse gallery of the kinds of ground a quest might send you to. */
+export function Destinations() {
+  return (
+    <section className="bg-paper py-24 sm:py-32">
+      <div className="mx-auto max-w-[100rem] px-5 sm:px-8">
+        <SectionHeading
+          index="Where it goes"
+          title="Every quest lands somewhere different."
+          lede="Drag through a few of the kinds of places the generator can send you."
+        />
+      </div>
+      <div className="mt-4">
+        <CarouselStacked />
       </div>
     </section>
   );
