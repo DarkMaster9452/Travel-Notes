@@ -5,7 +5,7 @@
 A production-shaped web app that generates personalised, randomised hiking and
 adventure quests — and never gives you the same one twice.
 
-Next.js 16 · TypeScript · Tailwind v4 · Prisma · Postgres (Neon) · Stripe
+Next.js 16 · TypeScript · Tailwind v4 · Prisma 7 · Postgres (Neon) · Stripe
 
 ---
 
@@ -144,7 +144,7 @@ Everything that matters is decided on the server, from database state:
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | yes | Neon pooled connection |
-| `DIRECT_URL` | yes | Same host without `-pooler`, used by Prisma Migrate |
+| `DIRECT_URL` | yes | Same host without `-pooler`. Migrations run over it: Neon's pooler multiplexes connections, which the schema engine's advisory locks don't tolerate |
 | `AUTH_SECRET` | yes | ≥ 32 chars |
 | `NEXT_PUBLIC_APP_URL` | yes | Used for Stripe redirect URLs |
 | `STRIPE_SECRET_KEY` | no | Without it, checkout is disabled and the paywall degrades gracefully instead of erroring |
@@ -153,6 +153,15 @@ Everything that matters is decided on the server, from database state:
 
 Pricing, plan features, the free allowance and rate limits all live in
 `src/lib/config.ts` — nothing is hardcoded in a component.
+
+### Prisma 7 notes
+
+Connection URLs live in `prisma.config.ts`, not `schema.prisma`, and the CLI no
+longer loads `.env` implicitly — the config imports `dotenv/config` to do it.
+The client connects through the **node-postgres driver adapter**, which is the
+portable choice: the same code talks to Neon's pooled endpoint and to a plain
+local Postgres. Swap `@prisma/adapter-pg` for `@prisma/adapter-neon` if you move
+to an edge runtime.
 
 ### Stripe setup
 

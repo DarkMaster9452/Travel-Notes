@@ -1,9 +1,15 @@
+import "dotenv/config";
+
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 import { buildShowcaseQuests, DEMO_PREFERENCES } from "./seed-data";
 
-const db = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error("DATABASE_URL is not set — copy .env.example to .env.");
+
+const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 /**
  * Idempotent seed: showcase quests for the marketing pages, and (unless you
