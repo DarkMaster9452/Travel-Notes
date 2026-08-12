@@ -272,7 +272,14 @@ export async function getUserStats(userId: string) {
       where: { userId },
       include: {
         quest: {
-          select: { distance: true, elevationGain: true, features: true, terrain: true, region: true },
+          select: {
+            distance: true,
+            elevationGain: true,
+            features: true,
+            terrain: true,
+            region: true,
+            country: true,
+          },
         },
       },
     }),
@@ -296,6 +303,7 @@ export async function getUserStats(userId: string) {
     lakes: countFeature("lake"),
     ruins: countFeature("ruins") + countFeature("castle"),
     regions: new Set(history.map((h) => h.quest.region)).size,
+    countries: new Set(history.map((h) => h.quest.country)).size,
   };
 }
 

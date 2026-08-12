@@ -44,7 +44,23 @@ export async function updatePreferencesAction(
   const input = parsed.data;
 
   const place = findPlace(input.homeLocation);
-  const expanded = expandInterests(input.interests);
+
+  // The fields beyond home town and difficulty are optional in the shared
+  // schema (onboarding no longer asks for them). This form does submit them,
+  // but anything genuinely absent is left untouched rather than reset —
+  // `undefined` tells Prisma to skip the column.
+  const interests = input.interests;
+  const derived = interests
+    ? {
+        preferredTerrain: interests,
+        preferredEnvironment: expandInterests(interests).features,
+        waterPreference: interests.includes("water") ? ("YES" as const) : ("SURPRISE" as const),
+        elevationPreference: interests.includes("mountains")
+          ? ("YES" as const)
+          : ("SURPRISE" as const),
+        sunsetPreference: interests.includes("views") ? ("YES" as const) : ("SURPRISE" as const),
+      }
+    : {};
 
   await db.userPreferences.update({
     where: { userId: user.id },
@@ -53,16 +69,12 @@ export async function updatePreferencesAction(
       homeLatitude: place?.latitude ?? null,
       homeLongitude: place?.longitude ?? null,
       maxDistance: input.maxDistance,
-      preferredDistance: input.preferredDistance ?? 12,
+      preferredDistance: input.preferredDistance,
       difficulty: input.difficulty,
-      preferredTerrain: input.interests,
-      preferredEnvironment: expanded.features,
       timeAvailable: input.timeAvailable,
       transport: input.transport,
       questStyle: input.questStyle,
-      waterPreference: input.interests.includes("water") ? "YES" : "SURPRISE",
-      elevationPreference: input.interests.includes("mountains") ? "YES" : "SURPRISE",
-      sunsetPreference: input.interests.includes("views") ? "YES" : "SURPRISE",
+      ...derived,
     },
   });
 

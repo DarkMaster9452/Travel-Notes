@@ -15,7 +15,7 @@ export function getStripe(): Stripe | null {
   client ??= new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2026-07-29.dahlia",
     typescript: true,
-    appInfo: { name: "SIDEQUEST", version: "1.0.0" },
+    appInfo: { name: "Summit Quest", version: "1.0.0" },
   });
   return client;
 }

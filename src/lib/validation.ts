@@ -33,16 +33,24 @@ export const loginSchema = z.object({
 
 const interestIds = ONBOARDING_INTERESTS.map((i) => i.id) as [string, ...string[]];
 
+/**
+ * Onboarding asks two questions: where you are, and how hard you want it.
+ *
+ * Everything else the generator needs is derived server-side from the
+ * difficulty answer (see `completeOnboardingAction`) and stays editable in
+ * settings afterwards, so the signup path never turns into a survey. The
+ * remaining fields are still accepted here — the settings form posts the same
+ * schema — but they are optional and defaulted rather than required.
+ */
 export const onboardingSchema = z.object({
   homeLocation: z.string().trim().min(2, "Where are you starting from?").max(120),
-  maxDistance: z.coerce.number().int().min(5).max(300),
-  /** Optional during onboarding — derived from the time answer if absent. */
-  preferredDistance: z.coerce.number().int().min(3).max(40).optional(),
-  interests: z.array(z.enum(interestIds)).min(1, "Pick at least one").max(8),
   difficulty: z.enum(["EASY", "MODERATE", "HARD", "SURPRISE"]),
-  timeAvailable: z.enum(["SHORT", "HALF", "LONG", "FULL", "SURPRISE"]),
-  transport: z.enum(["CAR", "PUBLIC_TRANSPORT", "BIKE", "WALKING"]),
-  questStyle: z.enum(["RELAXED", "ADVENTUROUS", "CHALLENGING", "RANDOM"]),
+  maxDistance: z.coerce.number().int().min(5).max(300).optional(),
+  preferredDistance: z.coerce.number().int().min(3).max(40).optional(),
+  interests: z.array(z.enum(interestIds)).max(8).optional(),
+  timeAvailable: z.enum(["SHORT", "HALF", "LONG", "FULL", "SURPRISE"]).optional(),
+  transport: z.enum(["CAR", "PUBLIC_TRANSPORT", "BIKE", "WALKING"]).optional(),
+  questStyle: z.enum(["RELAXED", "ADVENTUROUS", "CHALLENGING", "RANDOM"]).optional(),
 });
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;

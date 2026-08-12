@@ -6,9 +6,9 @@
  */
 
 export const BRAND = {
-  name: "SIDEQUEST",
-  tagline: "Your next side quest is waiting.",
-  supportEmail: "hello@sidequest.example",
+  name: "Summit Quest",
+  tagline: "Your next summit is waiting.",
+  supportEmail: "hello@summitquest.example",
 } as const;
 
 /** Quests a brand-new account gets before the paywall. */

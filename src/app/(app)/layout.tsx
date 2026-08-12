@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app/app-shell";
 import { requireOnboardedUser } from "@/lib/auth/guards";
+import { PLANS } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
 
 /**
@@ -11,10 +12,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireOnboardedUser();
   const entitlement = await getEntitlement(user.id);
 
+  const planName =
+    PLANS.find((plan) => plan.id === (entitlement.isSubscribed ? "explorer" : "free"))?.name ??
+    "Free";
+
   return (
     <AppShell
+      userName={user.name}
       freeQuestsRemaining={entitlement.freeQuestsRemaining}
       isSubscribed={entitlement.isSubscribed}
+      planName={`${planName} plan`}
     >
       {children}
     </AppShell>
