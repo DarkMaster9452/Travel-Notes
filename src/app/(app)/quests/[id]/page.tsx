@@ -94,7 +94,7 @@ export default async function QuestDetailPage({ params, searchParams }: Props) {
 
             <h1 className="display-lg animate-rise mt-4 max-w-[16ch] text-paper">{quest.title}</h1>
 
-            <p className="mt-5 max-w-lg font-serif text-xl text-paper/80 italic sm:text-2xl">
+            <p className="mt-5 max-w-lg font-serif text-xl leading-snug font-medium text-paper/80 italic sm:text-2xl">
               {quest.subtitle}
             </p>
 

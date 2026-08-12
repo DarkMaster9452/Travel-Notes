@@ -22,9 +22,10 @@
   --color-ember: #595d1d;
   --color-ember-light: #9aa133;
 
-  --font-display: var(--font-display-face), "Arial Narrow", sans-serif;
+  --font-display: var(--font-display-face), Georgia, serif;
   --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-accent-face), Georgia, serif;
+  --font-serif: var(--font-display-face), Georgia, serif;
+  --font-script: var(--font-accent-face), "Segoe Script", cursive;
 
   --radius-none: 0px;
 
@@ -85,9 +86,9 @@
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: 0em;
     text-transform: uppercase;
-    line-height: 0.92;
+    line-height: 0.98;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -121,20 +122,20 @@
   /* Editorial display sizes — deliberately oversized, clamped for mobile. */
   .display-xl {
     font-size: clamp(3rem, 13vw, 11rem);
-    line-height: 0.86;
-    letter-spacing: -0.03em;
+    line-height: 0.94;
+    letter-spacing: -0.01em;
   }
 
   .display-lg {
     font-size: clamp(2.5rem, 8vw, 6.5rem);
-    line-height: 0.88;
-    letter-spacing: -0.025em;
+    line-height: 0.96;
+    letter-spacing: -0.01em;
   }
 
   .display-md {
     font-size: clamp(1.75rem, 4.5vw, 3.5rem);
-    line-height: 0.94;
-    letter-spacing: -0.02em;
+    line-height: 1;
+    letter-spacing: 0em;
   }
 
   .grain::after {

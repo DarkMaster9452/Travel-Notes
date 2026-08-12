@@ -22,7 +22,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" className="font-display text-3xl font-extrabold text-paper">
             {BRAND.name}
           </Link>
-          <p className="max-w-sm font-serif text-3xl leading-tight text-paper italic">
+          <p className="max-w-sm font-script text-4xl leading-relaxed text-paper">
             Somewhere within an hour of you, there is a place you have never stood.
           </p>
         </div>

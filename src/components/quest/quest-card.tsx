@@ -70,7 +70,7 @@ export function QuestCard({
 
           <h3 className={cn("font-display font-extrabold uppercase", titleSize)}>{quest.title}</h3>
 
-          <p className="mt-3 max-w-sm font-serif text-base text-paper/75 italic">{quest.subtitle}</p>
+          <p className="mt-3 max-w-sm font-serif text-base leading-relaxed font-medium text-paper/75 italic">{quest.subtitle}</p>
 
           <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-paper/25 pt-4">
             <QuestMetric value={formatDistance(quest.distance)} />

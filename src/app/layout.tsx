@@ -1,14 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Big_Shoulders, Inter, Instrument_Serif } from "next/font/google";
+import { Playfair_Display, Inter, Dancing_Script } from "next/font/google";
 
 import { BRAND } from "@/lib/config";
 
 import "./globals.css";
 
-const display = Big_Shoulders({
-  subsets: ["latin"],
+const display = Playfair_Display({
+  subsets: ["latin", "latin-ext"],
   variable: "--font-display-face",
-  weight: ["600", "700", "800", "900"],
+  weight: ["500", "700", "800", "900"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -18,11 +19,10 @@ const body = Inter({
   display: "swap",
 });
 
-const accent = Instrument_Serif({
-  subsets: ["latin"],
+const accent = Dancing_Script({
+  subsets: ["latin", "latin-ext"],
   variable: "--font-accent-face",
-  weight: "400",
-  style: ["italic", "normal"],
+  weight: ["500", "700"],
   display: "swap",
 });
 
