@@ -1,0 +1,276 @@
+// SIDEQUEST — schema
+// Postgres (Neon). Connection URLs live in `prisma.config.ts` (Prisma 7);
+// the app connects through the node-postgres driver adapter in src/lib/db.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Accounts
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  avatar       String?
+  passwordHash String   @map("password_hash")
+  freeQuestsUsed Int    @default(0) @map("free_quests_used")
+  onboardedAt  DateTime? @map("onboarded_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  preferences   UserPreferences?
+  subscription  Subscription?
+  sessions      Session[]
+  generations   QuestGeneration[]
+  history       QuestHistory[]
+  savedQuests   SavedQuest[]
+
+  @@map("users")
+}
+
+/// Server-side session records. The cookie holds a signed JWT whose `sid`
+/// claim points here, so sessions can be revoked server-side on logout.
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Billing
+// ---------------------------------------------------------------------------
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+  PAUSED
+}
+
+enum Plan {
+  FREE
+  EXPLORER
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique @map("user_id")
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
+  status               SubscriptionStatus @default(INCOMPLETE)
+  plan                 Plan               @default(FREE)
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ---------------------------------------------------------------------------
+// Preferences (captured during onboarding)
+// ---------------------------------------------------------------------------
+
+enum DifficultyPreference {
+  EASY
+  MODERATE
+  HARD
+  SURPRISE
+}
+
+enum TimeAvailable {
+  SHORT // 1–2 h
+  HALF  // 2–4 h
+  LONG  // 4–6 h
+  FULL  // full day
+  SURPRISE
+}
+
+enum Transport {
+  CAR
+  PUBLIC_TRANSPORT
+  BIKE
+  WALKING
+}
+
+enum QuestStyle {
+  RELAXED
+  ADVENTUROUS
+  CHALLENGING
+  RANDOM
+}
+
+enum Ternary {
+  YES
+  NO
+  SURPRISE
+}
+
+model UserPreferences {
+  id                  String               @id @default(cuid())
+  userId              String               @unique @map("user_id")
+  homeLocation        String               @map("home_location")
+  homeLatitude        Float?               @map("home_latitude")
+  homeLongitude       Float?               @map("home_longitude")
+  /// Max travel radius from home, in km.
+  maxDistance         Int                  @default(50) @map("max_distance")
+  /// Preferred route length, in km.
+  preferredDistance   Int                  @default(10) @map("preferred_distance")
+  difficulty          DifficultyPreference @default(SURPRISE)
+  /// Tags: forest, mountains, water, rocks, history, views, hidden, long_hikes
+  preferredTerrain    String[]             @default([]) @map("preferred_terrain")
+  /// Tags: photography, exploration, challenge, nature, solo, couple, friends
+  preferredActivity   String[]             @default([]) @map("preferred_activity")
+  /// Tags: waterfalls, lakes, rivers, caves, castles, ruins, ridges, meadows
+  preferredEnvironment String[]            @default([]) @map("preferred_environment")
+  timeAvailable       TimeAvailable        @default(SURPRISE) @map("time_available")
+  transport           Transport            @default(CAR)
+  questStyle          QuestStyle           @default(ADVENTUROUS) @map("quest_style")
+  sunsetPreference    Ternary              @default(SURPRISE) @map("sunset_preference")
+  waterPreference     Ternary              @default(SURPRISE) @map("water_preference")
+  elevationPreference Ternary              @default(SURPRISE) @map("elevation_preference")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// ---------------------------------------------------------------------------
+// Quests
+// ---------------------------------------------------------------------------
+
+enum Difficulty {
+  EASY
+  MODERATE
+  HARD
+  EXPERT
+}
+
+model Quest {
+  id            String     @id @default(cuid())
+  /// Sequential per-user quest number (QUEST #17). Null for showcase quests.
+  number        Int?
+  title         String
+  subtitle      String
+  description   String
+  objective     String
+  bonus         String?
+  safetyNotes   String?    @map("safety_notes")
+  location      String
+  region        String
+  country       String     @default("Slovakia")
+  latitude      Float
+  longitude     Float
+  /// Route length in km.
+  distance      Float
+  /// Estimated moving time in minutes.
+  duration      Int
+  /// Estimated travel time from the user's home, in minutes.
+  travelTime    Int?       @map("travel_time")
+  difficulty    Difficulty
+  elevationGain Int        @map("elevation_gain")
+  terrain       String[]   @default([])
+  features      String[]   @default([])
+  mood          String?
+  coverImage    String     @map("cover_image")
+  routeData     Json?      @map("route_data")
+  /// Stable hash of the defining parameter combination. Powers anti-repetition.
+  signature     String
+  /// Showcase quests are seeded examples used on the landing page.
+  isShowcase    Boolean    @default(false) @map("is_showcase")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  generations QuestGeneration[]
+  history     QuestHistory[]
+  saved       SavedQuest[]
+
+  @@index([isShowcase])
+  @@index([signature])
+  @@map("quests")
+}
+
+/// Immutable audit log: every generation event, with the parameters used.
+model QuestGeneration {
+  id                   String   @id @default(cuid())
+  userId               String   @map("user_id")
+  questId              String   @map("quest_id")
+  generationNumber     Int      @map("generation_number")
+  generatedAt          DateTime @default(now()) @map("generated_at")
+  generationParameters Json     @map("generation_parameters")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, generationNumber])
+  @@index([userId, generatedAt])
+  @@map("quest_generations")
+}
+
+/// What a user has received. Read by the anti-repetition engine.
+model QuestHistory {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  questId     String    @map("quest_id")
+  completed   Boolean   @default(false)
+  completedAt DateTime? @map("completed_at")
+  saved       Boolean   @default(false)
+  generatedAt DateTime  @default(now()) @map("generated_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId])
+  @@index([userId, generatedAt])
+  @@map("quest_history")
+}
+
+model SavedQuest {
+  id      String   @id @default(cuid())
+  userId  String   @map("user_id")
+  questId String   @map("quest_id")
+  savedAt DateTime @default(now()) @map("saved_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId])
+  @@index([userId, savedAt])
+  @@map("saved_quests")
+}
+
+/// Fixed-window rate limiting for expensive endpoints. Persisted so limits
+/// survive restarts and hold across serverless instances.
+model RateLimit {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  count       Int      @default(0)
+  windowStart DateTime @default(now()) @map("window_start")
+
+  @@index([windowStart])
+  @@map("rate_limits")
+}
