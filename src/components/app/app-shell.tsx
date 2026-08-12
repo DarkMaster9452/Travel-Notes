@@ -60,7 +60,7 @@ export function AppShell({
 
         <div className="border-t border-paper/20 pt-6">
           {isSubscribed ? (
-            <p className="kicker text-ember">Explorer · unlimited</p>
+            <p className="kicker text-ember-light">Explorer · unlimited</p>
           ) : (
             <>
               <p className="kicker text-paper/50">
@@ -68,7 +68,7 @@ export function AppShell({
               </p>
               <Link
                 href="/upgrade"
-                className="mt-3 inline-block text-xs font-semibold tracking-[0.14em] uppercase text-ember hover:underline"
+                className="mt-3 inline-block text-xs font-semibold tracking-[0.14em] uppercase text-ember-light hover:underline"
               >
                 Go unlimited →
               </Link>
@@ -91,7 +91,7 @@ export function AppShell({
             aria-current={isActive(item.href) ? "page" : undefined}
             className={cn(
               "flex flex-col items-center gap-1 py-3 text-[0.5625rem] font-semibold tracking-[0.14em] uppercase transition-colors",
-              isActive(item.href) ? "text-ember" : "text-paper/55",
+              isActive(item.href) ? "text-ember-light" : "text-paper/55",
             )}
           >
             <item.icon />

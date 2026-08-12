@@ -24,7 +24,7 @@ export default async function UpgradeSuccessPage() {
   return (
     <main className="flex min-h-dvh flex-col justify-center bg-ink px-5 py-20 text-paper sm:px-10">
       <div className="mx-auto w-full max-w-2xl">
-        <Kicker className="text-ember">
+        <Kicker className="text-ember-light">
           {entitlement.isSubscribed ? "Explorer unlocked" : "Payment received"}
         </Kicker>
 

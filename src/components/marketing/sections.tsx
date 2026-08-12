@@ -244,7 +244,7 @@ export function Pricing({ signedIn }: { signedIn: boolean }) {
               <ul className="mt-8 flex flex-1 flex-col gap-3 border-t border-paper/15 pt-8">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex gap-3 text-sm text-paper/75">
-                    <span aria-hidden="true" className="text-ember">
+                    <span aria-hidden="true" className="text-ember-light">
                       —
                     </span>
                     {feature}

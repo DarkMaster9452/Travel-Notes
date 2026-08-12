@@ -44,12 +44,12 @@ export function RouteMap({
       <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" role="img" aria-label="Schematic route preview">
         <defs>
           <pattern id="grid" width="8" height="8" patternUnits="userSpaceOnUse">
-            <path d="M8 0H0V8" fill="none" stroke="rgba(244,240,230,0.08)" strokeWidth="0.4" />
+            <path d="M8 0H0V8" fill="none" stroke="rgba(198,198,145,0.08)" strokeWidth="0.4" />
           </pattern>
         </defs>
         <rect width="100" height="100" fill="url(#grid)" />
 
-        <path d={path} fill="none" stroke="#c1531f" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={path} fill="none" stroke="var(--color-ember-light)" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
 
         {points.map((point, index) => (
           <g key={`${point.label}-${index}`}>
@@ -57,7 +57,7 @@ export function RouteMap({
               cx={point.x}
               cy={point.y}
               r={index === 0 ? 2 : 1.4}
-              fill={index === 0 ? "#f4f0e6" : "#c1531f"}
+              fill={index === 0 ? "var(--color-paper)" : "var(--color-ember-light)"}
             />
           </g>
         ))}

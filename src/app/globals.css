@@ -2,24 +2,25 @@
 
 /* ---------------------------------------------------------------------------
    SIDEQUEST design tokens
-   Earthy, high-contrast, editorial. Cream paper against near-black ink, with
-   forest and ember as the only saturated colours in the system.
+   Olive paper against a near-black forest ink, moving through a single
+   green-to-olive family — moss and a warm chartreuse ember as the only
+   accents in the system.
 --------------------------------------------------------------------------- */
 
 @theme {
-  --color-ink: #0b0c0a;
-  --color-ink-soft: #161814;
-  --color-bark: #22251f;
-  --color-stone: #6f6a5e;
-  --color-stone-light: #a8a296;
-  --color-sand: #e2dac9;
-  --color-paper: #f4f0e6;
-  --color-paper-dim: #eae4d6;
-  --color-moss: #2f4a38;
-  --color-moss-light: #4a6b53;
-  --color-sage: #8fa085;
-  --color-ember: #c1531f;
-  --color-ember-light: #de6a33;
+  --color-ink: #1e342b;
+  --color-ink-soft: #1b3623;
+  --color-bark: #18391b;
+  --color-stone: #3f542b;
+  --color-stone-light: #899263;
+  --color-sand: #9ea367;
+  --color-paper: #c6c691;
+  --color-paper-dim: #b4b883;
+  --color-moss: #204c24;
+  --color-moss-light: #4f6a36;
+  --color-sage: #7b8f5f;
+  --color-ember: #595d1d;
+  --color-ember-light: #9aa133;
 
   --font-display: var(--font-display-face), "Arial Narrow", sans-serif;
   --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
