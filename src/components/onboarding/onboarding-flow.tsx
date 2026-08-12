@@ -131,7 +131,7 @@ export function OnboardingFlow({
             key={title}
             className={cn(
               "h-0.5 flex-1 transition-colors duration-500",
-              i <= step ? "bg-ember" : "bg-paper/20",
+              i <= step ? "bg-ember-light" : "bg-paper/20",
             )}
           />
         ))}
@@ -188,7 +188,7 @@ export function OnboardingFlow({
                       onChange={(e) => setAnswers({ ...answers, homeLocation: e.target.value })}
                       placeholder="Žilina"
                       aria-label="Your home town"
-                      className="border-paper/30 text-2xl text-paper placeholder:text-paper/30 focus:border-ember sm:text-3xl"
+                      className="border-paper/30 text-2xl text-paper placeholder:text-paper/30 focus:border-ember-light sm:text-3xl"
                     />
                     <datalist id="places">
                       {PLACES.map((place) => (
@@ -203,7 +203,7 @@ export function OnboardingFlow({
 
                 {step === 1 && (
                   <div>
-                    <p className="font-display text-6xl font-extrabold text-ember sm:text-8xl">
+                    <p className="font-display text-6xl font-extrabold text-ember-light sm:text-8xl">
                       {answers.maxDistance === 200 ? "100+" : answers.maxDistance} km
                     </p>
                     <input
@@ -216,7 +216,7 @@ export function OnboardingFlow({
                         setAnswers({ ...answers, maxDistance: RADIUS_STOPS[Number(e.target.value)]! })
                       }
                       aria-label="Maximum travel distance in kilometres"
-                      className="mt-8 h-1 w-full cursor-pointer appearance-none rounded-none bg-paper/25 accent-ember"
+                      className="mt-8 h-1 w-full cursor-pointer appearance-none rounded-none bg-paper/25 accent-ember-light"
                     />
                     <div className="mt-4 flex justify-between text-xs text-paper/45">
                       {RADIUS_STOPS.map((stop) => (
@@ -312,7 +312,7 @@ export function OnboardingFlow({
           </AnimatePresence>
 
           {state?.errors && (
-            <p role="alert" className="mt-6 border-l-2 border-ember pl-4 text-sm text-paper">
+            <p role="alert" className="mt-6 border-l-2 border-ember-light pl-4 text-sm text-paper">
               {Object.values(state.errors)[0]}
             </p>
           )}
@@ -381,7 +381,7 @@ function OptionList({
             aria-pressed={selected}
             className={cn(
               "group flex items-baseline justify-between gap-4 border-b border-paper/20 py-5 text-left transition-colors",
-              selected ? "text-ember" : "text-paper hover:text-paper/70",
+              selected ? "text-ember-light" : "text-paper hover:text-paper/70",
             )}
           >
             <span className="font-display text-2xl font-extrabold uppercase sm:text-3xl">

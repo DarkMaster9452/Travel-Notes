@@ -135,7 +135,7 @@ export function GenerateQuest({
             aria-live="polite"
           >
             <div className="w-full max-w-lg">
-              <p className="kicker text-ember">Searching for something new</p>
+              <p className="kicker text-ember-light">Searching for something new</p>
 
               <ul className="mt-10 space-y-4">
                 {STAGES.map((text, index) => {
@@ -154,7 +154,7 @@ export function GenerateQuest({
                       <span
                         className={cn(
                           "size-2 shrink-0 transition-colors",
-                          done ? "bg-paper/35" : active ? "bg-ember" : "bg-paper/15",
+                          done ? "bg-paper/35" : active ? "bg-ember-light" : "bg-paper/15",
                         )}
                         aria-hidden="true"
                       />
@@ -166,7 +166,7 @@ export function GenerateQuest({
 
               <div className="mt-12 h-0.5 w-full overflow-hidden bg-paper/15">
                 <motion.div
-                  className="h-full bg-ember"
+                  className="h-full bg-ember-light"
                   initial={{ width: "0%" }}
                   animate={{ width: `${((stage + 1) / STAGES.length) * 100}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}

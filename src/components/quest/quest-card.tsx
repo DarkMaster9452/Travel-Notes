@@ -76,7 +76,7 @@ export function QuestCard({
             <QuestMetric value={formatDistance(quest.distance)} />
             <QuestMetric value={formatDuration(quest.duration)} />
             <QuestMetric value={`+${quest.elevationGain} m`} />
-            <span className="ml-auto hidden items-center gap-2 text-xs font-semibold tracking-[0.16em] uppercase transition-colors group-hover:text-ember sm:flex">
+            <span className="ml-auto hidden items-center gap-2 text-xs font-semibold tracking-[0.16em] uppercase transition-colors group-hover:text-ember-light sm:flex">
               Start quest
               <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">
                 →

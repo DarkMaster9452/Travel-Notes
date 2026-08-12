@@ -44,7 +44,7 @@ export default async function UpgradePage({
         <div className="scrim absolute inset-0" aria-hidden="true" />
 
         <div className="relative mx-auto max-w-5xl px-5 py-20 sm:px-10 sm:py-28">
-          <Kicker className="text-ember">
+          <Kicker className="text-ember-light">
             {exhausted ? "That's your three" : `${entitlement.freeQuestsRemaining} free quests left`}
           </Kicker>
 
@@ -85,7 +85,7 @@ export default async function UpgradePage({
             <ul className="mt-8 space-y-3 border-t border-paper/15 pt-8">
               {EXPLORER_PLAN.features.map((feature) => (
                 <li key={feature} className="flex gap-3 text-sm text-paper/80">
-                  <span aria-hidden="true" className="text-ember">
+                  <span aria-hidden="true" className="text-ember-light">
                     —
                   </span>
                   {feature}
