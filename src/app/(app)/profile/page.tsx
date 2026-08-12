@@ -12,7 +12,7 @@ import { requireOnboardedUser } from "@/lib/auth/guards";
 import { EXPLORER_PLAN } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import { stripeEnabled } from "@/lib/env";
+import { isStripeEnabled } from "@/lib/env";
 import { getUserStats } from "@/lib/quest/service";
 import { formatDate } from "@/lib/utils";
 
@@ -94,7 +94,7 @@ export default async function ProfilePage() {
                     </>
                   )}
                 </p>
-                <BillingActions className="mt-6" enabled={stripeEnabled} />
+                <BillingActions className="mt-6" enabled={isStripeEnabled()} />
               </>
             ) : (
               <>

@@ -2,7 +2,7 @@ import "server-only";
 
 import Stripe from "stripe";
 
-import { env, stripeEnabled } from "@/lib/env";
+import { env, isStripeEnabled } from "@/lib/env";
 
 let client: Stripe | null = null;
 
@@ -11,7 +11,7 @@ let client: Stripe | null = null;
  * configured so local development works without billing credentials.
  */
 export function getStripe(): Stripe | null {
-  if (!stripeEnabled) return null;
+  if (!isStripeEnabled()) return null;
   client ??= new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2026-07-29.dahlia",
     typescript: true,
@@ -52,4 +52,4 @@ export function mapStripeStatus(status: Stripe.Subscription.Status) {
   }
 }
 
-export { stripeEnabled };
+export { isStripeEnabled };

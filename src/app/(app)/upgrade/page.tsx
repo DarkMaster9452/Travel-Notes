@@ -9,7 +9,7 @@ import { Kicker } from "@/components/ui/primitives";
 import { requireOnboardedUser } from "@/lib/auth/guards";
 import { EXPLORER_PLAN, formatPrice } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
-import { stripeEnabled } from "@/lib/env";
+import { isStripeEnabled } from "@/lib/env";
 import { IMAGES } from "@/lib/images";
 import { LOCATIONS } from "@/lib/quest/locations";
 
@@ -93,7 +93,7 @@ export default async function UpgradePage({
               ))}
             </ul>
 
-            <CheckoutButton enabled={stripeEnabled} className="mt-10" />
+            <CheckoutButton enabled={isStripeEnabled()} className="mt-10" />
 
             <p className="mt-6 text-xs text-paper/45">
               Cancel any time from your profile. Your history and saved quests stay yours either
