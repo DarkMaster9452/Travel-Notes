@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { requireOnboardedUser } from "@/lib/auth/guards";
+import { ACCENT_IDS, AVATAR_STYLE_IDS, BANNER_IDS } from "@/lib/cosmetics";
 import { db } from "@/lib/db";
-import { findPlace } from "@/lib/geo";
-import { expandInterests } from "@/lib/quest/taxonomy";
-import { fieldErrors, onboardingSchema, profileSchema } from "@/lib/validation";
+import { getAchievements } from "@/lib/achievements";
+import { getUserStats } from "@/lib/quest/service";
+import { fieldErrors, profileSchema } from "@/lib/validation";
 
 export type ProfileState = { errors?: Record<string, string>; saved?: boolean } | undefined;
 
@@ -23,47 +24,48 @@ export async function updateProfileAction(
   return { saved: true };
 }
 
-export async function updatePreferencesAction(
+/**
+ * Save the cosmetic choices.
+ *
+ * Each value is checked against the enumerated preset ids rather than written
+ * through, so nothing here can smuggle in styling of its own. The explorer
+ * title is checked against the achievements the account has actually earned —
+ * a title is a reward, and the form is not the authority on who has it.
+ */
+export async function updateCosmeticsAction(
   _prev: ProfileState,
   formData: FormData,
 ): Promise<ProfileState> {
   const user = await requireOnboardedUser();
 
-  const parsed = onboardingSchema.safeParse({
-    homeLocation: formData.get("homeLocation"),
-    maxDistance: formData.get("maxDistance"),
-    preferredDistance: formData.get("preferredDistance"),
-    interests: formData.getAll("interests"),
-    difficulty: formData.get("difficulty"),
-    timeAvailable: formData.get("timeAvailable"),
-    transport: formData.get("transport"),
-    questStyle: formData.get("questStyle"),
-  });
+  const accentColor = String(formData.get("accentColor") ?? "");
+  const avatarStyle = String(formData.get("avatarStyle") ?? "");
+  const bannerStyle = String(formData.get("bannerStyle") ?? "");
+  const explorerTitle = String(formData.get("explorerTitle") ?? "");
 
-  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
-  const input = parsed.data;
+  if (!ACCENT_IDS.includes(accentColor as never)) {
+    return { errors: { accentColor: "Pick one of the available accents." } };
+  }
+  if (!AVATAR_STYLE_IDS.includes(avatarStyle as never)) {
+    return { errors: { avatarStyle: "Pick one of the available avatars." } };
+  }
+  if (!BANNER_IDS.includes(bannerStyle as never)) {
+    return { errors: { bannerStyle: "Pick one of the available banners." } };
+  }
 
-  const place = findPlace(input.homeLocation);
-  const expanded = expandInterests(input.interests);
+  let title: string | null = null;
+  if (explorerTitle) {
+    const stats = await getUserStats(user.id);
+    const earned = getAchievements(stats).filter((achievement) => achievement.earned);
+    if (!earned.some((achievement) => achievement.label === explorerTitle)) {
+      return { errors: { explorerTitle: "You haven't earned that title yet." } };
+    }
+    title = explorerTitle;
+  }
 
-  await db.userPreferences.update({
-    where: { userId: user.id },
-    data: {
-      homeLocation: place?.name ?? input.homeLocation,
-      homeLatitude: place?.latitude ?? null,
-      homeLongitude: place?.longitude ?? null,
-      maxDistance: input.maxDistance,
-      preferredDistance: input.preferredDistance ?? 12,
-      difficulty: input.difficulty,
-      preferredTerrain: input.interests,
-      preferredEnvironment: expanded.features,
-      timeAvailable: input.timeAvailable,
-      transport: input.transport,
-      questStyle: input.questStyle,
-      waterPreference: input.interests.includes("water") ? "YES" : "SURPRISE",
-      elevationPreference: input.interests.includes("mountains") ? "YES" : "SURPRISE",
-      sunsetPreference: input.interests.includes("views") ? "YES" : "SURPRISE",
-    },
+  await db.user.update({
+    where: { id: user.id },
+    data: { accentColor, avatarStyle, bannerStyle, explorerTitle: title },
   });
 
   revalidatePath("/profile");

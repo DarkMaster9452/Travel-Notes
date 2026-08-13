@@ -389,6 +389,12 @@ export type GenerateOptions = {
   now?: Date;
   /** Signatures already used by this user. Generation will not repeat one. */
   usedSignatures?: Set<string>;
+  /**
+   * Pin the quest to one catalogue location. Used when the reader has *chosen*
+   * a place from the database rather than asking to be sent somewhere — scoring
+   * still runs (it shapes the route), but only this candidate is considered.
+   */
+  locationId?: string;
 };
 
 export function generateQuest(options: GenerateOptions): GenerationResult {
@@ -405,7 +411,17 @@ export function generateQuest(options: GenerateOptions): GenerationResult {
   const usedTitles = new Set(history.map((h) => h.title));
 
   const params = drawParameters(preferences, rng, seed, now);
-  const scored = scoreLocations(preferences, params, history, rng);
+  const allScored = scoreLocations(preferences, params, history, rng);
+
+  // A pinned location narrows the field to one candidate. Scoring still ran, so
+  // the route is shaped by the same preferences; only the choice is taken away.
+  const scored = options.locationId
+    ? allScored.filter((entry) => entry.location.id === options.locationId)
+    : allScored;
+
+  if (options.locationId && scored.length === 0) {
+    throw new QuestGenerationError(`No catalogue location with id "${options.locationId}".`);
+  }
 
   const collisions: string[] = [];
   let attempts = 0;

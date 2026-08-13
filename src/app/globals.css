@@ -22,6 +22,25 @@
   --color-ember: #595d1d;
   --color-ember-light: #9aa133;
 
+  /* ---------------------------------------------------------------------
+     Signed-in surfaces.
+     The marketing pages keep the olive `paper`; everything behind the login
+     runs on a warm near-white instead, because a dashboard is read for
+     minutes at a time and full-strength olive is exhausting at that length.
+     `muted` clears 5:1 on both surfaces, so it is safe for body copy.
+  --------------------------------------------------------------------- */
+  --color-canvas: #faf8f2;
+  --color-card: #ffffff;
+  --color-line: #e8e4d9;
+  --color-muted: #6b6b5f;
+
+  /* Ordinal ramp for difficulty, light→dark. Validated for monotone lightness,
+     step separation and a light end that clears 2:1 on white. */
+  --color-grade-1: #9db87a;
+  --color-grade-2: #6f9450;
+  --color-grade-3: #456b2f;
+  --color-grade-4: #24401b;
+
   --font-display: var(--font-display-face), Georgia, serif;
   --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-display-face), Georgia, serif;

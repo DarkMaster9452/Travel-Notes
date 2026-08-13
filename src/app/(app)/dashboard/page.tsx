@@ -1,16 +1,35 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { GenerateQuest } from "@/components/app/generate-quest";
-import { QuestCard, QuestRow } from "@/components/quest/quest-card";
-import { Button } from "@/components/ui/button";
-import { Kicker, Stat, StateBlock } from "@/components/ui/primitives";
+import {
+  AchievementBadges,
+  FeaturedQuestCard,
+  Panel,
+  PanelLink,
+  QuotaDial,
+  StatStrip,
+} from "@/components/app/dashboard-panels";
+import { QuestDatabase } from "@/components/app/quest-database";
+import { SurpriseMeBar } from "@/components/app/unlock-actions";
+import { QuestImage } from "@/components/quest/quest-image";
+import {
+  IconActivity,
+  IconArrowRight,
+  IconBookmark,
+  IconCalendar,
+  IconDatabase,
+  IconSettings,
+  IconTrophy,
+} from "@/components/ui/icons";
+import { getAchievements } from "@/lib/achievements";
 import { requireOnboardedUser } from "@/lib/auth/guards";
 import { FREE_QUEST_ALLOWANCE } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { getCatalogue, getCatalogueFilters } from "@/lib/quest/catalogue";
+import { getFeaturedQuests } from "@/lib/quest/featured";
 import { getUserStats } from "@/lib/quest/service";
-import { formatDate, pluralise } from "@/lib/utils";
+import { formatRelativeDate } from "@/lib/utils";
 import { toQuestSummary } from "@/types/quest";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -19,177 +38,274 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const user = await requireOnboardedUser();
 
-  const [entitlement, stats, history, saved] = await Promise.all([
+  const [entitlement, stats, history, saved, featured] = await Promise.all([
     getEntitlement(user.id),
     getUserStats(user.id),
     db.questHistory.findMany({
       where: { userId: user.id },
       orderBy: { generatedAt: "desc" },
-      take: 5,
+      take: 4,
       include: { quest: true },
     }),
     db.savedQuest.findMany({
       where: { userId: user.id },
       orderBy: { savedAt: "desc" },
-      take: 3,
+      take: 4,
       include: { quest: true },
     }),
+    getFeaturedQuests(user.id),
   ]);
 
-  const latest = history[0];
-  const previous = history.slice(1);
+  const catalogue = getCatalogue();
+  const filters = getCatalogueFilters(catalogue);
+  const achievements = getAchievements(stats);
+
+  const weekly = featured.find((f) => f.period === "week");
+  const monthly = featured.find((f) => f.period === "month");
   const firstName = user.name.split(" ")[0];
 
   return (
-    <main className="px-5 pb-16 pt-10 sm:px-8 lg:px-12 lg:pt-14">
-      {/* ---- Header ---------------------------------------------------- */}
-      <section className="border-b border-ink/12 pb-10">
-        <Kicker>{firstName}&apos;s adventure hub</Kicker>
+    <main className="pb-12">
+      {/* ---- Hero band ------------------------------------------------- */}
+      <section className="relative overflow-hidden border-b border-line bg-gradient-to-b from-[#f6f2e6] to-canvas">
+        {/* Layered ridgeline, drawn rather than photographed so it stays crisp
+            at any width and costs no network request. */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 1200 260"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] w-full"
+        >
+          <path d="M0 260 L0 170 L180 92 L340 168 L470 120 L640 210 L760 150 L900 205 L1050 138 L1200 196 L1200 260Z" className="fill-moss/12" />
+          <path d="M0 260 L0 205 L150 150 L320 214 L520 168 L700 232 L880 186 L1060 226 L1200 190 L1200 260Z" className="fill-moss/20" />
+        </svg>
 
-        <h1 className="display-lg mt-4 max-w-[14ch]">Ready for your next quest?</h1>
+        <div className="relative mx-auto flex max-w-[90rem] flex-col gap-8 px-4 py-10 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8 lg:py-12">
+          <div>
+            {/* Not `display-*`: the global heading rule uppercases everything,
+                and shouting someone's own name at them is a bit much. */}
+            <h1 className="font-display text-3xl leading-[1.1] font-medium normal-case sm:text-4xl">
+              Good to see you,
+              <br />
+              <span className="font-extrabold">{firstName}.</span>
+            </h1>
+            <p className="mt-3 text-sm text-muted">Adventure is calling. Where will you go next?</p>
 
-        <div className="mt-9 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <GenerateQuest
-            disabled={!entitlement.canGenerate}
-            label={entitlement.canGenerate ? "Generate quest" : "Out of free quests"}
-          />
+            <Link
+              href="/database"
+              className="mt-6 inline-flex h-12 items-center gap-2 rounded-lg bg-ink px-6 text-sm font-semibold text-paper transition-colors hover:bg-moss"
+            >
+              Find My Next Quest
+              <IconArrowRight size={16} />
+            </Link>
+          </div>
 
-          <div className="sm:text-right">
-            {entitlement.isSubscribed ? (
-              <>
-                <p className="font-display text-2xl font-extrabold uppercase text-moss">
-                  Explorer · unlimited
-                </p>
-                <p className="mt-1 text-xs text-stone">
-                  {entitlement.cancelAtPeriodEnd && entitlement.currentPeriodEnd
-                    ? `Ends ${formatDate(entitlement.currentPeriodEnd)}`
-                    : "Generate as often as you like."}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="font-display text-3xl font-extrabold uppercase">
-                  {entitlement.freeQuestsRemaining} / {FREE_QUEST_ALLOWANCE} free quests remaining
-                </p>
-                <p className="mt-1 text-xs text-stone">
-                  {entitlement.freeQuestsRemaining === 0 ? (
-                    <Link href="/upgrade" className="text-ember underline underline-offset-4">
-                      Unlock unlimited quests →
-                    </Link>
-                  ) : (
-                    "No card needed until they're gone."
-                  )}
-                </p>
-              </>
-            )}
+          <div className="w-full lg:max-w-2xl">
+            <StatStrip
+              completed={stats.completedCount}
+              favourites={stats.savedCount}
+              countries={stats.countries}
+              distanceKm={stats.kmExplored}
+            />
           </div>
         </div>
       </section>
 
-      {/* ---- Latest quest ---------------------------------------------- */}
-      <section className="py-12">
-        {latest ? (
-          <>
-            <Kicker>Your latest quest</Kicker>
-            <div className="mt-6">
-              <QuestCard
-                quest={toQuestSummary(latest.quest, {
-                  generatedAt: latest.generatedAt,
-                  completed: latest.completed,
-                  saved: latest.saved,
-                })}
-                size="feature"
-                priority
-              />
-            </div>
-          </>
-        ) : (
-          <StateBlock
-            title="No quests yet."
-            message="Hit generate and we'll find you somewhere to be. It takes about four seconds."
-            action={<GenerateQuest disabled={!entitlement.canGenerate} label="Generate my first quest" size="lg" />}
+      <div className="mx-auto max-w-[90rem] px-4 pt-6 sm:px-6 lg:px-8">
+        {/* ---- Featured quests + quota --------------------------------- */}
+        <section className="grid gap-4 lg:grid-cols-3">
+          {weekly ? (
+            <FeaturedQuestCard
+              label="Weekly quest"
+              quest={weekly.summary}
+              href="/weekly"
+              icon={<IconCalendar size={15} />}
+            />
+          ) : (
+            <Panel title="Weekly quest" icon={<IconCalendar size={16} />}>
+              <p className="text-sm text-muted">
+                We couldn&apos;t place a quest for your current preferences. Widen your radius in
+                your profile and it&apos;ll show up here.
+              </p>
+            </Panel>
+          )}
+
+          {monthly ? (
+            <FeaturedQuestCard
+              label="Monthly quest"
+              quest={monthly.summary}
+              href="/monthly"
+              icon={<IconCalendar size={15} />}
+            />
+          ) : (
+            <Panel title="Monthly quest" icon={<IconCalendar size={16} />}>
+              <p className="text-sm text-muted">
+                Nothing to feature this month yet — adjust your preferences in your profile.
+              </p>
+            </Panel>
+          )}
+
+          <QuotaDial
+            remaining={entitlement.freeQuestsRemaining}
+            allowance={FREE_QUEST_ALLOWANCE}
+            isSubscribed={entitlement.isSubscribed}
           />
-        )}
-      </section>
+        </section>
 
-      {/* ---- Recent ----------------------------------------------------- */}
-      {previous.length > 0 && (
-        <section className="border-t border-ink/12 py-12">
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 className="display-md">Your recent quests</h2>
-            <Link
-              href="/history"
-              className="text-xs font-semibold tracking-[0.14em] uppercase text-stone hover:text-ember"
+        {/* ---- Database + side rail ------------------------------------ */}
+        <section className="mt-4 grid gap-4 lg:grid-cols-[1.75fr_1fr]">
+          <Panel
+            title="Quest database"
+            icon={<IconDatabase size={16} />}
+            bodyClassName="p-5 pt-4"
+          >
+            <QuestDatabase
+              entries={catalogue}
+              countries={filters.countries}
+              difficulties={filters.difficulties}
+              durations={filters.durations}
+              canUnlock={entitlement.canUnlock}
+              limit={3}
+              compact
+            />
+            <div className="mt-4 border-t border-line pt-4 text-center">
+              <Link
+                href="/database"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-ink transition-colors hover:text-moss"
+              >
+                View all quests
+                <IconArrowRight size={15} />
+              </Link>
+            </div>
+          </Panel>
+
+          <div className="flex flex-col gap-4">
+            {/* Saved quests */}
+            <Panel
+              title="Saved quests"
+              icon={<IconBookmark size={16} />}
+              action={saved.length > 0 ? <PanelLink href="/saved">View all</PanelLink> : undefined}
             >
-              All {pluralise(stats.questCount, "quest")} →
-            </Link>
-          </div>
+              {saved.length > 0 ? (
+                <div className="flex gap-2">
+                  {saved.slice(0, 3).map((entry) => {
+                    const quest = toQuestSummary(entry.quest);
+                    return (
+                      <Link
+                        key={entry.id}
+                        href={`/quests/${quest.id}`}
+                        title={quest.title}
+                        className="relative aspect-[4/3] flex-1 overflow-hidden rounded-lg"
+                      >
+                        <QuestImage
+                          src={quest.coverImage}
+                          alt={quest.title}
+                          palette={quest.palette}
+                          sizes="120px"
+                          zoomOnHover={false}
+                        />
+                      </Link>
+                    );
+                  })}
+                  {stats.savedCount > 3 && (
+                    <Link
+                      href="/saved"
+                      className="flex aspect-[4/3] flex-1 items-center justify-center rounded-lg bg-ink/5 font-display text-lg font-extrabold text-muted transition-colors hover:bg-ink/10"
+                    >
+                      +{stats.savedCount - 3}
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted">
+                  Nothing saved yet. Open a quest and hit save to keep it.
+                </p>
+              )}
+            </Panel>
 
-          <div className="mt-6">
-            {previous.map((entry) => (
-              <QuestRow
-                key={entry.id}
-                quest={toQuestSummary(entry.quest, {
-                  generatedAt: entry.generatedAt,
-                  completed: entry.completed,
-                  saved: entry.saved,
-                })}
-              />
-            ))}
+            {/* Achievements */}
+            <Panel
+              title="Achievements"
+              icon={<IconTrophy size={16} />}
+              action={<PanelLink href="/achievements">View all</PanelLink>}
+            >
+              <AchievementBadges achievements={achievements.slice(0, 4)} />
+            </Panel>
+
+            {/* Recent activity */}
+            <Panel
+              title="Recent activity"
+              icon={<IconActivity size={16} />}
+              action={
+                history.length > 0 ? <PanelLink href="/history">View all</PanelLink> : undefined
+              }
+            >
+              {history.length > 0 ? (
+                <ul className="flex flex-col gap-3">
+                  {history.slice(0, 3).map((entry) => {
+                    const quest = toQuestSummary(entry.quest);
+                    return (
+                      <li key={entry.id}>
+                        <Link
+                          href={`/quests/${quest.id}`}
+                          className="flex items-center gap-3 transition-opacity hover:opacity-80"
+                        >
+                          <span className="relative size-10 shrink-0 overflow-hidden rounded-lg">
+                            <QuestImage
+                              src={quest.coverImage}
+                              alt=""
+                              palette={quest.palette}
+                              sizes="40px"
+                              zoomOnHover={false}
+                            />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm text-ink">
+                              {entry.completed ? "You completed " : "Unlocked "}
+                              <span className="font-medium">{quest.title}</span>
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-xs whitespace-nowrap text-muted">
+                            {formatRelativeDate(entry.generatedAt)}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted">
+                  Nothing yet. Unlock your first quest and it&apos;ll appear here.
+                </p>
+              )}
+            </Panel>
+
+            {/* Settings & account */}
+            <Panel title="Settings & account" icon={<IconSettings size={16} />}>
+              <div className="grid grid-cols-2 gap-2">
+                <QuickLink href="/profile">Profile</QuickLink>
+                <QuickLink href="/upgrade">Billing</QuickLink>
+              </div>
+            </Panel>
           </div>
         </section>
-      )}
 
-      {/* ---- Saved ------------------------------------------------------ */}
-      <section className="border-t border-ink/12 py-12">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="display-md">Saved</h2>
-          {saved.length > 0 && (
-            <Link
-              href="/saved"
-              className="text-xs font-semibold tracking-[0.14em] uppercase text-stone hover:text-ember"
-            >
-              All saved →
-            </Link>
-          )}
+        {/* ---- Surprise me --------------------------------------------- */}
+        <div className="mt-4">
+          <SurpriseMeBar disabled={!entitlement.canUnlock} />
         </div>
-
-        {saved.length > 0 ? (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {saved.map((entry) => (
-              <QuestCard key={entry.id} quest={toQuestSummary(entry.quest)} className="h-full" />
-            ))}
-          </div>
-        ) : (
-          <StateBlock
-            className="mt-6"
-            title="Nothing saved yet."
-            message="Your next adventure could go here. Open a quest and hit save to keep it."
-            action={
-              <Button asChild variant="outline">
-                <Link href="/history">Browse your quests</Link>
-              </Button>
-            }
-          />
-        )}
-      </section>
-
-      {/* ---- Stats ------------------------------------------------------ */}
-      <section className="border-t border-ink/12 py-12">
-        <h2 className="display-md">Your adventure stats</h2>
-        <p className="mt-3 max-w-md text-sm text-stone">
-          Counted from quests you marked as completed. Nobody is checking, but you&apos;ll know.
-        </p>
-
-        <div className="mt-8 grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-6">
-          <Stat label="Quests" value={stats.questCount} />
-          <Stat label="Completed" value={stats.completedCount} />
-          <Stat label="Km explored" value={stats.kmExplored} />
-          <Stat label="Metres climbed" value={stats.elevation} />
-          <Stat label="Regions" value={stats.regions} />
-          <Stat label="Waterfalls" value={stats.waterfalls} />
-        </div>
-      </section>
+      </div>
     </main>
+  );
+}
+
+function QuickLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="flex h-11 items-center justify-center rounded-lg border border-line text-sm font-medium text-ink transition-colors hover:bg-ink/5"
+    >
+      {children}
+    </Link>
   );
 }

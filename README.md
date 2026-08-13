@@ -1,4 +1,4 @@
-# SIDEQUEST
+# Summit Quest
 
 > "My life is boring and I want to do a side quest, but I don't know what to do."
 

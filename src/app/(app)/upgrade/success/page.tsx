@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { GenerateQuest } from "@/components/app/generate-quest";
 import { Button } from "@/components/ui/button";
 import { Kicker } from "@/components/ui/primitives";
 import { requireOnboardedUser } from "@/lib/auth/guards";
@@ -34,13 +33,15 @@ export default async function UpgradeSuccessPage() {
 
         <p className="mt-7 max-w-lg text-lg leading-relaxed text-paper/70">
           {entitlement.isSubscribed
-            ? "Unlimited quests are live on your account. The generator will keep steering you away from everywhere you've already been."
+            ? "Unlimited quests are live on your account. Unlock as many places from the database as you like."
             : "Stripe is still confirming the payment. This usually takes a few seconds — refresh in a moment and your plan will be active."}
         </p>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           {entitlement.isSubscribed ? (
-            <GenerateQuest label="Generate a quest" variant="light" />
+            <Button asChild variant="light" size="xl">
+              <Link href="/database">Browse the database</Link>
+            </Button>
           ) : (
             <Button asChild variant="light" size="xl">
               <Link href="/upgrade/success">Check again</Link>

@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { logoutAction } from "@/app/(auth)/actions";
-import { updatePreferencesAction } from "@/app/(app)/profile/actions";
-import { PreferencesForm } from "@/components/app/preferences-form";
 import { BillingActions } from "@/components/app/billing-actions";
-import { Button } from "@/components/ui/button";
-import { Kicker } from "@/components/ui/primitives";
+import { CosmeticsForm } from "@/components/app/cosmetics-form";
+import { Panel } from "@/components/app/dashboard-panels";
+import { Icon, IconCrown, IconLogout } from "@/components/ui/icons";
+import { getAchievements } from "@/lib/achievements";
 import { requireOnboardedUser } from "@/lib/auth/guards";
 import { EXPLORER_PLAN } from "@/lib/config";
+import { accentOf, avatarStyleOf, bannerOf } from "@/lib/cosmetics";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
 import { getUserStats } from "@/lib/quest/service";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Profile" };
 export const dynamic = "force-dynamic";
@@ -33,112 +33,157 @@ const STATUS_COPY: Record<string, string> = {
 export default async function ProfilePage() {
   const user = await requireOnboardedUser();
 
-  const [preferences, entitlement, stats] = await Promise.all([
-    db.userPreferences.findUnique({ where: { userId: user.id } }),
+  const [entitlement, stats, profile] = await Promise.all([
     getEntitlement(user.id),
     getUserStats(user.id),
+    db.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: {
+        accentColor: true,
+        avatarStyle: true,
+        bannerStyle: true,
+        explorerTitle: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
-  if (!preferences) notFound();
+  const achievements = getAchievements(stats);
+  const earnedTitles = achievements.filter((a) => a.earned).map((a) => a.label);
+
+  const accent = accentOf(profile.accentColor);
+  const avatar = avatarStyleOf(profile.avatarStyle);
+  const banner = bannerOf(profile.bannerStyle);
+  const initial = user.name.trim().charAt(0).toUpperCase() || "?";
 
   return (
-    <main className="px-5 pb-16 pt-10 sm:px-8 lg:px-12 lg:pt-14">
-      <header className="border-b border-ink/12 pb-8">
-        <Kicker>Account</Kicker>
-        <h1 className="display-lg mt-4">{user.name}</h1>
-        <p className="mt-3 text-sm text-stone">
-          {user.email} · joined {formatDate(user.createdAt)}
-        </p>
-      </header>
-
-      <div className="grid gap-14 py-12 lg:grid-cols-[1.3fr_1fr]">
-        <section>
-          <h2 className="display-md">Preferences</h2>
-          <p className="mt-3 max-w-lg text-sm text-stone">
-            Change these any time. The generator reads them fresh on every quest.
-          </p>
-
-          <div className="mt-8">
-            <PreferencesForm
-              action={updatePreferencesAction}
-              initial={{
-                homeLocation: preferences.homeLocation,
-                maxDistance: preferences.maxDistance,
-                preferredDistance: preferences.preferredDistance,
-                interests: preferences.preferredTerrain,
-                difficulty: preferences.difficulty,
-                timeAvailable: preferences.timeAvailable,
-                transport: preferences.transport,
-                questStyle: preferences.questStyle,
-              }}
-            />
+    <main className="mx-auto max-w-[90rem] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      {/* ---- Identity card --------------------------------------------- */}
+      <section className="overflow-hidden rounded-xl border border-line bg-card">
+        <div className={cn("h-28 sm:h-36", banner.className)} />
+        <div className="flex flex-wrap items-end justify-between gap-4 px-5 pb-5 sm:px-8">
+          <div className="flex items-end gap-4">
+            <span
+              aria-hidden="true"
+              className={cn(
+                "-mt-10 flex size-20 items-center justify-center rounded-full text-paper ring-4 ring-card",
+                accent.bg,
+              )}
+            >
+              {avatar.icon ? (
+                <Icon name={avatar.icon} size={34} />
+              ) : (
+                <span className="font-display text-3xl font-extrabold">{initial}</span>
+              )}
+            </span>
+            <div className="pb-1">
+              <h1 className="font-display text-2xl font-extrabold normal-case sm:text-3xl">
+                {user.name}
+              </h1>
+              <p className={cn("text-sm font-medium", accent.text)}>
+                {profile.explorerTitle ?? "Explorer"}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {user.email} · joined {formatDate(profile.createdAt)}
+              </p>
+            </div>
           </div>
-        </section>
 
-        <aside className="space-y-10">
-          <section className="bg-ink p-6 text-paper sm:p-8">
-            <Kicker className="text-paper/50">Plan</Kicker>
-            <p className="mt-3 font-display text-3xl font-extrabold uppercase">
-              {entitlement.isSubscribed ? EXPLORER_PLAN.name : "Scout · free"}
+          <form action={logoutAction} className="pb-1">
+            <button
+              type="submit"
+              className="flex h-10 items-center gap-2 rounded-lg border border-line px-4 text-sm font-medium text-ember transition-colors hover:border-ember/50 hover:bg-ember/10"
+            >
+              <IconLogout size={16} /> Log out
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        {/* ---- Cosmetics ---------------------------------------------- */}
+        <Panel title="Appearance">
+          <p className="mb-6 text-sm text-muted">
+            How your profile looks. None of this changes the quests you get.
+          </p>
+          <CosmeticsForm
+            name={user.name}
+            initialAccent={profile.accentColor}
+            initialAvatarStyle={profile.avatarStyle}
+            initialBanner={profile.bannerStyle}
+            initialTitle={profile.explorerTitle}
+            earnedTitles={earnedTitles}
+          />
+        </Panel>
+
+        <div className="flex flex-col gap-4">
+          {/* ---- Plan ------------------------------------------------- */}
+          <Panel title="Plan">
+            <p className="flex items-center gap-2 font-display text-xl font-extrabold">
+              <IconCrown size={18} className={accent.text} />
+              {entitlement.isSubscribed ? EXPLORER_PLAN.name : "Free"}
             </p>
 
             {entitlement.isSubscribed ? (
               <>
-                <p className="mt-3 text-sm text-paper/70">
+                <p className="mt-2 text-sm text-muted">
                   {STATUS_COPY[entitlement.status ?? ""] ?? "Active"}
-                  {entitlement.currentPeriodEnd && (
-                    <>
-                      {" · "}
-                      {entitlement.cancelAtPeriodEnd ? "ends" : "renews"}{" "}
-                      {formatDate(entitlement.currentPeriodEnd)}
-                    </>
-                  )}
+                  {entitlement.currentPeriodEnd
+                    ? entitlement.cancelAtPeriodEnd
+                      ? ` · ends ${formatDate(entitlement.currentPeriodEnd)}`
+                      : ` · renews ${formatDate(entitlement.currentPeriodEnd)}`
+                    : ""}
                 </p>
-                <BillingActions className="mt-6" enabled={isStripeEnabled()} />
+                <BillingActions enabled={isStripeEnabled()} className="mt-5" />
               </>
             ) : (
               <>
-                <p className="mt-3 text-sm text-paper/70">
+                <p className="mt-2 text-sm text-muted">
                   {entitlement.freeQuestsRemaining} of {entitlement.freeQuestAllowance} free quests
                   left.
                 </p>
-                <Button asChild variant="ember" size="lg" className="mt-6">
-                  <Link href="/upgrade">Unlock unlimited</Link>
-                </Button>
+                <Link
+                  href="/upgrade"
+                  className="mt-5 flex h-11 items-center justify-center gap-2 rounded-lg bg-ink px-5 text-sm font-semibold text-paper transition-colors hover:bg-moss"
+                >
+                  <IconCrown size={16} /> Go unlimited
+                </Link>
               </>
             )}
-          </section>
+          </Panel>
 
-          <section>
-            <Kicker>Your numbers</Kicker>
-            <dl className="mt-4 space-y-3 text-sm">
-              <Row label="Quests generated" value={String(stats.questCount)} />
-              <Row label="Completed" value={String(stats.completedCount)} />
-              <Row label="Kilometres walked" value={`${stats.kmExplored} km`} />
-              <Row label="Metres climbed" value={`${stats.elevation} m`} />
-              <Row label="Regions visited" value={String(stats.regions)} />
-              <Row label="Saved" value={String(stats.savedCount)} />
-            </dl>
-          </section>
-
-          <section className="border-t border-ink/12 pt-8">
-            <form action={logoutAction}>
-              <Button type="submit" variant="outline" size="lg">
-                Log out
-              </Button>
-            </form>
-          </section>
-        </aside>
+          {/* ---- Titles ----------------------------------------------- */}
+          <Panel title="Titles earned">
+            {earnedTitles.length > 0 ? (
+              <ul className="flex flex-wrap gap-2">
+                {earnedTitles.map((earned) => (
+                  <li
+                    key={earned}
+                    className={cn(
+                      "rounded-lg border px-3 py-1.5 text-sm",
+                      earned === profile.explorerTitle
+                        ? "border-ink bg-ink/5 font-medium text-ink"
+                        : "border-line text-muted",
+                    )}
+                  >
+                    {earned}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted">
+                Titles unlock with achievements. Finish a quest to earn your first.
+              </p>
+            )}
+            <Link
+              href="/achievements"
+              className="mt-4 inline-block text-sm font-medium text-ink hover:text-moss"
+            >
+              See all achievements →
+            </Link>
+          </Panel>
+        </div>
       </div>
     </main>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4 border-b border-ink/10 pb-3">
-      <dt className="text-stone">{label}</dt>
-      <dd className="font-medium tabular-nums">{value}</dd>
-    </div>
   );
 }

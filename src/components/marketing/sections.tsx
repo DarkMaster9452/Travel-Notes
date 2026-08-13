@@ -6,7 +6,7 @@ import { QuestImage } from "@/components/quest/quest-image";
 import CarouselStacked from "@/components/ui/carousel-07";
 import { Button } from "@/components/ui/button";
 import { Kicker, SectionHeading } from "@/components/ui/primitives";
-import { formatPrice, PLANS } from "@/lib/config";
+import { BRAND, formatPrice, PLANS } from "@/lib/config";
 import { IMAGES } from "@/lib/images";
 import { cn } from "@/lib/utils";
 import type { QuestSummary } from "@/types/quest";
@@ -149,7 +149,7 @@ export function Randomness() {
               className="flex items-center gap-4 whitespace-nowrap font-display text-2xl font-bold uppercase text-ink/70 sm:text-3xl"
             >
               {param}
-              <span className="text-ember">✦</span>
+              <span className="text-ember" aria-hidden="true">/</span>
             </li>
           ))}
         </ul>
@@ -320,7 +320,7 @@ export function Footer() {
   return (
     <footer className="bg-ink px-5 py-12 sm:px-8">
       <div className="mx-auto flex max-w-[100rem] flex-col gap-6 border-t border-paper/15 pt-8 sm:flex-row sm:items-center sm:justify-between">
-        <p className="font-display text-2xl font-extrabold text-paper">SIDEQUEST</p>
+        <p className="font-display text-2xl font-extrabold text-paper">{BRAND.name}</p>
         <p className="text-xs text-paper/45">
           Go carefully. Check the weather, tell someone your plan, and turn back when it stops being
           fun.

@@ -24,7 +24,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         </p>
 
         <h1 className="display-xl animate-rise mt-6 max-w-[16ch] text-paper">
-          Your next side quest is waiting.
+          Your next summit is waiting.
         </h1>
 
         <div className="mt-10 flex flex-col gap-8 border-t border-paper/25 pt-8 lg:flex-row lg:items-end lg:justify-between">

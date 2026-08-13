@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { UnlockCelebration } from "@/components/app/unlock-celebration";
 import { CompleteQuestButton, SaveQuestButton } from "@/components/quest/quest-actions";
 import { QuestImage } from "@/components/quest/quest-image";
 import { RouteMap, type Waypoint } from "@/components/quest/route-map";
@@ -122,10 +124,20 @@ export default async function QuestDetailPage({ params, searchParams }: Props) {
         {owned && (
           <>
             <SaveQuestButton questId={quest.id} initialSaved={isSaved} />
-            <CompleteQuestButton questId={quest.id} initialCompleted={isCompleted} />
+            <CompleteQuestButton
+              questId={quest.id}
+              questTitle={quest.title}
+              initialCompleted={isCompleted}
+            />
           </>
         )}
       </div>
+
+      {owned && (
+        <Suspense fallback={null}>
+          <UnlockCelebration questTitle={quest.title} />
+        </Suspense>
+      )}
 
       <div className="mx-auto grid max-w-[90rem] gap-12 px-5 py-14 sm:px-10 lg:grid-cols-[1.4fr_1fr]">
         {/* ---- Left column -------------------------------------------- */}
