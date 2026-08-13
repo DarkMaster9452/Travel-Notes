@@ -12,6 +12,20 @@ import { fieldErrors, loginSchema, signupSchema } from "@/lib/validation";
 
 export type AuthState = { errors?: Record<string, string> } | undefined;
 
+/**
+ * Prisma's duplicate-key code. Checked structurally rather than by importing
+ * `Prisma.PrismaClientKnownRequestError`, which drags the client namespace
+ * into a module that only needs one field off the error.
+ */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
+
 /** Only allow relative paths, so `?next=` can't be used as an open redirect. */
 function safeNext(value: FormDataEntryValue | null): string | null {
   const next = typeof value === "string" ? value : null;
@@ -57,9 +71,21 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
       select: { id: true },
     });
     userId = user.id;
-  } catch {
-    // Unique constraint under a race — same message as the check above.
-    return { errors: { email: "There's already an account with this email." } };
+  } catch (error) {
+    // Only a genuine unique-constraint violation means the address is taken.
+    //
+    // This used to catch everything and report "already registered" for any
+    // failure at all, which turned an unmigrated database into a signup form
+    // insisting an empty `users` table already held the address. Anything that
+    // isn't P2002 is a real fault: log it and say so, rather than blaming the
+    // person typing.
+    if (isUniqueViolation(error)) {
+      return { errors: { email: "There's already an account with this email." } };
+    }
+    console.error("[auth] signup failed", error);
+    return {
+      errors: { form: "We couldn't create your account. Please try again in a moment." },
+    };
   }
 
   await createSession(userId);
