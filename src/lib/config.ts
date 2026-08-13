@@ -14,8 +14,8 @@ export const BRAND = {
 /** Quests a brand-new account gets before the paywall. */
 export const FREE_QUEST_ALLOWANCE = 3;
 
-/** Quest generation rate limit (per user, fixed window). */
-export const GENERATION_RATE_LIMIT = {
+/** Quest unlock rate limit (per user, fixed window). */
+export const UNLOCK_RATE_LIMIT = {
   max: 12,
   windowSeconds: 60 * 60,
 } as const;

@@ -53,3 +53,13 @@ export function titleCase(value: string): string {
 export function pluralise(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+/** "3 days ago" for recent items, falling back to a date once that stops helping. */
+export function formatRelativeDate(date: Date | string): string {
+  const value = typeof date === "string" ? new Date(date) : date;
+  const days = Math.floor((Date.now() - value.getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days} days ago`;
+  return formatDate(value);
+}

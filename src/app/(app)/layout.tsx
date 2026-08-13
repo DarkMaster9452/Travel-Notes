@@ -1,3 +1,4 @@
+import { logoutAction } from "@/app/(auth)/actions";
 import { AppShell } from "@/components/app/app-shell";
 import { requireOnboardedUser } from "@/lib/auth/guards";
 import { PLANS } from "@/lib/config";
@@ -19,9 +20,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <AppShell
       userName={user.name}
-      freeQuestsRemaining={entitlement.freeQuestsRemaining}
+      userEmail={user.email}
       isSubscribed={entitlement.isSubscribed}
       planName={`${planName} plan`}
+      logout={logoutAction}
     >
       {children}
     </AppShell>

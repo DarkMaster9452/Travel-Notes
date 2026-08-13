@@ -51,17 +51,17 @@ export type ActivityTag = (typeof ACTIVITY_TAGS)[number];
 
 /** The eight choices offered during onboarding. */
 export const ONBOARDING_INTERESTS = [
-  { id: "forest", emoji: "🌲", label: "Forest", terrain: ["forest", "valley"], features: ["old_growth"] },
-  { id: "mountains", emoji: "⛰️", label: "Mountains", terrain: ["mountains", "ridge"], features: ["summit"] },
-  { id: "water", emoji: "💧", label: "Water", terrain: ["valley"], features: ["waterfall", "lake", "river"] },
-  { id: "rocks", emoji: "🪨", label: "Rocks", terrain: ["rocks", "gorge", "karst"], features: ["cave"] },
-  { id: "history", emoji: "🏰", label: "History", terrain: [], features: ["castle", "ruins", "chapel"] },
-  { id: "views", emoji: "🌅", label: "Views", terrain: ["ridge", "plateau"], features: ["viewpoint", "sunset", "sunrise"] },
-  { id: "hidden", emoji: "🧭", label: "Hidden places", terrain: ["gorge"], features: ["hidden"] },
-  { id: "long_hikes", emoji: "🥾", label: "Long hikes", terrain: ["plateau", "ridge"], features: [] },
+  { id: "forest", icon: "forest", label: "Forest", terrain: ["forest", "valley"], features: ["old_growth"] },
+  { id: "mountains", icon: "mountain", label: "Mountains", terrain: ["mountains", "ridge"], features: ["summit"] },
+  { id: "water", icon: "water", label: "Water", terrain: ["valley"], features: ["waterfall", "lake", "river"] },
+  { id: "rocks", icon: "rocks", label: "Rocks", terrain: ["rocks", "gorge", "karst"], features: ["cave"] },
+  { id: "history", icon: "castle", label: "History", terrain: [], features: ["castle", "ruins", "chapel"] },
+  { id: "views", icon: "sunrise", label: "Views", terrain: ["ridge", "plateau"], features: ["viewpoint", "sunset", "sunrise"] },
+  { id: "hidden", icon: "compass", label: "Hidden places", terrain: ["gorge"], features: ["hidden"] },
+  { id: "long_hikes", icon: "boot", label: "Long hikes", terrain: ["plateau", "ridge"], features: [] },
 ] as const satisfies ReadonlyArray<{
   id: string;
-  emoji: string;
+  icon: string;
   label: string;
   terrain: readonly string[];
   features: readonly string[];

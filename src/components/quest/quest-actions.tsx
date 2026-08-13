@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { toggleCompleteAction, toggleSaveAction } from "@/app/(app)/quest-actions";
+import { Celebration, type CelebrationItem } from "@/components/app/celebration";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/primitives";
 
@@ -50,35 +51,69 @@ export function SaveQuestButton({
 
 export function CompleteQuestButton({
   questId,
+  questTitle,
   initialCompleted,
 }: {
   questId: string;
+  questTitle: string;
   initialCompleted: boolean;
 }) {
   const router = useRouter();
   const [completed, setCompleted] = React.useState(initialCompleted);
   const [pending, startTransition] = React.useTransition();
+  const [celebrations, setCelebrations] = React.useState<CelebrationItem[]>([]);
 
   return (
-    <Button
-      type="button"
-      variant={completed ? "primary" : "outline"}
-      size="lg"
-      aria-pressed={completed}
-      disabled={pending}
-      onClick={() => {
-        const next = !completed;
-        setCompleted(next);
-        startTransition(async () => {
-          const result = await toggleCompleteAction(questId);
-          if (!result.ok) setCompleted(!next);
-          else setCompleted(Boolean(result.completed));
-          router.refresh();
-        });
-      }}
-    >
-      {pending ? <Spinner /> : null}
-      {completed ? "Completed ✓" : "Mark completed"}
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant={completed ? "primary" : "outline"}
+        size="lg"
+        aria-pressed={completed}
+        disabled={pending}
+        onClick={() => {
+          const next = !completed;
+          setCompleted(next);
+          startTransition(async () => {
+            const result = await toggleCompleteAction(questId);
+            if (!result.ok) {
+              setCompleted(!next);
+              router.refresh();
+              return;
+            }
+
+            setCompleted(Boolean(result.completed));
+
+            // The quest itself first, then anything it unlocked — the reader
+            // steps through them one at a time.
+            if (result.completed) {
+              setCelebrations([
+                {
+                  id: `quest-${questId}`,
+                  eyebrow: "Quest complete",
+                  title: questTitle,
+                  message: "Logged and counted. That's one more off the map.",
+                  icon: "flag",
+                },
+                ...(result.earned ?? []).map((achievement) => ({
+                  id: achievement.id,
+                  eyebrow: "Achievement earned",
+                  title: achievement.label,
+                  message: achievement.description,
+                  icon: achievement.icon,
+                })),
+              ]);
+            }
+
+            router.refresh();
+          });
+        }}
+      >
+        {pending ? <Spinner /> : null}
+        {completed ? "Completed" : "Mark completed"}
+      </Button>
+
+      <Celebration items={celebrations} onDismiss={() => setCelebrations([])} />
+    </>
   );
 }

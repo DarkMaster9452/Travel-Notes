@@ -149,7 +149,7 @@ export function Randomness() {
               className="flex items-center gap-4 whitespace-nowrap font-display text-2xl font-bold uppercase text-ink/70 sm:text-3xl"
             >
               {param}
-              <span className="text-ember">✦</span>
+              <span className="text-ember" aria-hidden="true">/</span>
             </li>
           ))}
         </ul>

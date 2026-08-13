@@ -2,11 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { IconName } from "@/components/ui/icons";
+import { getAchievements } from "@/lib/achievements";
 import { requireOnboardedUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { getUserStats } from "@/lib/quest/service";
 import { questIdSchema } from "@/lib/validation";
 
-export type QuestActionResult = { ok: boolean; saved?: boolean; completed?: boolean; error?: string };
+export type EarnedAchievement = { id: string; label: string; description: string; icon: IconName };
+
+export type QuestActionResult = {
+  ok: boolean;
+  saved?: boolean;
+  completed?: boolean;
+  error?: string;
+  /** Achievements that crossed their threshold because of this change. */
+  earned?: EarnedAchievement[];
+};
 
 /**
  * Ownership check for every quest mutation.
@@ -63,16 +75,33 @@ export async function toggleCompleteAction(rawQuestId: string): Promise<QuestAct
   const history = await assertOwnership(user.id, questId);
   if (!history) return { ok: false, error: "That quest isn't yours." };
 
+  // Snapshot what was already earned so the difference afterwards is exactly
+  // what this action unlocked — the alternative, recomputing thresholds by
+  // hand here, would drift from the achievement definitions the moment either
+  // side changed.
+  const before = new Set(
+    getAchievements(await getUserStats(user.id))
+      .filter((achievement) => achievement.earned)
+      .map((achievement) => achievement.id),
+  );
+
   const completed = !history.completed;
   await db.questHistory.update({
     where: { id: history.id },
     data: { completed, completedAt: completed ? new Date() : null },
   });
 
+  const earned = completed
+    ? getAchievements(await getUserStats(user.id))
+        .filter((achievement) => achievement.earned && !before.has(achievement.id))
+        .map(({ id, label, description, icon }) => ({ id, label, description, icon }))
+    : [];
+
   revalidatePath("/history");
   revalidatePath("/dashboard");
+  revalidatePath("/achievements");
   revalidatePath(`/quests/${questId}`);
-  return { ok: true, completed };
+  return { ok: true, completed, earned };
 }
 
 export async function removeSavedAction(rawQuestId: string): Promise<QuestActionResult> {

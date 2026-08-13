@@ -1,3 +1,4 @@
+import type { IconName } from "@/components/ui/icons";
 import type { UserStats } from "@/lib/quest/service";
 
 /**
@@ -13,7 +14,7 @@ export type Achievement = {
   id: string;
   label: string;
   description: string;
-  icon: string;
+  icon: IconName;
   /** Progress toward the badge, 0–1. */
   progress: number;
   earned: boolean;
@@ -25,7 +26,7 @@ type Definition = {
   id: string;
   label: string;
   description: string;
-  icon: string;
+  icon: IconName;
   target: number;
   value: (stats: UserStats) => number;
   unit?: string;
@@ -36,7 +37,7 @@ const DEFINITIONS: Definition[] = [
     id: "first-steps",
     label: "First steps",
     description: "Complete your first quest.",
-    icon: "🥾",
+    icon: "boot",
     target: 1,
     value: (s) => s.completedCount,
   },
@@ -44,7 +45,7 @@ const DEFINITIONS: Definition[] = [
     id: "regular",
     label: "Regular",
     description: "Complete five quests.",
-    icon: "🧭",
+    icon: "compass",
     target: 5,
     value: (s) => s.completedCount,
   },
@@ -52,7 +53,7 @@ const DEFINITIONS: Definition[] = [
     id: "seasoned",
     label: "Seasoned",
     description: "Complete twenty-five quests.",
-    icon: "🏔️",
+    icon: "peak",
     target: 25,
     value: (s) => s.completedCount,
   },
@@ -60,7 +61,7 @@ const DEFINITIONS: Definition[] = [
     id: "distance",
     label: "Long hauler",
     description: "Cover 100 km across completed quests.",
-    icon: "📏",
+    icon: "ruler",
     target: 100,
     value: (s) => s.kmExplored,
     unit: "km",
@@ -69,7 +70,7 @@ const DEFINITIONS: Definition[] = [
     id: "climber",
     label: "Climber",
     description: "Climb 5 000 m of ascent.",
-    icon: "⛰️",
+    icon: "mountain",
     target: 5000,
     value: (s) => s.elevation,
     unit: "m",
@@ -78,7 +79,7 @@ const DEFINITIONS: Definition[] = [
     id: "explorer",
     label: "Region hopper",
     description: "Visit five different regions.",
-    icon: "🗺️",
+    icon: "map",
     target: 5,
     value: (s) => s.regions,
   },
@@ -86,7 +87,7 @@ const DEFINITIONS: Definition[] = [
     id: "water",
     label: "Waterfall hunter",
     description: "Find three waterfalls.",
-    icon: "💧",
+    icon: "water",
     target: 3,
     value: (s) => s.waterfalls,
   },
@@ -94,7 +95,7 @@ const DEFINITIONS: Definition[] = [
     id: "collector",
     label: "Collector",
     description: "Save ten quests for later.",
-    icon: "🔖",
+    icon: "bookmark",
     target: 10,
     value: (s) => s.savedCount,
   },

@@ -2,7 +2,9 @@
 
 import * as React from "react";
 
+import { UnlockQuestButton } from "@/components/app/unlock-actions";
 import { QuestImage } from "@/components/quest/quest-image";
+import { IconChevronDown, IconPin, IconSearch } from "@/components/ui/icons";
 import {
   DURATION_LABEL,
   type CatalogueEntry,
@@ -12,16 +14,20 @@ import { DIFFICULTY_LABEL } from "@/lib/quest/taxonomy";
 import { cn, formatDistance } from "@/lib/utils";
 
 /**
- * Browsable table of the places the generator draws from, with the filters
- * from the dashboard mock. Filtering happens in memory: the catalogue is a few
- * dozen static rows, so a round trip per keystroke would be pure latency.
+ * Browsable table of the places a quest can send you, with the filters from the
+ * dashboard mock. Filtering happens in memory: the catalogue is a few dozen
+ * static rows, so a round trip per keystroke would be pure latency.
+ *
+ * Difficulty chips use the ordinal green ramp — one hue, light→dark — so the
+ * colour carries the ordering instead of four unrelated hues that a reader has
+ * to learn.
  */
 
 const DIFFICULTY_CHIP: Record<string, string> = {
-  EASY: "bg-moss/15 text-moss",
-  MODERATE: "bg-ember/15 text-ember",
-  HARD: "bg-ember/25 text-ember",
-  EXPERT: "bg-ink/15 text-ink",
+  EASY: "bg-grade-1/25 text-grade-4",
+  MODERATE: "bg-grade-2/25 text-grade-4",
+  HARD: "bg-grade-3/25 text-grade-4",
+  EXPERT: "bg-grade-4/25 text-grade-4",
 };
 
 /** Accent-insensitive compare, so "zilina" still finds "Žilina". */
@@ -38,6 +44,7 @@ export function QuestDatabase({
   countries,
   difficulties,
   durations,
+  canUnlock,
   limit,
   compact = false,
 }: {
@@ -45,6 +52,7 @@ export function QuestDatabase({
   countries: string[];
   difficulties: string[];
   durations: DurationBucket[];
+  canUnlock: boolean;
   /** Cap the rows shown — the dashboard preview passes a small number. */
   limit?: number;
   compact?: boolean;
@@ -99,37 +107,37 @@ export function QuestDatabase({
           options={durations.map((d) => ({ value: d, label: DURATION_LABEL[d] }))}
         />
 
-        <div className="relative min-w-[12rem] flex-1">
+        <div className="relative min-w-[11rem] flex-1">
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search quests..."
             aria-label="Search the quest database"
-            className="h-10 w-full rounded-sm border border-ink/15 bg-paper pl-3 pr-9 text-sm text-ink placeholder:text-stone/70 focus:border-moss focus:outline-none focus:ring-2 focus:ring-moss/25"
+            className="h-10 w-full rounded-lg border border-line bg-card pl-3 pr-9 text-sm text-ink placeholder:text-muted/80 focus:border-moss focus:outline-none focus:ring-2 focus:ring-moss/20"
           />
           <span
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-stone"
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"
             aria-hidden="true"
           >
-            <SearchGlyph />
+            <IconSearch size={16} />
           </span>
         </div>
       </div>
 
       {/* Rows */}
       {rows.length === 0 ? (
-        <p className="mt-6 text-sm text-stone">
+        <p className="mt-6 text-sm text-muted">
           Nothing matches those filters. Try widening the search.
         </p>
       ) : (
-        <ul className="mt-4 divide-y divide-ink/10">
+        <ul className="mt-4 divide-y divide-line">
           {rows.map((entry) => (
             <li
               key={entry.id}
-              className="grid grid-cols-[3.5rem_1fr] items-center gap-4 py-3 sm:grid-cols-[3.5rem_minmax(0,14rem)_auto_1fr]"
+              className="grid grid-cols-[3.5rem_1fr] items-center gap-x-4 gap-y-2 py-3 sm:grid-cols-[3.5rem_minmax(0,12rem)_auto_1fr_auto]"
             >
-              <div className="relative aspect-square overflow-hidden rounded-sm">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
                 <QuestImage
                   src={entry.coverImage}
                   alt=""
@@ -140,9 +148,9 @@ export function QuestDatabase({
               </div>
 
               <div className="min-w-0">
-                <p className="truncate font-display text-lg font-extrabold">{entry.name}</p>
-                <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-stone">
-                  <PinGlyph />
+                <p className="truncate font-display text-base font-extrabold">{entry.name}</p>
+                <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted">
+                  <IconPin size={12} />
                   {entry.country}
                 </p>
               </div>
@@ -151,24 +159,28 @@ export function QuestDatabase({
                 <Chip className={DIFFICULTY_CHIP[entry.topDifficulty] ?? "bg-ink/10 text-ink"}>
                   {DIFFICULTY_LABEL[entry.topDifficulty]}
                 </Chip>
-                <Chip className="bg-ink/8 text-stone">{DURATION_LABEL[entry.duration]}</Chip>
+                <Chip className="bg-ink/6 text-muted">{DURATION_LABEL[entry.duration]}</Chip>
                 {!compact && (
-                  <Chip className="bg-ink/8 text-stone">
+                  <Chip className="bg-ink/6 text-muted">
                     {formatDistance(entry.distanceBand[0])}–{formatDistance(entry.distanceBand[1])}
                   </Chip>
                 )}
               </div>
 
-              <p className="col-span-2 line-clamp-2 text-sm text-stone sm:col-span-1 sm:line-clamp-1">
+              <p className="col-span-2 line-clamp-2 text-sm text-muted sm:col-span-1 sm:line-clamp-1">
                 {entry.description}
               </p>
+
+              <div className="col-span-2 justify-self-end sm:col-span-1">
+                <UnlockQuestButton locationId={entry.id} disabled={!canUnlock} />
+              </div>
             </li>
           ))}
         </ul>
       )}
 
       {limit && filtered.length > rows.length && (
-        <p className="mt-4 text-xs text-stone">
+        <p className="mt-4 text-xs text-muted">
           Showing {rows.length} of {filtered.length} places.
         </p>
       )}
@@ -180,7 +192,7 @@ function Chip({ className, children }: { className?: string; children: React.Rea
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-sm px-2 py-1 text-[0.625rem] font-semibold tracking-wide",
+        "inline-flex shrink-0 items-center rounded-md px-2 py-1 text-[0.625rem] font-semibold tracking-wide",
         className,
       )}
     >
@@ -206,7 +218,7 @@ function Select({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 appearance-none rounded-sm border border-ink/15 bg-paper pl-3 pr-8 text-sm text-ink focus:border-moss focus:outline-none focus:ring-2 focus:ring-moss/25"
+        className="h-10 appearance-none rounded-lg border border-line bg-card pl-3 pr-8 text-sm text-ink focus:border-moss focus:outline-none focus:ring-2 focus:ring-moss/20"
       >
         <option value="all">{label}</option>
         {options.map((option) => (
@@ -216,47 +228,11 @@ function Select({
         ))}
       </select>
       <span
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-stone"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted"
         aria-hidden="true"
       >
-        <ChevronGlyph />
+        <IconChevronDown size={14} />
       </span>
     </label>
-  );
-}
-
-const glyph = {
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.7,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
-
-function SearchGlyph() {
-  return (
-    <svg {...glyph} width={16} height={16}>
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4 4" />
-    </svg>
-  );
-}
-
-function ChevronGlyph() {
-  return (
-    <svg {...glyph} width={14} height={14}>
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-}
-
-function PinGlyph() {
-  return (
-    <svg {...glyph} width={12} height={12}>
-      <path d="M12 21s6.5-5.7 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.3 12 21 12 21z" />
-      <circle cx="12" cy="10.5" r="2.2" />
-    </svg>
   );
 }

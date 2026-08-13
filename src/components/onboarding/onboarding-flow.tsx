@@ -6,6 +6,7 @@ import { useActionState } from "react";
 
 import type { OnboardingState } from "@/app/onboarding/actions";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icons";
 import { PlaceCombobox } from "@/components/ui/place-combobox";
 import { Spinner } from "@/components/ui/primitives";
 import { BRAND } from "@/lib/config";
@@ -27,28 +28,28 @@ const DIFFICULTIES = [
     label: "Easy",
     hint: "A walk, not a workout. Gentle ground and short days.",
     detail: "Up to ~6 km",
-    icon: "🌿",
+    icon: "leaf" as const,
   },
   {
     value: "MODERATE",
     label: "Moderate",
     hint: "Some climbing, nothing scary. A proper half day out.",
     detail: "Around 11 km",
-    icon: "⛰️",
+    icon: "mountain" as const,
   },
   {
     value: "HARD",
     label: "Hard",
     hint: "Long days and real ascent. Bring the good boots.",
     detail: "16 km and up",
-    icon: "🥾",
+    icon: "boot" as const,
   },
   {
     value: "SURPRISE",
     label: "Surprise me",
     hint: "Let the dice decide. Anything from a stroll to a slog.",
     detail: "Anything goes",
-    icon: "🎲",
+    icon: "dice" as const,
   },
 ] as const;
 
@@ -185,9 +186,7 @@ export function OnboardingFlow({
                               : "border-ink/15 bg-paper hover:border-ink/40",
                           )}
                         >
-                          <span className="text-2xl" aria-hidden="true">
-                            {option.icon}
-                          </span>
+                          <Icon name={option.icon} size={28} />
                           <span className="flex w-full items-baseline justify-between gap-3">
                             <span className="font-display text-2xl font-extrabold uppercase">
                               {option.label}

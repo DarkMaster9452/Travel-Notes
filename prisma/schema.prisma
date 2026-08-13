@@ -21,6 +21,15 @@ model User {
   avatar       String?
   passwordHash String   @map("password_hash")
   freeQuestsUsed Int    @default(0) @map("free_quests_used")
+
+  /// Cosmetics. Purely presentational, all defaulted, so an existing row keeps
+  /// working without a backfill and nothing here can affect what a quest is.
+  accentColor  String   @default("moss") @map("accent_color")
+  avatarStyle  String   @default("initial") @map("avatar_style")
+  bannerStyle  String   @default("ridge") @map("banner_style")
+  /// Chosen from the achievements the account has actually earned.
+  explorerTitle String? @map("explorer_title")
+
   onboardedAt  DateTime? @map("onboarded_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

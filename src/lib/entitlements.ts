@@ -6,8 +6,8 @@ import { db } from "@/lib/db";
 import { FREE_QUEST_ALLOWANCE } from "@/lib/config";
 
 export type Entitlement = {
-  /** May the user generate another quest right now? */
-  canGenerate: boolean;
+  /** May the user unlock another quest right now? */
+  canUnlock: boolean;
   isSubscribed: boolean;
   plan: "FREE" | "EXPLORER";
   status: Subscription["status"] | null;
@@ -23,10 +23,10 @@ export type Entitlement = {
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
 
 /**
- * The single source of truth for "is this user allowed to generate?".
+ * The single source of truth for "is this user allowed to unlock a quest?".
  *
  * Always computed on the server from database state — never from anything the
- * client sends. Every generation path calls this before doing work.
+ * client sends. Every unlock path calls this before doing work.
  */
 export async function getEntitlement(userId: string): Promise<Entitlement> {
   const [user, subscription] = await Promise.all([
@@ -51,7 +51,7 @@ export async function getEntitlement(userId: string): Promise<Entitlement> {
   );
 
   return {
-    canGenerate: isSubscribed || freeQuestsRemaining > 0,
+    canUnlock: isSubscribed || freeQuestsRemaining > 0,
     isSubscribed,
     plan: isSubscribed ? "EXPLORER" : "FREE",
     status: subscription?.status ?? null,

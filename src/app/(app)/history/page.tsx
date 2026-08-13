@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { GenerateQuest } from "@/components/app/generate-quest";
 import { QuestRow } from "@/components/quest/quest-card";
+import { Button } from "@/components/ui/button";
 import { Kicker, StateBlock } from "@/components/ui/primitives";
 import { requireOnboardedUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { getEntitlement } from "@/lib/entitlements";
 import { cn, formatDate, pluralise } from "@/lib/utils";
 import { toQuestSummary } from "@/types/quest";
 
@@ -30,18 +29,15 @@ export default async function HistoryPage({
   const { filter: rawFilter } = await searchParams;
   const filter: Filter = FILTERS.some((f) => f.id === rawFilter) ? (rawFilter as Filter) : "all";
 
-  const [entries, entitlement] = await Promise.all([
-    db.questHistory.findMany({
-      where: {
-        userId: user.id,
-        ...(filter === "completed" ? { completed: true } : {}),
-        ...(filter === "todo" ? { completed: false } : {}),
-      },
-      orderBy: { generatedAt: "desc" },
-      include: { quest: true },
-    }),
-    getEntitlement(user.id),
-  ]);
+  const entries = await db.questHistory.findMany({
+    where: {
+      userId: user.id,
+      ...(filter === "completed" ? { completed: true } : {}),
+      ...(filter === "todo" ? { completed: false } : {}),
+    },
+    orderBy: { generatedAt: "desc" },
+    include: { quest: true },
+  });
 
   return (
     <main className="px-5 pb-16 pt-10 sm:px-8 lg:px-12 lg:pt-14">
@@ -100,12 +96,14 @@ export default async function HistoryPage({
           title={filter === "all" ? "Nothing here yet." : "Nothing matches that filter."}
           message={
             filter === "all"
-              ? "Generate your first quest and it'll show up here, along with everything that comes after it."
+              ? "Unlock your first quest and it'll show up here, along with everything that comes after it."
               : "Try a different filter, or go and finish something."
           }
           action={
             filter === "all" ? (
-              <GenerateQuest disabled={!entitlement.canGenerate} size="lg" />
+              <Button asChild variant="primary" size="lg">
+                <Link href="/database">Browse the quest database</Link>
+              </Button>
             ) : (
               <Link
                 href="/history"
