@@ -86,6 +86,36 @@ full-day ridge traverse — but never as the same combination.
 
 ---
 
+## Design system
+
+`index.html` (the finished landing page) is the source of truth. Nothing in the
+product invents a colour, a radius or a type size of its own.
+
+- **Tokens** live in the `@theme` block of `src/app/globals.css` — the palette,
+  radii, the three faces and the two shadows, lifted from the landing page's
+  `:root`. This is a Tailwind v4 project, so tokens are declared in CSS rather
+  than in a `tailwind.config.ts`.
+- **Component classes** live in `src/styles/field-guide.css`, a near-verbatim
+  port of the landing page's stylesheet so the two can be diffed. It is imported
+  `layer(components)`, which matters: unlayered CSS beats every Tailwind
+  utility, so without the layer a component class would silently win over any
+  utility applied next to it.
+- **Components** live in `src/components/field/` — `QuestCard`, `Tag`, `Stat`,
+  `Panel`, `Pill`, `Avatar`, `Sticker`, `EmptyState`, `Modal`, `Toast`.
+  Marketing, app interior and admin all build from these.
+
+Rules carried over from the landing page and enforced in the components rather
+than left to call sites:
+
+- Green is the structure; **orange is stamp ink only** — seals, bonus
+  challenges, "Most taken", hard/brutal difficulty. `DifficultyTag` decides
+  which grades earn it, so no page decides on its own.
+- Every quest renders as an **issued document**: quest number, dashed rules,
+  difficulty tag, seal watermark, expiry. That is `QuestCard`, everywhere.
+- Uppercase mono for all metadata; serif for anything handed to you.
+- Paper grain and contour lines are marketing surfaces only. The app interior
+  drops both and keeps the palette.
+
 ## Architecture
 
 ```
@@ -98,7 +128,11 @@ src/
     api/
       quests/generate stripe/{checkout,portal,webhook}
   components/
-    marketing/ quest/ app/ onboarding/ ui/ motion/
+    field/            the shared design-system library (see below)
+    landing/          the landing page, ported from index.html
+    quest/ app/ onboarding/ ui/
+  styles/
+    field-guide.css   component classes, ported from index.html
   lib/
     auth/ quest/ db, entitlements, billing, stripe, rate-limit, validation, geo, images
 prisma/

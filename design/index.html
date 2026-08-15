@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Summit Quest — Your next adventure, assigned.</title>
+<meta name="description" content="Summit Quest turns your preferences into a real hiking assignment: a place, an objective, a bonus challenge — and, if you want, someone to go with. Try it online. Subscribe and it arrives in your inbox.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SUMMIT QUEST — field guide design system
+   ============================================================ */
+:root{
+  --paper:#EFF0E5;
+  --paper-2:#E3E8D7;
+  --paper-3:#D5DCC5;
+  --card:#F9FAF3;
+  --ink:#141A16;
+  --ink-2:#47544B;
+  --ink-3:#848A78;
+  --signal:#C4481B;
+  --signal-2:#E8622F;
+  --pine:#1E3B2C;
+  --pine-2:#2C5540;
+  --moss:#21402F;
+  --moss-2:#3A6047;
+  --sage:#7E9A80;
+  --line:rgba(20,26,22,.15);
+  --line-2:rgba(20,26,22,.08);
+  --shadow:0 1px 2px rgba(20,32,24,.04),0 8px 24px -12px rgba(20,40,28,.20);
+  --shadow-lg:0 2px 4px rgba(20,32,24,.04),0 24px 60px -24px rgba(18,44,30,.34);
+  --r:14px;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --serif:'Fraunces','Iowan Old Style',Georgia,serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --maxw:1180px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+::selection{background:var(--pine);color:#fff}
+
+/* ---------- paper grain + contour texture ---------- */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply;
+}
+.wrap{width:100%;max-width:var(--maxw);margin:0 auto;padding:0 28px;position:relative;z-index:2}
+
+/* ---------- type ---------- */
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.02em;line-height:1.08}
+.display{font-family:var(--serif);font-weight:600}
+h1{font-size:clamp(44px,7.2vw,88px);font-family:var(--serif);letter-spacing:-.035em}
+h2{font-size:clamp(32px,4.4vw,54px);font-family:var(--serif);letter-spacing:-.03em}
+h3{font-size:clamp(20px,2.2vw,25px)}
+p{margin:0}
+.lede{font-size:clamp(17px,1.65vw,20px);line-height:1.55;color:var(--ink-2)}
+.eyebrow{
+  font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--moss-2);display:inline-flex;align-items:center;gap:9px;
+}
+.eyebrow::before{content:'';width:22px;height:1px;background:currentColor;opacity:.55}
+.eyebrow.warm{color:var(--signal)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--ink-2)}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:14px 24px;border-radius:100px;font-size:15px;font-weight:600;letter-spacing:-.01em;
+  transition:transform .18s cubic-bezier(.2,.8,.3,1),box-shadow .18s,background .18s,color .18s;
+  white-space:nowrap;position:relative;
+}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--pine);color:#F2F4EA;box-shadow:var(--shadow)}
+.btn-primary:hover{background:var(--moss-2);box-shadow:0 10px 26px -10px rgba(30,59,44,.6)}
+.btn-signal{background:var(--pine);color:#F2F4EA;box-shadow:0 10px 26px -12px rgba(30,59,44,.75)}
+.btn-signal:hover{background:var(--pine-2);box-shadow:0 14px 32px -12px rgba(30,59,44,.9)}
+.btn-ghost{border:1px solid var(--line);color:var(--ink);background:rgba(255,255,255,.4)}
+.btn-ghost:hover{border-color:var(--ink);background:rgba(255,255,255,.85)}
+.btn-sm{padding:10px 18px;font-size:14px}
+.btn-lg{padding:17px 30px;font-size:16px}
+
+/* ---------- nav ---------- */
+header.nav{
+  position:sticky;top:0;z-index:60;
+  background:rgba(239,240,229,.82);backdrop-filter:blur(14px) saturate(1.3);
+  border-bottom:1px solid transparent;transition:border-color .3s,background .3s;
+}
+header.nav.stuck{border-bottom-color:var(--line);background:rgba(239,240,229,.95)}
+.nav-in{display:flex;align-items:center;gap:22px;height:70px}
+.logo{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:-.03em;font-size:18px}
+.logo .mark{width:30px;height:30px;flex:0 0 30px}
+.logo .mark path{fill:none;stroke:var(--pine);stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+.logo .mark .peak{fill:var(--signal);stroke:none}
+.nav-links{display:flex;gap:4px;margin-left:auto;align-items:center}
+.nav-links a{
+  font-size:14.5px;font-weight:500;color:var(--ink-2);padding:8px 14px;border-radius:100px;transition:.18s;
+}
+.nav-links a:hover{color:var(--ink);background:rgba(21,24,26,.05)}
+.nav-cta{display:flex;gap:10px;align-items:center;margin-left:14px}
+.burger{display:none;margin-left:auto;padding:8px;border-radius:8px}
+.burger span{display:block;width:20px;height:1.7px;background:var(--pine);border-radius:2px}
+.burger span+span{margin-top:5px}
+
+/* ---------- hero ---------- */
+.hero{position:relative;padding:76px 0 60px;overflow:hidden}
+.contours{
+  position:absolute;inset:-10% -5% auto -5%;height:130%;z-index:0;pointer-events:none;
+  opacity:.5;
+}
+.contours path{fill:none;stroke:var(--pine);stroke-width:1;opacity:.24}
+.contours path:nth-child(3n){stroke:var(--moss-2);opacity:.3}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.hero h1{margin:22px 0 0}
+.hero h1 em{font-style:italic;color:var(--moss-2);font-weight:400}
+.hero .lede{margin-top:22px;max-width:34ch}
+.hero-actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+.hero-meta{
+  display:flex;gap:26px;margin-top:38px;padding-top:26px;border-top:1px solid var(--line);
+  flex-wrap:wrap;
+}
+.hero-meta div{display:flex;flex-direction:column;gap:3px}
+.hero-meta b{font-family:var(--serif);font-size:26px;font-weight:600;letter-spacing:-.02em}
+.hero-meta span{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ---------- quest card ---------- */
+.quest-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow-lg);position:relative;overflow:hidden;
+}
+.quest-card::after{
+  content:'';position:absolute;inset:5px;border:1px solid var(--line-2);border-radius:9px;pointer-events:none;
+}
+.qc-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:15px 20px;border-bottom:1px dashed var(--line);background:rgba(21,24,26,.02);
+}
+.qc-id{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
+.tag{
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:5px 10px;border-radius:100px;background:var(--pine);color:#F2F4EA;
+}
+.tag.warm{background:var(--signal)}
+.tag.ghost{background:transparent;border:1px solid var(--line);color:var(--ink-2)}
+.qc-body{padding:24px 22px 22px}
+.qc-loc{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--moss-2);display:flex;align-items:center;gap:7px}
+.qc-title{font-family:var(--serif);font-size:clamp(25px,2.7vw,32px);font-weight:600;letter-spacing:-.03em;line-height:1.12;margin:11px 0 0}
+.qc-obj{margin-top:14px;color:var(--ink-2);font-size:15.5px;line-height:1.55}
+.qc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:20px}
+.qc-stats div{background:var(--card);padding:12px 13px}
+.qc-stats b{display:block;font-family:var(--mono);font-size:17px;font-weight:700;letter-spacing:-.02em}
+.qc-stats span{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+.qc-bonus{
+  margin-top:16px;padding:13px 15px;border-radius:10px;
+  background:rgba(196,72,27,.07);border:1px dashed rgba(196,72,27,.35);
+  display:flex;gap:11px;align-items:flex-start;
+}
+.qc-bonus svg{flex:0 0 17px;margin-top:2px}
+.qc-bonus p{font-size:14px;line-height:1.5}
+.qc-bonus b{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--signal);display:block;margin-bottom:3px}
+.qc-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-top:1px dashed var(--line);font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.06em}
+
+/* seal stamp */
+.seal{
+  position:absolute;right:16px;bottom:58px;width:88px;height:88px;opacity:.16;
+  transform:rotate(-14deg);pointer-events:none;
+}
+.seal circle,.seal path{fill:none;stroke:var(--signal);stroke-width:1.5}
+.seal text{font-family:var(--mono);font-size:8px;letter-spacing:.22em;fill:var(--signal)}
+
+/* ---------- section shell ---------- */
+section{position:relative;padding:96px 0}
+.sec-head{max-width:640px;margin-bottom:48px}
+.sec-head h2{margin-top:18px}
+.sec-head .lede{margin-top:16px}
+.rule{height:1px;background:var(--line);border:0;margin:0}
+.center{text-align:center;margin-left:auto;margin-right:auto}
+.center .eyebrow::before{display:none}
+
+/* ---------- demo generator ---------- */
+#demo{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+#demo::before{
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.55;
+  background-image:linear-gradient(var(--line-2) 1px,transparent 1px),linear-gradient(90deg,var(--line-2) 1px,transparent 1px);
+  background-size:34px 34px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 40%,#000 20%,transparent 78%);
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 40%,#000 20%,transparent 78%);
+}
+.demo-grid{display:grid;grid-template-columns:1fr 1.02fr;gap:44px;align-items:start}
+.panel{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:26px;box-shadow:var(--shadow);
+}
+.field{margin-bottom:22px}
+.field:last-of-type{margin-bottom:0}
+.field-label{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px;
+}
+.field-label b{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.field-label span{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{
+  padding:8px 15px;border-radius:100px;border:1px solid var(--line);
+  font-size:13.5px;font-weight:500;color:var(--ink-2);background:transparent;
+  transition:.16s;line-height:1.3;
+}
+.pill:hover{border-color:var(--ink-3);color:var(--ink)}
+.pill[aria-pressed="true"]{background:var(--pine);border-color:var(--pine);color:#F2F4EA}
+.pill[aria-pressed="true"]:hover{background:var(--moss-2);border-color:var(--moss-2)}
+.gen-row{display:flex;align-items:center;gap:14px;margin-top:26px;padding-top:22px;border-top:1px dashed var(--line);flex-wrap:wrap}
+.credits{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.credits b{color:var(--moss-2)}
+.dots{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--moss-2);display:block}
+.dots i.spent{background:transparent;box-shadow:inset 0 0 0 1px var(--ink-3);opacity:.6}
+
+.result{position:relative;min-height:430px}
+.result .quest-card{animation:cardIn .5s cubic-bezier(.2,.8,.3,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.rolling .qc-title,.rolling .qc-loc,.rolling .qc-obj{opacity:.35;filter:blur(.6px)}
+
+/* locked state */
+.lock{
+  text-align:center;padding:40px 30px;
+}
+.lock .lock-ico{width:44px;height:44px;margin:0 auto 18px;color:var(--moss-2)}
+.lock h3{font-family:var(--serif);font-size:27px;letter-spacing:-.03em}
+.lock p{margin-top:12px;color:var(--ink-2);font-size:15.5px;max-width:38ch;margin-left:auto;margin-right:auto}
+.capture{display:flex;gap:8px;margin-top:22px;max-width:400px;margin-left:auto;margin-right:auto}
+.capture input{
+  flex:1;padding:13px 16px;border-radius:100px;border:1px solid var(--line);
+  background:#fff;font:inherit;font-size:14.5px;color:var(--ink);outline:none;transition:.16s;min-width:0;
+}
+.capture input:focus{border-color:var(--moss-2);box-shadow:0 0 0 3px rgba(58,96,71,.16)}
+.capture input::placeholder{color:var(--ink-3)}
+.note{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-3);margin-top:14px}
+
+/* ---------- steps ---------- */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
+.step{padding:34px 30px 34px 0;border-right:1px solid var(--line);position:relative}
+.step:last-child{border-right:0;padding-right:0}
+.step:not(:first-child){padding-left:30px}
+.step .num{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--moss-2);
+  display:block;margin-bottom:16px;
+}
+.step h3{font-family:var(--serif);letter-spacing:-.025em}
+.step p{margin-top:11px;color:var(--ink-2);font-size:15.5px}
+.step .ico{width:36px;height:36px;margin-bottom:18px;color:var(--ink)}
+.step .ico *{fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- mail section ---------- */
+#mail{background:#1B3325;color:#EDE7DA;border-top:1px solid var(--moss);overflow:hidden}
+#mail .eyebrow{color:#A8C49A}
+#mail h2{color:#F7F2E7}
+#mail .lede{color:rgba(237,231,218,.72)}
+#mail .rule{background:rgba(237,231,218,.16)}
+.mail-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:52px;align-items:center}
+.mail-list{margin-top:34px;display:flex;flex-direction:column;gap:2px}
+.mail-list li{
+  list-style:none;display:flex;gap:14px;align-items:flex-start;
+  padding:16px 0;border-top:1px solid rgba(237,231,218,.14);
+}
+.mail-list li:last-child{border-bottom:1px solid rgba(237,231,218,.14)}
+.mail-list .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:#A8C49A;flex:0 0 42px;padding-top:3px}
+.mail-list b{display:block;font-size:15.5px;font-weight:600;color:#F7F2E7}
+.mail-list p{font-size:14.5px;color:rgba(237,231,218,.68);margin-top:3px}
+
+.envelope{
+  background:var(--card);border-radius:var(--r);box-shadow:0 30px 70px -30px rgba(0,0,0,.6);
+  overflow:hidden;transform:rotate(-.7deg);
+}
+.env-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--paper-2);border-bottom:1px solid var(--line)}
+.env-bar i{width:9px;height:9px;border-radius:50%;background:var(--ink-3);opacity:.4;display:block}
+.env-bar span{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:6px;letter-spacing:.06em}
+.env-body{padding:22px 24px 26px;color:var(--ink)}
+.env-from{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--line-2)}
+.env-av{width:32px;height:32px;border-radius:8px;background:var(--pine);display:grid;place-items:center;flex:0 0 32px}
+.env-av svg{width:18px;height:18px}
+.env-from b{font-size:14px;display:block;letter-spacing:-.01em}
+.env-from span{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.env-sub{font-family:var(--serif);font-size:23px;font-weight:600;letter-spacing:-.03em;margin-top:16px;line-height:1.15}
+.env-text{font-size:14.5px;color:var(--ink-2);margin-top:11px;line-height:1.55}
+.env-quest{margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:14px 15px;background:rgba(21,24,26,.02)}
+.env-quest .qq{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--moss-2)}
+.env-quest b{display:block;font-family:var(--serif);font-size:19px;letter-spacing:-.02em;margin-top:6px}
+.env-quest .row{display:flex;gap:16px;margin-top:11px;flex-wrap:wrap}
+.env-quest .row span{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+.env-btn{display:inline-block;margin-top:16px;padding:11px 20px;border-radius:100px;background:var(--pine);color:#F2F4EA;font-size:13.5px;font-weight:600}
+
+/* ---------- shared weekly / monthly quest ---------- */
+#weekly{background:var(--paper);position:relative}
+.week-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.shared{display:flex;flex-direction:column;gap:16px}
+.shot{
+  position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);
+  box-shadow:var(--shadow-lg);background:var(--card);
+}
+.shot img{width:100%;height:210px;object-fit:cover;display:block;background:var(--paper-3)}
+.shot .over{
+  position:absolute;top:0;left:0;right:0;height:210px;
+  background:linear-gradient(to top,rgba(12,22,16,.86),rgba(12,22,16,.15) 60%,rgba(12,22,16,.35));
+  display:flex;flex-direction:column;justify-content:space-between;padding:16px 18px;color:#EEF2E7;
+}
+.shot .over .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.shot .over h3{font-family:var(--serif);font-size:24px;letter-spacing:-.025em;line-height:1.15;max-width:22ch}
+.shot .over .loc{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(238,242,231,.75);margin-bottom:6px;display:block}
+.shot .body{padding:16px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.shot .body .st{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.shot .body .st b{color:var(--ink)}
+.shot .bar{
+  display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px dashed var(--line);
+  font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.05em;flex-wrap:wrap;
+}
+.progress{flex:1;min-width:120px;height:5px;border-radius:100px;background:var(--paper-3);overflow:hidden}
+.progress i{display:block;height:100%;width:38%;background:var(--moss-2);border-radius:100px}
+
+/* ---------- chat room ---------- */
+.chat{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.chat-head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);background:rgba(20,26,22,.02)}
+.chat-head .av{width:30px;height:30px;flex:0 0 30px;border-radius:9px;font-size:11px}
+.chat-head b{font-size:14px;display:block;letter-spacing:-.01em}
+.chat-head span{font-family:var(--mono);font-size:10px;color:var(--ink-3)}
+.chat-head .live{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--moss-2);display:flex;align-items:center;gap:6px}
+.chat-head .live i{width:6px;height:6px;border-radius:50%;background:var(--moss-2);display:block}
+.chat-body{padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.msg{max-width:82%;padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.45;background:var(--card);border:1px solid var(--line)}
+.msg b{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.msg.me{align-self:flex-end;background:var(--pine);color:#EEF2E7;border-color:var(--pine)}
+.msg.me b{color:rgba(238,242,231,.55)}
+.msg.pin{align-self:stretch;max-width:100%;background:rgba(58,96,71,.1);border:1px dashed rgba(58,96,71,.4);color:var(--ink-2);font-family:var(--mono);font-size:12px;text-align:center}
+
+/* ---------- proof ---------- */
+#proof{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.proof-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:48px;align-items:center}
+.proof-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-lg);overflow:hidden;position:relative}
+.proof-card .ph{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.proof-card .ph img{width:100%;height:150px;object-fit:cover;display:block;background:var(--paper-3)}
+.proof-body{padding:20px}
+.proof-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:14px}
+.proof-row div{background:var(--card);padding:11px 12px}
+.proof-row b{display:block;font-family:var(--mono);font-size:15px;font-weight:700}
+.proof-row span{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.strava{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--signal);letter-spacing:.06em;margin-top:14px}
+.quote{margin-top:14px;padding:13px 15px;border-left:2px solid var(--moss-2);background:rgba(58,96,71,.07);font-size:14.5px;color:var(--ink-2);line-height:1.5}
+.verdict{display:flex;align-items:center;gap:12px;padding:14px 20px;border-top:1px dashed var(--line);background:rgba(58,96,71,.08)}
+.verdict svg{flex:0 0 20px;color:var(--moss-2)}
+.verdict b{font-size:14px;display:block}
+.verdict span{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);letter-spacing:.05em}
+.verdict .stamp{
+  margin-left:auto;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--moss-2);border:1.5px solid var(--moss-2);border-radius:6px;padding:6px 10px;transform:rotate(-4deg);opacity:.85;
+}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-top:1px solid var(--line);margin-top:44px}
+.flow div{padding:22px 18px 0 0;border-right:1px solid var(--line)}
+.flow div:last-child{border-right:0}
+.flow div:not(:first-child){padding-left:18px}
+.flow b{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--moss-2);display:block;margin-bottom:9px}
+.flow p{font-size:14px;color:var(--ink-2);line-height:1.45}
+@media (max-width:980px){
+  .week-grid,.proof-grid{grid-template-columns:1fr;gap:34px}
+  .flow{grid-template-columns:1fr 1fr}
+  .flow div{border-right:0;border-bottom:1px solid var(--line);padding:18px 0}
+  .flow div:not(:first-child){padding-left:0}
+}
+
+/* ---------- terrain gallery ---------- */
+.terrains{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.terrain{
+  position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:.72;
+  border:1px solid var(--line);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:18px 16px;color:#fff;isolation:isolate;transition:transform .3s cubic-bezier(.2,.8,.3,1),box-shadow .3s;
+}
+.terrain:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg)}
+.terrain svg.scene{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+.terrain::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(10,14,12,.88) 8%,rgba(10,14,12,.28) 52%,rgba(10,14,12,.05))}
+.terrain b{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.terrain span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.62);margin-top:5px;display:block}
+
+/* ---------- companions / rope-up ---------- */
+#together{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.rope-grid{display:grid;grid-template-columns:1fr 1.02fr;gap:52px;align-items:center}
+.matches{display:flex;flex-direction:column;gap:12px;position:relative}
+.matches::before{
+  content:'';position:absolute;left:31px;top:44px;bottom:44px;width:2px;z-index:0;
+  background:repeating-linear-gradient(to bottom,var(--moss-2) 0 6px,transparent 6px 12px);opacity:.45;
+}
+.match{
+  display:flex;align-items:center;gap:14px;padding:15px 17px;background:var(--card);
+  border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);position:relative;z-index:1;
+  transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s;
+}
+.match:hover{transform:translateX(4px);box-shadow:var(--shadow-lg)}
+.match:nth-child(2){margin-left:26px}
+.match:nth-child(3){margin-left:13px}
+.av{
+  width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;
+  font-family:var(--mono);font-weight:700;font-size:14px;color:#F2F4EA;letter-spacing:.02em;
+  background:linear-gradient(145deg,var(--pine-2),var(--pine));
+}
+.av.b{background:linear-gradient(145deg,#5C7F62,#33553F)}
+.av.c{background:linear-gradient(145deg,#8A6A4A,#5A3F2C)}
+.match .who b{display:block;font-size:15.5px;letter-spacing:-.01em}
+.match .who span{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+.match .pct{
+  margin-left:auto;text-align:right;font-family:var(--mono);font-size:11px;color:var(--moss-2);
+  letter-spacing:.06em;line-height:1.5;flex:0 0 auto;
+}
+.match .pct b{display:block;font-size:16px}
+.meet{
+  margin-top:14px;display:flex;align-items:center;gap:12px;padding:14px 17px;border-radius:14px;
+  background:var(--pine);color:#EEF2E7;box-shadow:var(--shadow);
+}
+.meet svg{flex:0 0 18px;color:#9DC48C}
+.meet b{font-size:14.5px;display:block}
+.meet span{font-family:var(--mono);font-size:11px;color:rgba(238,242,231,.66);letter-spacing:.05em}
+.rope-steps{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+.rope-steps li{
+  list-style:none;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-2);border:1px solid var(--line);border-radius:100px;padding:8px 15px;background:rgba(255,255,255,.5);
+}
+.rope-steps li b{color:var(--moss-2)}
+.safety{
+  margin-top:26px;display:flex;gap:12px;align-items:flex-start;padding:15px 17px;border-radius:12px;
+  border:1px dashed var(--line);background:rgba(255,255,255,.45);
+}
+.safety svg{flex:0 0 17px;margin-top:2px;color:var(--moss-2)}
+.safety p{font-size:13.5px;color:var(--ink-2);line-height:1.5}
+/* party block inside a generated quest */
+.qc-party{
+  margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:13px 15px;
+  background:rgba(33,64,47,.05);
+}
+.qc-party > b{
+  font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--moss-2);display:block;margin-bottom:10px;
+}
+.qc-party .row{display:flex;align-items:center;gap:11px;padding:6px 0}
+.qc-party .row .av{width:30px;height:30px;flex:0 0 30px;border-radius:9px;font-size:11px}
+.qc-party .row i{font-style:normal;font-size:14px;font-weight:600}
+.qc-party .row em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:auto}
+@media (max-width:980px){
+  .rope-grid{grid-template-columns:1fr;gap:36px}
+  .match:nth-child(2),.match:nth-child(3){margin-left:0}
+  .matches::before{display:none}
+}
+
+/* ---------- stickers ---------- */
+#stickers{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden}
+.sticker-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:52px;align-items:center}
+.sheet{
+  position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:30px 24px;box-shadow:var(--shadow-lg);
+  display:grid;grid-template-columns:repeat(4,1fr);gap:18px 12px;place-items:center;
+}
+.sheet::before{
+  content:'';position:absolute;inset:12px;border:1px dashed var(--line);border-radius:12px;pointer-events:none;
+}
+.sheet-tag{
+  position:absolute;top:-11px;left:24px;background:var(--pine);color:#EEF2E7;font-family:var(--mono);
+  font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;padding:5px 12px;border-radius:100px;
+}
+.sticker{
+  width:100%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;text-align:center;
+  background:var(--pine);color:#EEF2E7;box-shadow:0 4px 10px -4px rgba(20,40,28,.55);
+  border:3px solid var(--card);outline:1px solid var(--line-2);
+  transition:transform .25s cubic-bezier(.2,.8,.3,1);position:relative;padding:6px;
+}
+.sticker:hover{transform:scale(1.09) rotate(0deg)!important;z-index:2}
+.sticker:nth-child(3n){background:var(--signal)}
+.sticker:nth-child(3n+2){background:var(--moss-2)}
+.sticker:nth-child(4n){background:#8A6A4A}
+.sticker:nth-child(odd){transform:rotate(-7deg)}
+.sticker:nth-child(even){transform:rotate(5deg)}
+.sticker:nth-child(4n){transform:rotate(-3deg)}
+.sticker:nth-child(6){transform:rotate(8deg)}
+.sticker.sq{border-radius:16px}
+.sticker b{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;line-height:1.25;display:block;padding:0 4px}
+.sticker svg{width:20px;height:20px;margin:0 auto 3px}
+.sticker svg *{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.unlocks{margin-top:30px;display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+.unlocks li{
+  list-style:none;display:flex;gap:11px;align-items:baseline;padding:11px 0;border-top:1px solid var(--line-2);
+  font-size:14.5px;color:var(--ink-2);
+}
+.unlocks li b{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--moss-2);flex:0 0 78px}
+
+/* ---------- community board ---------- */
+.board{margin-top:56px;border-top:1px solid var(--line);padding-top:34px}
+.board-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px}
+.board-head h3{font-family:var(--serif);letter-spacing:-.025em}
+.board-head p{font-size:14.5px;color:var(--ink-2);max-width:52ch;margin-top:8px}
+.posts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.post{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;
+}
+.post-top{display:flex;align-items:center;gap:11px}
+.post-top .av{width:38px;height:38px;flex:0 0 38px;border-radius:11px;font-size:12px}
+.post-top b{display:block;font-size:14.5px}
+.post-top span{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.post h4{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.post .facts{display:flex;flex-direction:column;gap:7px;font-family:var(--mono);font-size:11.5px;color:var(--ink-2)}
+.post .facts div{display:flex;gap:8px;align-items:center}
+.post .facts svg{flex:0 0 13px;color:var(--moss-2)}
+.post .spots{
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  padding:5px 11px;border-radius:100px;background:rgba(58,96,71,.12);color:var(--moss-2);align-self:flex-start;
+}
+.post .spots.last{background:rgba(196,72,27,.12);color:var(--signal)}
+.post .btn{width:100%;margin-top:auto}
+@media (max-width:980px){
+  .sticker-grid{grid-template-columns:1fr;gap:36px}
+  .posts{grid-template-columns:1fr}
+  .unlocks{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  .sheet{grid-template-columns:repeat(3,1fr);padding:24px 18px}
+}
+
+/* ---------- pricing ---------- */
+#pricing{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.plans{display:grid;grid-template-columns:1fr 1.22fr 1fr;gap:18px;align-items:center}
+.plan{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:28px 26px 30px;display:flex;flex-direction:column;position:relative;box-shadow:var(--shadow);
+}
+.plan.feature{
+  background:#1B3325;color:#EEF2E7;border-color:#1B3325;box-shadow:var(--shadow-lg);
+  transform:scale(1.045);padding:38px 32px 36px;border-radius:18px;z-index:2;
+}
+.plan.feature .muted,.plan.feature .plan-desc{color:rgba(238,242,231,.66)}
+.plan.feature ul li{color:rgba(238,242,231,.88);border-color:rgba(238,242,231,.14)}
+.plan.feature ul li svg{color:#9DC48C}
+.plan-flag{
+  position:absolute;top:-11px;left:26px;font-family:var(--mono);font-size:9.5px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;background:var(--signal);color:#fff;
+  padding:5px 12px;border-radius:100px;
+}
+.plan-name{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.plan.feature .plan-name{color:rgba(238,242,231,.58)}
+.plan-price{display:flex;align-items:baseline;gap:5px;margin-top:14px}
+.plan-price b{font-family:var(--serif);font-size:48px;font-weight:600;letter-spacing:-.04em;line-height:1}
+.plan-price span{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.plan.feature .plan-price span{color:rgba(238,242,231,.58)}
+.plan-desc{margin-top:12px;font-size:14.5px;color:var(--ink-2);min-height:44px}
+.plan ul{list-style:none;padding:0;margin:22px 0 26px;flex:1}
+.plan ul li{
+  display:flex;gap:11px;align-items:flex-start;font-size:14.5px;color:var(--ink-2);
+  padding:11px 0;border-top:1px solid var(--line-2);
+}
+.plan ul li svg{flex:0 0 15px;margin-top:4px;color:var(--moss-2)}
+.plan .btn{width:100%}
+.plan-note{font-family:var(--mono);font-size:10px;letter-spacing:.09em;color:var(--ink-3);text-align:center;margin-top:12px}
+.plan.feature .plan-note{color:rgba(238,242,231,.48)}
+.plan.feature .plan-price b{font-size:58px}
+.plan.feature .plan-desc{font-size:15.5px}
+.plan.feature ul li{font-size:15.5px;padding:12.5px 0}
+.plan.feature .btn{padding:16px 26px;font-size:16px}
+.plan.feature .btn-signal{background:var(--signal);color:#fff;box-shadow:0 10px 26px -12px rgba(196,72,27,.8)}
+.plan.feature .btn-signal:hover{background:var(--signal-2)}
+
+/* ---------- faq ---------- */
+.faq{border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{
+  list-style:none;cursor:pointer;padding:22px 0;display:flex;align-items:center;gap:18px;
+  font-size:17px;font-weight:600;letter-spacing:-.015em;transition:color .18s;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:hover{color:var(--moss-2)}
+.faq summary .sign{
+  margin-left:auto;flex:0 0 22px;width:22px;height:22px;position:relative;transition:transform .28s cubic-bezier(.2,.8,.3,1);
+}
+.faq summary .sign::before,.faq summary .sign::after{
+  content:'';position:absolute;background:currentColor;border-radius:2px;
+}
+.faq summary .sign::before{inset:10px 2px auto 2px;height:1.6px}
+.faq summary .sign::after{inset:2px 10px auto 10px;height:18px;width:1.6px;transition:opacity .28s}
+.faq details[open] summary .sign{transform:rotate(180deg)}
+.faq details[open] summary .sign::after{opacity:0}
+.faq summary .q{font-family:var(--mono);font-size:11px;color:var(--moss-2);letter-spacing:.1em;flex:0 0 30px}
+.faq .ans{padding:0 0 24px 48px;color:var(--ink-2);font-size:15.5px;max-width:74ch}
+
+/* ---------- final cta ---------- */
+#cta{padding:110px 0;text-align:center;position:relative;overflow:hidden}
+#cta .contours{opacity:.7}
+#cta h2{max-width:21ch;margin:20px auto 0}
+#cta .lede{max-width:48ch;margin:20px auto 0}
+#cta .hero-actions{justify-content:center}
+
+/* ---------- footer ---------- */
+footer{background:#14251B;color:rgba(238,242,231,.72);padding:56px 0 34px}
+footer .logo{color:var(--paper)}
+footer .logo .mark path{stroke:#EEF2E7}
+.foot-grid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:36px}
+.foot-grid h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(238,242,231,.44);font-weight:500}
+.foot-grid ul{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:10px}
+.foot-grid a{font-size:14.5px;transition:color .16s}
+.foot-grid a:hover{color:#EEF2E7}
+.foot-blurb{font-size:14.5px;margin-top:16px;max-width:34ch;color:rgba(238,242,231,.58)}
+.foot-bot{
+  margin-top:44px;padding-top:22px;border-top:1px solid rgba(238,242,231,.13);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:rgba(238,242,231,.44);
+}
+
+/* ---------- auth modal ---------- */
+.modal{
+  position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:20px;
+  background:rgba(20,37,27,.55);backdrop-filter:blur(6px);
+}
+.modal[open]{display:grid}
+.modal-card{
+  width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);
+  border-radius:18px;box-shadow:var(--shadow-lg);padding:30px 28px 26px;position:relative;
+  animation:cardIn .35s cubic-bezier(.2,.8,.3,1) both;
+}
+.modal-card h3{font-family:var(--serif);font-size:26px;letter-spacing:-.03em}
+.modal-card > p{margin-top:9px;color:var(--ink-2);font-size:14.5px}
+.modal-x{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--ink-3)}
+.modal-x:hover{background:rgba(20,26,22,.06);color:var(--ink)}
+.modal form{margin-top:20px;display:flex;flex-direction:column;gap:10px}
+.modal input{
+  padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:#fff;
+  font:inherit;font-size:14.5px;outline:none;transition:.16s;
+}
+.modal input:focus{border-color:var(--moss-2);box-shadow:0 0 0 3px rgba(58,96,71,.16)}
+.modal .btn{width:100%;margin-top:4px}
+.modal .alt{
+  display:flex;align-items:center;gap:12px;margin:18px 0 0;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+}
+.modal .alt::before,.modal .alt::after{content:'';height:1px;flex:1;background:var(--line)}
+.modal .oauth{
+  margin-top:14px;width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);
+  font-size:14.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:9px;background:#fff;transition:.16s;
+}
+.modal .oauth:hover{border-color:var(--ink);background:var(--paper)}
+.modal .swap{margin-top:18px;text-align:center;font-size:13.5px;color:var(--ink-2)}
+.modal .swap button{color:var(--moss-2);font-weight:600;text-decoration:underline}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(20px)}
+.reveal.in{opacity:1;transform:none;transition:opacity .7s cubic-bezier(.2,.8,.3,1),transform .7s cubic-bezier(.2,.8,.3,1)}
+
+/* ---------- responsive ---------- */
+@media (max-width:980px){
+  .hero-grid,.demo-grid,.mail-grid{grid-template-columns:1fr;gap:38px}
+  .plans{grid-template-columns:1fr;gap:14px}
+  .plan.feature{transform:none;padding:30px 26px 32px}
+  .steps{grid-template-columns:1fr}
+  .step{border-right:0;border-bottom:1px solid var(--line);padding:26px 0}
+  .step:not(:first-child){padding-left:0}
+  .step:last-child{border-bottom:0}
+  .terrains{grid-template-columns:repeat(2,1fr)}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:30px}
+  .nav-links{display:none}
+  .nav-links.open{
+    display:flex;position:absolute;top:70px;left:0;right:0;flex-direction:column;
+    background:var(--paper);border-bottom:1px solid var(--line);padding:12px 20px 18px;gap:2px;
+  }
+  .nav-links.open a{padding:12px 4px}
+  .burger{display:block}
+  .nav-cta .btn-ghost{padding:8px 13px;font-size:13.5px}
+  .nav-cta{margin-left:10px;gap:8px}
+  .nav-in{gap:12px}
+  .nav-cta{margin-left:12px}
+}
+@media (max-width:620px){
+  .nav-cta .btn-primary{display:none}
+  body{font-size:16px}
+  .wrap{padding:0 20px}
+  section{padding:66px 0}
+  .hero{padding:44px 0 30px}
+  .panel{padding:20px 18px}
+  .terrains{grid-template-columns:1fr 1fr;gap:10px}
+  .qc-stats{grid-template-columns:1fr 1fr}
+  .qc-stats div:last-child{grid-column:span 2}
+  .capture{flex-direction:column;border-radius:14px}
+  .capture .btn{width:100%}
+  .hero-meta{gap:20px}
+  .faq .ans{padding-left:0}
+  .seal{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a href="#" class="logo" aria-label="Summit Quest home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M2 25 L11 10 L16.5 19 L20 13.5 L30 25 Z"/>
+        <path class="peak" d="M11 10 L14.6 16 L7.4 16 Z"/>
+        <path d="M2 29 H30" opacity=".35"/>
+      </svg>
+      Summit&nbsp;Quest
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#demo">Try it</a>
+      <a href="#how">How it works</a>
+      <a href="#mail">By mail</a>
+      <a href="#together">Go together</a>
+      <a href="#weekly">Weekly</a>
+      <a href="#stickers">Stickers</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="nav-cta">
+      <button class="btn btn-ghost btn-sm" data-login>Log in</button>
+      <a href="#pricing" class="btn btn-primary btn-sm">Subscribe</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============================ HERO ============================ -->
+<section class="hero">
+  <svg class="contours" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path d="M600 400c-90 0-150 30-150 70s70 60 150 60 150-25 150-60-60-70-150-70z"/>
+    <path d="M600 350c-140 0-235 48-235 116s110 100 235 100 235-38 235-100-95-116-235-116z"/>
+    <path d="M600 300c-190 0-320 66-320 162s150 140 320 140 320-52 320-140-130-162-320-162z"/>
+    <path d="M600 250c-240 0-405 84-405 208s190 180 405 180 405-66 405-180-165-208-405-208z"/>
+    <path d="M600 200c-290 0-490 102-490 254s230 220 490 220 490-80 490-220-200-254-490-254z"/>
+    <path d="M600 150c-340 0-575 120-575 300s270 260 575 260 575-94 575-260-235-300-575-300z"/>
+    <path d="M600 100c-390 0-660 138-660 346s310 300 660 300 660-108 660-300-270-346-660-346z"/>
+    <path d="M600 50c-440 0-745 156-745 392s350 340 745 340 745-122 745-340S1040 50 600 50z"/>
+    <path d="M600 0C130 0-195 168-195 438s375 380 795 380 795-136 795-380S1070 0 600 0z"/>
+  </svg>
+
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Est. 2025 · Field-issued adventures</span>
+      <h1>You don't plan<br>the hike.<br><em>You accept it.</em></h1>
+      <p class="lede">Summit Quest turns what you're after into a real assignment — a place to be, an objective to complete, one bonus challenge you didn't ask for. Never the same one twice — and, if you want it, someone to walk it with.</p>
+      <div class="hero-actions">
+        <a href="#demo" class="btn btn-signal btn-lg">
+          See a sample quest
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <button class="btn btn-ghost btn-lg" data-login data-mode="signup">Create a free account</button>
+      </div>
+      <div class="hero-meta">
+        <div><b>3 min</b><span>To set up</span></div>
+        <div><b>∞</b><span>Combinations</span></div>
+        <div><b>0</b><span>Repeats, ever</span></div>
+        <div><b>1×/wk</b><span>Straight to your mail</span></div>
+      </div>
+    </div>
+
+    <div>
+      <article class="quest-card">
+        <div class="qc-head">
+          <span class="qc-id">Quest № 0417 · Issued 06:00</span>
+          <span class="tag warm">Hard</span>
+        </div>
+        <div class="qc-body">
+          <span class="qc-loc">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 11S1.8 7.6 1.8 4.8a4.2 4.2 0 118.4 0C10.2 7.6 6 11 6 11z" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="4.8" r="1.4" fill="currentColor"/></svg>
+            Malá Fatra · Slovakia
+          </span>
+          <h2 class="qc-title">Stand on Veľký Rozsutec before the valley wakes up.</h2>
+          <p class="qc-obj">Start from Štefanová in the dark. Take the chained ridge route, not the tourist path. Be on the summit for first light and stay until the cloud below you breaks.</p>
+          <div class="qc-stats">
+            <div><b>14.2</b><span>Kilometres</span></div>
+            <div><b>1 180</b><span>Metres up</span></div>
+            <div><b>6h 40</b><span>Est. moving</span></div>
+          </div>
+          <div class="qc-bonus">
+            <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><path d="M8.5 1.5l2 4.4 4.8.6-3.5 3.3.9 4.7-4.2-2.3-4.2 2.3.9-4.7L1.7 6.5l4.8-.6 2-4.4z" stroke="#C4481B" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            <p><b>Bonus challenge</b>Photograph the summit cross with nobody else in frame. If someone beats you up there, buy them a coffee at the bottom.</p>
+          </div>
+        </div>
+        <svg class="seal" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="46"/><circle cx="50" cy="50" r="38"/>
+          <path d="M30 60 L42 40 L50 52 L56 44 L70 60 Z"/>
+          <text x="50" y="26" text-anchor="middle">SUMMIT QUEST</text>
+          <text x="50" y="80" text-anchor="middle">ISSUED</text>
+        </svg>
+        <div class="qc-foot">
+          <span>Weather window: 04:40 – 11:00</span>
+          <span>Expires in 6 days</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ DEMO ============================ -->
+<section id="demo">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Sample · No account needed</span>
+      <h2>Answer three things.<br>See what an assignment looks like.</h2>
+      <p class="lede">This is a taster, and it is deliberately dull: the demo only knows one place — <b>Slnečné skaly</b> above Rajecké Teplice. Real quests are chosen for you, from anywhere in your range, and they live in your account.</p>
+    </div>
+
+    <div class="demo-grid">
+      <!-- controls -->
+      <div class="panel" id="controls">
+        <div class="field">
+          <div class="field-label"><b>Where should it send you?</b><span>01 / Range</span></div>
+          <div class="pills" data-group="range">
+            <button class="pill" data-val="My country" aria-pressed="true">My country</button>
+            <button class="pill" data-val="Europe" data-locked="1" aria-pressed="false">Europe · Pro</button>
+            <button class="pill" data-val="Worldwide" data-locked="1" aria-pressed="false">Worldwide · Pro</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label"><b>What ground do you want under you?</b><span>02 / Terrain</span></div>
+          <div class="pills" data-group="terrain">
+            <button class="pill" data-val="ridge" aria-pressed="true">Ridgeline</button>
+            <button class="pill" data-val="forest" aria-pressed="false">Deep forest</button>
+            <button class="pill" data-val="water" aria-pressed="false">Lakes &amp; rivers</button>
+            <button class="pill" data-val="coast" aria-pressed="false">Coast</button>
+            <button class="pill" data-val="alpine" aria-pressed="false">High alpine</button>
+          </div>
+        </div>
+        
+        
+        
+        <div class="field">
+          <div class="field-label"><b>Who's coming?</b><span>03 / Rope</span></div>
+          <div class="pills" data-group="party">
+            <button class="pill" data-val="solo" aria-pressed="true">Just me</button>
+            <button class="pill" data-val="duo" aria-pressed="false">Someone I already know</button>
+            <button class="pill" data-val="match" aria-pressed="false">Find me a partner</button>
+            <button class="pill" data-val="group" aria-pressed="false">Match me with a group</button>
+          </div>
+        </div>
+
+        <div class="gen-row">
+          <button class="btn btn-signal" id="genBtn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.6v3M8 11.4v3M1.6 8h3M11.4 8h3M3.5 3.5l2.1 2.1M10.4 10.4l2.1 2.1M12.5 3.5l-2.1 2.1M5.6 10.4l-2.1 2.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            See a sample quest
+          </button>
+          <span class="credits" id="credits">Free quests left: <b>3</b>
+            <span class="dots" id="dots"><i></i><i></i><i></i></span>
+          </span>
+        </div>
+      </div>
+
+      <!-- result -->
+      <div class="result" id="result"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ HOW ============================ -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The mechanism</span>
+      <h2>Decision fatigue is the thing that keeps you home.</h2>
+      <p class="lede">Most weekends die in a browser tab. Summit Quest removes the choosing and leaves the going.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12"/><path d="M16 10v6l4 3"/></svg>
+        <span class="num">STEP 01</span>
+        <h3>You set the constraints once</h3>
+        <p>Range, terrain, distance, difficulty, time window, party size. Two minutes. You can change them any time, and the generator remembers.</p>
+      </div>
+      <div class="step">
+        <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 24l8-13 5 8 3-5 8 10z"/><circle cx="24" cy="8" r="3"/></svg>
+        <span class="num">STEP 02</span>
+        <h3>The generator picks, not you</h3>
+        <p>It cross-references terrain data, season, daylight and everything it has already sent you, then commits to one real place with one clear objective.</p>
+      </div>
+      <div class="step">
+        <svg class="ico" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h22v16H5z"/><path d="M5 9l11 8 11-8"/><path d="M12 27h8"/></svg>
+        <span class="num">STEP 03</span>
+        <h3>It arrives and you answer it</h3>
+        <p>Online for the demo, in your inbox once you subscribe. Objective, bonus challenge, place to be. Log it when it's done and it never comes back.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ MAIL ============================ -->
+<section id="mail">
+  <div class="wrap mail-grid">
+    <div>
+      <span class="eyebrow">For subscribers</span>
+      <h2>The website is the demo.<br>The inbox is the product.</h2>
+      <p class="lede" style="margin-top:18px">Once you're subscribed you stop visiting a site at all. The quest finds you on the morning you agreed to, already decided, already timed to your daylight.</p>
+      <ul class="mail-list">
+        <li><span class="k">06:00</span><div><b>It lands before you're properly awake</b><p>Sent the morning of your chosen day, so the decision is made before the excuses arrive.</p></div></li>
+        <li><span class="k">ONE</span><div><b>One quest. No feed, no options.</b><p>Nothing to scroll through. The weekly one is the same for everybody, so the only comparing happens afterwards.</p></div></li>
+        <li><span class="k">LOG</span><div><b>Reply to log it</b><p>Answer the mail with a photo or a word and it goes into your quest history — and never gets issued again.</p></div></li>
+        <li><span class="k">SKIP</span><div><b>Skip without guilt</b><p>Weather turned, life happened. One tap re-rolls it or pauses you until you're ready.</p></div></li>
+      </ul>
+    </div>
+
+    <div class="envelope">
+      <div class="env-bar"><i></i><i></i><i></i><span>Inbox — Saturday, 06:00</span></div>
+      <div class="env-body">
+        <div class="env-from">
+          <div class="env-av">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M2 25 L11 10 L16.5 19 L20 13.5 L30 25 Z" fill="none" stroke="#F3EFE6" stroke-width="2" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <b>Summit Quest</b>
+            <span>quests@summitquest.app · to you</span>
+          </div>
+        </div>
+        <p class="env-sub">Quest № 0418 — you have until Sunday.</p>
+        <p class="env-text">Good morning. The forecast opened a window on the Slovenský raj ladders and you haven't been in a gorge this year. Boots by the door, headlamp in the bag.</p>
+        <div class="env-quest">
+          <span class="qq">Suchá Belá Gorge · Slovakia</span>
+          <b>Climb the gorge ladders while the water is still loud.</b>
+          <div class="row"><span>11.4 km</span><span>640 m ↑</span><span>Moderate</span><span>Start 07:15</span></div>
+        </div>
+        <span class="env-btn">Accept quest →</span>
+        <p class="env-text" style="font-size:13px;margin-top:14px">Not today? <u>Re-roll</u> · <u>Pause me a week</u></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ WEEKLY / MONTHLY ============================ -->
+<!-- NOTE: demo photography is hot-linked from Unsplash. Swap for your own before launch. -->
+<section id="weekly">
+  <div class="wrap week-grid">
+    <div>
+      <span class="eyebrow">Same quest, same week, everyone</span>
+      <h2>One quest a week.<br>The whole community gets it.</h2>
+      <p class="lede" style="margin-top:18px">The weekly and the monthly quest are identical for every member — same objective, same window, same bonus challenge. That's what makes the rest of it work: you can compare logs with someone you've never met, run into three other people on the same ridge at dawn, and argue about the bonus in the thread afterwards.</p>
+      <p class="muted" style="margin-top:16px;font-size:15.5px">Your personal quests are still yours alone — generated from your preferences, on demand or on your own schedule. The weekly is the one everybody shares.</p>
+      <ul class="rope-steps" style="margin-top:26px">
+        <li><b>MON</b> &nbsp;Weekly drops, 06:00</li>
+        <li><b>SUN</b> &nbsp;Log closes 23:59</li>
+        <li><b>1st</b> &nbsp;Monthly — the big one</li>
+      </ul>
+    </div>
+    <div class="shared">
+      <article class="shot">
+        <img src="https://images.unsplash.com/photo-1551632811-561732d1e306?w=900&q=70&auto=format&fit=crop" alt="Hiker on a mountain ridge at sunrise" loading="lazy" referrerpolicy="no-referrer">
+        <div class="over">
+          <div class="top"><span class="tag">Week 33</span><span class="tag ghost" style="background:rgba(238,242,231,.14);border-color:rgba(238,242,231,.3);color:#EEF2E7">Everyone</span></div>
+          <div>
+            <span class="loc">Malá Fatra · Slovakia</span>
+            <h3>Be on Veľký Rozsutec for first light.</h3>
+          </div>
+        </div>
+        <div class="body">
+          <span class="st"><b>14.2</b> km</span><span class="st"><b>1 180</b> m ↑</span><span class="st"><b>Hard</b></span><span class="st">Window <b>04:40–11:00</b></span>
+        </div>
+        <div class="bar">
+          <span>347 accepted · 128 logged</span><span class="progress"><i></i></span><span>Closes Sun 23:59</span>
+        </div>
+      </article>
+      <article class="shot">
+        <img src="https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=900&q=70&auto=format&fit=crop" alt="High mountain range above the clouds" loading="lazy" referrerpolicy="no-referrer">
+        <div class="over" style="height:210px">
+          <div class="top"><span class="tag warm">August</span><span class="tag ghost" style="background:rgba(238,242,231,.14);border-color:rgba(238,242,231,.3);color:#EEF2E7">Monthly</span></div>
+          <div>
+            <span class="loc">Vysoké Tatry · Slovakia</span>
+            <h3>Cross the Tatras hut to hut in one weekend.</h3>
+          </div>
+        </div>
+        <div class="bar"><span>Opens 1 Aug · 61 attempting</span><span class="progress"><i style="width:22%"></i></span><span>2 days left</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TOGETHER ============================ -->
+<section id="together">
+  <div class="wrap rope-grid">
+    <div>
+      <span class="eyebrow">Rope up · optional, always</span>
+      <h2>Nobody says you<br>have to go alone.</h2>
+      <p class="lede" style="margin-top:18px">Ask for company and Summit Quest looks for people who were issued a compatible quest — same range, same morning, similar pace — and offers you each other. Nothing is shared until you both say yes.</p>
+      <ul class="rope-steps">
+        <li><b>01</b> &nbsp;Tick "find me someone"</li>
+        <li><b>02</b> &nbsp;We match the quest, not the profile</li>
+        <li><b>03</b> &nbsp;Both accept</li>
+        <li><b>04</b> &nbsp;A thread opens, 48 h before</li>
+        <li><b>05</b> &nbsp;Meet at the trailhead</li>
+      </ul>
+      <div class="safety">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><path d="M8.5 1.6l5.6 2.3v4.3c0 3.4-2.3 6.1-5.6 7.2-3.3-1.1-5.6-3.8-5.6-7.2V3.9l5.6-2.3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6.1 8.4l1.8 1.8 3.2-3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p><b>How we keep it sane:</b> first names only, verified email, no home addresses, no public profiles to browse. You see a person once you've both accepted the same quest — and either of you can unmatch, block or report without a word of explanation.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="matches">
+        <div class="match">
+          <span class="av">TK</span>
+          <div class="who"><b>Tomáš K.</b><span>Žilina · 12 km away · 34 quests logged</span></div>
+          <span class="pct"><b>94%</b>match</span>
+        </div>
+        <div class="match">
+          <span class="av b">LM</span>
+          <div class="who"><b>Lucia M.</b><span>Martin · 21 km away · steady 4.2 km/h</span></div>
+          <span class="pct"><b>88%</b>match</span>
+        </div>
+        <div class="match">
+          <span class="av c">PH</span>
+          <div class="who"><b>Peter H.</b><span>Rajec · 18 km away · likes sunrise starts</span></div>
+          <span class="pct"><b>81%</b>match</span>
+        </div>
+      </div>
+      <div class="meet">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="7.2" stroke="currentColor" stroke-width="1.4"/><path d="M9 5v4.3l2.8 1.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <div><b>Meet point: Štefanová car park, 04:40</b><span>Agreed by both · added to the quest mail</span></div>
+      </div>
+      <p class="note" style="text-align:center">Matching is off by default. Solo stays solo, forever, if that's the point for you.</p>
+    </div>
+  </div>
+  <div class="wrap">
+      <div class="board">
+        <div class="board-head">
+          <div>
+            <span class="eyebrow">The board</span>
+            <h3 style="margin-top:12px">Open quests this weekend.</h3>
+            <p>Slovak hiking groups have worked like this for years: somebody posts where and when, and whoever is free turns up. Summit Quest keeps that — it just attaches a real quest to the post, so everyone arrives knowing what the day is for.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" data-login data-mode="signup">Post your quest</button>
+        </div>
+        <div class="posts">
+        <article class="post">
+          <div class="post-top"><span class="av c">MD</span><div><b>Marek D.</b><span>Terchová · 41 quests</span></div></div>
+          <h4>Rozsutec ridge, sunrise start</h4>
+          <div class="facts"><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Saturday 04:40 · Štefanová</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>14.2 km · 1 180 m ↑ · Hard</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Steady 4 km/h, no rush on the chains</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Two seats in the car from Žilina</div></div>
+          <span class="spots ">2 spots left</span>
+          <button class="btn btn-ghost btn-sm" data-login>Ask to join</button>
+        </article>
+        <article class="post">
+          <div class="post-top"><span class="av b">LM</span><div><b>Lucia M.</b><span>Martin · 18 quests</span></div></div>
+          <h4>Suchá Belá gorge before the crowds</h4>
+          <div class="facts"><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Sunday 07:15 · Podlesok</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>11.4 km · 640 m ↑ · Moderate</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Relaxed pace, photo stops allowed</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Meeting at the car park</div></div>
+          <span class="spots ">3 spots left</span>
+          <button class="btn btn-ghost btn-sm" data-login>Ask to join</button>
+        </article>
+        <article class="post">
+          <div class="post-top"><span class="av b">ZB</span><div><b>Zuzana B.</b><span>Púchov · 26 quests</span></div></div>
+          <h4>Night quest — Vápeč under a full moon</h4>
+          <div class="facts"><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Friday 21:00 · Horná Poruba</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>8.6 km · 720 m ↑ · Moderate</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Headlamps, spare batteries, tea at the top</div><div><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.4" stroke="currentColor" stroke-width="1.2"/></svg>Beginners welcome, we wait</div></div>
+          <span class="spots last">Last spot</span>
+          <button class="btn btn-ghost btn-sm" data-login>Ask to join</button>
+        </article>
+        </div>
+        <div class="rope-grid" style="margin-top:38px;align-items:center">
+          <div>
+            <span class="eyebrow">And then you actually talk</span>
+            <h3 style="font-family:var(--serif);letter-spacing:-.025em;margin-top:12px">Join a quest and a room opens.</h3>
+            <p class="muted" style="margin-top:14px;font-size:15.5px">Propose any quest you're thinking of doing — one of yours, the weekly, or something you invented. People ask to join, you accept who you want, and the moment there are two of you a private room opens: meeting place, parking, who's driving, what the weather did overnight. It closes a week after the quest, and nothing in it is public.</p>
+            <ul class="rope-steps" style="margin-top:22px">
+              <li><b>01</b> &nbsp;Post the quest</li>
+              <li><b>02</b> &nbsp;Accept who joins</li>
+              <li><b>03</b> &nbsp;Room opens</li>
+              <li><b>04</b> &nbsp;Agree the meeting point</li>
+              <li><b>05</b> &nbsp;Go</li>
+            </ul>
+          </div>
+          <div class="chat">
+            <div class="chat-head">
+              <span class="av c">MD</span>
+              <div><b>Rozsutec ridge, sunrise start</b><span>Marek, Lucia, you · Saturday</span></div>
+              <span class="live"><i></i>Open</span>
+            </div>
+            <div class="chat-body">
+              <div class="msg pin">📍 Meeting point pinned: Štefanová car park, 04:40</div>
+              <div class="msg"><b>Marek D.</b>Parking fills by five, I'll be there quarter past four. Two seats free from Žilina if anyone needs one.</div>
+              <div class="msg me"><b>You</b>I'll take one. Chains on the ridge — are they fine when it's damp?</div>
+              <div class="msg"><b>Lucia M.</b>Fine, just slow. Forecast says it clears by six, we should be above the cloud for sunrise.</div>
+              <div class="msg pin">Quest logged Saturday 11:20 · proof pending</div>
+            </div>
+          </div>
+        </div>
+        <p class="note" style="text-align:center;margin-top:26px">A community, not a contact list. There are no profiles to browse — you meet people through the quest they opened.</p>
+      </div>
+  </div>
+</section>
+
+<!-- ============================ TERRAIN ============================ -->
+<section id="terrain">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Where it sends you</span>
+      <h2>Five kinds of ground, one kind of morning.</h2>
+    </div>
+    <div class="terrains">
+      <article class="terrain">
+        <svg class="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F5B872"/><stop offset="1" stop-color="#8A4A3C"/></linearGradient></defs>
+          <rect width="100" height="140" fill="url(#g1)"/>
+          <circle cx="70" cy="34" r="11" fill="#FFF0C9" opacity=".85"/>
+          <path d="M0 96 L26 52 L44 84 L58 62 L100 110 V140 H0Z" fill="#4A3A46"/>
+          <path d="M0 118 L30 84 L52 112 L74 92 L100 122 V140 H0Z" fill="#2A2230"/>
+        </svg>
+        <b>Ridgeline</b><span>Exposure</span>
+      </article>
+      <article class="terrain">
+        <svg class="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFD8A8"/><stop offset="1" stop-color="#1F3324"/></linearGradient></defs>
+          <rect width="100" height="140" fill="url(#g2)"/>
+          <g fill="#2E4A33"><path d="M18 120 L28 60 L38 120Z"/><path d="M46 128 L58 44 L70 128Z"/><path d="M72 122 L82 66 L92 122Z"/><path d="M2 124 L12 74 L22 124Z"/></g>
+          <g fill="#16261B" opacity=".85"><path d="M30 140 L42 88 L54 140Z"/><path d="M62 140 L76 92 L90 140Z"/><path d="M-4 140 L8 96 L20 140Z"/></g>
+        </svg>
+        <b>Deep forest</b><span>Silence</span>
+      </article>
+      <article class="terrain">
+        <svg class="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A8C9DE"/><stop offset=".55" stop-color="#4E7C93"/><stop offset="1" stop-color="#16323F"/></linearGradient></defs>
+          <rect width="100" height="140" fill="url(#g3)"/>
+          <path d="M0 74 L30 40 L52 74 L70 52 L100 82 V88 H0Z" fill="#37596B"/>
+          <rect y="88" width="100" height="52" fill="#1E4353"/>
+          <g stroke="#CFE6F2" stroke-width="1.4" opacity=".5"><path d="M12 100h26M52 100h22M22 110h34M60 118h22M8 122h30"/></g>
+        </svg>
+        <b>Lakes &amp; rivers</b><span>Cold water</span>
+      </article>
+      <article class="terrain">
+        <svg class="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD9A0"/><stop offset=".5" stop-color="#63B6C2"/><stop offset="1" stop-color="#12545F"/></linearGradient></defs>
+          <rect width="100" height="140" fill="url(#g4)"/>
+          <circle cx="30" cy="30" r="9" fill="#FFF3D6"/>
+          <path d="M0 66 C22 58 34 74 56 66 C74 60 86 70 100 64 V140 H0Z" fill="#2E8794" opacity=".9"/>
+          <path d="M0 92 C26 84 40 98 62 90 C80 84 90 94 100 88 V140 H0Z" fill="#12545F"/>
+          <path d="M0 122 C30 116 44 126 68 120 C84 116 92 122 100 118 V140 H0Z" fill="#E8D9B4"/>
+        </svg>
+        <b>Coast</b><span>Long light</span>
+      </article>
+      <article class="terrain">
+        <svg class="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B3A56"/><stop offset="1" stop-color="#0C1220"/></linearGradient></defs>
+          <rect width="100" height="140" fill="url(#g5)"/>
+          <g fill="#EFF4FF" opacity=".8"><circle cx="18" cy="20" r="1.2"/><circle cx="42" cy="12" r="1"/><circle cx="66" cy="26" r="1.3"/><circle cx="86" cy="14" r="1"/><circle cx="30" cy="36" r=".9"/><circle cx="78" cy="40" r="1.1"/></g>
+          <path d="M0 100 L24 46 L40 78 L54 56 L74 84 L100 58 V140 H0Z" fill="#3C4C6B"/>
+          <path d="M24 46 L33 64 H15Z M54 56 L61 70 H47Z" fill="#EDF2FF"/>
+          <path d="M0 118 L28 90 L50 116 L72 96 L100 120 V140 H0Z" fill="#161E2F"/>
+        </svg>
+        <b>High alpine</b><span>Thin air</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ PROOF ============================ -->
+<section id="proof">
+  <div class="wrap proof-grid">
+    <div>
+      <span class="eyebrow">Logging &amp; approval</span>
+      <h2>Nothing counts<br>until it's checked.</h2>
+      <p class="lede" style="margin-top:18px">When the quest is done, everyone who was on it files proof: a couple of photos, a Strava or GPX link, or just an honest note about what happened. A human on our side reads it.</p>
+      <p class="muted" style="margin-top:16px;font-size:15.5px">Approved means it's locked into your history, the sticker unlocks, and that quest is retired for you forever. Rejected means we'll tell you why — usually a missing photo, not a suspicion. Turned back at the saddle because the weather closed in? Say so and log it as an honest retreat; that gets approved too.</p>
+      <div class="safety" style="margin-top:24px">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><path d="M8.5 1.6l5.6 2.3v4.3c0 3.4-2.3 6.1-5.6 7.2-3.3-1.1-5.6-3.8-5.6-7.2V3.9l5.6-2.3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6.1 8.4l1.8 1.8 3.2-3.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p><b>Why we bother:</b> the stickers are physical and the weekly leaderboard is shared, so "I did it" has to mean something. Your photos stay private to the quest unless you tick the box to show them on the community feed.</p>
+      </div>
+    </div>
+
+    <div>
+      <article class="proof-card">
+        <div class="ph">
+          <img src="https://images.unsplash.com/photo-1502126324834-38f8e02d7160?w=900&q=70&auto=format&fit=crop" alt="Summit photo submitted as proof" loading="lazy" referrerpolicy="no-referrer">
+          <img src="https://images.unsplash.com/photo-1586022045497-31fcf76fa6cc?w=900&q=70&auto=format&fit=crop" alt="Trail marker photo submitted as proof" loading="lazy" referrerpolicy="no-referrer">
+        </div>
+        <div class="proof-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <span class="qc-loc" style="margin:0"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 11S1.8 7.6 1.8 4.8a4.2 4.2 0 118.4 0C10.2 7.6 6 11 6 11z" stroke="currentColor" stroke-width="1.3"/></svg>Quest № 0417 · Veľký Rozsutec</span>
+            <span class="tag ghost">2 members</span>
+          </div>
+          <div class="proof-row">
+            <div><b>14.6</b><span>km</span></div>
+            <div><b>1 204</b><span>m ↑</span></div>
+            <div><b>6:12</b><span>moving</span></div>
+            <div><b>04:41</b><span>started</span></div>
+          </div>
+          <span class="strava">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor" aria-hidden="true"><path d="M5.6.5L1.9 7.7h2.2L5.6 4.8l1.5 2.9h2.2L5.6.5zm1.5 7.2l-1.1 2.1-1.1-2.1H3.1l2.9 5.3 2.9-5.3H7.1z"/></svg>
+            Strava activity attached · verified GPX
+          </span>
+          <p class="quote">"Cloud broke at 05:58, about ten minutes after we got up. Chains were greasy but fine. Bonus done — photo two, nobody else in frame, we beat the Bratislava group by four minutes." — Marek D.</p>
+        </div>
+        <div class="verdict">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8.4" stroke="currentColor" stroke-width="1.5"/><path d="M6.2 10.2l2.6 2.6 5-5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div><b>Approved — both members credited</b><span>Reviewed by an admin · 4 h after submission</span></div>
+          <span class="stamp">Logged</span>
+        </div>
+      </article>
+      <p class="note" style="text-align:center">Sticker unlocked: <b style="color:var(--moss-2)">Ridge Runner</b> · quest retired from your pool</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="flow">
+      <div><b>01 · POST</b><p>Someone proposes a quest, or the weekly drops for everybody at once.</p></div>
+      <div><b>02 · JOIN</b><p>Others ask to join. The host accepts who they want, spots run out.</p></div>
+      <div><b>03 · ROOM</b><p>A private room opens. Meeting place, parking, transport, weather.</p></div>
+      <div><b>04 · GO</b><p>You turn up and do the thing. That part we can't help with.</p></div>
+      <div><b>05 · PROOF</b><p>Photos, Strava or a note. An admin approves it and the sticker lands.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ STICKERS ============================ -->
+<section id="stickers">
+  <div class="wrap sticker-grid">
+    <div>
+      <span class="eyebrow">Levels, but physical</span>
+      <h2>Every step you clear<br>comes with a sticker.</h2>
+      <p class="lede" style="margin-top:18px">Not a badge that glows on a screen for one second. A real die-cut sticker, drawn for that one achievement, and it's yours to put somewhere in the world.</p>
+      <ul class="unlocks">
+        <li><b>Quest 1</b> First Light — you actually went</li>
+        <li><b>&times;10</b> Ten quests logged, no repeats</li>
+        <li><b>First night</b> Night Shift</li>
+        <li><b>First match</b> Roped Up — you went with someone</li>
+        <li><b>5 regions</b> Cartographer</li>
+        <li><b>1 000 m</b> In one single push</li>
+      </ul>
+      <p class="muted" style="margin-top:24px;font-size:15.5px">Unlocked in your account the moment you log the quest. Subscribers get the printed sheet in the post — then stick it on your bottle, your frame, a hut wall, a signpost at the end of a road nobody drives down. Photograph where it ended up and it goes on the community map.</p>
+      <div class="hero-actions" style="margin-top:26px">
+        <button class="btn btn-signal" data-login data-mode="signup">Start collecting</button>
+      </div>
+    </div>
+    <div>
+      <div class="sheet">
+        <span class="sheet-tag">Sheet 01 · posted to subscribers</span>
+        <div class="sticker "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19L9 7l4 7 3-4 6 9z"/></svg><b>FIRST<br>LIGHT</b></div>
+        <div class="sticker sq"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6"/><path d="M12 2v2.6M12 19.4V22M2 12h2.6M19.4 12H22M4.9 4.9l1.9 1.9M17.2 17.2l1.9 1.9M19.1 4.9l-1.9 1.9M6.8 17.2l-1.9 1.9"/></svg><b>SUNRISE<br>&times;10</b></div>
+        <div class="sticker "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg><b>NIGHT<br>SHIFT</b></div>
+        <div class="sticker sq"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3.4"/><circle cx="16" cy="16" r="3.4"/><path d="M10.4 10.4l3.2 3.2"/></svg><b>ROPED<br>UP</b></div>
+        <div class="sticker "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9c3-2.4 5-2.4 8 0s5 2.4 8 0M2 15c3-2.4 5-2.4 8 0s5 2.4 8 0"/></svg><b>GORGE<br>RAT</b></div>
+        <div class="sticker sq"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l5 8h-3l4 7H6l4-7H7z"/><path d="M12 18v3"/></svg><b>DEEP<br>WOODS</b></div>
+        <div class="sticker "><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/><path d="M9 4v13M15 6.5v13"/></svg><b>5<br>REGIONS</b></div>
+        <div class="sticker sq"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h4v7l7 4v7H4v-6l2-2z"/><path d="M4 17h13"/></svg><b>1000 m<br>IN ONE GO</b></div>
+      </div>
+      <p class="note" style="text-align:center">Peel, stick, photograph, log. The sheet changes every season.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ PRICING ============================ -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="sec-head center" style="text-align:center">
+      <span class="eyebrow">Plans</span>
+      <h2>Try it here. Subscribe to stop deciding.</h2>
+      <p class="lede">Cancel any time, from the footer of any quest you've ever been sent.</p>
+    </div>
+
+    <div class="plans">
+      <div class="plan">
+        <span class="plan-name">Free</span>
+        <div class="plan-price"><b>€0</b><span>/ forever</span></div>
+        <p class="plan-desc">An account and three real quests. Enough to find out whether being told what to do suits you.</p>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Free account + 3 real quests</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Your own country only</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Quest history &amp; digital stickers</li>
+          <li style="opacity:.5"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M4 4l7 7M11 4l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>No inbox delivery</li><li style="opacity:.5"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M4 4l7 7M11 4l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>No partner matching</li>
+        </ul>
+        <button class="btn btn-ghost" data-login data-mode="signup">Create a free account</button>
+        <p class="plan-note">Free forever · no card</p>
+      </div>
+
+      <div class="plan feature">
+        <span class="plan-flag">Most taken</span>
+        <span class="plan-name">Explorer</span>
+        <div class="plan-price"><b>€11</b><span>/ month</span></div>
+        <p class="plan-desc">The real thing: unlimited quests, worldwide, delivered to your inbox on the day you pick.</p>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited quest generation</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Worldwide range, any terrain</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Quests by mail, on your schedule</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Saved quests &amp; full history</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Re-roll, skip and pause</li><li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Partner matching &amp; the community board</li><li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Printed sticker sheets, posted to you</li>
+        </ul>
+        <a href="#" class="btn btn-signal">Start with Explorer</a>
+        <p class="plan-note">Billed via Stripe · cancel anytime</p>
+      </div>
+
+      <div class="plan">
+        <span class="plan-name">Ultra Explorer</span>
+        <div class="plan-price"><b>€31</b><span>/ month</span></div>
+        <p class="plan-desc">For people who want the quest built around something specific — a season, a range, a goal.</p>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Explorer</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Custom quests you commission</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Multi-day and trip-week quests</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Priority support, real replies</li>
+          <li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Private crews &amp; invite links</li><li><svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M2.5 8l3.5 3.5L12.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Group quests, one mail each</li>
+        </ul>
+        <a href="#" class="btn btn-primary">Go Ultra</a>
+        <p class="plan-note">Billed via Stripe · cancel anytime</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FAQ ============================ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Before you ask</span>
+      <h2>Reasonable questions.</h2>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary><span class="q">01</span>Is this just a random trail picker?<span class="sign"></span></summary>
+        <p class="ans">No. A random picker gives you a trail; a quest gives you a reason to be on it. Every issue comes with an objective — be somewhere at a specific hour, reach a specific point, find a specific thing — plus one bonus challenge that makes the day yours rather than the map's. And it tracks what it has already sent you, so the same assignment never comes twice.</p>
+      </details>
+      <details>
+        <summary><span class="q">02</span>What does the free version actually give me?<span class="sign"></span></summary>
+        <p class="ans">A free account with three real quests inside your own country, no card needed — plus your history and the digital stickers you unlock. What you can play with on this page without an account is only a sample loop above Rajecké Teplice. Inbox delivery, worldwide range, partner matching, the community board and the printed sticker sheets start at Explorer.</p>
+      </details>
+      <details>
+        <summary><span class="q">03</span>Why do I need an account?<span class="sign"></span></summary>
+        <p class="ans">Because a quest is only worth issuing once. Your account is what remembers where you have already been, so nothing repeats; it holds your preferences, your logged quests, your stickers and any matches you accept. The page you're on can only ever show you the same sample loop above Rajecké Teplice — real quests need somewhere to live. The account is free.</p>
+      </details>
+      <details>
+        <summary><span class="q">04</span>What are the stickers?<span class="sign"></span></summary>
+        <p class="ans">Every level and milestone — your first quest, ten logged, your first night start, your first quest with a partner, a thousand metres in one push — has its own die-cut sticker drawn for it. It unlocks in your account when you log the quest, and subscribers get the printed sheet in the post. Where you stick it is up to you: bottle, frame, hut wall, a signpost at the end of a road. Photograph it and it goes on the community map.</p>
+      </details>
+      <details>
+        <summary><span class="q">05</span>How often do quests arrive by mail?<span class="sign"></span></summary>
+        <p class="ans">You choose: weekly, every two weeks, or monthly — and which morning. One mail, one quest, sent early enough that you can still act on it that day. If you'd rather pull than be pushed, generate on demand instead; subscribers can do both.</p>
+      </details>
+      <details>
+        <summary><span class="q">06</span>What if the quest is beyond me, or the weather is wrong?<span class="sign"></span></summary>
+        <p class="ans">Re-roll it. Every mail has a re-roll and a pause link, and neither counts against you. Difficulty is your setting, not ours — set it to Easy and it stays Easy until you say otherwise.</p>
+      </details>
+      <details>
+        <summary><span class="q">07</span>Is it safe to be sent somewhere by an algorithm?<span class="sign"></span></summary>
+        <p class="ans">Quests are built from marked, publicly documented routes and come with distance, elevation, an estimated moving time and a daylight window. They are not a substitute for your own judgement, a map, or a weather check on the morning — and night quests are only issued if you explicitly ask for them.</p>
+      </details>
+      <details>
+        <summary><span class="q">08</span>How do you know I actually did it?<span class="sign"></span></summary>
+        <p class="ans">Because you tell us, and a human checks. To log a quest you file proof: photos, a Strava or GPX link, or a written account of the day — and if you went with someone, you both file. An admin reviews it, approves or comes back with a question, and only then does it enter your history and unlock the sticker. It isn't surveillance; it's the same reason a summit book exists. Honest retreats count: say the weather turned and you got to the saddle, and that gets approved as a retreat rather than quietly failing.</p>
+      </details>
+      <details>
+        <summary><span class="q">09</span>Do I have to meet strangers?<span class="sign"></span></summary>
+        <p class="ans">No — matching is off unless you switch it on, and solo is a first-class way to use Summit Quest. If you do switch it on, you are matched on the quest rather than on a profile: same range, same morning, similar pace. You see a first name, a rough distance from you and how many quests they've logged; nothing is exchanged until you have both accepted, and either side can unmatch, block or report at any point. Meet at the trailhead, tell someone where you're going, and if it feels off, walk your own quest.</p>
+      </details>
+      <details>
+        <summary><span class="q">10</span>Can I cancel?<span class="sign"></span></summary>
+        <p class="ans">Any time, from the footer of any quest mail or your account page. Billing is handled by Stripe, you keep access until the end of the period you paid for, and your quest history stays exportable.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section id="cta">
+  <svg class="contours" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path d="M600 400c-90 0-150 30-150 70s70 60 150 60 150-25 150-60-60-70-150-70z"/>
+    <path d="M600 350c-140 0-235 48-235 116s110 100 235 100 235-38 235-100-95-116-235-116z"/>
+    <path d="M600 300c-190 0-320 66-320 162s150 140 320 140 320-52 320-140-130-162-320-162z"/>
+    <path d="M600 250c-240 0-405 84-405 208s190 180 405 180 405-66 405-180-165-208-405-208z"/>
+    <path d="M600 200c-290 0-490 102-490 254s230 220 490 220 490-80 490-220-200-254-490-254z"/>
+    <path d="M600 150c-340 0-575 120-575 300s270 260 575 260 575-94 575-260-235-300-575-300z"/>
+    <path d="M600 100c-390 0-660 138-660 346s310 300 660 300 660-108 660-300-270-346-660-346z"/>
+  </svg>
+  <div class="wrap">
+    <span class="eyebrow" style="justify-content:center">Your move</span>
+    <h2>Somewhere out there is a morning with your name on it.</h2>
+    <p class="lede">Generate one free right now. If it gets you out of the house, let the next one come to you.</p>
+    <div class="hero-actions">
+      <button class="btn btn-signal btn-lg" data-login data-mode="signup">Create a free account</button>
+      <a href="#pricing" class="btn btn-ghost btn-lg">See the plans</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ AUTH ============================ -->
+<div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <div class="modal-card">
+    <button class="modal-x" data-close aria-label="Close">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M3.5 3.5l8 8M11.5 3.5l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <h3 id="authTitle">Welcome back.</h3>
+    <p id="authSub">Log in to see your quest history, your saved quests and your matches.</p>
+    <form id="authForm">
+      <input type="email" placeholder="you@email.com" aria-label="Email" required>
+      <input type="password" placeholder="Password" aria-label="Password" minlength="6" required>
+      <button class="btn btn-signal" type="submit" id="authSubmit">Log in</button>
+    </form>
+    <div class="alt">or</div>
+    <button class="oauth">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="#4285F4" d="M15.7 8.2c0-.6 0-1-.1-1.5H8v2.9h4.3a3.7 3.7 0 01-1.6 2.4v2h2.6c1.5-1.4 2.4-3.5 2.4-5.8z"/><path fill="#34A853" d="M8 16c2.2 0 4-.7 5.3-2l-2.6-2c-.7.5-1.6.8-2.7.8-2.1 0-3.9-1.4-4.5-3.3H.8v2.1A8 8 0 008 16z"/><path fill="#FBBC05" d="M3.5 9.5a4.8 4.8 0 010-3V4.4H.8a8 8 0 000 7.2l2.7-2.1z"/><path fill="#EA4335" d="M8 3.2c1.2 0 2.2.4 3 1.2l2.3-2.3A8 8 0 00.8 4.4l2.7 2.1C4.1 4.6 5.9 3.2 8 3.2z"/></svg>
+      Continue with Google
+    </button>
+    <p class="swap" id="authSwap">No account yet? <button type="button" data-swap>Create one</button></p>
+    <p class="note" style="text-align:center">Demo only — wire this to your auth provider.</p>
+  </div>
+</div>
+
+<!-- ============================ FOOTER ============================ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a href="#" class="logo">
+          <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M2 25 L11 10 L16.5 19 L20 13.5 L30 25 Z"/>
+            <path class="peak" d="M11 10 L14.6 16 L7.4 16 Z"/>
+          </svg>
+          Summit&nbsp;Quest
+        </a>
+        <p class="foot-blurb">Adventures issued, not planned. One quest at a time, to your inbox, until you run out of weekends.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul><li><a href="#demo">Try the generator</a></li><li><a href="#how">How it works</a></li><li><a href="#mail">Quests by mail</a></li><li><a href="#together">Find a partner</a></li><li><a href="#weekly">Weekly quest</a></li><li><a href="#stickers">Sticker sheets</a></li><li><a href="#pricing">Pricing</a></li></ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul><li><a href="#">About</a></li><li><a href="#">Field journal</a></li><li><a href="#" data-login>Log in / Account</a></li><li><a href="#">Contact</a></li><li><a href="#faq">FAQ</a></li></ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul><li><a href="#">Terms</a></li><li><a href="#">Privacy</a></li><li><a href="#">Safety notice</a></li><li><a href="#">Cancel a plan</a></li></ul>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>© 2026 Summit Quest</span>
+      <span>Go outside · Leave no trace · Tell someone where you went</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- nav ---------------- */
+  var nav=document.getElementById('nav'),burger=document.getElementById('burger'),navLinks=document.getElementById('navLinks');
+  addEventListener('scroll',function(){nav.classList.toggle('stuck',scrollY>10)},{passive:true});
+  burger.addEventListener('click',function(){
+    var open=navLinks.classList.toggle('open');
+    burger.setAttribute('aria-expanded',open?'true':'false');
+  });
+  navLinks.addEventListener('click',function(e){
+    if(e.target.tagName==='A'){navLinks.classList.remove('open');burger.setAttribute('aria-expanded','false');}
+  });
+
+  /* ---------------- auth modal ---------------- */
+  var modal=document.getElementById('authModal'),lastFocus=null,mode='login';
+  function setMode(m){
+    mode=m;
+    document.getElementById('authTitle').textContent=m==='login'?'Welcome back.':'Start your quest log.';
+    document.getElementById('authSub').textContent=m==='login'
+      ? 'Log in to see your quests, your history, your stickers and your matches.'
+      : 'One free account holds your quests, your history, your sticker sheet and the people you go with.';
+    document.getElementById('authSubmit').textContent=m==='login'?'Log in':'Create account';
+    document.getElementById('authSwap').innerHTML=m==='login'
+      ? 'No account yet? <button type="button" data-swap>Create one</button>'
+      : 'Already have an account? <button type="button" data-swap>Log in</button>';
+  }
+  function openAuth(e,trigger){
+    if(e){e.preventDefault()}
+    setMode(trigger&&trigger.dataset.mode==='signup'?'signup':'login');
+    lastFocus=document.activeElement;modal.setAttribute('open','');
+    var f=modal.querySelector('input');if(f)f.focus();
+  }
+  function closeAuth(){modal.removeAttribute('open');if(lastFocus)lastFocus.focus()}
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-login]');
+    if(t)return openAuth(e,t);
+    if(e.target.closest('[data-close]')||e.target===modal)return closeAuth();
+    if(e.target.closest('[data-swap]'))setMode(mode==='login'?'signup':'login');
+  });
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&modal.hasAttribute('open'))closeAuth()});
+  document.getElementById('authForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    this.innerHTML='<p class="mono" style="font-size:13px;color:var(--moss-2);text-align:center;padding:10px 0">✓ Demo only — connect this to your auth provider.</p>';
+  });
+
+  /* ---------------- reveal on scroll ---------------- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})
+  },{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  var revealEls=document.querySelectorAll('.sec-head,.step,.terrain,.plan,.mail-list li,.envelope,.faq details,#cta .wrap > *');
+  revealEls.forEach(function(el,i){
+    el.classList.add('reveal');el.style.transitionDelay=(i%4)*60+'ms';io.observe(el);
+  });
+  /* failsafe: never leave content invisible if the observer misbehaves */
+  setTimeout(function(){revealEls.forEach(function(el){el.classList.add('in')})},4000);
+
+  /* ---------------- quest data ---------------- */
+  /* ---- demo quests: hardcoded, one place only, on purpose ---- */
+  var DEMO=[
+    {
+      place:'The full circuit of Slnečné skaly',
+      obj:'Start at the Rajecké Teplice spa car park and take the yellow markers up. Touch every one of the three viewpoints before you allow yourself to come down — the last one is further than it looks on the map.',
+      km:'7.8',gain:'420',time:'3h 10',diff:'Moderate',start:'06:20',
+      bonus:'Sit on the top rock for ten minutes without taking your phone out of your pocket.',
+      note:'Sunrise start · dry rock only, this one is miserable in rain'
+    },
+    {
+      place:'Slnečné skaly, the long way round',
+      obj:'Approach from Poluvsie instead of the spa, so you climb the quiet side. Reach the main crag before the first climbers rack up, and be back at the road for coffee.',
+      km:'11.2',gain:'560',time:'4h 25',diff:'Moderate',start:'05:50',
+      bonus:'Learn the name of one plant you walk past and check it when you get home.',
+      note:'Sunrise start · headlamp for the first 30 minutes'
+    },
+    {
+      place:'Sunset shift at Slnečné skaly',
+      obj:'Go up late. Be on the west-facing rocks for the last hour of light with the Rajec valley underneath you, and walk the descent in the dark on purpose.',
+      km:'6.4',gain:'380',time:'2h 40',diff:'Easy',start:'18:40',
+      bonus:'Stay fifteen minutes after the sun has actually gone. That part is the point.',
+      note:'Golden hour · headlamp and a warm layer, it drops fast'
+    }
+  ];
+
+  var PARTY={
+    solo:'Solo · nobody to negotiate with',
+    duo:'Two people · one map between you',
+    match:'Partner matching on · we look for one compatible quester',
+    group:'Group matching on · up to four, slowest sets the pace'
+  };
+  var PEOPLE=[
+    ['Tomáš K.','TK','','Žilina · 12 km away','94%'],
+    ['Lucia M.','LM','b','Martin · 21 km away','88%'],
+    ['Peter H.','PH','c','Rajec · 18 km away','81%'],
+    ['Zuzana B.','ZB','b','Púchov · 26 km away','86%'],
+    ['Marek D.','MD','c','Terchová · 6 km away','91%'],
+    ['Nina S.','NS','','Trenčín · 33 km away','79%']
+  ];
+
+  var state={range:'My country',terrain:'ridge',party:'solo'};
+  var credits=3,shown=-1;
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+  function build(){shown=(shown+1)%DEMO.length;return DEMO[shown]}
+
+  function partyHTML(){
+    if(state.party!=='match'&&state.party!=='group')return '';
+    var n=state.party==='match'?1:3,pool=PEOPLE.slice().sort(function(){return Math.random()-.5}).slice(0,n);
+    var rows=pool.map(function(p){
+      return '<div class="row"><span class="av '+p[2]+'">'+p[1]+'</span><i>'+esc(p[0])+'</i>'+
+             '<em>'+esc(p[3])+' · '+p[4]+'</em></div>';
+    }).join('');
+    return '<div class="qc-party"><b>Your rope — '+(n===1?'1 match found':'3 matches found')+'</b>'+rows+
+           '<p class="note" style="margin-top:8px">Sample people. Real matches need an account, and nobody is contacted until you both accept.</p></div>';
+  }
+
+  function cardHTML(q){
+    return ''+
+    '<article class="quest-card">'+
+      '<div class="qc-head">'+
+        '<span class="qc-id">Sample quest · Slnečné skaly only</span>'+
+        '<span class="tag'+(q.diff==='Hard'||q.diff==='Brutal'?' warm':'')+'">'+esc(q.diff)+'</span>'+
+      '</div>'+
+      '<div class="qc-body">'+
+        '<span class="qc-loc"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 11S1.8 7.6 1.8 4.8a4.2 4.2 0 118.4 0C10.2 7.6 6 11 6 11z" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="4.8" r="1.4" fill="currentColor"/></svg>Slnečné skaly · Rajecké Teplice</span>'+
+        '<h3 class="qc-title">'+esc(q.place)+'</h3>'+
+        '<p class="qc-obj">'+esc(q.obj)+'</p>'+
+        '<div class="qc-stats">'+
+          '<div><b>'+q.km+'</b><span>Kilometres</span></div>'+
+          '<div><b>'+q.gain+'</b><span>Metres up</span></div>'+
+          '<div><b>'+q.time+'</b><span>Est. moving</span></div>'+
+        '</div>'+
+        '<div class="qc-bonus"><svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><path d="M8.5 1.5l2 4.4 4.8.6-3.5 3.3.9 4.7-4.2-2.3-4.2 2.3.9-4.7L1.7 6.5l4.8-.6 2-4.4z" stroke="#C4481B" stroke-width="1.2" stroke-linejoin="round"/></svg>'+
+          '<p><b>Bonus challenge</b>'+esc(q.bonus)+'</p></div>'+
+        partyHTML()+
+        '<p class="note" style="margin-top:14px">'+esc(q.note)+' · '+esc(PARTY[state.party])+'</p>'+
+      '</div>'+
+      '<svg class="seal" viewBox="0 0 100 100" aria-hidden="true">'+
+        '<circle cx="50" cy="50" r="46"/><circle cx="50" cy="50" r="38"/>'+
+        '<path d="M30 60 L42 40 L50 52 L56 44 L70 60 Z"/>'+
+        '<text x="50" y="26" text-anchor="middle">SUMMIT QUEST</text>'+
+        '<text x="50" y="80" text-anchor="middle">SAMPLE</text></svg>'+
+      '<div class="qc-foot"><span>Start '+esc(q.start)+'</span><span>Your real quests live in your account</span></div>'+
+    '</article>';
+  }
+
+  var lockHTML=''+
+    '<div class="quest-card"><div class="qc-head"><span class="qc-id">Samples finished</span><span class="tag ghost">Demo</span></div>'+
+    '<div class="lock">'+
+      '<svg class="lock-ico" viewBox="0 0 44 44" fill="none" aria-hidden="true"><rect x="9" y="19" width="26" height="19" rx="4" stroke="currentColor" stroke-width="2"/><path d="M15 19v-5a7 7 0 0114 0v5" stroke="currentColor" stroke-width="2"/><circle cx="22" cy="28" r="2.4" fill="currentColor"/></svg>'+
+      '<h3>That is as much as the demo knows.</h3>'+
+      '<p>Real quests are picked for you, anywhere in your range — and they need somewhere to live. Create an account to get your first three, keep your history, collect stickers and see who else is going.</p>'+
+      '<div class="capture" style="justify-content:center">'+
+        '<button class="btn btn-signal" data-login data-mode="signup">Create a free account</button>'+
+      '</div>'+
+      '<p class="note" style="margin-top:14px">Free account · no card · <button data-login style="text-decoration:underline;font:inherit;color:var(--moss-2)">already have one?</button></p>'+
+    '</div></div>';
+
+  var result=document.getElementById('result'),credEl=document.getElementById('credits');
+
+  function paintCredits(){
+    if(credits<=0){credEl.innerHTML='Samples used up — <b><button data-login data-mode="signup" style="font:inherit;color:var(--moss-2);text-decoration:underline">create an account</button></b>';return}
+    var d='';for(var i=0;i<3;i++)d+='<i class="'+(i<credits?'':'spent')+'"></i>';
+    credEl.innerHTML='Samples left: <b>'+credits+'</b><span class="dots">'+d+'</span>';
+  }
+
+  function render(){
+    if(credits<=0){result.innerHTML=lockHTML;return}
+    var q=build();
+    result.innerHTML=cardHTML(q);
+    var card=result.firstChild;card.classList.add('rolling');
+    var titleEl=card.querySelector('.qc-title'),ticks=0;
+    var spin=setInterval(function(){
+      titleEl.textContent=DEMO[Math.floor(Math.random()*DEMO.length)].place;
+      if(++ticks>6){clearInterval(spin);titleEl.textContent=q.place;card.classList.remove('rolling')}
+    },55);
+  }
+
+  /* pills */
+  document.querySelectorAll('.pills').forEach(function(grp){
+    grp.addEventListener('click',function(e){
+      var b=e.target.closest('.pill');if(!b)return;
+      if(b.dataset.locked){
+        var old=b.textContent;b.textContent='Explorer only →';b.style.color='var(--signal)';
+        setTimeout(function(){b.textContent=old;b.style.color=''},1400);
+        document.getElementById('pricing').scrollIntoView({behavior:'smooth',block:'start'});
+        return;
+      }
+      grp.querySelectorAll('.pill').forEach(function(p){p.setAttribute('aria-pressed','false')});
+      b.setAttribute('aria-pressed','true');
+      state[grp.dataset.group]=b.dataset.val;
+    });
+  });
+
+  document.getElementById('genBtn').addEventListener('click',function(){
+    if(credits>0){credits--;render();paintCredits()}
+    else{openAuth(null,{dataset:{mode:'signup'}})}
+  });
+
+  /* first paint — free preview that doesn't spend a credit */
+  result.innerHTML=cardHTML(build());
+  paintCredits();
+})();
+</script>
+</body>
+</html>
