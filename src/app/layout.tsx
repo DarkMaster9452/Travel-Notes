@@ -57,8 +57,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    // The landing page scrolls smoothly to its anchors. `data-scroll-behavior`
+    // tells the router that is deliberate, so route transitions still jump.
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-dvh">
