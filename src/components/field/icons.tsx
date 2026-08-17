@@ -6,7 +6,7 @@ import * as React from "react";
  * one size each, so they are not parameterised into a generic icon component.
  */
 
-type IconProps = React.SVGProps<SVGSVGElement>;
+export type IconProps = React.SVGProps<SVGSVGElement>;
 
 /** Map pin. Prefixes every location line. */
 export function IconPin(props: IconProps) {
@@ -154,6 +154,235 @@ export function IconStrava(props: IconProps) {
   return (
     <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor" aria-hidden="true" {...props}>
       <path d="M5.6.5L1.9 7.7h2.2L5.6 4.8l1.5 2.9h2.2L5.6.5zm1.5 7.2l-1.1 2.1-1.1-2.1H3.1l2.9 5.3 2.9-5.3H7.1z" />
+    </svg>
+  );
+}
+
+/**
+ * Navigation glyphs, for the sidebar.
+ *
+ * Line icons rather than emoji: an emoji is a colour glyph baked into the
+ * platform font, so it cannot take the sidebar's ink or paper colour and
+ * reads as decoration next to the mono labels. These are drawn at 24×24 in
+ * the same stroke language as the rest of the set — 1.6 weight, round caps,
+ * no fill — so they inherit `currentColor` and sit at one weight, one colour,
+ * wherever they render.
+ */
+
+export function IconGrid(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="13" y="3.5" width="7.5" height="7.5" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="3.5" y="13" width="7.5" height="7.5" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="13" y="13" width="7.5" height="7.5" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+export function IconCompass(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M14.8 9.2l-1.9 4.4-4.4 1.9 1.9-4.4 4.4-1.9z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconInbox(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M4 12.5h4.3l1.4 2.4h4.6l1.4-2.4H20"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="4" y="6" width="16" height="13" rx="1.6" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+export function IconUsers(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="9" cy="8.5" r="3.1" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M3.6 19c.6-3 2.7-4.7 5.4-4.7s4.8 1.7 5.4 4.7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M15.3 5.2c1.5.3 2.6 1.6 2.6 3.2s-1.1 2.9-2.6 3.2M18 14.6c1.9.5 3.2 1.9 3.6 4.2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconMap(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M9 4.5L4 6.3v13.2L9 17.7l6 2.8 5-1.9V5.4l-5 1.9-6-2.8z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M9 4.5v13.2M15 7.3v13.2" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+export function IconMarker(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M12 21s-6.8-6.3-6.8-11.2a6.8 6.8 0 1113.6 0C18.8 14.7 12 21 12 21z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="9.8" r="2.3" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+export function IconCoin(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M14.6 9a3 3 0 00-2.6-1.4c-1.7 0-3 1.5-3 3.4v2c0 1.9 1.3 3.4 3 3.4A3 3 0 0014.6 15M8.4 10.6h4.4M8.4 13.4h4.4"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconDatabase(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <ellipse cx="12" cy="6" rx="7.5" ry="2.6" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M4.5 6v12c0 1.4 3.4 2.6 7.5 2.6s7.5-1.2 7.5-2.6V6M4.5 12c0 1.4 3.4 2.6 7.5 2.6s7.5-1.2 7.5-2.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconSun(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="4.4" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M12 2.8v2.6M12 18.6v2.6M4.5 12H7M17 12h2.5M6.6 6.6l1.8 1.8M15.6 15.6l1.8 1.8M17.4 6.6l-1.8 1.8M8.4 15.6l-1.8 1.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconCalendarDays(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <rect x="3.5" y="5" width="17" height="15" rx="1.8" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M3.5 9.6h17M8 3v3.6M16 3v3.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="8.3" cy="13.6" r="1" fill="currentColor" />
+      <circle cx="12" cy="13.6" r="1" fill="currentColor" />
+      <circle cx="15.7" cy="13.6" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconMountain(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M3 19L9.5 8l3.7 6.4 2.3-3.3L21 19H3z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="17" cy="6.5" r="1.6" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+export function IconBook(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M4.5 5.4c1.9-.9 4.5-.9 7.5.4V19c-3-1.3-5.6-1.3-7.5-.4V5.4zM19.5 5.4c-1.9-.9-4.5-.9-7.5.4V19c3-1.3 5.6-1.3 7.5-.4V5.4z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconBadge(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="12" cy="9.4" r="5.4" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M9 13.8l-1.6 6.8L12 18l4.6 2.6-1.6-6.8" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconGear(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M12 3.6v2.3M12 18.1v2.3M20.4 12h-2.3M5.9 12H3.6M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6M17.8 17.8l-1.6-1.6M7.8 7.8L6.2 6.2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconSparkle(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M12 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7 1.7-5z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconPencil(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M14.3 5.3l4.4 4.4M4 20l.9-4.2a2 2 0 01.55-1L15 5.3a1.7 1.7 0 012.4 0l1.3 1.3a1.7 1.7 0 010 2.4L8.2 18.5a2 2 0 01-1 .55L3 20"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

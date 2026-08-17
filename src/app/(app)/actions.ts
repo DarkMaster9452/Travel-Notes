@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import { getAchievements } from "@/lib/achievements";
 import { requireClient } from "@/lib/auth/guards";
@@ -56,6 +57,91 @@ export async function issueQuestAction(): Promise<IssueState> {
 
   revalidateQuestPaths(outcome.quest.id);
   return { ok: true, questId: outcome.quest.id, title: outcome.quest.title };
+}
+
+const proofSchema = z.object({
+  questId: z.string().trim().min(1).max(60),
+  note: z.string().trim().min(10, "Tell us what happened.").max(2000),
+  stravaUrl: z.string().trim().url().max(300).optional().or(z.literal("")),
+  distance: z.coerce.number().min(0).max(500).optional(),
+  elevation: z.coerce.number().int().min(0).max(20000).optional(),
+  movingTime: z.coerce.number().int().min(0).max(20000).optional(),
+  retreated: z.coerce.boolean().optional(),
+});
+
+export type ProofResult = { ok: boolean; message?: string };
+
+/**
+ * File proof that a quest was done.
+ *
+ * This replaces marking a quest complete by hand. Nothing counts until an
+ * admin has read it — so this only records the claim and the evidence, and
+ * `reviewSubmissionAction` on the other side of the desk is what writes the
+ * quest into history.
+ *
+ * Ownership runs through `quest_history`: proof can only be filed for a quest
+ * this account was actually issued.
+ */
+export async function submitProofAction(formData: FormData): Promise<ProofResult> {
+  const user = await requireClient();
+
+  const parsed = proofSchema.safeParse({
+    questId: formData.get("questId"),
+    note: formData.get("note"),
+    stravaUrl: formData.get("stravaUrl") || undefined,
+    distance: formData.get("distance") || undefined,
+    elevation: formData.get("elevation") || undefined,
+    movingTime: formData.get("movingTime") || undefined,
+    retreated: formData.get("retreated") === "true",
+  });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the form." };
+  }
+  const proof = parsed.data;
+
+  const photos = String(formData.get("photos") ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^https?:\/\//.test(line))
+    .slice(0, 6);
+
+  // At least one photo is required — a written account alone isn't proof
+  // somebody can approve, and this is checked here rather than left to the
+  // form, since the form is not the authority on what a submission needs.
+  if (photos.length === 0) {
+    return { ok: false, message: "Add at least one photo link before filing." };
+  }
+
+  const history = await db.questHistory.findUnique({
+    where: { userId_questId: { userId: user.id, questId: proof.questId } },
+    select: { id: true },
+  });
+  if (!history) return { ok: false, message: "That quest isn't yours." };
+
+  const values = {
+    note: proof.note,
+    photos,
+    stravaUrl: proof.stravaUrl || null,
+    distance: proof.distance ?? null,
+    elevation: proof.elevation ?? null,
+    movingTime: proof.movingTime ?? null,
+    retreated: proof.retreated ?? false,
+    // Re-filing after a decline puts it back in the queue rather than opening
+    // a second row: one submission per person per quest, edited in place.
+    status: "PENDING" as const,
+    reviewedById: null,
+    reviewedAt: null,
+    reviewNote: null,
+  };
+
+  await db.submission.upsert({
+    where: { userId_questId: { userId: user.id, questId: proof.questId } },
+    update: values,
+    create: { userId: user.id, questId: proof.questId, ...values },
+  });
+
+  revalidateQuestPaths(proof.questId);
+  return { ok: true };
 }
 
 export type LogResult = {

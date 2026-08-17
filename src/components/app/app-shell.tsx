@@ -4,7 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 
-import { Avatar, IconClose, LogoMark } from "@/components/field";
+import {
+  Avatar,
+  IconBadge,
+  IconBook,
+  IconCalendarDays,
+  IconClose,
+  IconCoin,
+  IconCompass,
+  IconDatabase,
+  IconGear,
+  IconGrid,
+  IconInbox,
+  IconMap,
+  IconMarker,
+  IconMountain,
+  IconSparkle,
+  IconSun,
+  IconUsers,
+  LogoMark,
+} from "@/components/field";
+import type { IconProps } from "@/components/field/icons";
 import type { PlanId } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
@@ -23,9 +43,49 @@ import { PlanMark } from "./plan-mark";
  * side of the desk.
  */
 
-export type NavItem = { href: string; label: string };
+/**
+ * Looked up by key rather than passed as a component: the layouts that build
+ * `NavItem[]` are server components, and a component reference cannot cross
+ * into `"use client"` as a prop — only serialisable data can. The map itself
+ * lives here, inside the client module, where referencing a component is fine.
+ */
+const NAV_ICONS = {
+  grid: IconGrid,
+  compass: IconCompass,
+  inbox: IconInbox,
+  users: IconUsers,
+  map: IconMap,
+  marker: IconMarker,
+  coin: IconCoin,
+  database: IconDatabase,
+  sun: IconSun,
+  calendar: IconCalendarDays,
+  mountain: IconMountain,
+  book: IconBook,
+  badge: IconBadge,
+  gear: IconGear,
+  sparkle: IconSparkle,
+} satisfies Record<string, React.ComponentType<IconProps>>;
 
-function Bar({
+export type NavIconKey = keyof typeof NAV_ICONS;
+
+export type NavItem = {
+  href: string;
+  label: string;
+  /**
+   * A key into the sidebar's line-icon set, drawn before the label. Never an
+   * emoji — an emoji is a colour glyph baked into the platform font and
+   * cannot take the sidebar's ink or paper colour, so it would sit next to
+   * the mono labels as decoration instead of matching them.
+   */
+  icon?: NavIconKey;
+  /** Starts a labelled block in the sidebar — "Analytics", "Management". */
+  section?: string;
+  /** A count rendered on the right. Zero and undefined both render nothing. */
+  badge?: number;
+};
+
+function Sidebar({
   home,
   items,
   admin,
@@ -37,68 +97,88 @@ function Bar({
   children?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // Close the drawer whenever the route changes, so following a link on a
+  // phone doesn't leave the menu sitting over the page you just opened.
+  // Adjusted during render rather than in an effect, per the React-blessed
+  // pattern for resetting state on a prop change — an effect here would mean
+  // the drawer visibly stays open for one extra frame after the navigation.
+  const [lastPathname, setLastPathname] = React.useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setOpen(false);
+  }
+
+  // Exact match for the index route, prefix match for the rest — otherwise
+  // "/admin" would light up on every page in the panel.
+  const isActive = (href: string) =>
+    pathname === href || (href !== home && pathname.startsWith(`${href}/`));
 
   return (
-    <header className={cn("app-bar", admin && "admin-bar")}>
-      <div className="wrap app-bar-in">
+    <>
+      {/* The phone bar. The sidebar is a drawer under `lg`. */}
+      <header className={cn("app-topbar", admin && "admin-topbar")}>
+        <button
+          type="button"
+          className={cn("burger", open && "open")}
+          aria-label={open ? "Close menu" : "Menu"}
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
         <Link href={home} className="logo logo-live" aria-label="Summit Quest">
           <LogoMark />
           Summit&nbsp;Quest
         </Link>
+        <div className="ml-auto flex items-center gap-2">{children}</div>
+      </header>
 
-        {admin && <span className="admin-flag">Admin</span>}
-
-        <nav className="app-nav" aria-label="Main">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(item.href) ? "page" : undefined}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-2">
-          {children}
-          <button
-            type="button"
-            className={cn("burger", menuOpen && "open")}
-            aria-label={menuOpen ? "Close menu" : "Menu"}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-        </div>
-      </div>
-
-      {menuOpen && (
-        <nav
-          className="wrap drop-in flex flex-col gap-1 border-t border-line py-3 md:hidden"
-          aria-label="Main"
-          onClick={() => setMenuOpen(false)}
-        >
-          {items.map((item, index) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(item.href) ? "page" : undefined}
-              style={{ animationDelay: `${index * 40}ms` }}
-              className="slide-in rounded-[var(--radius-pill)] px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.13em] text-ink-2 aria-[current=page]:bg-pine aria-[current=page]:text-card"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      {open && (
+        <button
+          type="button"
+          className="app-scrim"
+          aria-label="Close menu"
+          onClick={() => setOpen(false)}
+        />
       )}
-    </header>
+
+      <aside className={cn("app-side", admin && "admin-side", open && "open")}>
+        <div className="app-side-head">
+          <Link href={home} className="logo logo-live" aria-label="Summit Quest">
+            <LogoMark />
+            Summit&nbsp;Quest
+          </Link>
+          {admin && <span className="admin-flag">Admin panel</span>}
+        </div>
+
+        <nav className="app-side-nav" aria-label="Main">
+          {items.map((item, index) => {
+            const Icon = item.icon ? NAV_ICONS[item.icon] : null;
+            return (
+              <React.Fragment key={item.href}>
+                {item.section && <p className="app-side-section">{item.section}</p>}
+                <Link
+                  href={item.href}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                  style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
+                  className="slide-in"
+                >
+                  {Icon && <Icon className="app-side-icon" />}
+                  <span className="app-side-label">{item.label}</span>
+                  {item.badge ? <span className="app-side-badge">{item.badge}</span> : null}
+                </Link>
+              </React.Fragment>
+            );
+          })}
+        </nav>
+
+        <div className="app-side-foot">{children}</div>
+      </aside>
+    </>
   );
 }
 
@@ -129,8 +209,8 @@ export function AppShell({
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-paper text-ink" data-plan={plan}>
-      <Bar home="/dashboard" items={items}>
+    <div className="app-frame bg-paper text-ink" data-plan={plan}>
+      <Sidebar home="/dashboard" items={items}>
         {plan !== "free" && <PlanMark plan={plan} />}
         <AccountMenu
           userName={userName}
@@ -139,9 +219,9 @@ export function AppShell({
           links={CLIENT_LINKS}
           logout={logout}
         />
-      </Bar>
-      <main className="app-main flex-1">
-        <div className="wrap">{children}</div>
+      </Sidebar>
+      <main className="app-main">
+        <div className="app-canvas">{children}</div>
       </main>
     </div>
   );
@@ -161,8 +241,8 @@ export function AdminShell({
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-paper text-ink" data-surface="admin">
-      <Bar home="/admin" items={items} admin>
+    <div className="app-frame bg-paper text-ink" data-surface="admin">
+      <Sidebar home="/admin" items={items} admin>
         {/* No plan mark, no settings, no billing: an admin account holds none
             of those, and a menu that offers them would be lying. */}
         <AccountMenu
@@ -173,9 +253,9 @@ export function AdminShell({
           logout={logout}
           inverse
         />
-      </Bar>
-      <main className="app-main flex-1">
-        <div className="wrap">{children}</div>
+      </Sidebar>
+      <main className="app-main">
+        <div className="app-canvas">{children}</div>
       </main>
     </div>
   );
@@ -216,23 +296,26 @@ function AccountMenu({
   }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative w-full" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="press flex items-center gap-2 rounded-[var(--radius-pill)] p-1 transition-transform"
+        className="app-side-account press"
       >
         <Avatar name={userName} className="size-9 flex-[0_0_2.25rem] rounded-[11px] text-[12px]" />
-        <span className="sr-only">Account</span>
+        <span className="app-side-account-who">
+          <b>{userName}</b>
+          <span>{planName}</span>
+        </span>
       </button>
 
       {open && (
         <div
           role="menu"
           aria-label="Account"
-          className="drop-in absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-field-lg)]"
+          className="drop-in absolute bottom-full left-0 z-50 mb-2 w-64 overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-field-lg)]"
         >
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-semibold text-ink">{userName}</p>

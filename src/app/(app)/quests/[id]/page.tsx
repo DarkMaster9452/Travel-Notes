@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { LogQuestButton } from "@/components/app/log-quest";
+import { SubmitProofButton } from "@/components/app/submit-proof";
 import { Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
 import { QuestSheet } from "@/components/app/quest-sheet";
 import { Eyebrow, IconShield, Panel, PanelHead, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
+import { db } from "@/lib/db";
 import { getQuestForUser } from "@/lib/quest/service";
 import { formatDate, titleCase } from "@/lib/utils";
 import { toQuestSummary } from "@/types/quest";
@@ -35,6 +36,13 @@ export default async function QuestPage({ params }: Params) {
   const record = await getQuestForUser(id, user.id);
   if (!record) notFound();
 
+  // What the reader sees on the button depends on where their proof sits.
+  const submission = await db.submission.findUnique({
+    where: { userId_questId: { userId: user.id, questId: id } },
+    select: { status: true, reviewNote: true },
+  });
+  const proofStatus = submission?.status ?? "NONE";
+
   const quest = toQuestSummary(record.quest, {
     generatedAt: record.generatedAt,
     completed: record.isCompleted,
@@ -48,7 +56,7 @@ export default async function QuestPage({ params }: Params) {
           <h1>{quest.title}</h1>
           <p>{quest.subtitle}</p>
         </div>
-        {record.owned && <LogQuestButton questId={quest.id} completed={record.isCompleted} />}
+        {record.owned && <SubmitProofButton questId={quest.id} status={proofStatus} />}
       </Reveal>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr] lg:items-start">
@@ -110,6 +118,19 @@ export default async function QuestPage({ params }: Params) {
               </p>
             </div>
           </Reveal>
+
+          {proofStatus === "REJECTED" && (
+            <Reveal delay={stagger(3)}>
+              <div className="safety mt-0" style={{ borderColor: "rgba(196,72,27,.4)" }}>
+                <IconShield />
+                <p>
+                  <b>Proof declined.</b>{" "}
+                  {submission?.reviewNote ??
+                    "Usually a missing photo rather than a suspicion — file it again with more to go on."}
+                </p>
+              </div>
+            </Reveal>
+          )}
 
           {record.isCompleted && record.completedAt && (
             <Reveal delay={stagger(4)}>
