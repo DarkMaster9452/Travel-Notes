@@ -1,23 +1,19 @@
-import { Skeleton } from "@/components/ui/primitives";
-
-/** Shown while a protected page streams in. */
+/** Skeleton in the shape of a page head plus two panels, so the layout doesn't jump. */
 export default function AppLoading() {
   return (
-    <div className="px-5 pb-16 pt-10 sm:px-8 lg:px-12 lg:pt-14" role="status" aria-live="polite">
-      <span className="sr-only">Finding your next adventure…</span>
-
-      <Skeleton className="h-3 w-40" />
-      <Skeleton className="mt-6 h-16 w-full max-w-2xl" />
-      <Skeleton className="mt-4 h-16 w-full max-w-xl" />
-
-      <div className="mt-12 grid gap-4 lg:grid-cols-3">
-        <Skeleton className="aspect-[16/11] lg:col-span-2" />
-        <Skeleton className="aspect-[4/5]" />
+    <div className="animate-pulse" aria-hidden="true">
+      <div className="page-head">
+        <div className="w-full">
+          <div className="h-3 w-32 rounded bg-line" />
+          <div className="mt-4 h-9 w-72 max-w-full rounded bg-line" />
+        </div>
       </div>
-
-      <div className="mt-10 space-y-4">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+        <div className="h-[420px] rounded-[var(--radius-card)] border border-line bg-card" />
+        <div className="flex flex-col gap-5">
+          <div className="h-48 rounded-[var(--radius-card)] border border-line bg-card" />
+          <div className="h-40 rounded-[var(--radius-card)] border border-line bg-card" />
+        </div>
       </div>
     </div>
   );

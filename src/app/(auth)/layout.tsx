@@ -1,42 +1,36 @@
 import Link from "next/link";
 
-import { QuestImage } from "@/components/quest/quest-image";
-import { IMAGES } from "@/lib/images";
-import { BRAND } from "@/lib/config";
+import { Contours, LogoMark } from "@/components/field";
 
+/**
+ * The shell around login and signup.
+ *
+ * Same paper, same contour backdrop as the landing hero — arriving at the
+ * login form should feel like walking further into the same building, not
+ * leaving it.
+ */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
-      {/* Image panel — decorative on mobile, full height on desktop. */}
-      <div className="relative hidden overflow-hidden bg-ink lg:block">
-        <QuestImage
-          src={IMAGES.forestPath.src}
-          alt={IMAGES.forestPath.alt}
-          palette={IMAGES.forestPath.palette}
-          sizes="50vw"
-          zoomOnHover={false}
-          priority
-        />
-        <div className="scrim absolute inset-0" aria-hidden="true" />
-        <div className="relative flex h-full flex-col justify-between p-10">
-          <Link href="/" className="font-display text-3xl font-extrabold text-paper">
-            {BRAND.name}
-          </Link>
-          <p className="max-w-sm font-script text-4xl leading-relaxed text-paper">
-            Somewhere within an hour of you, there is a place you have never stood.
-          </p>
-        </div>
-      </div>
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-paper text-ink">
+      <div className="paper-grain" aria-hidden="true" />
+      <Contours />
 
-      <main className="flex flex-col justify-center bg-paper px-5 py-12 sm:px-12 lg:px-16">
-        <Link
-          href="/"
-          className="mb-12 font-display text-2xl font-extrabold text-ink lg:hidden"
-        >
-          {BRAND.name}
+      <header className="wrap flex h-[70px] shrink-0 items-center">
+        <Link href="/" className="logo" aria-label="Summit Quest home">
+          <LogoMark />
+          Summit&nbsp;Quest
         </Link>
-        <div className="w-full max-w-md">{children}</div>
+      </header>
+
+      <main className="wrap flex flex-1 items-center justify-center py-10">
+        <div className="w-full max-w-[420px]">{children}</div>
       </main>
+
+      <footer className="wrap shrink-0 pb-8">
+        <p className="note text-center">
+          Go outside · Leave no trace · Tell someone where you went
+        </p>
+      </footer>
     </div>
   );
 }

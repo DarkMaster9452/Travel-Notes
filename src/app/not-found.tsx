@@ -1,25 +1,26 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { Kicker } from "@/components/ui/primitives";
+import { Contours, Eyebrow } from "@/components/field";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-dvh flex-col justify-center bg-ink px-5 py-16 text-paper sm:px-10">
-      <div className="mx-auto w-full max-w-2xl">
-        <Kicker className="text-ember-light">404</Kicker>
-        <h1 className="display-lg mt-5">This one isn&apos;t on the map.</h1>
-        <p className="mt-6 max-w-md text-lg text-paper/70">
+    <main className="relative flex min-h-dvh flex-col justify-center overflow-hidden bg-paper text-ink">
+      <div className="paper-grain" aria-hidden="true" />
+      <Contours />
+      <div className="wrap">
+        <Eyebrow tone="warm">404</Eyebrow>
+        <h1 className="h2 mt-4 max-w-[18ch]">This one isn&apos;t on the map.</h1>
+        <p className="lede mt-5 max-w-[46ch]">
           The page you were looking for doesn&apos;t exist — or it belongs to someone else&apos;s
           adventure.
         </p>
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <Button asChild variant="light" size="lg">
-            <Link href="/dashboard">Go to dashboard</Link>
-          </Button>
-          <Button asChild variant="outlineLight" size="lg">
-            <Link href="/">Back to the start</Link>
-          </Button>
+        <div className="hero-actions">
+          <Link href="/dashboard" className="btn btn-signal btn-lg">
+            Go to your quests
+          </Link>
+          <Link href="/" className="btn btn-ghost btn-lg">
+            Back to the start
+          </Link>
         </div>
       </div>
     </main>

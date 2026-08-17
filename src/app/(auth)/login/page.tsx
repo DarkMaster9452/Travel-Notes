@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Log in" };
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect(user.onboardedAt ? "/dashboard" : "/onboarding");
+  if (user) redirect("/dashboard");
 
   return (
     <Suspense fallback={null}>

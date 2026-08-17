@@ -1,4 +1,3 @@
-import type { IconName } from "@/components/ui/icons";
 import type { UserStats } from "@/lib/quest/service";
 
 /**
@@ -14,7 +13,7 @@ export type Achievement = {
   id: string;
   label: string;
   description: string;
-  icon: IconName;
+  sticker: string;
   /** Progress toward the badge, 0–1. */
   progress: number;
   earned: boolean;
@@ -26,7 +25,8 @@ type Definition = {
   id: string;
   label: string;
   description: string;
-  icon: IconName;
+  /** Key into `STICKER_ARTWORK` — the die-cut design this unlocks. */
+  sticker: string;
   target: number;
   value: (stats: UserStats) => number;
   unit?: string;
@@ -34,70 +34,70 @@ type Definition = {
 
 const DEFINITIONS: Definition[] = [
   {
-    id: "first-steps",
-    label: "First steps",
-    description: "Complete your first quest.",
-    icon: "boot",
+    id: "first-light",
+    label: "First Light",
+    description: "You actually went. Log your first quest.",
+    sticker: "first-light",
     target: 1,
     value: (s) => s.completedCount,
   },
   {
-    id: "regular",
-    label: "Regular",
-    description: "Complete five quests.",
-    icon: "compass",
-    target: 5,
+    id: "ten-logged",
+    label: "Ten logged",
+    description: "Ten quests logged, no repeats.",
+    sticker: "ten-logged",
+    target: 10,
     value: (s) => s.completedCount,
   },
   {
-    id: "seasoned",
-    label: "Seasoned",
-    description: "Complete twenty-five quests.",
-    icon: "peak",
-    target: 25,
+    id: "fifty-logged",
+    label: "Fifty logged",
+    description: "Fifty quests logged. That is a habit now.",
+    sticker: "fifty-logged",
+    target: 50,
     value: (s) => s.completedCount,
   },
   {
-    id: "distance",
+    id: "long-hauler",
     label: "Long hauler",
-    description: "Cover 100 km across completed quests.",
-    icon: "ruler",
+    description: "A hundred kilometres under your boots.",
+    sticker: "long-hauler",
     target: 100,
     value: (s) => s.kmExplored,
     unit: "km",
   },
   {
-    id: "climber",
-    label: "Climber",
-    description: "Climb 5 000 m of ascent.",
-    icon: "mountain",
+    id: "thousand-metres",
+    label: "Five thousand up",
+    description: "Five thousand metres of ascent, all told.",
+    sticker: "thousand-metres",
     target: 5000,
     value: (s) => s.elevation,
     unit: "m",
   },
   {
-    id: "explorer",
-    label: "Region hopper",
-    description: "Visit five different regions.",
-    icon: "map",
+    id: "cartographer",
+    label: "Cartographer",
+    description: "Five different regions.",
+    sticker: "cartographer",
     target: 5,
     value: (s) => s.regions,
   },
   {
-    id: "water",
-    label: "Waterfall hunter",
-    description: "Find three waterfalls.",
-    icon: "water",
+    id: "gorge-rat",
+    label: "Gorge Rat",
+    description: "Three quests with water in them.",
+    sticker: "gorge-rat",
     target: 3,
     value: (s) => s.waterfalls,
   },
   {
-    id: "collector",
-    label: "Collector",
-    description: "Save ten quests for later.",
-    icon: "bookmark",
-    target: 10,
-    value: (s) => s.savedCount,
+    id: "hundred-logged",
+    label: "Hundred logged",
+    description: "One hundred quests. Go outside more.",
+    sticker: "hundred-logged",
+    target: 100,
+    value: (s) => s.completedCount,
   },
 ];
 
@@ -110,7 +110,7 @@ export function getAchievements(stats: UserStats): Achievement[] {
       id: definition.id,
       label: definition.label,
       description: definition.description,
-      icon: definition.icon,
+      sticker: definition.sticker,
       progress: Math.min(1, definition.target === 0 ? 1 : value / definition.target),
       earned,
       progressLabel: earned

@@ -14,23 +14,25 @@ datasource db {
 // Accounts
 // ---------------------------------------------------------------------------
 
+/// Who someone is, as opposed to what they have paid for.
+///
+/// Guests are not represented here — a guest has no account, sees only the
+/// landing page, and never reaches a real quest. Admins are flagged in the
+/// database and never self-serve: nothing in the product writes this column.
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String
   avatar       String?
   passwordHash String   @map("password_hash")
+  role         Role     @default(USER)
   freeQuestsUsed Int    @default(0) @map("free_quests_used")
 
-  /// Cosmetics. Purely presentational, all defaulted, so an existing row keeps
-  /// working without a backfill and nothing here can affect what a quest is.
-  accentColor  String   @default("moss") @map("accent_color")
-  avatarStyle  String   @default("initial") @map("avatar_style")
-  bannerStyle  String   @default("ridge") @map("banner_style")
-  /// Chosen from the achievements the account has actually earned.
-  explorerTitle String? @map("explorer_title")
-
-  onboardedAt  DateTime? @map("onboarded_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -77,6 +79,7 @@ enum SubscriptionStatus {
 enum Plan {
   FREE
   EXPLORER
+  ULTRA
 }
 
 model Subscription {

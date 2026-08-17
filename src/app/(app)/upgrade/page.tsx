@@ -1,144 +1,107 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CheckoutButton } from "@/components/app/billing-actions";
-import { QuestImage } from "@/components/quest/quest-image";
-import { Button } from "@/components/ui/button";
-import { Kicker } from "@/components/ui/primitives";
-import { requireOnboardedUser } from "@/lib/auth/guards";
-import { EXPLORER_PLAN, formatPrice, ULTRA_PLAN } from "@/lib/config";
+import { Reveal } from "@/components/app/motion";
+import { stagger } from "@/lib/motion";
+import { Eyebrow, IconCheck, IconCross } from "@/components/field";
+import { requireUser } from "@/lib/auth/guards";
+import { PLANS, formatPrice } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
-import { IMAGES } from "@/lib/images";
-import { LOCATIONS } from "@/lib/quest/locations";
-import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Go unlimited" };
+export const metadata: Metadata = { title: "Plans" };
 export const dynamic = "force-dynamic";
 
-export default async function UpgradePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ checkout?: string }>;
-}) {
-  const user = await requireOnboardedUser();
-  const [entitlement, { checkout }] = await Promise.all([getEntitlement(user.id), searchParams]);
+/**
+ * The plans, on the same card language as the landing page's pricing table —
+ * Explorer raised on the dark forest surface, orange reserved for the "Most
+ * taken" flag and nothing else.
+ */
+export default async function UpgradePage() {
+  const user = await requireUser();
+  const entitlement = await getEntitlement(user.id);
 
   if (entitlement.isSubscribed) redirect("/profile");
 
-  const exhausted = entitlement.freeQuestsRemaining === 0;
+  const stripeReady = isStripeEnabled();
 
   return (
-    <main className="min-h-dvh bg-ink text-paper">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-45">
-          <QuestImage
-            src={IMAGES.summitFog.src}
-            alt=""
-            palette={IMAGES.summitFog.palette}
-            sizes="100vw"
-            zoomOnHover={false}
-            priority
-          />
-        </div>
-        <div className="scrim absolute inset-0" aria-hidden="true" />
-
-        <div className="relative mx-auto max-w-5xl px-5 py-20 sm:px-10 sm:py-28">
-          <Kicker className="text-ember-light">
-            {exhausted ? "That's your three" : `${entitlement.freeQuestsRemaining} free quests left`}
-          </Kicker>
-
-          <h1 className="display-lg mt-5 max-w-[16ch] text-paper">
-            {exhausted ? (
-              <>Your free quests are gone.</>
-            ) : (
-              <>Never run out of somewhere to go.</>
-            )}
-          </h1>
-
-          <p className="mt-7 max-w-xl font-serif text-2xl leading-snug font-medium text-paper/80 italic">
-            But there are still {LOCATIONS.length} places in the catalogue waiting for you, and the
-            generator can build thousands of different days out of them.
+    <>
+      <Reveal as="header" className="page-head">
+        <div>
+          <Eyebrow>Plans</Eyebrow>
+          <h1>Subscribe to stop deciding.</h1>
+          <p>
+            {entitlement.freeQuestsRemaining > 0
+              ? `You have ${entitlement.freeQuestsRemaining} free quest${
+                  entitlement.freeQuestsRemaining === 1 ? "" : "s"
+                } left. After that this is the way on.`
+              : "All three free quests are used. This is the way on."}
           </p>
-
-          {checkout === "cancelled" && (
-            <p className="mt-8 border-l-2 border-paper/40 pl-4 text-sm text-paper/70">
-              Checkout cancelled — nothing was charged. Your free quests and history are untouched.
-            </p>
-          )}
         </div>
-      </section>
+      </Reveal>
 
-      <section className="mx-auto max-w-6xl px-5 pb-24 sm:px-10">
-        <div className="grid gap-px bg-paper/15 lg:grid-cols-2">
-          {[EXPLORER_PLAN, ULTRA_PLAN].map((plan) => (
-            <div
-              key={plan.id}
-              className={cn(
-                "bg-ink p-8 sm:p-12",
-                plan.highlight && "ring-2 ring-inset ring-ember-light",
-              )}
-            >
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="font-display text-4xl font-extrabold uppercase sm:text-5xl">
-                  {plan.name}
-                </h2>
-                {plan.badge && (
-                  <span className="kicker shrink-0 bg-ember px-2 py-1 text-paper">{plan.badge}</span>
-                )}
+      <div className="plans equal">
+        {PLANS.map((plan, index) => {
+          const featured = plan.id === "explorer";
+          const isCurrent = plan.id === "free";
+
+          return (
+            <Reveal key={plan.id} delay={stagger(index)} className={featured ? "plan feature" : "plan"}>
+              {plan.badge && <span className="plan-flag">{plan.badge}</span>}
+              <span className="plan-name">{plan.name}</span>
+              <div className="plan-price">
+                <b>{plan.price.monthly === 0 ? "€0" : formatPrice(plan.price.monthly)}</b>
+                <span>{plan.price.monthly === 0 ? "/ forever" : "/ month"}</span>
               </div>
-              <p className="mt-4 text-sm text-paper/60">{plan.description}</p>
+              <p className="plan-desc">{plan.description}</p>
 
-              <p className="mt-8 font-display text-5xl font-extrabold sm:text-6xl">
-                {formatPrice(plan.price.monthly, plan.currency)}
-                <span className="ml-2 font-sans text-sm font-medium tracking-normal text-paper/50 normal-case">
-                  / month
-                </span>
-              </p>
-
-              <ul className="mt-8 space-y-3 border-t border-paper/15 pt-8">
+              <ul>
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex gap-3 text-sm text-paper/80">
-                    <span aria-hidden="true" className="text-ember-light">
-                      —
-                    </span>
+                  <li key={feature}>
+                    <IconCheck />
+                    {feature}
+                  </li>
+                ))}
+                {plan.missing?.map((feature) => (
+                  <li key={feature} style={{ opacity: 0.5 }}>
+                    <IconCross />
                     {feature}
                   </li>
                 ))}
               </ul>
 
-              <CheckoutButton
-                enabled={isStripeEnabled()}
-                label={`Unlock ${plan.name}`}
-                className="mt-10"
-              />
-            </div>
-          ))}
-        </div>
+              {isCurrent ? (
+                <button type="button" className="btn btn-ghost" disabled>
+                  <IconCross />
+                  Your current plan
+                </button>
+              ) : (
+                <CheckoutButton
+                  enabled={stripeReady}
+                  label={plan.id === "ultra" ? "Go Ultra" : "Start with Explorer"}
+                  className={featured ? "btn btn-signal" : "btn btn-primary"}
+                />
+              )}
 
-        <p className="mt-8 text-xs text-paper/45">
-          Cancel any time from your profile. Your history and saved quests stay yours either way.
+              <p className="plan-note">
+                {isCurrent
+                  ? "Free forever · no card"
+                  : stripeReady
+                    ? "Billed via Stripe · cancel anytime"
+                    : "Checkout is not configured yet"}
+              </p>
+            </Reveal>
+          );
+        })}
+      </div>
+
+      <Reveal delay={stagger(3)}>
+        <p className="note text-center">
+          Cancel any time, from the footer of any quest you&apos;ve ever been sent.
         </p>
-
-        <div className="mt-16 flex flex-col items-start gap-6 border-t border-paper/15 pt-10 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Kicker className="text-paper/50">Still yours on the free plan</Kicker>
-            <p className="mt-3 max-w-md text-sm text-paper/70">
-              Everything you&apos;ve already been sent, your saved quests, your full history, and
-              marking quests as completed.
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-3">
-            <Button asChild variant="outlineLight" size="lg">
-              <Link href="/history">Browse your history</Link>
-            </Button>
-            <Button asChild variant="ghostLight" size="lg">
-              <Link href="/dashboard">Back to dashboard</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-    </main>
+      </Reveal>
+    </>
   );
 }

@@ -88,6 +88,19 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
     ),
   },
 
+  /* Distance covered, rather than height gained: a road running to the edge of
+     the frame, marked off. */
+  "long-hauler": {
+    label: ["LONG", "HAULER"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M3 20c4-3 5-8 9-11s6-3 9-5" />
+        <path d="M6 17.5v2.5M11 12.5v2.5M16 7.5v2.5" />
+      </>
+    ),
+  },
+
   /* The counted tiers. One mark, four strokes and a cross — a tally, which is
      what these are: how many times you actually went. */
   "ten-logged": {

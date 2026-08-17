@@ -36,11 +36,15 @@ export async function requireUser(returnTo?: string): Promise<SessionUser> {
 }
 
 /**
- * Require a signed-in user who finished onboarding. Everything behind the
- * dashboard needs preferences to exist before it can do anything useful.
+ * Require an admin.
+ *
+ * A signed-in non-admin is sent to their own dashboard rather than to login —
+ * they are authenticated, just not entitled, and bouncing them to a login form
+ * they have already passed would be a dead end. The role is read from the
+ * database on every request through `getCurrentUser`, never from the cookie.
  */
-export async function requireOnboardedUser(returnTo?: string): Promise<SessionUser> {
+export async function requireAdmin(returnTo?: string): Promise<SessionUser> {
   const user = await requireUser(returnTo);
-  if (!user.onboardedAt) redirect("/onboarding");
+  if (user.role !== "ADMIN") redirect("/dashboard");
   return user;
 }

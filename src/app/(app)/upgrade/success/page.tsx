@@ -1,57 +1,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { Kicker } from "@/components/ui/primitives";
-import { requireOnboardedUser } from "@/lib/auth/guards";
-import { getEntitlement } from "@/lib/entitlements";
+import { Reveal } from "@/components/app/motion";
+import { EmptyState, IconApproved } from "@/components/field";
 
-export const metadata: Metadata = { title: "You're in" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Welcome" };
 
-/**
- * Post-checkout landing.
- *
- * Stripe redirects here immediately, but the subscription only becomes real
- * when the webhook lands — so this page reads our own database and tells the
- * truth either way rather than assuming success.
- */
-export default async function UpgradeSuccessPage() {
-  const user = await requireOnboardedUser();
-  const entitlement = await getEntitlement(user.id);
-
+export default function CheckoutSuccessPage() {
   return (
-    <main className="flex min-h-dvh flex-col justify-center bg-ink px-5 py-20 text-paper sm:px-10">
-      <div className="mx-auto w-full max-w-2xl">
-        <Kicker className="text-ember-light">
-          {entitlement.isSubscribed ? "Explorer unlocked" : "Payment received"}
-        </Kicker>
-
-        <h1 className="display-lg mt-5">
-          {entitlement.isSubscribed ? <>Go anywhere. As often as you like.</> : <>Almost there.</>}
-        </h1>
-
-        <p className="mt-7 max-w-lg text-lg leading-relaxed text-paper/70">
-          {entitlement.isSubscribed
-            ? "Unlimited quests are live on your account. Unlock as many places from the database as you like."
-            : "Stripe is still confirming the payment. This usually takes a few seconds — refresh in a moment and your plan will be active."}
-        </p>
-
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          {entitlement.isSubscribed ? (
-            <Button asChild variant="light" size="xl">
-              <Link href="/database">Browse the database</Link>
-            </Button>
-          ) : (
-            <Button asChild variant="light" size="xl">
-              <Link href="/upgrade/success">Check again</Link>
-            </Button>
-          )}
-          <Button asChild variant="outlineLight" size="xl">
-            <Link href="/dashboard">Back to dashboard</Link>
-          </Button>
-        </div>
-      </div>
-    </main>
+    <Reveal>
+      <EmptyState
+        icon={<IconApproved width={40} height={40} />}
+        title="You're in."
+        action={
+          <Link href="/dashboard" className="btn btn-signal">
+            Take your first quest
+          </Link>
+        }
+      >
+        Unlimited quests, worldwide, and the printed sticker sheet in the post. The receipt is on its
+        way to your inbox.
+      </EmptyState>
+    </Reveal>
   );
 }
