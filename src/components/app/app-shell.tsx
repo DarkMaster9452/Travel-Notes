@@ -5,7 +5,10 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 
 import { Avatar, IconClose, LogoMark } from "@/components/field";
+import type { PlanId } from "@/lib/config";
 import { cn } from "@/lib/utils";
+
+import { PlanMark } from "./plan-mark";
 
 /**
  * The signed-in shell.
@@ -14,8 +17,10 @@ import { cn } from "@/lib/utils";
  * landing page — the interior only drops the grain and the contour lines,
  * because a dashboard is read for minutes at a time rather than scrolled past.
  *
- * `AdminShell` is the same chrome inverted onto the dark forest surface, so an
- * admin can always tell which side of the desk they are on.
+ * `AdminShell` is the same chrome inverted onto the dark forest surface, and it
+ * is deliberately *not* the customer shell with extra links: an admin has no
+ * plan, no stickers and no billing, so that menu simply does not exist on that
+ * side of the desk.
  */
 
 export type NavItem = { href: string; label: string };
@@ -39,7 +44,7 @@ function Bar({
   return (
     <header className={cn("app-bar", admin && "admin-bar")}>
       <div className="wrap app-bar-in">
-        <Link href={home} className="logo" aria-label="Summit Quest">
+        <Link href={home} className="logo logo-live" aria-label="Summit Quest">
           <LogoMark />
           Summit&nbsp;Quest
         </Link>
@@ -62,7 +67,7 @@ function Bar({
           {children}
           <button
             type="button"
-            className="burger"
+            className={cn("burger", menuOpen && "open")}
             aria-label={menuOpen ? "Close menu" : "Menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
@@ -76,16 +81,17 @@ function Bar({
 
       {menuOpen && (
         <nav
-          className="wrap flex flex-col gap-1 border-t border-line py-3 md:hidden"
+          className="wrap drop-in flex flex-col gap-1 border-t border-line py-3 md:hidden"
           aria-label="Main"
           onClick={() => setMenuOpen(false)}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
-              className="rounded-[var(--radius-pill)] px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.13em] text-ink-2 aria-[current=page]:bg-pine aria-[current=page]:text-card"
+              style={{ animationDelay: `${index * 40}ms` }}
+              className="slide-in rounded-[var(--radius-pill)] px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.13em] text-ink-2 aria-[current=page]:bg-pine aria-[current=page]:text-card"
             >
               {item.label}
             </Link>
@@ -96,11 +102,19 @@ function Bar({
   );
 }
 
+/** The menu links a customer has. An admin gets none of these. */
+const CLIENT_LINKS: readonly NavItem[] = [
+  { href: "/profile", label: "Settings" },
+  { href: "/achievements", label: "Stickers" },
+  { href: "/upgrade", label: "Plan & billing" },
+];
+
 export function AppShell({
   children,
   items,
   userName,
   userEmail,
+  plan,
   planName,
   logout,
 }: {
@@ -108,17 +122,21 @@ export function AppShell({
   items: readonly NavItem[];
   userName: string;
   userEmail: string;
+  /** Drives the membership accents. `free` leaves the interior plain. */
+  plan: PlanId;
   /** "Free plan", "Explorer" — shown in the account menu. */
   planName: string;
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-paper text-ink">
+    <div className="flex min-h-dvh flex-col bg-paper text-ink" data-plan={plan}>
       <Bar home="/dashboard" items={items}>
+        {plan !== "free" && <PlanMark plan={plan} />}
         <AccountMenu
           userName={userName}
           userEmail={userEmail}
           planName={planName}
+          links={CLIENT_LINKS}
           logout={logout}
         />
       </Bar>
@@ -143,12 +161,15 @@ export function AdminShell({
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-paper text-ink">
+    <div className="flex min-h-dvh flex-col bg-paper text-ink" data-surface="admin">
       <Bar home="/admin" items={items} admin>
+        {/* No plan mark, no settings, no billing: an admin account holds none
+            of those, and a menu that offers them would be lying. */}
         <AccountMenu
           userName={userName}
           userEmail={userEmail}
-          planName="Admin"
+          planName="Staff account"
+          links={[]}
           logout={logout}
           inverse
         />
@@ -164,12 +185,14 @@ function AccountMenu({
   userName,
   userEmail,
   planName,
+  links,
   logout,
   inverse,
 }: {
   userName: string;
   userEmail: string;
   planName: string;
+  links: readonly NavItem[];
   logout: () => Promise<void>;
   inverse?: boolean;
 }) {
@@ -199,7 +222,7 @@ function AccountMenu({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-[var(--radius-pill)] p-1 transition-colors"
+        className="press flex items-center gap-2 rounded-[var(--radius-pill)] p-1 transition-transform"
       >
         <Avatar name={userName} className="size-9 flex-[0_0_2.25rem] rounded-[11px] text-[12px]" />
         <span className="sr-only">Account</span>
@@ -209,7 +232,7 @@ function AccountMenu({
         <div
           role="menu"
           aria-label="Account"
-          className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-field-lg)]"
+          className="drop-in absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-field-lg)]"
         >
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-semibold text-ink">{userName}</p>
@@ -217,17 +240,15 @@ function AccountMenu({
             <p className="meta mt-2">{planName}</p>
           </div>
 
-          <div className="py-1">
-            <MenuLink href="/profile" onClick={() => setOpen(false)}>
-              Settings
-            </MenuLink>
-            <MenuLink href="/achievements" onClick={() => setOpen(false)}>
-              Stickers
-            </MenuLink>
-            <MenuLink href="/upgrade" onClick={() => setOpen(false)}>
-              Plan &amp; billing
-            </MenuLink>
-          </div>
+          {links.length > 0 && (
+            <div className="py-1">
+              {links.map((link) => (
+                <MenuLink key={link.href} href={link.href} onClick={() => setOpen(false)}>
+                  {link.label}
+                </MenuLink>
+              ))}
+            </div>
+          )}
 
           <form action={logout} className="border-t border-line py-1">
             <button
@@ -260,7 +281,7 @@ function MenuLink({
       href={href}
       role="menuitem"
       onClick={onClick}
-      className="block px-4 py-2.5 font-mono text-[10.5px] uppercase tracking-[0.13em] text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink"
+      className="menu-link block px-4 py-2.5 font-mono text-[10.5px] uppercase tracking-[0.13em] text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink"
     >
       {children}
     </Link>

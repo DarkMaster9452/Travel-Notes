@@ -2,7 +2,11 @@ import "server-only";
 
 import Stripe from "stripe";
 
+import type { BillingInterval, PlanId } from "@/lib/config";
 import { env, isStripeEnabled } from "@/lib/env";
+
+/** The two plans that are actually sold. `free` is the absence of a purchase. */
+export type PaidPlanId = Exclude<PlanId, "free">;
 
 let client: Stripe | null = null;
 
@@ -20,12 +24,37 @@ export function getStripe(): Stripe | null {
   return client;
 }
 
-export function priceIdFor(interval: "monthly" | "yearly"): string | null {
+/** The configured price for a paid plan, or null if this deployment has none. */
+export function priceIdFor(
+  plan: PaidPlanId,
+  interval: BillingInterval,
+): string | null {
   const id =
-    interval === "yearly"
-      ? env.STRIPE_PRICE_ID_EXPLORER_YEARLY
-      : env.STRIPE_PRICE_ID_EXPLORER_MONTHLY;
+    plan === "ultra"
+      ? interval === "yearly"
+        ? env.STRIPE_PRICE_ID_ULTRA_YEARLY
+        : env.STRIPE_PRICE_ID_ULTRA_MONTHLY
+      : interval === "yearly"
+        ? env.STRIPE_PRICE_ID_EXPLORER_YEARLY
+        : env.STRIPE_PRICE_ID_EXPLORER_MONTHLY;
   return id.length > 0 ? id : null;
+}
+
+/**
+ * Which plan a Stripe price belongs to.
+ *
+ * The webhook needs this to tell an Explorer subscription from an Ultra one,
+ * and it must not guess: a price that matches nothing configured returns null
+ * so the caller can fall back to the plan recorded in subscription metadata
+ * rather than silently granting the wrong tier.
+ */
+export function planForPriceId(priceId: string | null | undefined): PaidPlanId | null {
+  if (!priceId) return null;
+  const ultra = [env.STRIPE_PRICE_ID_ULTRA_MONTHLY, env.STRIPE_PRICE_ID_ULTRA_YEARLY];
+  const explorer = [env.STRIPE_PRICE_ID_EXPLORER_MONTHLY, env.STRIPE_PRICE_ID_EXPLORER_YEARLY];
+  if (ultra.some((id) => id.length > 0 && id === priceId)) return "ultra";
+  if (explorer.some((id) => id.length > 0 && id === priceId)) return "explorer";
+  return null;
 }
 
 /** Maps Stripe subscription statuses onto our enum. */

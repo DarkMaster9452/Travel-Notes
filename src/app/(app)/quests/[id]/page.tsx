@@ -7,7 +7,7 @@ import { Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
 import { QuestSheet } from "@/components/app/quest-sheet";
 import { Eyebrow, IconShield, Panel, PanelHead, Tag } from "@/components/field";
-import { requireUser } from "@/lib/auth/guards";
+import { requireClient } from "@/lib/auth/guards";
 import { getQuestForUser } from "@/lib/quest/service";
 import { formatDate, titleCase } from "@/lib/utils";
 import { toQuestSummary } from "@/types/quest";
@@ -15,7 +15,7 @@ import { toQuestSummary } from "@/types/quest";
 type Params = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const user = await requireUser();
+  const user = await requireClient();
   const { id } = await params;
   const record = await getQuestForUser(id, user.id);
   return { title: record?.quest.title ?? "Quest" };
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
  * not-found, so another account's id reveals nothing.
  */
 export default async function QuestPage({ params }: Params) {
-  const user = await requireUser();
+  const user = await requireClient();
   const { id } = await params;
 
   const record = await getQuestForUser(id, user.id);

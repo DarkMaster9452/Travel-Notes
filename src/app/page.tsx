@@ -16,6 +16,7 @@ import {
   TogetherSection,
   WeeklySection,
 } from "@/components/landing/sections";
+import { homeFor } from "@/lib/auth/guards";
 import { getCurrentUser } from "@/lib/auth/session";
 
 /**
@@ -38,7 +39,7 @@ export default async function LandingPage() {
       {/* Paper grain over the marketing surfaces. The app interior drops it. */}
       <div className="paper-grain" aria-hidden="true" />
 
-      <LandingNav signedIn={Boolean(user)} />
+      <LandingNav home={user ? homeFor(user) : null} />
 
       <main id="main">
         <Hero />

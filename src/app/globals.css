@@ -132,6 +132,13 @@
   --line: var(--color-line);
   --line-2: var(--color-line-2);
   --forest: var(--color-forest);
+  --forest-deep: var(--color-forest-deep);
+
+  /* The two curves everything moves on. One for anything that settles into
+     place, one for the few things that are allowed to overshoot — a sticker
+     being peeled, a seal being stamped. Nothing in the product invents a third. */
+  --ease-field: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.3, 0.5, 1);
   --shadow: var(--shadow-field);
   --shadow-lg: var(--shadow-field-lg);
   --r: var(--radius-card);
@@ -197,6 +204,12 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      /* Delays too, not just durations. The staggered entrances across the app
+         and the panel carry their timing in `animation-delay`, so cancelling
+         only the duration would leave a reader who asked for no motion staring
+         at a page that fills in over two seconds anyway. */
+      animation-delay: 0.01ms !important;
+      transition-delay: 0.01ms !important;
     }
 
     html {

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getAchievements } from "@/lib/achievements";
-import { requireUser } from "@/lib/auth/guards";
+import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { LOCATIONS } from "@/lib/quest/locations";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
@@ -39,7 +39,7 @@ function revalidateQuestPaths(questId?: string) {
  * `unlockQuestForUser`, on the server, reading database state.
  */
 export async function issueQuestAction(): Promise<IssueState> {
-  const user = await requireUser();
+  const user = await requireClient();
 
   const visited = await db.questHistory.findMany({
     where: { userId: user.id },
@@ -74,7 +74,7 @@ export type LogResult = {
  * nothing.
  */
 export async function logQuestAction(rawQuestId: string): Promise<LogResult> {
-  const user = await requireUser();
+  const user = await requireClient();
   const parsed = questIdSchema.safeParse(rawQuestId);
   if (!parsed.success) return { ok: false, error: "Unknown quest." };
   const questId = parsed.data;

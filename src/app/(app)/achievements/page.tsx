@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ProgressBar, Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
 import { Eyebrow, Panel, PanelHead, Sticker, StickerSheet, Tag } from "@/components/field";
-import { requireUser } from "@/lib/auth/guards";
+import { requireClient } from "@/lib/auth/guards";
 import { countEarned, getAchievements } from "@/lib/achievements";
 import { getEntitlement } from "@/lib/entitlements";
 import { getUserStats } from "@/lib/quest/service";
@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "Stickers" };
  * told the printed sheet is posted; free accounts are told what it takes.
  */
 export default async function StickersPage() {
-  const user = await requireUser();
+  const user = await requireClient();
   const [stats, entitlement] = await Promise.all([
     getUserStats(user.id),
     getEntitlement(user.id),
@@ -55,8 +55,8 @@ export default async function StickersPage() {
             ))}
           </StickerSheet>
           <p className="note text-center">
-            {entitlement.isSubscribed
-              ? "The printed sheet is posted to you once a season."
+            {entitlement.can("printedStickers")
+              ? "The printed sheet is posted to you once a season — it's part of your plan."
               : "Printed sheets are posted to subscribers. The digital ones are yours either way."}
           </p>
         </Reveal>

@@ -23,6 +23,14 @@ export async function POST() {
     return NextResponse.json({ ok: false, message: "Log in first." }, { status: 401 });
   }
 
+  // Admin accounts have no customer side: nothing to bill, nothing to manage.
+  if (user.role === "ADMIN") {
+    return NextResponse.json(
+      { ok: false, message: "Admin accounts don't have a subscription." },
+      { status: 403 },
+    );
+  }
+
   const subscription = await db.subscription.findUnique({
     where: { userId: user.id },
     select: { stripeCustomerId: true },

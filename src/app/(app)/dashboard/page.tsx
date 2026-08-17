@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { IssueQuestButton } from "@/components/app/issue-quest";
 import { CountUp, Reveal } from "@/components/app/motion";
+import { PlanChip } from "@/components/app/plan-mark";
 import { stagger } from "@/lib/motion";
 import { QuestSheet } from "@/components/app/quest-sheet";
 import {
@@ -14,7 +15,8 @@ import {
   PanelHead,
   Tag,
 } from "@/components/field";
-import { requireUser } from "@/lib/auth/guards";
+import { requireClient } from "@/lib/auth/guards";
+import { CAPABILITY_COPY } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { getFeaturedQuests } from "@/lib/quest/featured";
@@ -31,7 +33,7 @@ export const metadata: Metadata = { title: "Today" };
  * promises exactly one decision, and this is it.
  */
 export default async function TodayPage() {
-  const user = await requireUser();
+  const user = await requireClient();
 
   const [entitlement, stats, featured, current] = await Promise.all([
     getEntitlement(user.id),
@@ -98,11 +100,8 @@ export default async function TodayPage() {
 
         <div className="flex flex-col gap-5">
           <Reveal delay={stagger(1)}>
-            <Panel flush>
-              <PanelHead
-                title="Your log"
-                aside={<Tag tone="ghost">{entitlement.plan.toLowerCase()}</Tag>}
-              />
+            <Panel flush className={entitlement.isSubscribed ? "member-panel" : undefined}>
+              <PanelHead title="Your log" aside={<PlanChip plan={entitlement.plan} />} />
               <dl className="grid grid-cols-2 gap-px bg-line">
                 <Figure label="Logged" value={stats.completedCount} />
                 <Figure label="Regions" value={stats.regions} />
@@ -111,7 +110,12 @@ export default async function TodayPage() {
               </dl>
               <div className="border-t border-dashed border-line px-5 py-4">
                 {entitlement.isSubscribed ? (
-                  <p className="meta">Unlimited quests · worldwide range</p>
+                  <MemberLine
+                    planName={entitlement.definition.name}
+                    lines={entitlement.definition.capabilities
+                      .slice(0, 3)
+                      .map((capability) => CAPABILITY_COPY[capability].title)}
+                  />
                 ) : (
                   <FreeAllowance
                     remaining={entitlement.freeQuestsRemaining}
@@ -165,6 +169,30 @@ function Figure({ label, value }: { label: string; value: number }) {
       <dd className="mt-1 font-mono text-[22px] font-bold tracking-[-0.02em]">
         <CountUp value={value} />
       </dd>
+    </div>
+  );
+}
+
+/**
+ * The membership, restated on the page a member sees most.
+ *
+ * The counter it replaces was the most-looked-at number on this panel while the
+ * account was free; leaving a blank space where it used to be is how a
+ * subscription starts to feel like nothing happened. So the space keeps its
+ * weight and says what was bought instead.
+ */
+function MemberLine({ planName, lines }: { planName: string; lines: string[] }) {
+  return (
+    <div className="member-line">
+      <span className="member-line-mark" aria-hidden="true" />
+      <p>
+        <b>{planName}</b>
+        {lines.map((line, index) => (
+          <span key={line} className="tick-in" style={{ animationDelay: `${index * 90}ms` }}>
+            {line}
+          </span>
+        ))}
+      </p>
     </div>
   );
 }

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 import { FeaturedQuestPage } from "@/components/app/featured-quest-page";
-import { requireUser } from "@/lib/auth/guards";
+import { requireClient } from "@/lib/auth/guards";
 import { getFeaturedQuest, periodEnds } from "@/lib/quest/featured";
 
 export const metadata: Metadata = { title: "Monthly quest" };
 export const dynamic = "force-dynamic";
 
 export default async function MonthlyQuestPage() {
-  const user = await requireUser();
+  const user = await requireClient();
   const featured = await getFeaturedQuest(user.id, "month");
 
   return (
