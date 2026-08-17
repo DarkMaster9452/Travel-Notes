@@ -17,15 +17,15 @@ import { db } from "@/lib/db";
  */
 function nav(pending: number): readonly NavItem[] {
   return [
-    { href: "/admin", label: "Dashboard", emoji: "📊" },
-    { href: "/admin/review", label: "Review", emoji: "🧭", badge: pending },
-    { href: "/admin/submissions", label: "Submissions", emoji: "📥" },
-    { href: "/admin/users", label: "Users", emoji: "👥" },
-    { href: "/admin/quests", label: "Quests", emoji: "🗺️" },
-    { href: "/admin/locations", label: "Locations", emoji: "📍" },
+    { href: "/admin", label: "Dashboard", icon: "grid" },
+    { href: "/admin/review", label: "Review", icon: "compass", badge: pending },
+    { href: "/admin/submissions", label: "Submissions", icon: "inbox" },
+    { href: "/admin/users", label: "Users", icon: "users" },
+    { href: "/admin/quests", label: "Quests", icon: "map" },
+    { href: "/admin/locations", label: "Locations", icon: "marker" },
 
-    { section: "Analytics", href: "/admin/revenue", label: "Revenue", emoji: "💶" },
-    { href: "/admin/database", label: "Database", emoji: "🗄️" },
+    { section: "Analytics", href: "/admin/revenue", label: "Revenue", icon: "coin" },
+    { href: "/admin/database", label: "Database", icon: "database" },
   ];
 }
 

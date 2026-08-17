@@ -4,7 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 
-import { Avatar, IconClose, LogoMark } from "@/components/field";
+import {
+  Avatar,
+  IconBadge,
+  IconBook,
+  IconCalendarDays,
+  IconClose,
+  IconCoin,
+  IconCompass,
+  IconDatabase,
+  IconGear,
+  IconGrid,
+  IconInbox,
+  IconMap,
+  IconMarker,
+  IconMountain,
+  IconSparkle,
+  IconSun,
+  IconUsers,
+  LogoMark,
+} from "@/components/field";
+import type { IconProps } from "@/components/field/icons";
 import type { PlanId } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
@@ -23,11 +43,42 @@ import { PlanMark } from "./plan-mark";
  * side of the desk.
  */
 
+/**
+ * Looked up by key rather than passed as a component: the layouts that build
+ * `NavItem[]` are server components, and a component reference cannot cross
+ * into `"use client"` as a prop — only serialisable data can. The map itself
+ * lives here, inside the client module, where referencing a component is fine.
+ */
+const NAV_ICONS = {
+  grid: IconGrid,
+  compass: IconCompass,
+  inbox: IconInbox,
+  users: IconUsers,
+  map: IconMap,
+  marker: IconMarker,
+  coin: IconCoin,
+  database: IconDatabase,
+  sun: IconSun,
+  calendar: IconCalendarDays,
+  mountain: IconMountain,
+  book: IconBook,
+  badge: IconBadge,
+  gear: IconGear,
+  sparkle: IconSparkle,
+} satisfies Record<string, React.ComponentType<IconProps>>;
+
+export type NavIconKey = keyof typeof NAV_ICONS;
+
 export type NavItem = {
   href: string;
   label: string;
-  /** Shown before the label. One glyph, no skin tones, no ZWJ sequences. */
-  emoji?: string;
+  /**
+   * A key into the sidebar's line-icon set, drawn before the label. Never an
+   * emoji — an emoji is a colour glyph baked into the platform font and
+   * cannot take the sidebar's ink or paper colour, so it would sit next to
+   * the mono labels as decoration instead of matching them.
+   */
+  icon?: NavIconKey;
   /** Starts a labelled block in the sidebar — "Analytics", "Management". */
   section?: string;
   /** A count rendered on the right. Zero and undefined both render nothing. */
@@ -105,25 +156,24 @@ function Sidebar({
         </div>
 
         <nav className="app-side-nav" aria-label="Main">
-          {items.map((item, index) => (
-            <React.Fragment key={item.href}>
-              {item.section && <p className="app-side-section">{item.section}</p>}
-              <Link
-                href={item.href}
-                aria-current={isActive(item.href) ? "page" : undefined}
-                style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
-                className="slide-in"
-              >
-                {item.emoji && (
-                  <span className="app-side-emoji" aria-hidden="true">
-                    {item.emoji}
-                  </span>
-                )}
-                <span className="app-side-label">{item.label}</span>
-                {item.badge ? <span className="app-side-badge">{item.badge}</span> : null}
-              </Link>
-            </React.Fragment>
-          ))}
+          {items.map((item, index) => {
+            const Icon = item.icon ? NAV_ICONS[item.icon] : null;
+            return (
+              <React.Fragment key={item.href}>
+                {item.section && <p className="app-side-section">{item.section}</p>}
+                <Link
+                  href={item.href}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                  style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
+                  className="slide-in"
+                >
+                  {Icon && <Icon className="app-side-icon" />}
+                  <span className="app-side-label">{item.label}</span>
+                  {item.badge ? <span className="app-side-badge">{item.badge}</span> : null}
+                </Link>
+              </React.Fragment>
+            );
+          })}
         </nav>
 
         <div className="app-side-foot">{children}</div>

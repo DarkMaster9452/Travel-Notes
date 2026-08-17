@@ -14,14 +14,14 @@ import { getEntitlement } from "@/lib/entitlements";
  * it is retired.
  */
 const NAV: readonly NavItem[] = [
-  { href: "/dashboard", label: "Today", emoji: "🌄" },
-  { href: "/weekly", label: "Weekly", emoji: "🗓️" },
-  { href: "/monthly", label: "Monthly", emoji: "🏔️" },
-  { href: "/history", label: "History", emoji: "📖" },
-  { href: "/achievements", label: "Stickers", emoji: "🏅" },
+  { href: "/dashboard", label: "Today", icon: "sun" },
+  { href: "/weekly", label: "Weekly", icon: "calendar" },
+  { href: "/monthly", label: "Monthly", icon: "mountain" },
+  { href: "/history", label: "History", icon: "book" },
+  { href: "/achievements", label: "Stickers", icon: "badge" },
 
-  { section: "Account", href: "/profile", label: "Settings", emoji: "⚙️" },
-  { href: "/upgrade", label: "Plan", emoji: "✨" },
+  { section: "Account", href: "/profile", label: "Settings", icon: "gear" },
+  { href: "/upgrade", label: "Plan", icon: "sparkle" },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
