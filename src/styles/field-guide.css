@@ -4382,6 +4382,259 @@ a.plan-mark:hover {
   font-size: 12.5px;
 }
 
+/* A row jumped to from a map pin gets a brief wash of colour so the click
+   has a visible destination, then settles back to normal. */
+.admin-table tbody tr:target td {
+  animation: rowFlag 2.2s var(--ease-field) both;
+}
+@keyframes rowFlag {
+  0% {
+    background: rgba(58, 96, 71, 0.16);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   World map — admin locations
+
+   Countries are static SVG paths computed on the server (see
+   `lib/admin/world-map`); this only styles them and the pins. Pins are green,
+   never orange — a place isn't stamp ink, it's structure, same as everything
+   else the panel counts.
+--------------------------------------------------------------------------- */
+.world-map-wrap {
+  position: relative;
+  padding: 20px 20px 8px;
+}
+.world-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: grab;
+  touch-action: none;
+}
+.world-map.dragging {
+  cursor: grabbing;
+}
+.world-map-land path {
+  fill: var(--paper-2);
+  stroke: var(--line);
+  stroke-width: 0.6;
+}
+.world-map-pin {
+  cursor: pointer;
+  outline: none;
+}
+.world-map-pin-halo {
+  fill: var(--moss-2);
+  opacity: 0.16;
+  transition: opacity 0.25s var(--ease-field);
+  /* Decorative only — without this, two nearby pins' halos fight over which
+     one is "hovered" and the tooltip flickers between them. */
+  pointer-events: none;
+}
+.world-map-pin-dot {
+  fill: var(--moss-2);
+  stroke: var(--card);
+  stroke-width: 1.5;
+  transition:
+    fill 0.2s var(--ease-field),
+    transform 0.2s var(--ease-field);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.world-map-pin:hover .world-map-pin-dot,
+.world-map-pin:focus-visible .world-map-pin-dot,
+.world-map-pin.active .world-map-pin-dot {
+  fill: var(--pine);
+  transform: scale(1.25);
+}
+.world-map-pin:hover .world-map-pin-halo,
+.world-map-pin:focus-visible .world-map-pin-halo,
+.world-map-pin.active .world-map-pin-halo {
+  opacity: 0.3;
+}
+.world-map-pin:focus-visible .world-map-pin-dot {
+  stroke: var(--signal);
+}
+.world-map-cluster {
+  cursor: pointer;
+}
+.world-map-cluster-count {
+  fill: var(--card);
+  font-family: var(--mono);
+  font-weight: 600;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.world-map-tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 14px));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-field);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  pointer-events: none;
+  z-index: 5;
+  animation: fade 0.15s var(--ease-field) both;
+}
+.world-map-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.world-map-tooltip b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13.5px;
+}
+.world-map-tooltip-icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  color: var(--moss-2);
+}
+.world-map-tooltip-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--moss-2);
+  margin-top: 2px;
+}
+
+.world-map-controls {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-field);
+}
+.world-map-controls button {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: none;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s var(--ease-field), color 0.15s var(--ease-field);
+}
+.world-map-controls button:hover {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.world-map-controls button + button {
+  border-top: 1px solid var(--line);
+}
+.world-map-controls .world-map-reset {
+  width: auto;
+  padding: 0 10px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* A cluster's members, listed so an admin can jump straight to one without
+   needing the map to zoom them physically apart — which, for two peaks a
+   few kilometres apart in the same range, no reasonable zoom ever will. */
+.world-map-picker {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  width: 220px;
+  max-width: calc(100% - 60px);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-field-lg);
+  overflow: hidden;
+  animation: fade 0.15s var(--ease-field) both;
+}
+.world-map-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.world-map-picker-head button {
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.world-map-picker-head button:hover {
+  color: var(--ink);
+}
+.world-map-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.world-map-picker-list a {
+  display: block;
+  padding: 7px 8px;
+  border-radius: 8px;
+  transition: background 0.15s var(--ease-field);
+}
+.world-map-picker-list a:hover {
+  background: var(--paper-2);
+}
+.world-map-picker-list b {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.world-map-picker-list span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
 /* A field pair inside a panel form. */
 .admin-field {
   display: flex;
@@ -4511,4 +4764,104 @@ select.input {
   align-items: flex-end;
   gap: 4px;
   flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Account detail — controls and the danger zone
+
+   The one place in the panel that can permanently remove something. Signal
+   orange here is doing its normal job: this is a warning, not structure.
+--------------------------------------------------------------------------- */
+.danger-zone {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+.danger-zone h4 {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--signal);
+  margin: 0 0 6px;
+}
+.danger-zone > p {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  margin: 0 0 12px;
+  max-width: 40ch;
+}
+
+/* ---------------------------------------------------------------------------
+   Account detail — activity timeline
+
+   Built entirely from tables that already exist (quest history, submissions,
+   sessions) rather than a dedicated audit log, so it isn't empty for every
+   account that existed before the day this shipped.
+--------------------------------------------------------------------------- */
+.account-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 640px;
+  overflow-y: auto;
+}
+.account-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--line-2);
+}
+.account-timeline-item:last-child {
+  border-bottom: 0;
+}
+.account-timeline-icon {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-2);
+  color: var(--moss-2);
+}
+.account-timeline-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.account-timeline-item.is-rejected .account-timeline-icon {
+  color: var(--signal);
+}
+.account-timeline-item.is-session .account-timeline-icon {
+  color: var(--ink-3);
+}
+.account-timeline-body {
+  flex: 1;
+  min-width: 0;
+}
+.account-timeline-body b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-timeline-body span {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-top: 1px;
+}
+.account-timeline-when {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  padding-top: 2px;
 }

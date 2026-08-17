@@ -175,14 +175,21 @@ export default async function AdminUsersPage({
                     delay={stagger(index, 8)}
                     className="admin-row border-b border-line px-5 py-4 last:border-b-0"
                   >
-                    <Avatar
-                      name={user.name}
-                      className="size-9 flex-[0_0_2.25rem] rounded-[11px] text-[12px]"
-                    />
-                    <span className="min-w-[min(100%,14rem)] flex-1">
-                      <b className="block text-[15px] font-semibold">{user.name}</b>
-                      <span className="meta normal-case tracking-[0.06em]">{user.email}</span>
-                    </span>
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="flex min-w-[min(100%,14rem)] flex-1 items-center gap-3"
+                    >
+                      <Avatar
+                        name={user.name}
+                        className="size-9 flex-[0_0_2.25rem] rounded-[11px] text-[12px]"
+                      />
+                      <span className="min-w-0">
+                        <b className="block text-[15px] font-semibold hover:underline">
+                          {user.name}
+                        </b>
+                        <span className="meta normal-case tracking-[0.06em]">{user.email}</span>
+                      </span>
+                    </Link>
                     <span className="meta w-24 shrink-0">{user._count.history} issued</span>
                     <span className="meta hidden w-24 shrink-0 lg:inline">
                       {user.role === "ADMIN"
