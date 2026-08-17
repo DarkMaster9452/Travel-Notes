@@ -26,7 +26,7 @@ const STEPS = [
   {
     num: "STEP 01",
     title: "You set the constraints once",
-    body: "Range, terrain, distance, difficulty, time window, party size. Two minutes. You can change them any time, and the generator remembers.",
+    body: "Range, terrain, distance, difficulty, time. Two minutes, changeable any time.",
     icon: (
       <>
         <circle cx="16" cy="16" r="12" />
@@ -37,7 +37,7 @@ const STEPS = [
   {
     num: "STEP 02",
     title: "The generator picks, not you",
-    body: "It cross-references terrain data, season, daylight and everything it has already sent you, then commits to one real place with one clear objective.",
+    body: "It reads the terrain, the season, the daylight and everything it has already sent you, then commits to one place.",
     icon: (
       <>
         <path d="M4 24l8-13 5 8 3-5 8 10z" />
@@ -48,7 +48,7 @@ const STEPS = [
   {
     num: "STEP 03",
     title: "It arrives and you answer it",
-    body: "Online for the demo, in your inbox once you subscribe. Objective, bonus challenge, place to be. Log it when it's done and it never comes back.",
+    body: "Objective, bonus challenge, place to be. Log it when it's done and it never comes back.",
     icon: (
       <>
         <path d="M5 8h22v16H5z" />
@@ -66,10 +66,7 @@ export function HowItWorks() {
         <div className="sec-head">
           <span className="eyebrow">The mechanism</span>
           <h2 className="h2">Decision fatigue is the thing that keeps you home.</h2>
-          <p className="lede">
-            Most weekends die in a browser tab. Summit Quest removes the choosing and leaves the
-            going.
-          </p>
+          <p className="lede">Most weekends die in a browser tab. This one removes the choosing.</p>
         </div>
         <div className="steps">
           {STEPS.map((step) => (
@@ -96,22 +93,22 @@ const MAIL_POINTS = [
   {
     k: "06:00",
     title: "It lands before you're properly awake",
-    body: "Sent the morning of your chosen day, so the decision is made before the excuses arrive.",
+    body: "The morning you chose, before the excuses arrive.",
   },
   {
     k: "ONE",
     title: "One quest. No feed, no options.",
-    body: "Nothing to scroll through. The weekly one is the same for everybody, so the only comparing happens afterwards.",
+    body: "Nothing to scroll. The weekly is the same for everybody.",
   },
   {
     k: "LOG",
     title: "Reply to log it",
-    body: "Answer the mail with a photo or a word and it goes into your quest history — and never gets issued again.",
+    body: "Answer with a photo or a word. It never gets issued again.",
   },
   {
     k: "SKIP",
     title: "Skip without guilt",
-    body: "Weather turned, life happened. One tap re-rolls it or pauses you until you're ready.",
+    body: "One tap re-rolls it, or pauses you until you're ready.",
   },
 ];
 
@@ -127,8 +124,8 @@ export function MailSection() {
             The inbox is the product.
           </h2>
           <p className="lede mt-[18px]">
-            Once you&apos;re subscribed you stop visiting a site at all. The quest finds you on the
-            morning you agreed to, already decided, already timed to your daylight.
+            Subscribed, you stop visiting a site at all. The quest finds you, already decided and
+            timed to your daylight.
           </p>
           <ul className="mail-list">
             {MAIL_POINTS.map((point) => (
@@ -211,14 +208,11 @@ export function WeeklySection() {
             The whole community gets it.
           </h2>
           <p className="lede mt-[18px]">
-            The weekly and the monthly quest are identical for every member — same objective, same
-            window, same bonus challenge. That&apos;s what makes the rest of it work: you can compare
-            logs with someone you&apos;ve never met, run into three other people on the same ridge at
-            dawn, and argue about the bonus in the thread afterwards.
+            Same objective, same window, same bonus for every member — so you can compare logs with
+            someone you have never met, and argue about the bonus afterwards.
           </p>
           <p className="muted mt-4 text-[15.5px]">
-            Your personal quests are still yours alone — generated from your preferences, on demand
-            or on your own schedule. The weekly is the one everybody shares.
+            Your own quests stay yours alone. The weekly is the one everybody shares.
           </p>
           <ul className="rope-steps mt-[26px]">
             <li>
@@ -377,9 +371,8 @@ export function TogetherSection() {
             have to go alone.
           </h2>
           <p className="lede mt-[18px]">
-            Ask for company and Summit Quest looks for people who were issued a compatible quest —
-            same range, same morning, similar pace — and offers you each other. Nothing is shared
-            until you both say yes.
+            Ask for company and you are matched on the quest — same range, same morning, similar
+            pace. Nothing is shared until you both say yes.
           </p>
           <ul className="rope-steps">
             <li>
@@ -401,9 +394,8 @@ export function TogetherSection() {
           <div className="safety">
             <IconShield />
             <p>
-              <b>How we keep it sane:</b> first names only, verified email, no home addresses, no
-              public profiles to browse. You see a person once you&apos;ve both accepted the same
-              quest — and either of you can unmatch, block or report without a word of explanation.
+              <b>How we keep it sane:</b> first names only, no addresses, no profiles to browse.
+              Either of you can unmatch, block or report without explaining.
             </p>
           </div>
         </div>
@@ -443,9 +435,8 @@ export function TogetherSection() {
               <span className="eyebrow">The board</span>
               <h3 className="mt-3">Open quests this weekend.</h3>
               <p>
-                Slovak hiking groups have worked like this for years: somebody posts where and when,
-                and whoever is free turns up. Summit Quest keeps that — it just attaches a real quest
-                to the post, so everyone arrives knowing what the day is for.
+                Somebody posts where and when, whoever is free turns up — with a real quest attached,
+                so everyone arrives knowing what the day is for.
               </p>
             </div>
             <AuthButton mode="signup" className="btn btn-primary btn-sm">
@@ -485,11 +476,8 @@ export function TogetherSection() {
                 Join a quest and a room opens.
               </h3>
               <p className="muted mt-[14px] text-[15.5px]">
-                Propose any quest you&apos;re thinking of doing — one of yours, the weekly, or
-                something you invented. People ask to join, you accept who you want, and the moment
-                there are two of you a private room opens: meeting place, parking, who&apos;s
-                driving, what the weather did overnight. It closes a week after the quest, and
-                nothing in it is public.
+                Accept who you want and a private room opens: meeting place, parking, who is driving,
+                what the weather did overnight. It closes a week after, and nothing in it is public.
               </p>
               <ul className="rope-steps mt-[22px]">
                 <li>
@@ -542,8 +530,7 @@ export function TogetherSection() {
           </div>
 
           <p className="note text-center mt-[26px]">
-            A community, not a contact list. There are no profiles to browse — you meet people
-            through the quest they opened.
+            A community, not a contact list. You meet people through the quest they opened.
           </p>
         </div>
       </div>
@@ -564,120 +551,141 @@ export function TerrainSection() {
           <h2 className="h2">Five kinds of ground, one kind of morning.</h2>
         </div>
         <div className="terrains">
-          <article className="terrain">
-            <svg className="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="terrain-ridge" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#F5B872" />
-                  <stop offset="1" stopColor="#8A4A3C" />
-                </linearGradient>
-              </defs>
-              <rect width="100" height="140" fill="url(#terrain-ridge)" />
-              <circle cx="70" cy="34" r="11" fill="#FFF0C9" opacity=".85" />
-              <path d="M0 96 L26 52 L44 84 L58 62 L100 110 V140 H0Z" fill="#4A3A46" />
-              <path d="M0 118 L30 84 L52 112 L74 92 L100 122 V140 H0Z" fill="#2A2230" />
-            </svg>
-            <b>Ridgeline</b>
-            <span>Exposure</span>
-          </article>
-
-          <article className="terrain">
-            <svg className="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="terrain-forest" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#BFD8A8" />
-                  <stop offset="1" stopColor="#1F3324" />
-                </linearGradient>
-              </defs>
-              <rect width="100" height="140" fill="url(#terrain-forest)" />
-              <g fill="#2E4A33">
-                <path d="M18 120 L28 60 L38 120Z" />
-                <path d="M46 128 L58 44 L70 128Z" />
-                <path d="M72 122 L82 66 L92 122Z" />
-                <path d="M2 124 L12 74 L22 124Z" />
-              </g>
-              <g fill="#16261B" opacity=".85">
-                <path d="M30 140 L42 88 L54 140Z" />
-                <path d="M62 140 L76 92 L90 140Z" />
-                <path d="M-4 140 L8 96 L20 140Z" />
-              </g>
-            </svg>
-            <b>Deep forest</b>
-            <span>Silence</span>
-          </article>
-
-          <article className="terrain">
-            <svg className="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="terrain-water" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#A8C9DE" />
-                  <stop offset=".55" stopColor="#4E7C93" />
-                  <stop offset="1" stopColor="#16323F" />
-                </linearGradient>
-              </defs>
-              <rect width="100" height="140" fill="url(#terrain-water)" />
-              <path d="M0 74 L30 40 L52 74 L70 52 L100 82 V88 H0Z" fill="#37596B" />
-              <rect y="88" width="100" height="52" fill="#1E4353" />
-              <g stroke="#CFE6F2" strokeWidth="1.4" opacity=".5">
-                <path d="M12 100h26M52 100h22M22 110h34M60 118h22M8 122h30" />
-              </g>
-            </svg>
-            <b>Lakes &amp; rivers</b>
-            <span>Cold water</span>
-          </article>
-
-          <article className="terrain">
-            <svg className="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="terrain-coast" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#FFD9A0" />
-                  <stop offset=".5" stopColor="#63B6C2" />
-                  <stop offset="1" stopColor="#12545F" />
-                </linearGradient>
-              </defs>
-              <rect width="100" height="140" fill="url(#terrain-coast)" />
-              <circle cx="30" cy="30" r="9" fill="#FFF3D6" />
-              <path
-                d="M0 66 C22 58 34 74 56 66 C74 60 86 70 100 64 V140 H0Z"
-                fill="#2E8794"
-                opacity=".9"
-              />
-              <path d="M0 92 C26 84 40 98 62 90 C80 84 90 94 100 88 V140 H0Z" fill="#12545F" />
-              <path d="M0 122 C30 116 44 126 68 120 C84 116 92 122 100 118 V140 H0Z" fill="#E8D9B4" />
-            </svg>
-            <b>Coast</b>
-            <span>Long light</span>
-          </article>
-
-          <article className="terrain">
-            <svg className="scene" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="terrain-alpine" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#2B3A56" />
-                  <stop offset="1" stopColor="#0C1220" />
-                </linearGradient>
-              </defs>
-              <rect width="100" height="140" fill="url(#terrain-alpine)" />
-              <g fill="#EFF4FF" opacity=".8">
-                <circle cx="18" cy="20" r="1.2" />
-                <circle cx="42" cy="12" r="1" />
-                <circle cx="66" cy="26" r="1.3" />
-                <circle cx="86" cy="14" r="1" />
-                <circle cx="30" cy="36" r=".9" />
-                <circle cx="78" cy="40" r="1.1" />
-              </g>
-              <path d="M0 100 L24 46 L40 78 L54 56 L74 84 L100 58 V140 H0Z" fill="#3C4C6B" />
-              <path d="M24 46 L33 64 H15Z M54 56 L61 70 H47Z" fill="#EDF2FF" />
-              <path d="M0 118 L28 90 L50 116 L72 96 L100 120 V140 H0Z" fill="#161E2F" />
-            </svg>
-            <b>High alpine</b>
-            <span>Thin air</span>
-          </article>
+          {TERRAINS.map((terrain) => (
+            <article className="terrain" key={terrain.name}>
+              <svg
+                className="scene"
+                viewBox="0 0 100 140"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                {/* Flat bands, not graded ones: these are printed scenes on a
+                    field-guide cover, and nothing in this product fades from
+                    one colour into another. Depth comes from the stack. */}
+                {terrain.bands.map((band, index) => (
+                  <rect
+                    key={index}
+                    y={band.y}
+                    width="100"
+                    height={band.h}
+                    fill={band.fill}
+                  />
+                ))}
+                {terrain.shapes}
+              </svg>
+              <b>{terrain.name}</b>
+              <span>{terrain.note}</span>
+            </article>
+          ))}
         </div>
       </div>
     </section>
   );
 }
+
+type Terrain = {
+  name: string;
+  note: string;
+  /** Sky and ground, painted from the top down. */
+  bands: { y: number; h: number; fill: string }[];
+  shapes: React.ReactNode;
+};
+
+const TERRAINS: Terrain[] = [
+  {
+    name: "Ridgeline",
+    note: "Exposure",
+    bands: [
+      { y: 0, h: 58, fill: "#E8A968" },
+      { y: 58, h: 82, fill: "#B4704A" },
+    ],
+    shapes: (
+      <>
+        <circle cx="70" cy="34" r="11" fill="#FFF0C9" />
+        <path d="M0 96 L26 52 L44 84 L58 62 L100 110 V140 H0Z" fill="#4A3A46" />
+        <path d="M0 118 L30 84 L52 112 L74 92 L100 122 V140 H0Z" fill="#2A2230" />
+      </>
+    ),
+  },
+  {
+    name: "Deep forest",
+    note: "Silence",
+    bands: [
+      { y: 0, h: 62, fill: "#BFD8A8" },
+      { y: 62, h: 78, fill: "#5E7F4E" },
+    ],
+    shapes: (
+      <>
+        <g fill="#2E4A33">
+          <path d="M18 120 L28 60 L38 120Z" />
+          <path d="M46 128 L58 44 L70 128Z" />
+          <path d="M72 122 L82 66 L92 122Z" />
+          <path d="M2 124 L12 74 L22 124Z" />
+        </g>
+        <g fill="#16261B">
+          <path d="M30 140 L42 88 L54 140Z" />
+          <path d="M62 140 L76 92 L90 140Z" />
+          <path d="M-4 140 L8 96 L20 140Z" />
+        </g>
+      </>
+    ),
+  },
+  {
+    name: "Lakes & rivers",
+    note: "Cold water",
+    bands: [
+      { y: 0, h: 74, fill: "#A8C9DE" },
+      { y: 74, h: 66, fill: "#4E7C93" },
+    ],
+    shapes: (
+      <>
+        <path d="M0 74 L30 40 L52 74 L70 52 L100 82 V88 H0Z" fill="#37596B" />
+        <rect y="88" width="100" height="52" fill="#1E4353" />
+        <g stroke="#CFE6F2" strokeWidth="1.4" opacity=".5">
+          <path d="M12 100h26M52 100h22M22 110h34M60 118h22M8 122h30" />
+        </g>
+      </>
+    ),
+  },
+  {
+    name: "Coast",
+    note: "Long light",
+    bands: [
+      { y: 0, h: 64, fill: "#FFD9A0" },
+      { y: 64, h: 76, fill: "#2E8794" },
+    ],
+    shapes: (
+      <>
+        <circle cx="30" cy="30" r="9" fill="#FFF3D6" />
+        <path d="M0 92 C26 84 40 98 62 90 C80 84 90 94 100 88 V140 H0Z" fill="#12545F" />
+        <path d="M0 122 C30 116 44 126 68 120 C84 116 92 122 100 118 V140 H0Z" fill="#E8D9B4" />
+      </>
+    ),
+  },
+  {
+    name: "High alpine",
+    note: "Thin air",
+    bands: [
+      { y: 0, h: 56, fill: "#2B3A56" },
+      { y: 56, h: 84, fill: "#1A2439" },
+    ],
+    shapes: (
+      <>
+        <g fill="#EFF4FF" opacity=".8">
+          <circle cx="18" cy="20" r="1.2" />
+          <circle cx="42" cy="12" r="1" />
+          <circle cx="66" cy="26" r="1.3" />
+          <circle cx="86" cy="14" r="1" />
+          <circle cx="30" cy="36" r=".9" />
+          <circle cx="78" cy="40" r="1.1" />
+        </g>
+        <path d="M0 100 L24 46 L40 78 L54 56 L74 84 L100 58 V140 H0Z" fill="#3C4C6B" />
+        <path d="M24 46 L33 64 H15Z M54 56 L61 70 H47Z" fill="#EDF2FF" />
+        <path d="M0 118 L28 90 L50 116 L72 96 L100 120 V140 H0Z" fill="#161E2F" />
+      </>
+    ),
+  },
+];
 
 /* ========================================================================== */
 /* Proof & approval                                                           */
@@ -703,21 +711,17 @@ export function ProofSection() {
             until it&apos;s checked.
           </h2>
           <p className="lede mt-[18px]">
-            When the quest is done, everyone who was on it files proof: a couple of photos, a Strava
-            or GPX link, or just an honest note about what happened. A human on our side reads it.
+            Photos, a Strava link, or an honest note. A human reads it.
           </p>
           <p className="muted mt-4 text-[15.5px]">
-            Approved means it&apos;s locked into your history, the sticker unlocks, and that quest is
-            retired for you forever. Rejected means we&apos;ll tell you why — usually a missing
-            photo, not a suspicion. Turned back at the saddle because the weather closed in? Say so
-            and log it as an honest retreat; that gets approved too.
+            Approved locks it into your history, unlocks the sticker and retires the quest forever.
+            Turned back by the weather? Log it as a retreat — that gets approved too.
           </p>
           <div className="safety mt-6">
             <IconShield />
             <p>
-              <b>Why we bother:</b> the stickers are physical and the weekly leaderboard is shared,
-              so &ldquo;I did it&rdquo; has to mean something. Your photos stay private to the quest
-              unless you tick the box to show them on the community feed.
+              <b>Why we bother:</b> the stickers are physical and the board is shared, so &ldquo;I
+              did it&rdquo; has to mean something. Photos stay private unless you say otherwise.
             </p>
           </div>
         </div>
@@ -842,8 +846,8 @@ export function StickersSection() {
             comes with a sticker.
           </h2>
           <p className="lede mt-[18px]">
-            Not a badge that glows on a screen for one second. A real die-cut sticker, drawn for that
-            one achievement, and it&apos;s yours to put somewhere in the world.
+            Not a badge that glows for a second. A die-cut sticker, drawn for that one achievement,
+            yours to put somewhere in the world.
           </p>
           <ul className="unlocks">
             {UNLOCKS.map((unlock) => (
@@ -853,10 +857,8 @@ export function StickersSection() {
             ))}
           </ul>
           <p className="muted mt-6 text-[15.5px]">
-            Unlocked in your account the moment you log the quest. Subscribers get the printed sheet
-            in the post — then stick it on your bottle, your frame, a hut wall, a signpost at the end
-            of a road nobody drives down. Photograph where it ended up and it goes on the community
-            map.
+            Unlocked the moment you log the quest. Subscribers get the printed sheet in the post —
+            photograph where it ends up and it goes on the map.
           </p>
           <div className="hero-actions mt-[26px]">
             <AuthButton mode="signup" className="btn btn-signal">
@@ -902,7 +904,7 @@ const PLANS: {
     name: "Free",
     price: "€0",
     period: "/ forever",
-    desc: "An account and three real quests. Enough to find out whether being told what to do suits you.",
+    desc: "Three real quests, to find out whether being told what to do suits you.",
     features: [
       { text: "Free account + 3 real quests" },
       { text: "Your own country only" },
@@ -918,7 +920,7 @@ const PLANS: {
     name: "Explorer",
     price: "€11",
     period: "/ month",
-    desc: "The real thing: unlimited quests, worldwide, delivered to your inbox on the day you pick.",
+    desc: "Unlimited quests, worldwide, in your inbox on the morning you pick.",
     features: [
       { text: "Unlimited quest generation" },
       { text: "Worldwide range, any terrain" },
@@ -938,7 +940,7 @@ const PLANS: {
     name: "Ultra Explorer",
     price: "€31",
     period: "/ month",
-    desc: "For people who want the quest built around something specific — a season, a range, a goal.",
+    desc: "For quests built around something specific — a season, a range, a goal.",
     features: [
       { text: "Everything in Explorer" },
       { text: "Custom quests you commission" },
@@ -960,9 +962,7 @@ export function PricingSection() {
         <div className="sec-head center">
           <span className="eyebrow centered">Plans</span>
           <h2 className="h2">Try it here. Subscribe to stop deciding.</h2>
-          <p className="lede">
-            Cancel any time, from the footer of any quest you&apos;ve ever been sent.
-          </p>
+          <p className="lede">Cancel any time, from the footer of any quest mail.</p>
         </div>
 
         <div className="plans">
@@ -1004,43 +1004,43 @@ export function PricingSection() {
 const FAQ = [
   {
     q: "Is this just a random trail picker?",
-    a: "No. A random picker gives you a trail; a quest gives you a reason to be on it. Every issue comes with an objective — be somewhere at a specific hour, reach a specific point, find a specific thing — plus one bonus challenge that makes the day yours rather than the map's. And it tracks what it has already sent you, so the same assignment never comes twice.",
+    a: "A picker gives you a trail; a quest gives you a reason to be on it — an objective, an hour, and one bonus challenge. It also remembers what it has sent you, so nothing repeats.",
   },
   {
     q: "What does the free version actually give me?",
-    a: "A free account with three real quests inside your own country, no card needed — plus your history and the digital stickers you unlock. What you can play with on this page without an account is only a sample loop above Rajecké Teplice. Inbox delivery, worldwide range, partner matching, the community board and the printed sticker sheets start at Explorer.",
+    a: "Three real quests in your own country, no card, plus your history and digital stickers. Inbox delivery, worldwide range, matching and printed sheets start at Explorer.",
   },
   {
     q: "Why do I need an account?",
-    a: "Because a quest is only worth issuing once. Your account is what remembers where you have already been, so nothing repeats; it holds your preferences, your logged quests, your stickers and any matches you accept. The page you're on can only ever show you the same sample loop above Rajecké Teplice — real quests need somewhere to live. The account is free.",
+    a: "Because a quest is only worth issuing once, and your account is what remembers where you have been. This page can only ever show the same sample loop. The account is free.",
   },
   {
     q: "What are the stickers?",
-    a: "Every level and milestone — your first quest, ten logged, your first night start, your first quest with a partner, a thousand metres in one push — has its own die-cut sticker drawn for it. It unlocks in your account when you log the quest, and subscribers get the printed sheet in the post. Where you stick it is up to you: bottle, frame, hut wall, a signpost at the end of a road. Photograph it and it goes on the community map.",
+    a: "Every milestone has its own die-cut sticker. It unlocks when you log the quest; subscribers get the printed sheet in the post. Where it ends up is your business — photograph it and it goes on the map.",
   },
   {
     q: "How often do quests arrive by mail?",
-    a: "You choose: weekly, every two weeks, or monthly — and which morning. One mail, one quest, sent early enough that you can still act on it that day. If you'd rather pull than be pushed, generate on demand instead; subscribers can do both.",
+    a: "Weekly, fortnightly or monthly, on the morning you choose — early enough to act on that day. Or generate on demand instead. Subscribers can do both.",
   },
   {
     q: "What if the quest is beyond me, or the weather is wrong?",
-    a: "Re-roll it. Every mail has a re-roll and a pause link, and neither counts against you. Difficulty is your setting, not ours — set it to Easy and it stays Easy until you say otherwise.",
+    a: "Re-roll it. Every mail has a re-roll and a pause link, and neither counts against you. Difficulty is your setting, not ours.",
   },
   {
     q: "Is it safe to be sent somewhere by an algorithm?",
-    a: "Quests are built from marked, publicly documented routes and come with distance, elevation, an estimated moving time and a daylight window. They are not a substitute for your own judgement, a map, or a weather check on the morning — and night quests are only issued if you explicitly ask for them.",
+    a: "Quests use marked, documented routes and carry distance, ascent, moving time and a daylight window. They are not a substitute for your own judgement, a map or the morning forecast. Night quests are only issued if you ask.",
   },
   {
     q: "How do you know I actually did it?",
-    a: "Because you tell us, and a human checks. To log a quest you file proof: photos, a Strava or GPX link, or a written account of the day — and if you went with someone, you both file. An admin reviews it, approves or comes back with a question, and only then does it enter your history and unlock the sticker. It isn't surveillance; it's the same reason a summit book exists. Honest retreats count: say the weather turned and you got to the saddle, and that gets approved as a retreat rather than quietly failing.",
+    a: "You file proof — photos, a Strava link, or an account of the day — and a human reads it. Same reason a summit book exists. Honest retreats count: say the weather turned and it is approved as a retreat, not a failure.",
   },
   {
     q: "Do I have to meet strangers?",
-    a: "No — matching is off unless you switch it on, and solo is a first-class way to use Summit Quest. If you do switch it on, you are matched on the quest rather than on a profile: same range, same morning, similar pace. You see a first name, a rough distance from you and how many quests they've logged; nothing is exchanged until you have both accepted, and either side can unmatch, block or report at any point. Meet at the trailhead, tell someone where you're going, and if it feels off, walk your own quest.",
+    a: "No. Matching is off unless you switch it on, and solo is a first-class way to use this. If you do, you are matched on the quest, not a profile — and either side can unmatch, block or report at any point.",
   },
   {
     q: "Can I cancel?",
-    a: "Any time, from the footer of any quest mail or your account page. Billing is handled by Stripe, you keep access until the end of the period you paid for, and your quest history stays exportable.",
+    a: "Any time, from any quest mail or your account page. You keep access to the end of the period you paid for, and your history stays exportable.",
   },
 ];
 
@@ -1083,7 +1083,7 @@ export function FinalCta() {
           Somewhere out there is a morning with your name on it.
         </h2>
         <p className="lede mx-auto mt-5 max-w-[48ch]">
-          Generate one free right now. If it gets you out of the house, let the next one come to you.
+          Generate one free. If it gets you out of the house, let the next one come to you.
         </p>
         <div className="hero-actions justify-center">
           <AuthButton mode="signup" className="btn btn-signal btn-lg">
@@ -1128,8 +1128,7 @@ export function LandingFooter() {
               Summit&nbsp;Quest
             </a>
             <p className="foot-blurb">
-              Adventures issued, not planned. One quest at a time, to your inbox, until you run out
-              of weekends.
+              Adventures issued, not planned. One at a time, until you run out of weekends.
             </p>
           </div>
           <div>

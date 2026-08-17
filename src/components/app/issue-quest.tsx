@@ -55,6 +55,7 @@ export function IssueQuestButton({
 
   return (
     <button type="button" className={className} onClick={issue} disabled={pending || disabled}>
+      {pending && <span className="spinner" aria-hidden="true" />}
       {pending ? "Choosing…" : label}
       {!pending && <IconArrowRight />}
     </button>

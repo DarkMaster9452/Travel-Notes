@@ -2645,6 +2645,13 @@ textarea.input {
    delays alike) to a single frame.
 =========================================================================== */
 
+/* Every entrance below fills `backwards`, never `both`.
+   A filling animation keeps writing its final keyframe forever, and animated
+   declarations outrank ordinary ones — so `both` would pin `transform: none`
+   on the element for good and silently kill every `:hover` lift underneath it.
+   `backwards` holds the *starting* frame before the delay elapses, which is
+   the only part an entrance actually needs, and hands the element back to its
+   own styles the moment it lands. */
 @keyframes riseIn {
   from {
     opacity: 0;
@@ -2749,22 +2756,61 @@ textarea.input {
   }
 }
 
+/* -------------------------------- the hero ------------------------------- */
+
+/* Everything above the fold arrives in order — eyebrow, headline, promise,
+   buttons, figures, then the quest itself — so the page reads as being dealt
+   out rather than switched on. */
+.hero-enter > div > *,
+.hero-enter > div:last-child {
+  animation: riseIn 0.62s var(--ease-field) backwards;
+}
+.hero-enter > div > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.hero-enter > div > *:nth-child(2) {
+  animation-delay: 0.13s;
+}
+.hero-enter > div > *:nth-child(3) {
+  animation-delay: 0.22s;
+}
+.hero-enter > div > *:nth-child(4) {
+  animation-delay: 0.31s;
+}
+.hero-enter > div > *:nth-child(5) {
+  animation-delay: 0.4s;
+}
+/* The issued quest lands last, and lands like a document. */
+.hero-enter > div:last-child {
+  animation-name: cardIn;
+  animation-duration: 0.7s;
+  animation-delay: 0.34s;
+}
+
+/* The figures under the headline tick up as the eye reaches them. */
+.hero-meta b {
+  transition: transform 0.24s var(--ease-out-back);
+}
+.hero-meta div:hover b {
+  transform: translateY(-2px);
+}
+
 /* ------------------------------ utilities -------------------------------- */
 
 .rise-in {
-  animation: riseIn 0.5s var(--ease-field) both;
+  animation: riseIn 0.5s var(--ease-field) backwards;
 }
 .tick-in {
-  animation: tickIn 0.42s var(--ease-field) both;
+  animation: tickIn 0.42s var(--ease-field) backwards;
 }
 .drop-in {
-  animation: dropIn 0.2s var(--ease-field) both;
+  animation: dropIn 0.2s var(--ease-field) backwards;
 }
 .slide-in {
-  animation: slideIn 0.28s var(--ease-field) both;
+  animation: slideIn 0.28s var(--ease-field) backwards;
 }
 .stamp-in {
-  animation: stampIn 0.46s var(--ease-field) both;
+  animation: stampIn 0.46s var(--ease-field) backwards;
 }
 
 /* Anything that should visibly accept a press. */
@@ -3199,7 +3245,7 @@ a.plan-mark:hover {
 .ceremony-seal {
   display: flex;
   justify-content: center;
-  animation: stampIn 0.6s var(--ease-field) both;
+  animation: stampIn 0.6s var(--ease-field) backwards;
 }
 .member-stamp {
   width: 96px;
@@ -3228,7 +3274,7 @@ a.plan-mark:hover {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--moss-2);
-  animation: riseIn 0.5s var(--ease-field) 0.12s both;
+  animation: riseIn 0.5s var(--ease-field) 0.12s backwards;
 }
 .ceremony-title {
   margin-top: 10px;
@@ -3237,7 +3283,7 @@ a.plan-mark:hover {
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.04;
-  animation: riseIn 0.55s var(--ease-field) 0.18s both;
+  animation: riseIn 0.55s var(--ease-field) 0.18s backwards;
 }
 .ceremony-stop {
   color: var(--signal);
@@ -3248,7 +3294,7 @@ a.plan-mark:hover {
   font-size: 16.5px;
   line-height: 1.55;
   color: var(--ink-2);
-  animation: riseIn 0.5s var(--ease-field) 0.26s both;
+  animation: riseIn 0.5s var(--ease-field) 0.26s backwards;
 }
 .ceremony-list {
   list-style: none;
@@ -3263,7 +3309,7 @@ a.plan-mark:hover {
   align-items: flex-start;
   padding: 15px 4px;
   border-bottom: 1px dashed var(--line);
-  animation: tickIn 0.44s var(--ease-field) both;
+  animation: tickIn 0.44s var(--ease-field) backwards;
 }
 .ceremony-line b {
   display: block;
@@ -3290,10 +3336,12 @@ a.plan-mark:hover {
   place-items: center;
   margin-top: 1px;
 }
+/* Drawn at rest, so the stroke stays put once the animation hands the
+   element back to its own styles. */
 .ceremony-check {
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: drawStroke 0.34s var(--ease-field) both;
+  stroke-dashoffset: 0;
+  animation: drawStroke 0.34s var(--ease-field) backwards;
 }
 .ceremony-actions {
   display: flex;
@@ -3301,10 +3349,10 @@ a.plan-mark:hover {
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 34px;
-  animation: riseIn 0.5s var(--ease-field) both;
+  animation: riseIn 0.5s var(--ease-field) backwards;
 }
 .ceremony-foot {
-  animation: riseIn 0.5s var(--ease-field) both;
+  animation: riseIn 0.5s var(--ease-field) backwards;
 }
 
 /* ===========================================================================
@@ -3328,7 +3376,7 @@ a.plan-mark:hover {
 .stat-cell {
   background: var(--card);
   padding: 18px 20px 16px;
-  animation: riseIn 0.5s var(--ease-field) both;
+  animation: riseIn 0.5s var(--ease-field) backwards;
   transition: background 0.2s;
 }
 .stat-cell:hover {
@@ -3635,15 +3683,15 @@ a.plan-mark:hover {
 .grow-y {
   transform-origin: bottom;
   transform-box: fill-box;
-  animation: growY 0.62s var(--ease-field) both;
+  animation: growY 0.62s var(--ease-field) backwards;
 }
 .grow-x {
   transform-origin: left;
-  animation: growX 0.66s var(--ease-field) both;
+  animation: growX 0.66s var(--ease-field) backwards;
 }
 .wipe {
   transform-origin: left;
-  animation: wipeIn 0.85s var(--ease-field) both;
+  animation: wipeIn 0.85s var(--ease-field) backwards;
 }
 
 /* --------------------------- admin furniture ----------------------------- */

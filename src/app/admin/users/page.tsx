@@ -4,7 +4,7 @@ import Link from "next/link";
 import { StatGrid } from "@/components/admin/stat-grid";
 import { Reveal } from "@/components/app/motion";
 import { Avatar, Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
-import { LIVE_STATUSES } from "@/lib/admin/stats";
+import { getAdminOverview, LIVE_STATUSES } from "@/lib/admin/stats";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { stagger } from "@/lib/motion";
@@ -73,7 +73,10 @@ export default async function AdminUsersPage({
       : {}),
   };
 
-  const [users, matched, totals] = await Promise.all([
+  // The headline figures come from the same place the overview reads them, so
+  // "subscribers" and "new this week" cannot mean one thing on one page and
+  // something slightly different on another.
+  const [users, matched, overview] = await Promise.all([
     db.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -90,19 +93,8 @@ export default async function AdminUsersPage({
       },
     }),
     db.user.count({ where }),
-    Promise.all([
-      db.user.count({ where: { role: "USER" } }),
-      db.user.count({ where: { role: "ADMIN" } }),
-      db.user.count({
-        where: { subscription: { is: { status: { in: [...LIVE_STATUSES] } } } },
-      }),
-      db.user.count({
-        where: { role: "USER", createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } },
-      }),
-    ]),
+    getAdminOverview(),
   ]);
-
-  const [customers, admins, subscribers, newThisWeek] = totals;
 
   return (
     <>
@@ -117,10 +109,10 @@ export default async function AdminUsersPage({
       <Reveal>
         <StatGrid
           items={[
-            { label: "Customers", value: customers },
-            { label: "Subscribers", value: subscribers },
-            { label: "Staff", value: admins },
-            { label: "New this week", value: newThisWeek },
+            { label: "Customers", value: overview.customers },
+            { label: "Subscribers", value: overview.subscribers },
+            { label: "Staff", value: overview.admins },
+            { label: "New this week", value: overview.newThisWeek },
           ]}
         />
       </Reveal>
