@@ -1959,6 +1959,15 @@ textarea.input {
   gap: 18px;
   align-items: center;
 }
+/* The app's plan grid stretches instead of centring: the landing page's three
+   columns are balanced by hand, the app's are generated and are not. */
+.plans.equal {
+  align-items: stretch;
+}
+.plans.equal .plan.feature {
+  transform: none;
+}
+
 .plan {
   background: var(--card);
   border: 1px solid var(--line);

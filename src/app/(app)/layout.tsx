@@ -1,27 +1,28 @@
 import { logoutAction } from "@/app/(auth)/actions";
 import { AppShell, type NavItem } from "@/components/app/app-shell";
-import { requireOnboardedUser } from "@/lib/auth/guards";
+import { requireUser } from "@/lib/auth/guards";
 import { PLANS } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
 
 /**
- * Everything under this layout requires an account and finished onboarding.
- * The guard runs on the server on every request — the client never decides
- * whether it is allowed to be here.
+ * Everything under this layout requires an account. The guard runs on the
+ * server on every request — the client never decides whether it is allowed to
+ * be here.
  *
- * The nav lists the routes that exist today. It moves to the `/app/*` shape
- * from the route plan as each of those pages is built.
+ * There is nothing to browse and nothing to save: the nav is the product's
+ * whole surface, which is the point. You are issued a quest, you log it, and
+ * it is retired.
  */
 const NAV: readonly NavItem[] = [
   { href: "/dashboard", label: "Today" },
-  { href: "/database", label: "Quests" },
   { href: "/weekly", label: "Weekly" },
+  { href: "/monthly", label: "Monthly" },
   { href: "/history", label: "History" },
   { href: "/achievements", label: "Stickers" },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireOnboardedUser();
+  const user = await requireUser();
   const entitlement = await getEntitlement(user.id);
 
   const planName =

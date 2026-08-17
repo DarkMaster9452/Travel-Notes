@@ -1,120 +1,125 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { QuestRow } from "@/components/quest/quest-card";
-import { Button } from "@/components/ui/button";
-import { Kicker, StateBlock } from "@/components/ui/primitives";
-import { requireOnboardedUser } from "@/lib/auth/guards";
+import { IssueQuestButton } from "@/components/app/issue-quest";
+import { CountUp, Reveal } from "@/components/app/motion";
+import { stagger } from "@/lib/motion";
+import { questDocumentId } from "@/components/app/quest-sheet";
+import { EmptyState, Eyebrow, IconLock, Panel, Tag } from "@/components/field";
+import { requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { cn, formatDate, pluralise } from "@/lib/utils";
-import { toQuestSummary } from "@/types/quest";
+import { getUserStats } from "@/lib/quest/service";
+import { formatDate, formatDuration } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Quest history" };
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "History" };
 
-type Filter = "all" | "completed" | "todo";
+/**
+ * Everything this account has been issued.
+ *
+ * A ledger, not a gallery: one line per quest, newest first. The point of the
+ * page is that it is the record of what has already been sent, which is what
+ * makes "never the same one twice" mean anything.
+ */
+export default async function HistoryPage() {
+  const user = await requireUser();
 
-const FILTERS: Array<{ id: Filter; label: string }> = [
-  { id: "all", label: "All" },
-  { id: "completed", label: "Completed" },
-  { id: "todo", label: "Still to do" },
-];
-
-export default async function HistoryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>;
-}) {
-  const user = await requireOnboardedUser();
-  const { filter: rawFilter } = await searchParams;
-  const filter: Filter = FILTERS.some((f) => f.id === rawFilter) ? (rawFilter as Filter) : "all";
-
-  const entries = await db.questHistory.findMany({
-    where: {
-      userId: user.id,
-      ...(filter === "completed" ? { completed: true } : {}),
-      ...(filter === "todo" ? { completed: false } : {}),
-    },
-    orderBy: { generatedAt: "desc" },
-    include: { quest: true },
-  });
+  const [entries, stats] = await Promise.all([
+    db.questHistory.findMany({
+      where: { userId: user.id },
+      orderBy: { generatedAt: "desc" },
+      include: { quest: true },
+      take: 100,
+    }),
+    getUserStats(user.id),
+  ]);
 
   return (
-    <main className="px-5 pb-16 pt-10 sm:px-8 lg:px-12 lg:pt-14">
-      <header className="border-b border-ink/12 pb-8">
-        <Kicker>Everything you&apos;ve been sent</Kicker>
-        <h1 className="display-lg mt-4">Quest history</h1>
-        <p className="mt-5 max-w-lg text-sm text-stone">
-          This list is also what the generator reads before it builds anything new — the longer it
-          gets, the further off the beaten track you end up.
-        </p>
-
-        <nav className="mt-8 flex flex-wrap gap-2" aria-label="Filter quests">
-          {FILTERS.map((option) => (
-            <Link
-              key={option.id}
-              href={option.id === "all" ? "/history" : `/history?filter=${option.id}`}
-              aria-current={filter === option.id ? "true" : undefined}
-              className={cn(
-                "border px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors",
-                filter === option.id
-                  ? "border-ink bg-ink text-paper"
-                  : "border-ink/25 text-stone hover:border-ink hover:text-ink",
-              )}
-            >
-              {option.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
-
-      {entries.length > 0 ? (
-        <>
-          <p className="pt-8 text-xs tracking-[0.14em] uppercase text-stone">
-            {pluralise(entries.length, "quest")}
+    <>
+      <Reveal as="header" className="page-head">
+        <div>
+          <Eyebrow>The record</Eyebrow>
+          <h1>Where you&apos;ve been sent.</h1>
+          <p>
+            Every quest this account has been issued. Logged ones are retired — they never come
+            back.
           </p>
-          <div className="mt-2">
-            {entries.map((entry) => (
-              <div key={entry.id} className="relative">
-                <QuestRow
-                  quest={toQuestSummary(entry.quest, {
-                    generatedAt: entry.generatedAt,
-                    completed: entry.completed,
-                    saved: entry.saved,
-                  })}
-                />
-                <span className="pointer-events-none absolute right-0 top-4 hidden text-xs text-stone lg:block">
-                  {formatDate(entry.generatedAt)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </>
+        </div>
+      </Reveal>
+
+      <Reveal delay={stagger(0)} className="mb-5">
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-card)] border border-line bg-line sm:grid-cols-4">
+          <Figure label="Issued" value={entries.length} />
+          <Figure label="Logged" value={stats.completedCount} />
+          <Figure label="Kilometres" value={Math.round(stats.kmExplored)} />
+          <Figure label="Metres up" value={Math.round(stats.elevation)} />
+        </dl>
+      </Reveal>
+
+      {entries.length === 0 ? (
+        <Reveal delay={stagger(1)}>
+          <EmptyState icon={<IconLock />} title="Nothing here yet." action={<IssueQuestButton />}>
+            Your history fills up one morning at a time. Take a quest and it lands here the moment
+            you log it.
+          </EmptyState>
+        </Reveal>
       ) : (
-        <StateBlock
-          className="mt-10"
-          title={filter === "all" ? "Nothing here yet." : "Nothing matches that filter."}
-          message={
-            filter === "all"
-              ? "Unlock your first quest and it'll show up here, along with everything that comes after it."
-              : "Try a different filter, or go and finish something."
-          }
-          action={
-            filter === "all" ? (
-              <Button asChild variant="primary" size="lg">
-                <Link href="/database">Browse the quest database</Link>
-              </Button>
-            ) : (
-              <Link
-                href="/history"
-                className="text-xs font-semibold tracking-[0.14em] uppercase text-ember hover:underline"
+        <Panel flush>
+          <ul>
+            {entries.map((entry, index) => (
+              <Reveal
+                as="li"
+                key={entry.id}
+                delay={stagger(index, 8)}
+                className="border-b border-line last:border-b-0"
               >
-                Show all quests →
-              </Link>
-            )
-          }
-        />
+                <Link
+                  href={`/quests/${entry.quest.id}`}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 transition-colors hover:bg-ink/[.03]"
+                >
+                  <span className="qc-id w-[122px] shrink-0">
+                    {questDocumentId(entry.quest.number)}
+                  </span>
+
+                  <span className="min-w-[min(100%,16rem)] flex-1">
+                    <b className="block font-serif text-[17px] font-semibold tracking-[-0.02em]">
+                      {entry.quest.title}
+                    </b>
+                    <span className="meta mt-1 block normal-case tracking-[0.06em]">
+                      {entry.quest.location} · {entry.quest.region}
+                    </span>
+                  </span>
+
+                  <span className="flex shrink-0 items-center gap-4 font-mono text-[11px] text-ink-2">
+                    <span>{entry.quest.distance.toFixed(1)} km</span>
+                    <span>{Math.round(entry.quest.elevationGain)} m ↑</span>
+                    <span className="hidden sm:inline">{formatDuration(entry.quest.duration)}</span>
+                  </span>
+
+                  <span className="flex shrink-0 items-center gap-3">
+                    <span className="meta hidden md:inline">
+                      {formatDate(entry.completedAt ?? entry.generatedAt)}
+                    </span>
+                    <Tag tone={entry.completed ? "pine" : "ghost"}>
+                      {entry.completed ? "Logged" : "Open"}
+                    </Tag>
+                  </span>
+                </Link>
+              </Reveal>
+            ))}
+          </ul>
+        </Panel>
       )}
-    </main>
+    </>
+  );
+}
+
+function Figure({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-card px-5 py-4">
+      <dt className="meta">{label}</dt>
+      <dd className="mt-1 font-mono text-[22px] font-bold tracking-[-0.02em]">
+        <CountUp value={value} />
+      </dd>
+    </div>
   );
 }

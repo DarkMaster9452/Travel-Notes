@@ -37,6 +37,8 @@ export type PlanDefinition = {
   price: Record<BillingInterval, number>;
   currency: "EUR";
   features: string[];
+  /** Struck-through lines, as on the landing page's Free column. */
+  missing?: string[];
   /** Short label shown as a badge on the plan card, e.g. "Most popular". */
   badge?: string;
   highlight?: boolean;
@@ -47,58 +49,52 @@ export const PLANS: PlanDefinition[] = [
     id: "free",
     name: "Free",
     kicker: `${FREE_QUEST_ALLOWANCE} quests`,
-    description: "Enough to find out whether leaving the house is your thing.",
+    description:
+      "An account and three real quests. Enough to find out whether being told what to do suits you.",
     price: { monthly: 0, yearly: 0 },
     currency: "EUR",
     features: [
-      "Only in your country",
-      "Sticker only online",
-      "Max 3 free quests",
-      "Everything you've already been sent",
-      "Your saved quests",
-      "Marking quests as completed",
+      "Free account + 3 real quests",
+      "Your own country only",
+      "Quest history & digital stickers",
     ],
+    missing: ["No inbox delivery", "No partner matching"],
   },
   {
     id: "explorer",
     name: "Explorer",
     kicker: "Unlimited quests",
-    description: "For people who keep running out of weekends, not ideas.",
-    // Placeholder pricing — change here, or override with Stripe price data.
+    description:
+      "The real thing: unlimited quests, worldwide, delivered to your inbox on the day you pick.",
     price: { monthly: 1100, yearly: 9400 },
     currency: "EUR",
     features: [
-      "World wide",
-      "Sticker within post in mail — real",
       "Unlimited quest generation",
-      "Advanced filters",
-      "Personalised recommendations — chat with admin",
-      "Saved quests & history",
-      "More adventure types",
-      "Richer objectives and bonus challenges + custom quest only for Explorer package",
+      "Worldwide range, any terrain",
+      "Quests by mail, on your schedule",
+      "Full quest history",
+      "Re-roll, skip and pause",
+      "Partner matching & the community board",
+      "Printed sticker sheets, posted to you",
     ],
-    badge: "Most popular",
+    badge: "Most taken",
   },
   {
     id: "ultra",
     name: "Ultra Explorer",
     kicker: "Everything, priority",
-    description: "The full package — priority access, real mail, nothing capped.",
-    // Placeholder pricing — change here, or override with Stripe price data.
+    description:
+      "For people who want the quest built around something specific — a season, a range, a goal.",
     price: { monthly: 3100, yearly: 26400 },
     currency: "EUR",
     features: [
-      "World wide",
-      "Sticker within post in mail — real",
-      "Custom list from owners (certificate)",
-      "Unlimited quest generation",
-      "Advanced filters+",
-      "Personalised recommendations — chat with admin (priority)",
-      "Saved quests & history",
-      "More adventure types (same as Explorer)",
-      "Richer objectives and bonus challenges + custom quest only for Ultra Explorer package",
+      "Everything in Explorer",
+      "Custom quests you commission",
+      "Multi-day and trip-week quests",
+      "Priority support, real replies",
+      "Private crews & invite links",
+      "Group quests, one mail each",
     ],
-    badge: "Best value",
     highlight: true,
   },
 ];

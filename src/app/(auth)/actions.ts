@@ -7,6 +7,7 @@ import { burnPasswordCycle, hashPassword, verifyPassword } from "@/lib/auth/pass
 import { createSession, destroySession } from "@/lib/auth/session";
 import { AUTH_RATE_LIMIT } from "@/lib/config";
 import { db } from "@/lib/db";
+import { DEFAULT_PREFERENCES } from "@/lib/preferences";
 import { rateLimit } from "@/lib/rate-limit";
 import { fieldErrors, loginSchema, signupSchema } from "@/lib/validation";
 
@@ -66,8 +67,16 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
 
   let userId: string;
   try {
+    // Preferences are written here, with defaults, rather than collected by a
+    // quiz before the account exists. A new account is immediately complete —
+    // there is no half-finished state for the rest of the app to guard against.
     const user = await db.user.create({
-      data: { email, name, passwordHash: await hashPassword(password) },
+      data: {
+        email,
+        name,
+        passwordHash: await hashPassword(password),
+        preferences: { create: DEFAULT_PREFERENCES },
+      },
       select: { id: true },
     });
     userId = user.id;
@@ -89,7 +98,7 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
   }
 
   await createSession(userId);
-  redirect("/onboarding");
+  redirect("/dashboard");
 }
 
 export async function loginAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -112,7 +121,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
 
   const user = await db.user.findUnique({
     where: { email },
-    select: { id: true, passwordHash: true, onboardedAt: true },
+    select: { id: true, passwordHash: true },
   });
 
   if (!user) {
@@ -127,7 +136,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   await createSession(user.id);
 
   const next = safeNext(formData.get("next"));
-  redirect(next ?? (user.onboardedAt ? "/dashboard" : "/onboarding"));
+  redirect(next ?? "/dashboard");
 }
 
 export async function logoutAction(): Promise<void> {

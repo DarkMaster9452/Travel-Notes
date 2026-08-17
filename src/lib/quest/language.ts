@@ -73,6 +73,12 @@ const SUBJECTS: Record<string, string[]> = {
 
 const FALLBACK_SUBJECTS = ["the Unknown Turn", "Something New", "the Other Side"];
 
+/** "climb to the wide horizon" → "Climb to the wide horizon" */
+function sentenceCase(value: string): string {
+  const trimmed = value.trim().toLowerCase();
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 const SUBTITLE_TEMPLATES: Array<(c: CopyContext) => string> = [
   (c) => `${terrainPhrase(c)} in ${c.location.region}.`,
   (c) => `${Math.round(c.distance)} km of ${terrainPhrase(c).toLowerCase()}, one objective.`,
@@ -92,7 +98,10 @@ export function buildTitle(c: CopyContext): TitleResult {
     for (const subject of subjects) {
       combos.push({
         id: `${action.word}|${subject}`,
-        title: `${action.word} ${subject}`.toUpperCase(),
+        // Sentence case, not caps. The design system sets a quest title in the
+        // display serif, the way the landing page does — shouting it in the
+        // data was a habit of the previous, all-uppercase heading style.
+        title: sentenceCase(`${action.word} ${subject}`),
       });
     }
   }
