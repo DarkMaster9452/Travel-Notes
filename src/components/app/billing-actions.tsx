@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { useToast } from "@/components/field";
-import type { BillingInterval } from "@/lib/config";
+import type { BillingInterval, PlanId } from "@/lib/config";
 
 async function post(endpoint: string, body?: unknown) {
   const response = await fetch(endpoint, {
@@ -22,11 +22,13 @@ async function post(endpoint: string, body?: unknown) {
  * to an honest dead end, not an error.
  */
 export function CheckoutButton({
+  plan = "explorer",
   interval = "monthly",
   enabled,
   label = "Start with Explorer",
   className = "btn btn-primary",
 }: {
+  plan?: Exclude<PlanId, "free">;
   interval?: BillingInterval;
   enabled: boolean;
   label?: string;
@@ -50,7 +52,7 @@ export function CheckoutButton({
       disabled={pending}
       onClick={async () => {
         setPending(true);
-        const result = await post("/api/stripe/checkout", { interval }).catch(() => null);
+        const result = await post("/api/stripe/checkout", { plan, interval }).catch(() => null);
         if (result?.ok && result.url) {
           window.location.href = result.url;
           return;
@@ -63,7 +65,14 @@ export function CheckoutButton({
         });
       }}
     >
-      {pending ? "Opening checkout…" : label}
+      {pending ? (
+        <>
+          <span className="spinner" aria-hidden="true" />
+          Opening checkout…
+        </>
+      ) : (
+        label
+      )}
     </button>
   );
 }
@@ -98,7 +107,14 @@ export function BillingActions({ enabled }: { enabled: boolean }) {
           });
         }}
       >
-        {pending ? "Opening…" : "Manage billing"}
+        {pending ? (
+          <>
+            <span className="spinner" aria-hidden="true" />
+            Opening…
+          </>
+        ) : (
+          "Manage billing"
+        )}
       </button>
     </div>
   );

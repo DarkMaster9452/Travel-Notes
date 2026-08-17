@@ -14,7 +14,10 @@ export function Hero() {
     <section className="hero">
       <Contours />
 
-      <div className="wrap hero-grid">
+      {/* The hero is above the fold, so it animates on load rather than on
+          scroll — the reveal observer would fire for all of it at once and
+          land the whole block in a single beat. */}
+      <div className="wrap hero-grid hero-enter">
         <div>
           <span className="eyebrow">Est. 2025 · Field-issued adventures</span>
           <h1 className="h1">
@@ -25,9 +28,8 @@ export function Hero() {
             <em>You accept it.</em>
           </h1>
           <p className="lede">
-            Summit Quest turns what you&apos;re after into a real assignment — a place to be, an
-            objective to complete, one bonus challenge you didn&apos;t ask for. Never the same one
-            twice — and, if you want it, someone to walk it with.
+            A real assignment: a place to be, an objective, one bonus challenge you didn&apos;t ask
+            for. Never the same one twice.
           </p>
           <div className="hero-actions">
             <a href="#demo" className="btn btn-signal btn-lg">

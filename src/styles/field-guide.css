@@ -622,13 +622,16 @@ textarea.input {
   font-size: 14px;
   color: #f2f4ea;
   letter-spacing: 0.02em;
-  background: linear-gradient(145deg, var(--pine-2), var(--pine));
+  /* Flat ink, not a graded one. An initial on a solid tile is a stamp; the
+     same initial on a graded tile is a button from a different product. */
+  background: var(--pine);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 .av.b {
-  background: linear-gradient(145deg, #5c7f62, #33553f);
+  background: #3d6349;
 }
 .av.c {
-  background: linear-gradient(145deg, #8a6a4a, #5a3f2c);
+  background: #6b5238;
 }
 
 /* Empty states. They have a point of view, so they get real space. */
@@ -845,19 +848,18 @@ textarea.input {
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
+/* Survey grid. Drawn as a hairline SVG tile rather than with gradient stops:
+   nothing in this product fades from one colour into another, so the grid is
+   ruled lines on paper and its edges are handled by opacity alone. */
 .demo-section::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.55;
-  background-image:
-    linear-gradient(var(--line-2) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line-2) 1px, transparent 1px);
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M34 0H0v34' fill='none' stroke='rgba(20,26,22,.16)' stroke-width='1'/%3E%3C/svg%3E");
   background-size: 34px 34px;
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 20%, transparent 78%);
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 20%, transparent 78%);
 }
 .demo-grid {
   display: grid;
@@ -1154,12 +1156,9 @@ textarea.input {
   left: 0;
   right: 0;
   height: 210px;
-  background: linear-gradient(
-    to top,
-    rgba(12, 22, 16, 0.86),
-    rgba(12, 22, 16, 0.15) 60%,
-    rgba(12, 22, 16, 0.35)
-  );
+  /* One flat scrim rather than a graded one. It costs a little contrast at the
+     top of the photo and buys a consistent rule: no gradients anywhere. */
+  background: rgba(12, 22, 16, 0.56);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1347,9 +1346,9 @@ textarea.input {
   left: 31px;
   top: 44px;
   bottom: 44px;
-  width: 2px;
+  width: 0;
   z-index: 0;
-  background: repeating-linear-gradient(to bottom, var(--moss-2) 0 6px, transparent 6px 12px);
+  border-left: 2px dashed var(--moss-2);
   opacity: 0.45;
 }
 .match {
@@ -1774,12 +1773,7 @@ textarea.input {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(
-    to top,
-    rgba(10, 14, 12, 0.88) 8%,
-    rgba(10, 14, 12, 0.28) 52%,
-    rgba(10, 14, 12, 0.05)
-  );
+  background: rgba(10, 14, 12, 0.52);
 }
 .terrain b {
   font-family: var(--serif);
@@ -2040,6 +2034,16 @@ textarea.input {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--ink-3);
+}
+/* The animated figure renders inside its own span; it is part of the price,
+   not the period beside it, so it inherits rather than picking up the mono
+   caption styling above. Both selectors are needed: the dark feature card
+   restyles `.plan-price span` at a higher specificity. */
+.plan-price b span,
+.plan.feature .plan-price b span {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
 }
 .plan.feature .plan-price span {
   color: rgba(238, 242, 231, 0.58);
@@ -2554,15 +2558,10 @@ textarea.input {
   line-height: 1.12;
 }
 
-/* Photo scrim, so white type stays legible over an image. */
+/* Photo scrim, so white type stays legible over an image. Flat, like every
+   other overlay here. */
 .scrim {
-  background: linear-gradient(
-    to top,
-    rgba(20, 26, 22, 0.88) 0%,
-    rgba(20, 26, 22, 0.55) 38%,
-    rgba(20, 26, 22, 0.12) 72%,
-    transparent 100%
-  );
+  background: rgba(20, 26, 22, 0.58);
 }
 
 /* Grain on a positioned ancestor, rather than over the whole viewport. */
@@ -2629,6 +2628,1179 @@ textarea.input {
   transition:
     opacity 0.7s cubic-bezier(0.2, 0.8, 0.3, 1),
     transform 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ===========================================================================
+   17  micro-interactions
+
+   The rule for everything below: motion reports something. A press confirms
+   the tap landed, a lift says a card can be opened, a tick says a line just
+   became true, a bar growing says a figure was measured rather than typed.
+   Nothing here loops forever and nothing moves without being touched, hovered
+   or freshly rendered — a dashboard that fidgets is a dashboard people stop
+   reading.
+
+   Everything is transform and opacity, so nothing here triggers layout, and
+   the reduced-motion block in `globals.css` collapses all of it (durations and
+   delays alike) to a single frame.
+=========================================================================== */
+
+/* Every entrance below fills `backwards`, never `both`.
+   A filling animation keeps writing its final keyframe forever, and animated
+   declarations outrank ordinary ones — so `both` would pin `transform: none`
+   on the element for good and silently kill every `:hover` lift underneath it.
+   `backwards` holds the *starting* frame before the delay elapses, which is
+   the only part an entrance actually needs, and hands the element back to its
+   own styles the moment it lands. */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tickIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* A stamp lands: overshoot, settle, very slightly off-square on the way in. */
+@keyframes stampIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.5) rotate(-7deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.94) rotate(1.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes growY {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes growX {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes wipeIn {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes drawStroke {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* -------------------------------- the hero ------------------------------- */
+
+/* Everything above the fold arrives in order — eyebrow, headline, promise,
+   buttons, figures, then the quest itself — so the page reads as being dealt
+   out rather than switched on. */
+.hero-enter > div > *,
+.hero-enter > div:last-child {
+  animation: riseIn 0.62s var(--ease-field) backwards;
+}
+.hero-enter > div > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.hero-enter > div > *:nth-child(2) {
+  animation-delay: 0.13s;
+}
+.hero-enter > div > *:nth-child(3) {
+  animation-delay: 0.22s;
+}
+.hero-enter > div > *:nth-child(4) {
+  animation-delay: 0.31s;
+}
+.hero-enter > div > *:nth-child(5) {
+  animation-delay: 0.4s;
+}
+/* The issued quest lands last, and lands like a document. */
+.hero-enter > div:last-child {
+  animation-name: cardIn;
+  animation-duration: 0.7s;
+  animation-delay: 0.34s;
+}
+
+/* The figures under the headline tick up as the eye reaches them. */
+.hero-meta b {
+  transition: transform 0.24s var(--ease-out-back);
+}
+.hero-meta div:hover b {
+  transform: translateY(-2px);
+}
+
+/* ------------------------------ utilities -------------------------------- */
+
+.rise-in {
+  animation: riseIn 0.5s var(--ease-field) backwards;
+}
+.tick-in {
+  animation: tickIn 0.42s var(--ease-field) backwards;
+}
+.drop-in {
+  animation: dropIn 0.2s var(--ease-field) backwards;
+}
+.slide-in {
+  animation: slideIn 0.28s var(--ease-field) backwards;
+}
+.stamp-in {
+  animation: stampIn 0.46s var(--ease-field) backwards;
+}
+
+/* Anything that should visibly accept a press. */
+.press {
+  transition: transform 0.16s var(--ease-field);
+}
+.press:hover {
+  transform: translateY(-1px);
+}
+.press:active {
+  transform: scale(0.94);
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: spin 0.7s linear infinite;
+  flex: 0 0 13px;
+}
+
+/* ---------------------------- buttons & links ---------------------------- */
+
+/* The arrow in a call to action leans towards where it is about to take you. */
+.btn svg {
+  transition: transform 0.22s var(--ease-field);
+}
+.btn:hover:not(:disabled) svg {
+  transform: translateX(3px);
+}
+.btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.btn:not(:disabled):active {
+  transform: translateY(0) scale(0.975);
+}
+
+/* Marketing nav: a rule draws itself under the link from the left. */
+.nav-links a {
+  position: relative;
+}
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1.5px;
+  background: var(--moss-2);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.24s var(--ease-field);
+}
+.nav-links a:hover::after {
+  transform: scaleX(1);
+}
+
+/* App nav: the pill fills rather than jumping straight to its active state. */
+.app-nav a {
+  position: relative;
+  transition:
+    color 0.16s,
+    background 0.22s var(--ease-field);
+}
+.app-nav a:not([aria-current="page"]):hover {
+  transform: translateY(-1px);
+}
+
+.menu-link {
+  transition:
+    background 0.16s,
+    color 0.16s,
+    padding-left 0.18s var(--ease-field);
+}
+.menu-link:hover {
+  padding-left: 22px;
+}
+
+/* The logo mark tilts a degree when you go for it. */
+.logo-live .mark {
+  transition: transform 0.28s var(--ease-field);
+}
+.logo-live:hover .mark {
+  transform: rotate(-6deg) scale(1.06);
+}
+
+/* Burger → cross, drawn rather than swapped. */
+.burger span {
+  transition:
+    transform 0.26s var(--ease-field),
+    opacity 0.16s;
+}
+.burger.open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.burger.open span:nth-child(2) {
+  opacity: 0;
+}
+.burger.open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* ------------------------------- surfaces -------------------------------- */
+
+/* Cards lift towards the cursor. Only the ones you can actually open. */
+.panel,
+.shot,
+.post,
+.match,
+.terrain,
+.plan,
+.chart {
+  transition:
+    transform 0.26s var(--ease-field),
+    box-shadow 0.26s var(--ease-field),
+    border-color 0.2s;
+}
+.shot:hover,
+.post:hover,
+.match:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+.terrain:hover {
+  transform: translateY(-4px);
+}
+.plan:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.plans .plan.feature:hover {
+  transform: scale(1.045) translateY(-4px);
+}
+.plans.equal .plan.feature:hover {
+  transform: translateY(-4px);
+}
+.chart:hover {
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+/* An avatar acknowledges the pointer — it is a person, not a placeholder. */
+.match:hover .av,
+.post:hover .av {
+  transform: rotate(-3deg) scale(1.05);
+}
+
+/* Stickers are physical objects; they should feel peelable. */
+.sticker,
+.sheet > * {
+  transition: transform 0.24s var(--ease-out-back);
+}
+.sheet > *:hover {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+/* Tags land rather than appear. */
+.tag {
+  transition: transform 0.18s var(--ease-field);
+}
+.tag:hover {
+  transform: translateY(-1px);
+}
+
+.pill {
+  transition:
+    transform 0.16s var(--ease-field),
+    background 0.18s,
+    border-color 0.18s,
+    color 0.18s;
+}
+.pill:active {
+  transform: scale(0.95);
+}
+
+.input {
+  transition:
+    border-color 0.18s,
+    box-shadow 0.22s var(--ease-field),
+    background 0.18s;
+}
+
+/* Rows in a ledger tint under the cursor and nudge towards the reader. */
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  transition:
+    background 0.18s,
+    padding-left 0.2s var(--ease-field);
+}
+.admin-row:hover {
+  background: rgba(20, 26, 22, 0.03);
+  padding-left: 26px;
+}
+
+/* ===========================================================================
+   18  membership
+
+   What a subscription looks like once you have one. The rule: never a second
+   palette — a member's product is the same paper, marked. Green stays the
+   structure; the Ultra mark is the only place a member surface reaches for
+   stamp ink, because that is what stamp ink is for.
+=========================================================================== */
+
+.plan-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: var(--radius-pill);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition:
+    transform 0.2s var(--ease-field),
+    box-shadow 0.2s;
+}
+a.plan-mark:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.plan-mark-free {
+  border-color: var(--line);
+  color: var(--ink-3);
+  background: transparent;
+}
+.plan-mark-explorer {
+  background: var(--pine);
+  color: #eef2e7;
+}
+.plan-mark-ultra {
+  background: var(--forest-deep, #14251b);
+  color: #eef2e7;
+  border-color: var(--signal);
+}
+.plan-mark-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 6px;
+}
+.plan-mark-ultra .plan-mark-dot {
+  background: var(--signal-2);
+}
+/* One slow breath, so a live membership reads as live. */
+.plan-mark:not(.plan-mark-static) .plan-mark-dot {
+  animation: softPulse 2.8s ease-in-out infinite;
+}
+
+/* A panel that belongs to a member is edged, not recoloured. */
+.member-panel {
+  border-color: var(--moss-2);
+  box-shadow: 0 0 0 1px rgba(58, 96, 71, 0.18);
+}
+[data-plan="ultra"] .member-panel {
+  border-color: var(--pine);
+}
+
+.member-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+.member-line-mark {
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  flex: 0 0 9px;
+  border-radius: 2px;
+  background: var(--moss-2);
+  transform: rotate(45deg);
+}
+.member-line p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+.member-line b {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.member-line span {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+/* The list of what a plan actually gives you. */
+.held-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.held-grid li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--line-2);
+}
+.held-grid b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.held-grid span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.held-tick {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--moss-2);
+  position: relative;
+}
+.held-tick::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  width: 4px;
+  height: 7px;
+  border: solid #f9faf3;
+  border-width: 0 1.8px 1.8px 0;
+  transform: rotate(42deg);
+}
+
+.held-inline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.held-inline li {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(58, 96, 71, 0.1);
+  color: var(--moss);
+}
+
+/* Owned plan card: flagged in green, since it is a statement, not an offer. */
+.plan-owned {
+  border-color: var(--moss-2);
+}
+.plan-flag-owned {
+  background: var(--pine);
+}
+.plan-current {
+  border-color: var(--moss-2) !important;
+  color: var(--moss) !important;
+}
+
+.interval-toggle {
+  display: inline-flex;
+  padding: 4px;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+}
+.interval-toggle button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition:
+    background 0.22s var(--ease-field),
+    color 0.18s,
+    transform 0.16s var(--ease-field);
+}
+.interval-toggle button:hover {
+  color: var(--ink);
+}
+.interval-toggle button:active {
+  transform: scale(0.97);
+}
+.interval-toggle button[aria-pressed="true"] {
+  background: var(--pine);
+  color: #eef2e7;
+}
+.interval-toggle em {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--signal);
+}
+.interval-toggle button[aria-pressed="true"] em {
+  color: var(--signal-2);
+}
+
+/* --------------------------- the unlock moment ---------------------------- */
+
+.ceremony {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 26px 0 48px;
+  text-align: center;
+}
+.ceremony-seal {
+  display: flex;
+  justify-content: center;
+  animation: stampIn 0.6s var(--ease-field) backwards;
+}
+.member-stamp {
+  width: 96px;
+  height: 96px;
+  transform: rotate(-8deg);
+}
+.member-stamp circle,
+.member-stamp path {
+  fill: none;
+  stroke: var(--signal);
+  stroke-width: 1.6;
+}
+.member-stamp text {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  fill: var(--signal);
+}
+.ceremony-kicker {
+  display: block;
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--moss-2);
+  animation: riseIn 0.5s var(--ease-field) 0.12s backwards;
+}
+.ceremony-title {
+  margin-top: 10px;
+  font-family: var(--serif);
+  font-size: clamp(34px, 5vw, 54px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  animation: riseIn 0.55s var(--ease-field) 0.18s backwards;
+}
+.ceremony-stop {
+  color: var(--signal);
+}
+.ceremony-lede {
+  margin: 14px auto 0;
+  max-width: 46ch;
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  animation: riseIn 0.5s var(--ease-field) 0.26s backwards;
+}
+.ceremony-list {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+  text-align: left;
+  border-top: 1px dashed var(--line);
+}
+.ceremony-line {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 15px 4px;
+  border-bottom: 1px dashed var(--line);
+  animation: tickIn 0.44s var(--ease-field) backwards;
+}
+.ceremony-line b {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.ceremony-line em {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.ceremony-tick {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--pine);
+  color: #eef2e7;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+/* Drawn at rest, so the stroke stays put once the animation hands the
+   element back to its own styles. */
+.ceremony-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: drawStroke 0.34s var(--ease-field) backwards;
+}
+.ceremony-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 34px;
+  animation: riseIn 0.5s var(--ease-field) backwards;
+}
+.ceremony-foot {
+  animation: riseIn 0.5s var(--ease-field) backwards;
+}
+
+/* ===========================================================================
+   19  admin analytics
+
+   Charts on paper. The grid is faint, the axis is a hairline, the numbers are
+   mono like every other piece of metadata in the product, and the ink is the
+   same green everything else is built from.
+=========================================================================== */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  margin: 0 0 20px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--line);
+}
+.stat-cell {
+  background: var(--card);
+  padding: 18px 20px 16px;
+  animation: riseIn 0.5s var(--ease-field) backwards;
+  transition: background 0.2s;
+}
+.stat-cell:hover {
+  background: #fff;
+}
+.stat-cell dd {
+  margin: 0;
+}
+.stat-value {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.stat-delta {
+  display: inline-block;
+  margin-top: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.stat-delta.up {
+  color: var(--moss-2);
+}
+.stat-delta.down {
+  color: var(--signal);
+}
+.stat-foot {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+/* Full-bleed charts are deliberately not offered: the SVG type is sized in
+   viewBox units, so a chart stretched across the whole page scales its axis
+   labels up with it. Charts stay in the column grid, where they read. */
+
+.chart {
+  margin: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 0 0 16px;
+  overflow: hidden;
+}
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 18px;
+  border-bottom: 1px dashed var(--line);
+}
+.chart-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 12px 18px 0;
+}
+.chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.chart-legend i,
+.split-key i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: 0 0 10px;
+}
+.chart-plot {
+  padding: 12px 18px 0;
+}
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.chart-tick {
+  font-family: var(--mono);
+  /* Sized in viewBox units: the box is a touch wider than the column it lands
+     in, so these render a little smaller than the number says. */
+  font-size: 12px;
+  fill: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.chart-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--ink-2);
+}
+.chart-cursor {
+  animation: fade 0.14s ease both;
+}
+.chart-note,
+.chart-empty {
+  margin: 12px 18px 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.chart-empty {
+  padding: 26px 0;
+  text-align: center;
+}
+.chart-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: baseline;
+  margin: 10px 18px 0;
+  min-height: 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.chart-readout b {
+  color: var(--ink);
+}
+.chart-readout-hint {
+  color: var(--ink-3);
+}
+
+.chart-table {
+  margin: 14px 18px 0;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+.chart-table summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: color 0.16s;
+}
+.chart-table summary:hover {
+  color: var(--ink);
+}
+.chart-table-scroll,
+.data-table-scroll {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+.chart-table table,
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.chart-table th,
+.chart-table td,
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 7px 12px 7px 0;
+  border-bottom: 1px solid var(--line-2);
+  white-space: nowrap;
+}
+.chart-table th,
+.data-table th {
+  color: var(--ink-3);
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.data-table {
+  font-size: 11.5px;
+}
+.data-table-scroll {
+  margin: 0;
+  padding: 0 18px 4px;
+}
+.data-table tbody tr {
+  transition: background 0.16s;
+}
+.data-table tbody tr:hover {
+  background: rgba(20, 26, 22, 0.04);
+}
+.data-table td {
+  color: var(--ink-2);
+  max-width: 30ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ranked rows. */
+.rank-rows {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rank-rows li {
+  display: grid;
+  grid-template-columns: minmax(74px, 30%) 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+.rank-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rank-track {
+  height: 12px;
+  border-radius: 4px;
+  background: rgba(20, 26, 22, 0.06);
+  overflow: hidden;
+}
+.rank-track i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transform-origin: left;
+}
+.rank-value {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 3ch;
+  text-align: right;
+}
+
+/* One bar, split into parts of a whole. 2px of surface between segments. */
+.split-bar {
+  display: flex;
+  gap: 2px;
+  height: 30px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.split-bar > span {
+  display: block;
+  transform-origin: left;
+  border-radius: 3px;
+}
+.split-key {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.split-key li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.split-key span {
+  flex: 1;
+}
+.split-key b {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+}
+.split-key em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  min-width: 4ch;
+  text-align: right;
+}
+
+/* Chart entrances. A bar grows out of its baseline; a series wipes in. */
+.grow-y {
+  transform-origin: bottom;
+  transform-box: fill-box;
+  animation: growY 0.62s var(--ease-field) backwards;
+}
+.grow-x {
+  transform-origin: left;
+  animation: growX 0.66s var(--ease-field) backwards;
+}
+.wipe {
+  transform-origin: left;
+  animation: wipeIn 0.85s var(--ease-field) backwards;
+}
+
+/* --------------------------- admin furniture ----------------------------- */
+
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.admin-filters nav {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.admin-filters nav a,
+.table-picker a {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px 13px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-3);
+  transition:
+    background 0.2s var(--ease-field),
+    color 0.16s,
+    transform 0.16s var(--ease-field);
+}
+.admin-filters nav a:hover,
+.table-picker a:hover {
+  color: var(--ink);
+  background: rgba(20, 26, 22, 0.05);
+  transform: translateY(-1px);
+}
+.admin-filters nav a[aria-current="page"],
+.table-picker a[aria-current="page"] {
+  background: var(--pine);
+  color: var(--card);
+}
+.admin-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.admin-search .input {
+  width: min(240px, 46vw);
+  padding: 9px 16px;
+}
+
+.table-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.schema-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.schema-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line-2);
+  transition: background 0.16s;
+}
+.schema-list li:last-child {
+  border-bottom: 0;
+}
+.schema-list li:hover {
+  background: rgba(20, 26, 22, 0.03);
+}
+.schema-list b {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  min-width: 15ch;
+}
+.schema-list span {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.schema-list em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .rank-rows li {
+    grid-template-columns: minmax(60px, 34%) 1fr auto;
+  }
+  .ceremony-seal svg {
+    width: 74px;
+    height: 74px;
+  }
 }
 
 /* ---------------------------- responsive --------------------------------- */

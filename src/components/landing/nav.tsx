@@ -19,7 +19,7 @@ const LINKS = [
   { href: "#faq", label: "FAQ" },
 ];
 
-export function LandingNav({ signedIn }: { signedIn: boolean }) {
+export function LandingNav({ home }: { home: string | null }) {
   const { open } = useAuthModal();
   const [stuck, setStuck] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -60,9 +60,9 @@ export function LandingNav({ signedIn }: { signedIn: boolean }) {
         </button>
 
         <div className="nav-cta">
-          {signedIn ? (
-            <Link href="/app" className="btn btn-primary btn-sm">
-              Your quests
+          {home ? (
+            <Link href={home} className="btn btn-primary btn-sm">
+              {home === "/admin" ? "Open the panel" : "Your quests"}
             </Link>
           ) : (
             <>

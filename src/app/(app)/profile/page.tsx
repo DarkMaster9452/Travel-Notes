@@ -4,10 +4,11 @@ import Link from "next/link";
 import { BillingActions } from "@/components/app/billing-actions";
 import { Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
+import { PlanChip } from "@/components/app/plan-mark";
 import { DeleteAccount, NameForm, PreferencesForm } from "@/components/app/settings-forms";
-import { Avatar, Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
-import { requireUser } from "@/lib/auth/guards";
-import { PLANS } from "@/lib/config";
+import { Avatar, Eyebrow, Panel, PanelHead } from "@/components/field";
+import { requireClient } from "@/lib/auth/guards";
+import { CAPABILITY_COPY } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
@@ -18,14 +19,14 @@ export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const user = await requireUser();
+  const user = await requireClient();
 
   const [preferences, entitlement] = await Promise.all([
     db.userPreferences.findUnique({ where: { userId: user.id } }),
     getEntitlement(user.id),
   ]);
 
-  const plan = PLANS.find((item) => item.id === entitlement.plan.toLowerCase()) ?? PLANS[0];
+  const plan = entitlement.definition;
 
   return (
     <>
@@ -54,18 +55,24 @@ export default async function SettingsPage() {
           </Reveal>
 
           <Reveal delay={stagger(1)}>
-            <Panel flush>
-              <PanelHead
-                title="Plan"
-                aside={
-                  <Tag tone={entitlement.isSubscribed ? "pine" : "ghost"}>{plan.name}</Tag>
-                }
-              />
+            <Panel flush className={entitlement.isSubscribed ? "member-panel" : undefined}>
+              <PanelHead title="Plan" aside={<PlanChip plan={entitlement.plan} />} />
               <div className="flex flex-col gap-4 px-5 py-5">
                 <p className="text-[14.5px] leading-[1.55] text-ink-2">{plan.description}</p>
 
                 {entitlement.isSubscribed ? (
                   <>
+                    <ul className="held-inline">
+                      {plan.capabilities.map((capability, index) => (
+                        <li
+                          key={capability}
+                          className="tick-in"
+                          style={{ animationDelay: `${index * 70}ms` }}
+                        >
+                          {CAPABILITY_COPY[capability].title}
+                        </li>
+                      ))}
+                    </ul>
                     {entitlement.currentPeriodEnd && (
                       <p className="meta normal-case tracking-[0.06em]">
                         {entitlement.cancelAtPeriodEnd
@@ -73,7 +80,14 @@ export default async function SettingsPage() {
                           : `Renews ${formatDate(entitlement.currentPeriodEnd)}.`}
                       </p>
                     )}
-                    <BillingActions enabled={isStripeEnabled()} />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <BillingActions enabled={isStripeEnabled()} />
+                      {entitlement.plan !== "ultra" && (
+                        <Link href="/upgrade" className="btn btn-primary btn-sm">
+                          Move up to Ultra
+                        </Link>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">

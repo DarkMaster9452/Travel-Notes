@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/guards";
+import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { destroySession } from "@/lib/auth/session";
 import { findPlace } from "@/lib/geo";
@@ -16,7 +16,7 @@ export async function updateProfileAction(
   _prev: ProfileState,
   formData: FormData,
 ): Promise<ProfileState> {
-  const user = await requireUser();
+  const user = await requireClient();
   const parsed = profileSchema.safeParse({ name: formData.get("name") });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
@@ -44,7 +44,7 @@ export async function updatePreferencesAction(
   _prev: ProfileState,
   formData: FormData,
 ): Promise<ProfileState> {
-  const user = await requireUser();
+  const user = await requireClient();
 
   const parsed = preferencesSchema.safeParse({
     homeLocation: formData.get("homeLocation"),
@@ -85,7 +85,7 @@ export async function updatePreferencesAction(
  * quietly keep the row.
  */
 export async function deleteAccountAction(): Promise<void> {
-  const user = await requireUser();
+  const user = await requireClient();
   await db.user.delete({ where: { id: user.id } });
   await destroySession();
   redirect("/");

@@ -24,6 +24,8 @@ const serverSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional().default(""),
   STRIPE_PRICE_ID_EXPLORER_MONTHLY: z.string().optional().default(""),
   STRIPE_PRICE_ID_EXPLORER_YEARLY: z.string().optional().default(""),
+  STRIPE_PRICE_ID_ULTRA_MONTHLY: z.string().optional().default(""),
+  STRIPE_PRICE_ID_ULTRA_YEARLY: z.string().optional().default(""),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -42,6 +44,8 @@ function load(): ServerEnv {
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_PRICE_ID_EXPLORER_MONTHLY: process.env.STRIPE_PRICE_ID_EXPLORER_MONTHLY,
     STRIPE_PRICE_ID_EXPLORER_YEARLY: process.env.STRIPE_PRICE_ID_EXPLORER_YEARLY,
+    STRIPE_PRICE_ID_ULTRA_MONTHLY: process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY,
+    STRIPE_PRICE_ID_ULTRA_YEARLY: process.env.STRIPE_PRICE_ID_ULTRA_YEARLY,
   });
 
   if (!parsed.success) {
@@ -72,6 +76,15 @@ export function isStripeEnabled(): boolean {
     (process.env.STRIPE_SECRET_KEY ?? "").length > 0 &&
     (process.env.STRIPE_PRICE_ID_EXPLORER_MONTHLY ?? "").length > 0
   );
+}
+
+/**
+ * Ultra is optional on top of Explorer: a deployment can sell one tier without
+ * the other, and the plan card says so instead of opening a checkout that
+ * Stripe would reject.
+ */
+export function isUltraEnabled(): boolean {
+  return isStripeEnabled() && (process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY ?? "").length > 0;
 }
 
 export const appUrl =

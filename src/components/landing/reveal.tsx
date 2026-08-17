@@ -2,9 +2,36 @@
 
 import * as React from "react";
 
-/** The elements the landing page reveals on scroll, as in `index.html`. */
-const SELECTOR =
-  ".sec-head,.step,.terrain,.plan,.mail-list li,.envelope,.faq details,#cta .wrap > *";
+/**
+ * The elements the landing page reveals on scroll.
+ *
+ * Wider than the original sweep in `index.html`: the shared quest shots, the
+ * board posts, the matches, the proof card and the sticker sheet were all
+ * simply *there* on arrival while everything around them animated in, which
+ * read as half the page having failed to load rather than as restraint.
+ */
+const SELECTOR = [
+  ".sec-head",
+  ".step",
+  ".terrain",
+  ".plan",
+  ".mail-list li",
+  ".envelope",
+  ".faq details",
+  "#cta .wrap > *",
+  ".shot",
+  ".post",
+  ".match",
+  ".meet",
+  ".proof-card",
+  ".flow > div",
+  ".unlocks li",
+  ".rope-steps li",
+  ".chat",
+  ".sheet",
+  ".board-head",
+  ".safety",
+].join(",");
 
 /**
  * Reveal-on-scroll, ported from the landing page.

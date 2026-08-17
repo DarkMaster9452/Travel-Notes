@@ -11,7 +11,21 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/jwt";
  * the proxy let the request through.
  */
 
-const PROTECTED = ["/dashboard", "/history", "/saved", "/profile", "/quests", "/upgrade", "/onboarding"];
+const PROTECTED = [
+  "/dashboard",
+  "/history",
+  "/saved",
+  "/profile",
+  "/quests",
+  "/upgrade",
+  "/onboarding",
+  "/weekly",
+  "/monthly",
+  "/achievements",
+  // The panel too. Which *role* may be here is decided in `requireAdmin`,
+  // against the database — the proxy can only tell that someone is signed in.
+  "/admin",
+];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function proxy(request: NextRequest) {

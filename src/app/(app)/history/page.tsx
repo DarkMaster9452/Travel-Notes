@@ -6,7 +6,7 @@ import { CountUp, Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
 import { questDocumentId } from "@/components/app/quest-sheet";
 import { EmptyState, Eyebrow, IconLock, Panel, Tag } from "@/components/field";
-import { requireUser } from "@/lib/auth/guards";
+import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getUserStats } from "@/lib/quest/service";
 import { formatDate, formatDuration } from "@/lib/utils";
@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: "History" };
  * makes "never the same one twice" mean anything.
  */
 export default async function HistoryPage() {
-  const user = await requireUser();
+  const user = await requireClient();
 
   const [entries, stats] = await Promise.all([
     db.questHistory.findMany({

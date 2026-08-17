@@ -121,7 +121,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
 
   const user = await db.user.findUnique({
     where: { email },
-    select: { id: true, passwordHash: true },
+    select: { id: true, passwordHash: true, role: true },
   });
 
   if (!user) {
@@ -134,6 +134,14 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   if (!valid) return { errors: { form: "That email and password don't match." } };
 
   await createSession(user.id);
+
+  // An admin lands in the panel, not on a customer dashboard they would only
+  // be bounced off. A `?next=` that points into the customer side is dropped
+  // for the same reason — following it would be a redirect straight back here.
+  if (user.role === "ADMIN") {
+    const next = safeNext(formData.get("next"));
+    redirect(next?.startsWith("/admin") ? next : "/admin");
+  }
 
   const next = safeNext(formData.get("next"));
   redirect(next ?? "/dashboard");

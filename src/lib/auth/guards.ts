@@ -48,3 +48,29 @@ export async function requireAdmin(returnTo?: string): Promise<SessionUser> {
   if (user.role !== "ADMIN") redirect("/dashboard");
   return user;
 }
+
+/**
+ * Require a *customer* — signed in, and not an admin.
+ *
+ * The mirror of `requireAdmin`, and the reason the two roles no longer share a
+ * surface. An admin has no quest history, no allowance and no subscription to
+ * manage: the whole customer side is meaningless from that side of the desk,
+ * and a half-working copy of it is worse than none. So every page under `(app)`
+ * refuses an admin and sends them to the panel, exactly as the panel refuses a
+ * customer and sends them to their dashboard.
+ *
+ * This is a product boundary, not a security one — an admin seeing the customer
+ * dashboard would leak nothing. It is enforced server-side anyway, because a
+ * boundary the client could step over is not a boundary.
+ */
+export async function requireClient(returnTo?: string): Promise<SessionUser> {
+  const user = await requireUser(returnTo);
+  if (user.role === "ADMIN") redirect("/admin");
+  return user;
+}
+
+/** Where this account belongs when it lands on the site root. */
+export function homeFor(user: Pick<SessionUser, "role"> | null): string {
+  if (!user) return "/";
+  return user.role === "ADMIN" ? "/admin" : "/dashboard";
+}
