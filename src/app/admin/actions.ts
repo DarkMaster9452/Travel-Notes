@@ -150,6 +150,45 @@ export async function revokeSessionsAction(userId: string): Promise<AdminResult>
   return { ok: true, message: `${count} session${count === 1 ? "" : "s"} ended.` };
 }
 
+/**
+ * Delete an account, and everything that hangs off it — sessions, quest
+ * history, submissions, saved quests, preferences, its subscription.
+ * Everywhere else it was only ever referenced (a submission someone else
+ * filed that this account reviewed) the reference is nulled, not cascaded:
+ * one account's deletion must not erase another account's evidence.
+ *
+ * Refused in exactly the two cases that would strand the panel itself: an
+ * admin cannot delete their own signed-in account, and the last remaining
+ * admin cannot be deleted by anyone (including another admin), because there
+ * would be nobody left who could open this page to undo it.
+ */
+export async function deleteAccountAction(userId: string): Promise<AdminResult> {
+  const admin = await requireAdmin();
+
+  if (userId === admin.id) {
+    return { ok: false, message: "You can't delete the account you're signed in as." };
+  }
+
+  const target = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, role: true },
+  });
+  if (!target) return { ok: false, message: "That account is already gone." };
+
+  if (target.role === "ADMIN") {
+    const otherAdmins = await db.user.count({ where: { role: "ADMIN", id: { not: userId } } });
+    if (otherAdmins === 0) {
+      return { ok: false, message: "That's the last admin — the panel would lock everyone out." };
+    }
+  }
+
+  await db.user.delete({ where: { id: userId } });
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin");
+  return { ok: true, message: `${target.name}'s account was deleted.` };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Quests                                                                      */
 /* -------------------------------------------------------------------------- */
