@@ -11,12 +11,12 @@ import { IconApproved, Modal, Tag, useToast } from "@/components/field";
  *
  * Logging a quest is no longer a button that marks it done — it opens this,
  * and an admin decides. What they need to decide with is what the form asks
- * for: an account of the day in your own words, whatever photographs you took,
- * a Strava link if there is one, and the figures your watch recorded.
+ * for: an account of the day in your own words, at least one photograph, a
+ * Strava link if there is one, and the figures your watch recorded.
  *
- * The written account is the only required field. Photographs and figures are
- * better evidence, but somebody who went up a hill without a phone still went
- * up the hill, and a form that refuses them would be telling them otherwise.
+ * The written account and at least one photo are both required. A note alone
+ * reads as an honest account but is not something an admin can actually look
+ * at; a photo is the minimum a reviewer has to judge by, on top of the words.
  */
 export function SubmitProofButton({
   questId,
@@ -72,7 +72,7 @@ export function SubmitProofButton({
         open={open}
         onClose={() => setOpen(false)}
         title="What happened?"
-        description="A human reads this. Photos and figures help, but your account of the day is the part that matters."
+        description="A human reads this. Your account of the day and at least one photo are both required."
         className="max-w-[520px]"
       >
         <form action={send} className="mt-5 flex flex-col gap-5">
@@ -93,13 +93,14 @@ export function SubmitProofButton({
           </div>
 
           <div className="admin-field">
-            <label htmlFor="proof-photos">Photo links</label>
+            <label htmlFor="proof-photos">Photo links · at least 1 required</label>
             <textarea
               id="proof-photos"
               name="photos"
               className="input"
               rows={2}
-              placeholder="One URL per line"
+              required
+              placeholder="https://…&#10;One URL per line"
             />
             <p className="note mt-0">
               One per line. Direct uploads arrive with the storage step — until then, a link.

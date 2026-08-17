@@ -99,17 +99,24 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
   }
   const proof = parsed.data;
 
-  const history = await db.questHistory.findUnique({
-    where: { userId_questId: { userId: user.id, questId: proof.questId } },
-    select: { id: true },
-  });
-  if (!history) return { ok: false, message: "That quest isn't yours." };
-
   const photos = String(formData.get("photos") ?? "")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => /^https?:\/\//.test(line))
     .slice(0, 6);
+
+  // At least one photo is required — a written account alone isn't proof
+  // somebody can approve, and this is checked here rather than left to the
+  // form, since the form is not the authority on what a submission needs.
+  if (photos.length === 0) {
+    return { ok: false, message: "Add at least one photo link before filing." };
+  }
+
+  const history = await db.questHistory.findUnique({
+    where: { userId_questId: { userId: user.id, questId: proof.questId } },
+    select: { id: true },
+  });
+  if (!history) return { ok: false, message: "That quest isn't yours." };
 
   const values = {
     note: proof.note,

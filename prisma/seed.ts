@@ -267,13 +267,20 @@ async function seedCrowd(passwordHash: string, quests: { id: string }[]) {
       const retreated = rand() > 0.88;
       const filedAt = new Date(Date.now() - Math.floor(rand() * 20 + 1) * 24 * 3600 * 1000);
 
+      // At least one photo is required to file at all, so the demo data
+      // carries one to three rather than sometimes none.
+      const photoCount = 1 + Math.floor(rand() * 3);
+      const photos = Array.from(
+        { length: photoCount },
+        (_, i) => `https://picsum.photos/seed/${user.id}-${quest.id}-${i}/640/480`,
+      );
+
       await db.submission.create({
         data: {
           userId: user.id,
           questId: quest.id,
           note: pick(NOTES),
-          // Most people attach something; some only write.
-          photos: rand() > 0.35 ? [] : [],
+          photos,
           stravaUrl:
             rand() > 0.45 ? `https://www.strava.com/activities/${9000000000 + index * 37}` : null,
           distance: rand() > 0.25 ? Math.round((6 + rand() * 14) * 10) / 10 : null,
