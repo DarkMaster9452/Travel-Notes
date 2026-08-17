@@ -23,7 +23,7 @@ const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
  * see the landing page, three hardcoded samples, and then a wall.
  */
 
-const PASSWORD = process.env.SEED_PASSWORD ?? "SummitQuest!2026";
+const PASSWORD = process.env.SEED_PASSWORD ?? "demo";
 
 type SeedAccount = {
   email: string;
@@ -39,8 +39,8 @@ type SeedAccount = {
 
 const ACCOUNTS: SeedAccount[] = [
   {
-    email: "admin@summitquest.app",
-    name: "Alena Adminová",
+    email: "admin@demo.com",
+    name: "Admin",
     role: "ADMIN",
     plan: "ULTRA",
     freeQuestsUsed: 0,
@@ -48,8 +48,8 @@ const ACCOUNTS: SeedAccount[] = [
     note: "Admin — approval queue, quest authoring, places, reports",
   },
   {
-    email: "free@summitquest.app",
-    name: "Filip Free",
+    email: "free@demo.com",
+    name: "Free",
     role: "USER",
     plan: "FREE",
     freeQuestsUsed: 3,
@@ -57,8 +57,8 @@ const ACCOUNTS: SeedAccount[] = [
     note: "Free — allowance spent, sits against the upgrade wall",
   },
   {
-    email: "explorer@summitquest.app",
-    name: "Elena Explorer",
+    email: "explorer@demo.com",
+    name: "Explorer",
     role: "USER",
     plan: "EXPLORER",
     freeQuestsUsed: 3,
@@ -66,8 +66,8 @@ const ACCOUNTS: SeedAccount[] = [
     note: "Explorer €11 — unlimited, worldwide, mail, board, stickers",
   },
   {
-    email: "ultra@summitquest.app",
-    name: "Uršuľa Ultra",
+    email: "ultra@demo.com",
+    name: "Ultra",
     role: "USER",
     plan: "ULTRA",
     freeQuestsUsed: 3,
@@ -174,6 +174,7 @@ async function main() {
   }
 
   console.log(`\nAll ${ACCOUNTS.length} accounts share the password: ${PASSWORD}`);
+  console.log("Log in with admin@demo.com / demo");
 }
 
 /** Give an account a plausible run of quests, the most recent one completed. */
