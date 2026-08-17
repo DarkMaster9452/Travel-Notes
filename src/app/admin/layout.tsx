@@ -1,6 +1,7 @@
 import { logoutAction } from "@/app/(auth)/actions";
 import { AdminShell, type NavItem } from "@/components/app/app-shell";
 import { requireAdmin } from "@/lib/auth/guards";
+import { db } from "@/lib/db";
 
 /**
  * The admin panel.
@@ -14,19 +15,34 @@ import { requireAdmin } from "@/lib/auth/guards";
  * no quests, no allowance, no stickers and no subscription, and a menu offering
  * them would be describing an account that doesn't exist.
  */
-const NAV: readonly NavItem[] = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/revenue", label: "Billing" },
-  { href: "/admin/quests", label: "Quests" },
-  { href: "/admin/database", label: "Database" },
-];
+function nav(pending: number): readonly NavItem[] {
+  return [
+    { href: "/admin", label: "Dashboard", emoji: "📊" },
+    { href: "/admin/review", label: "Review", emoji: "🧭", badge: pending },
+    { href: "/admin/submissions", label: "Submissions", emoji: "📥" },
+    { href: "/admin/users", label: "Users", emoji: "👥" },
+    { href: "/admin/quests", label: "Quests", emoji: "🗺️" },
+    { href: "/admin/locations", label: "Locations", emoji: "📍" },
+
+    { section: "Analytics", href: "/admin/revenue", label: "Revenue", emoji: "💶" },
+    { href: "/admin/database", label: "Database", emoji: "🗄️" },
+  ];
+}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin();
 
+  // The review badge is the one number an admin needs before they have chosen
+  // a page, so it is fetched with the shell rather than inside it.
+  const pending = await db.submission.count({ where: { status: "PENDING" } });
+
   return (
-    <AdminShell items={NAV} userName={user.name} userEmail={user.email} logout={logoutAction}>
+    <AdminShell
+      items={nav(pending)}
+      userName={user.name}
+      userEmail={user.email}
+      logout={logoutAction}
+    >
       {children}
     </AdminShell>
   );

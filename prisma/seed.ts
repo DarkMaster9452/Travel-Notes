@@ -118,8 +118,11 @@ async function main() {
 
   // Everything that is not one of the role accounts goes. Cascades take the
   // sessions, preferences, subscription and history with each row.
-  const keep = ACCOUNTS.map((account) => account.email);
-  const removed = await db.user.deleteMany({ where: { email: { notIn: keep } } });
+  // The role accounts and the demo crowd stay; everything else goes. Both are
+  // seeded data, and a panel with nothing to manage cannot be judged working.
+  const removed = await db.user.deleteMany({
+    where: { NOT: { email: { endsWith: "@demo.com" } } },
+  });
   if (removed.count > 0) console.log(`✓ removed ${removed.count} other account(s)`);
 
   const passwordHash = await bcrypt.hash(PASSWORD, 12);
@@ -173,8 +176,136 @@ async function main() {
     console.log(`✓ ${account.email.padEnd(26)} ${account.note}`);
   }
 
-  console.log(`\nAll ${ACCOUNTS.length} accounts share the password: ${PASSWORD}`);
+  const crowd = await seedCrowd(passwordHash, quests);
+  console.log(`✓ ${crowd.people} demo accounts with ${crowd.submissions} submissions`);
+
+  console.log(`\nAll accounts share the password: ${PASSWORD}`);
   console.log("Log in with admin@demo.com / demo");
+}
+
+/* -------------------------------------------------------------------------- */
+/* A crowd to manage                                                           */
+/* -------------------------------------------------------------------------- */
+
+const CROWD = [
+  "Tomáš Krajčí", "Lucia Mihálik", "Peter Hrivnák", "Zuzana Bieliková",
+  "Marek Dubovec", "Nina Sýkorová", "Jakub Vrábel", "Eva Hudecová",
+  "Martin Šimko", "Katarína Rybárová", "Ondrej Lipták", "Simona Bartošová",
+  "Adam Kollár", "Veronika Hlavatá", "Filip Zeman", "Dominika Uhrínová",
+  "Richard Novák", "Alžbeta Kmeťová", "Michal Sedlák", "Petra Vargová",
+];
+
+/** What people actually write when they file proof. Dry, specific, uneven. */
+const NOTES = [
+  "Left the car park at 05:10 in the dark. Cloud broke about ten minutes after we got to the top, which was the whole point. Chains were greasy but fine if you take your time.",
+  "Longer than the map suggested — the last viewpoint is a good twenty minutes past where you think it is. Worth it. Nobody else up there.",
+  "Rained the entire way up and the entire way down. Did the bonus anyway, mostly out of spite. Photo is mostly fog.",
+  "Went up the quiet side from the village. Met one shepherd and about forty sheep. Back at the road by eleven for coffee as instructed.",
+  "Got to the saddle and the wind was genuinely unpleasant, so we turned round. Filed as a retreat. Would go back in better weather.",
+  "Did it as a night start with a headlamp. Descending in the dark on purpose is a very different experience and I'd recommend it.",
+  "Straightforward. Ladders were dry, water was loud, done in under four hours including a long stop at the top.",
+  "Took my daughter, who is nine and complained for the first hour and then not at all. She found the trig point before I did.",
+];
+
+/**
+ * A crowd of accounts with real-looking history and a queue of submissions.
+ *
+ * The panel is unusable against an empty database — you cannot tell whether a
+ * review deck works when there is nothing in it — so the seed produces a mid-
+ * sized product: twenty people, a spread of plans, and submissions in all
+ * three states with the pending ones weighted so the deck has work in it.
+ */
+async function seedCrowd(passwordHash: string, quests: { id: string }[]) {
+  // Deterministic, so a reseed produces the same demo rather than a new one.
+  let n = 1337;
+  const rand = () => ((n = (n * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const pick = <T,>(list: T[]) => list[Math.floor(rand() * list.length)]!;
+
+  let submissions = 0;
+
+  for (const [index, name] of CROWD.entries()) {
+    const email = `${name.split(" ")[0]!.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "")}${index}@demo.com`;
+    const joinedAt = new Date(Date.now() - Math.floor(rand() * 90 + 1) * 24 * 3600 * 1000);
+
+    const user = await db.user.upsert({
+      where: { email },
+      update: { name, passwordHash },
+      create: {
+        email,
+        name,
+        passwordHash,
+        freeQuestsUsed: Math.floor(rand() * 4),
+        createdAt: joinedAt,
+      },
+    });
+
+    await db.userPreferences.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id, ...DEMO_PREFERENCES },
+    });
+
+    // Roughly a third pay, which is a believable conversion rather than a
+    // flattering one.
+    const roll = rand();
+    if (roll > 0.78) {
+      await upsertSubscription(user.id, "ULTRA");
+    } else if (roll > 0.62) {
+      await upsertSubscription(user.id, "EXPLORER");
+    } else {
+      await db.subscription.deleteMany({ where: { userId: user.id } });
+    }
+
+    const owned = quests.slice(0, 2 + Math.floor(rand() * 6));
+    await seedHistory(user.id, owned);
+
+    // Proof for some of what they were issued, weighted towards pending so
+    // the review deck has a queue to work through.
+    await db.submission.deleteMany({ where: { userId: user.id } });
+    for (const quest of owned.slice(0, 1 + Math.floor(rand() * 3))) {
+      const status = rand() > 0.55 ? "PENDING" : rand() > 0.4 ? "APPROVED" : "REJECTED";
+      const retreated = rand() > 0.88;
+      const filedAt = new Date(Date.now() - Math.floor(rand() * 20 + 1) * 24 * 3600 * 1000);
+
+      await db.submission.create({
+        data: {
+          userId: user.id,
+          questId: quest.id,
+          note: pick(NOTES),
+          // Most people attach something; some only write.
+          photos: rand() > 0.35 ? [] : [],
+          stravaUrl:
+            rand() > 0.45 ? `https://www.strava.com/activities/${9000000000 + index * 37}` : null,
+          distance: rand() > 0.25 ? Math.round((6 + rand() * 14) * 10) / 10 : null,
+          elevation: rand() > 0.25 ? Math.round(300 + rand() * 900) : null,
+          movingTime: rand() > 0.25 ? Math.round(120 + rand() * 260) : null,
+          startedAt: filedAt,
+          retreated,
+          status: status as "PENDING" | "APPROVED" | "REJECTED",
+          createdAt: filedAt,
+        },
+      });
+      submissions += 1;
+    }
+  }
+
+  return { people: CROWD.length, submissions };
+}
+
+async function upsertSubscription(userId: string, plan: "EXPLORER" | "ULTRA") {
+  const now = new Date();
+  const values = {
+    plan,
+    status: "ACTIVE" as const,
+    cancelAtPeriodEnd: false,
+    currentPeriodStart: now,
+    currentPeriodEnd: new Date(now.getTime() + 30 * 24 * 3600 * 1000),
+  };
+  await db.subscription.upsert({
+    where: { userId },
+    update: values,
+    create: { userId, ...values },
+  });
 }
 
 /** Give an account a plausible run of quests, the most recent one completed. */

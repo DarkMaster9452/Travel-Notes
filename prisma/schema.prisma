@@ -25,23 +25,25 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  avatar       String?
-  passwordHash String   @map("password_hash")
-  role         Role     @default(USER)
-  freeQuestsUsed Int    @default(0) @map("free_quests_used")
+  id             String  @id @default(cuid())
+  email          String  @unique
+  name           String
+  avatar         String?
+  passwordHash   String  @map("password_hash")
+  role           Role    @default(USER)
+  freeQuestsUsed Int     @default(0) @map("free_quests_used")
 
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  preferences   UserPreferences?
-  subscription  Subscription?
-  sessions      Session[]
-  generations   QuestGeneration[]
-  history       QuestHistory[]
-  savedQuests   SavedQuest[]
+  preferences  UserPreferences?
+  submissions  Submission[]      @relation("SubmissionAuthor")
+  reviewed     Submission[]      @relation("SubmissionReviewer")
+  subscription Subscription?
+  sessions     Session[]
+  generations  QuestGeneration[]
+  history      QuestHistory[]
+  savedQuests  SavedQuest[]
 
   @@map("users")
 }
@@ -115,9 +117,9 @@ enum DifficultyPreference {
 
 enum TimeAvailable {
   SHORT // 1–2 h
-  HALF  // 2–4 h
-  LONG  // 4–6 h
-  FULL  // full day
+  HALF // 2–4 h
+  LONG // 4–6 h
+  FULL // full day
   SURPRISE
 }
 
@@ -142,30 +144,30 @@ enum Ternary {
 }
 
 model UserPreferences {
-  id                  String               @id @default(cuid())
-  userId              String               @unique @map("user_id")
-  homeLocation        String               @map("home_location")
-  homeLatitude        Float?               @map("home_latitude")
-  homeLongitude       Float?               @map("home_longitude")
+  id                   String               @id @default(cuid())
+  userId               String               @unique @map("user_id")
+  homeLocation         String               @map("home_location")
+  homeLatitude         Float?               @map("home_latitude")
+  homeLongitude        Float?               @map("home_longitude")
   /// Max travel radius from home, in km.
-  maxDistance         Int                  @default(50) @map("max_distance")
+  maxDistance          Int                  @default(50) @map("max_distance")
   /// Preferred route length, in km.
-  preferredDistance   Int                  @default(10) @map("preferred_distance")
-  difficulty          DifficultyPreference @default(SURPRISE)
+  preferredDistance    Int                  @default(10) @map("preferred_distance")
+  difficulty           DifficultyPreference @default(SURPRISE)
   /// Tags: forest, mountains, water, rocks, history, views, hidden, long_hikes
-  preferredTerrain    String[]             @default([]) @map("preferred_terrain")
+  preferredTerrain     String[]             @default([]) @map("preferred_terrain")
   /// Tags: photography, exploration, challenge, nature, solo, couple, friends
-  preferredActivity   String[]             @default([]) @map("preferred_activity")
+  preferredActivity    String[]             @default([]) @map("preferred_activity")
   /// Tags: waterfalls, lakes, rivers, caves, castles, ruins, ridges, meadows
-  preferredEnvironment String[]            @default([]) @map("preferred_environment")
-  timeAvailable       TimeAvailable        @default(SURPRISE) @map("time_available")
-  transport           Transport            @default(CAR)
-  questStyle          QuestStyle           @default(ADVENTUROUS) @map("quest_style")
-  sunsetPreference    Ternary              @default(SURPRISE) @map("sunset_preference")
-  waterPreference     Ternary              @default(SURPRISE) @map("water_preference")
-  elevationPreference Ternary              @default(SURPRISE) @map("elevation_preference")
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
+  preferredEnvironment String[]             @default([]) @map("preferred_environment")
+  timeAvailable        TimeAvailable        @default(SURPRISE) @map("time_available")
+  transport            Transport            @default(CAR)
+  questStyle           QuestStyle           @default(ADVENTUROUS) @map("quest_style")
+  sunsetPreference     Ternary              @default(SURPRISE) @map("sunset_preference")
+  waterPreference      Ternary              @default(SURPRISE) @map("water_preference")
+  elevationPreference  Ternary              @default(SURPRISE) @map("elevation_preference")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -215,13 +217,19 @@ model Quest {
   signature     String
   /// Showcase quests are seeded examples used on the landing page.
   isShowcase    Boolean    @default(false) @map("is_showcase")
+  /// Only published quests can be issued. Admins write this; nothing else does.
+  published     Boolean    @default(true)
+  /// Free-text grouping shown in the panel — Hiking, Nature, Coastal, …
+  category      String?
   createdAt     DateTime   @default(now()) @map("created_at")
 
   generations QuestGeneration[]
   history     QuestHistory[]
   saved       SavedQuest[]
+  submissions Submission[]
 
   @@index([isShowcase])
+  @@index([published])
   @@index([signature])
   @@map("quests")
 }
@@ -259,6 +267,58 @@ model QuestHistory {
   @@unique([userId, questId])
   @@index([userId, generatedAt])
   @@map("quest_history")
+}
+
+/// Where a submission sits in review. Approve or decline, nothing in between —
+/// the panel is a two-way decision and a third state would be a queue that
+/// never empties.
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Proof that somebody actually did the quest.
+///
+/// Nothing counts until it is checked: logging a quest files one of these, and
+/// an admin approves or declines it. The evidence is whatever the person could
+/// bring — a written account, photographs, a Strava link, and the figures their
+/// watch recorded — and the admin sees all of it side by side against what the
+/// quest asked for.
+model Submission {
+  id      String @id @default(cuid())
+  userId  String @map("user_id")
+  questId String @map("quest_id")
+
+  /// What happened, in their words. Always required — a submission with no
+  /// account of the day is not evidence of anything.
+  note      String
+  /// Uploaded photograph URLs, in the order they were added.
+  photos    String[] @default([])
+  stravaUrl String?  @map("strava_url")
+
+  /// What the watch recorded, for the diff against what the quest asked for.
+  distance   Float?
+  elevation  Int?
+  movingTime Int?      @map("moving_time")
+  startedAt  DateTime? @map("started_at")
+
+  /// Turned back on purpose. An honest retreat is approved, not failed.
+  retreated Boolean @default(false)
+
+  status       SubmissionStatus @default(PENDING)
+  reviewedById String?          @map("reviewed_by_id")
+  reviewNote   String?          @map("review_note")
+  reviewedAt   DateTime?        @map("reviewed_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  user       User  @relation("SubmissionAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  quest      Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("SubmissionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, questId])
+  @@index([status, createdAt])
+  @@map("submissions")
 }
 
 model SavedQuest {

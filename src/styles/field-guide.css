@@ -2410,47 +2410,270 @@ textarea.input {
 }
 
 /* ------------------------ 14 app + admin chrome -------------------------- */
-/* The interior drops the grain and the contour lines but keeps the paper
-   palette, the mono metadata and the same card language. */
+/* The navigation runs down the left rather than across the top: the panel has
+   more destinations than a top bar holds without wrapping, and a sidebar keeps
+   them all in view. Same paper, same mono labels, same card language — only
+   the axis changed. Under `lg` it becomes a drawer behind a phone bar. */
 
-.app-bar {
-  position: sticky;
-  top: 0;
-  z-index: 60;
-  background: rgba(239, 240, 229, 0.92);
-  backdrop-filter: blur(14px) saturate(1.3);
+.app-frame {
+  min-height: 100dvh;
+}
+@media (min-width: 1024px) {
+  .app-frame {
+    display: grid;
+    grid-template-columns: 244px minmax(0, 1fr);
+  }
+}
+
+.app-side {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 70;
+  width: 244px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  transform: translateX(-100%);
+  transition: transform 0.28s var(--ease-field);
+}
+.app-side.open {
+  transform: none;
+}
+@media (min-width: 1024px) {
+  .app-side {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    transform: none;
+  }
+}
+
+/* The panel inverts onto the forest surface, so an admin always knows which
+   side of the desk they are on. */
+.app-side.admin-side {
+  background: var(--forest-deep);
+  border-right-color: var(--moss);
+  color: rgba(238, 242, 231, 0.72);
+}
+.app-side.admin-side .logo {
+  color: #eef2e7;
+}
+.app-side.admin-side .logo .mark path {
+  stroke: #eef2e7;
+}
+
+.app-side-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 18px 16px;
   border-bottom: 1px solid var(--line);
 }
-.app-bar-in {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  height: 66px;
+.admin-side .app-side-head {
+  border-bottom-color: rgba(238, 242, 231, 0.14);
 }
-.app-nav {
+.app-side-head .admin-flag {
+  align-self: flex-start;
+}
+
+.app-side-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 12px 18px;
   display: flex;
+  flex-direction: column;
   gap: 2px;
-  align-items: center;
 }
-.app-nav a {
+.app-side-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
   font-family: var(--mono);
   font-size: 10.5px;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--ink-3);
-  padding: 9px 13px;
-  border-radius: var(--radius-pill);
-  transition: 0.16s;
+  color: var(--ink-2);
+  transition:
+    background 0.16s,
+    color 0.16s;
   white-space: nowrap;
 }
-.app-nav a:hover {
+.app-side-nav a:hover {
+  background: rgba(21, 24, 26, 0.05);
   color: var(--ink);
+}
+.app-side-nav a[aria-current="page"] {
+  background: var(--pine);
+  color: var(--card);
+}
+.admin-side .app-side-nav a {
+  color: rgba(238, 242, 231, 0.62);
+}
+.admin-side .app-side-nav a:hover {
+  background: rgba(238, 242, 231, 0.09);
+  color: #eef2e7;
+}
+.admin-side .app-side-nav a[aria-current="page"] {
+  background: rgba(238, 242, 231, 0.15);
+  color: #eef2e7;
+}
+
+/* Emoji sit on the same optical line as the mono label, which they do not do
+   by default — they carry their own metrics and ride high. */
+.app-side-emoji {
+  font-size: 14px;
+  line-height: 1;
+  width: 18px;
+  text-align: center;
+  flex: 0 0 18px;
+  filter: saturate(0.92);
+}
+.app-side-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-side-badge {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--signal);
+  color: #fff;
+}
+
+.app-side-section {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 18px 12px 6px;
+}
+.admin-side .app-side-section {
+  color: rgba(238, 242, 231, 0.38);
+}
+
+.app-side-foot {
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-side .app-side-foot {
+  border-top-color: rgba(238, 242, 231, 0.14);
+}
+
+.app-side-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 12px;
+  text-align: left;
+  transition: background 0.16s;
+}
+.app-side-account:hover {
   background: rgba(21, 24, 26, 0.05);
 }
-.app-nav a[aria-current="page"] {
-  color: var(--card);
-  background: var(--pine);
+.admin-side .app-side-account:hover {
+  background: rgba(238, 242, 231, 0.09);
 }
+.app-side-account-who {
+  min-width: 0;
+  flex: 1;
+}
+.app-side-account-who b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-side-account-who span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.admin-side .app-side-account-who b {
+  color: #eef2e7;
+}
+.admin-side .app-side-account-who span {
+  color: rgba(238, 242, 231, 0.5);
+}
+
+/* The phone bar, and the scrim behind the open drawer. */
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 16px;
+  background: rgba(239, 240, 229, 0.92);
+  backdrop-filter: blur(14px) saturate(1.3);
+  border-bottom: 1px solid var(--line);
+}
+.app-topbar.admin-topbar {
+  background: var(--forest-deep);
+  border-bottom-color: var(--moss);
+}
+.app-topbar.admin-topbar .logo {
+  color: #eef2e7;
+}
+.app-topbar.admin-topbar .logo .mark path {
+  stroke: #eef2e7;
+}
+.app-topbar.admin-topbar .burger span {
+  background: #eef2e7;
+}
+@media (min-width: 1024px) {
+  .app-topbar {
+    display: none;
+  }
+}
+
+.app-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(20, 37, 27, 0.5);
+  backdrop-filter: blur(3px);
+  cursor: default;
+}
+@media (min-width: 1024px) {
+  .app-scrim {
+    display: none;
+  }
+}
+
+/* The canvas is wider than the marketing measure — tables and review cards
+   need the room, and there is no long-form prose out here to keep narrow. */
+.app-canvas {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 3vw, 32px);
+}
+
+/* The interior drops the grain and the contour lines but keeps the paper
+   palette, the mono metadata and the same card language. */
+
+
 .app-main {
   padding: 38px 0 76px;
 }
@@ -2478,28 +2701,8 @@ textarea.input {
 
 /* The admin panel is the same product with the chrome inverted, so an admin
    always knows which side of the desk they are on. */
-.admin-bar {
-  background: var(--forest);
-  border-bottom: 1px solid var(--moss);
-  color: #eef2e7;
-}
-.admin-bar .logo {
-  color: #eef2e7;
-}
-.admin-bar .logo .mark path {
-  stroke: #eef2e7;
-}
-.admin-bar .app-nav a {
-  color: rgba(238, 242, 231, 0.6);
-}
-.admin-bar .app-nav a:hover {
-  color: #eef2e7;
-  background: rgba(238, 242, 231, 0.1);
-}
-.admin-bar .app-nav a[aria-current="page"] {
-  background: rgba(238, 242, 231, 0.15);
-  color: #eef2e7;
-}
+
+
 .admin-flag {
   font-family: var(--mono);
   font-size: 9.5px;
@@ -2871,15 +3074,7 @@ textarea.input {
 }
 
 /* App nav: the pill fills rather than jumping straight to its active state. */
-.app-nav a {
-  position: relative;
-  transition:
-    color 0.16s,
-    background 0.22s var(--ease-field);
-}
-.app-nav a:not([aria-current="page"]):hover {
-  transform: translateY(-1px);
-}
+
 
 .menu-link {
   transition:
@@ -3909,9 +4104,7 @@ a.plan-mark:hover {
   .nav-in {
     gap: 12px;
   }
-  .app-nav {
-    display: none;
-  }
+
 }
 
 @media (max-width: 620px) {
@@ -3972,4 +4165,352 @@ a.plan-mark:hover {
     bottom: 12px;
     max-width: none;
   }
+}
+
+
+/* ---------------------- 17 the review deck -------------------------------- */
+/* One submission at a time, thrown to a side. The card is the same issued
+   document as everywhere else — only the verdict stamps and the throw are new. */
+
+.review-deck {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.review-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+.review-card:active {
+  cursor: grabbing;
+}
+.review-card.leaving {
+  opacity: 0;
+  transition:
+    transform 0.24s var(--ease-field),
+    opacity 0.24s var(--ease-field);
+}
+
+.review-body {
+  padding: 20px 22px 22px;
+}
+
+/* The verdict, stamped on as the card is thrown — legible before you let go. */
+.review-stamp {
+  position: absolute;
+  top: 58px;
+  z-index: 3;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 2.5px solid currentColor;
+  pointer-events: none;
+}
+.review-stamp.approve {
+  left: 22px;
+  color: var(--moss-2);
+  transform: rotate(-13deg);
+}
+.review-stamp.decline {
+  right: 22px;
+  color: var(--signal);
+  transform: rotate(13deg);
+}
+
+.review-photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin-top: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.review-card .proof-row .off b {
+  color: var(--signal);
+}
+.review-card .proof-row .off {
+  background: rgba(196, 72, 27, 0.06);
+}
+
+.review-flags {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px dashed rgba(196, 72, 27, 0.35);
+  background: rgba(196, 72, 27, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+.review-flags li {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--signal);
+}
+
+.review-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  margin-top: 22px;
+}
+.review-btn {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.18s var(--ease-field),
+    box-shadow 0.18s,
+    background 0.18s,
+    color 0.18s;
+}
+.review-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+.review-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+.review-btn:disabled {
+  opacity: 0.5;
+}
+/* Filled from the start, icon always white — the two verdicts read at a
+   glance rather than needing a hover to reveal which is which. */
+.review-btn.approve {
+  color: #fff;
+  background: var(--moss-2);
+  border-color: var(--moss-2);
+}
+.review-btn.approve:hover:not(:disabled) {
+  background: var(--pine);
+  border-color: var(--pine);
+}
+.review-btn.decline {
+  color: #fff;
+  background: var(--signal);
+  border-color: var(--signal);
+}
+.review-btn.decline:hover:not(:disabled) {
+  background: var(--signal-2);
+  border-color: var(--signal-2);
+}
+
+.review-count {
+  text-align: center;
+  min-width: 64px;
+}
+.review-count b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.review-count span {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+
+/* ------------------------- 18 admin tables -------------------------------- */
+/* Dense rows for the panel. Numbers are mono and right-aligned so columns of
+   figures can be compared by eye without reading them. */
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.admin-table th {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.admin-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line-2);
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.admin-table tbody tr:hover td {
+  background: rgba(20, 26, 22, 0.02);
+}
+.admin-table b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.admin-table .num {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+
+/* A field pair inside a panel form. */
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.admin-field > label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.admin-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+select.input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%),
+    linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 36px;
+}
+
+/* Quick actions — the four things an admin does most, one press away. */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+}
+.quick-actions a,
+.quick-actions button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: left;
+  width: 100%;
+  transition:
+    background 0.16s,
+    transform 0.16s var(--ease-field);
+}
+.quick-actions a:hover,
+.quick-actions button:hover {
+  background: rgba(20, 26, 22, 0.04);
+  transform: translateX(3px);
+}
+.quick-actions .qa-emoji {
+  font-size: 16px;
+  line-height: 1;
+  width: 22px;
+  text-align: center;
+  flex: 0 0 22px;
+}
+.quick-actions .qa-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+
+
+/* --------------------- 19 review queue browser ----------------------------- */
+
+.review-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.review-queue-list {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 60vh;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+}
+.review-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 10px;
+  text-align: left;
+  transition: background 0.16s;
+}
+.review-queue-item:hover {
+  background: rgba(20, 26, 22, 0.05);
+}
+.review-queue-item.current {
+  background: rgba(58, 96, 71, 0.1);
+}
+.review-queue-who {
+  min-width: 0;
+  flex: 1;
+}
+.review-queue-who b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.review-queue-who span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.review-queue-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: 0 0 auto;
 }

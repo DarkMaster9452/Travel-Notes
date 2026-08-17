@@ -8,6 +8,7 @@ import { getAdminOverview, LIVE_STATUSES } from "@/lib/admin/stats";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { stagger } from "@/lib/motion";
+import { AccountEditor } from "@/components/admin/account-editor";
 import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Users · Admin" };
@@ -102,7 +103,7 @@ export default async function AdminUsersPage({
         <div>
           <Eyebrow>Accounts</Eyebrow>
           <h1>Users.</h1>
-          <p>Lookup only. Roles are set in the database — nothing here writes one.</p>
+          <p>Every account, and what it is allowed to do. Manage sets role, plan and allowance.</p>
         </div>
       </Reveal>
 
@@ -197,6 +198,17 @@ export default async function AdminUsersPage({
                       </Tag>
                       {user.subscription?.cancelAtPeriodEnd && <Tag tone="warm">Cancelling</Tag>}
                       {user.role === "ADMIN" && <Tag tone="warm">Admin</Tag>}
+                      <AccountEditor
+                        user={{
+                          id: user.id,
+                          name: user.name,
+                          email: user.email,
+                          role: user.role,
+                          plan: live ? (user.subscription?.plan ?? "FREE") : "FREE",
+                          freeQuestsUsed: user.freeQuestsUsed,
+                          sessions: user._count.sessions,
+                        }}
+                      />
                     </span>
                   </Reveal>
                 );

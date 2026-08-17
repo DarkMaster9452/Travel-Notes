@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BarSeries, RankBars, SplitBar, TrendArea } from "@/components/admin/charts";
+import { QuickActions } from "@/components/admin/quick-actions";
 import { StatGrid } from "@/components/admin/stat-grid";
 import { Reveal } from "@/components/app/motion";
 import { Eyebrow } from "@/components/field";
 import { requireAdmin } from "@/lib/auth/guards";
+import { db } from "@/lib/db";
 import { RAMP_3, STATUS_COLOR } from "@/lib/admin/palette";
 import {
   getAdminOverview,
@@ -31,7 +33,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminOverviewPage() {
   await requireAdmin();
 
-  const [overview, signups, questSeries, planSplit, statusSplit, difficulty, regions] =
+  const [overview, signups, questSeries, planSplit, statusSplit, difficulty, regions, pending, decided] =
     await Promise.all([
       getAdminOverview(),
       getSignupSeries(30),
@@ -40,6 +42,8 @@ export default async function AdminOverviewPage() {
       getStatusSplit(),
       getDifficultySplit(),
       getTopRegions(6),
+      db.submission.count({ where: { status: "PENDING" } }),
+      db.submission.count({ where: { status: { not: "PENDING" } } }),
     ]);
 
   return (
@@ -80,13 +84,21 @@ export default async function AdminOverviewPage() {
               value: overview.logged,
               foot: `${Math.round(overview.completionRate * 100)}% of issued`,
             },
-            { label: "Live sessions", value: overview.liveSessions, foot: "Not yet expired" },
+            {
+              label: "Awaiting review",
+              value: pending,
+              foot: decided > 0 ? `${decided} already decided` : "Nothing decided yet",
+            },
           ]}
         />
       </Reveal>
 
-      <div className="chart-grid">
-        <Reveal delay={stagger(0)}>
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.9fr] lg:items-start">
+        <Reveal>
+          <QuickActions pending={pending} />
+        </Reveal>
+
+        <Reveal delay={stagger(1)}>
           <TrendArea
             title="Accounts opened · 30 days"
             points={signups.map((point) => ({
@@ -99,7 +111,9 @@ export default async function AdminOverviewPage() {
             note="The dark band is the share of that day's cohort paying today, not the day they paid."
           />
         </Reveal>
+      </div>
 
+      <div className="chart-grid">
         <Reveal delay={stagger(1)}>
           <TrendArea
             title="Quests issued · 30 days"
