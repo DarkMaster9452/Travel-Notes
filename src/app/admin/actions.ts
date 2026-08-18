@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { slotFromKey } from "@/lib/admin/schedule";
 
 /**
  * Everything the panel writes.
@@ -312,4 +313,131 @@ export async function deleteQuestAction(questId: string): Promise<AdminResult> {
   await db.quest.delete({ where: { id: questId } });
   revalidatePath("/admin/quests");
   return { ok: true, message: "Quest deleted." };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Scheduling                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const scheduleSchema = z.object({
+  period: z.enum(["WEEKLY", "MONTHLY"]),
+  slotKey: z.string().trim().min(4).max(12),
+  questId: z.string().trim().min(1).max(60),
+  audience: z.enum(["FREE", "EXPLORER", "ULTRA"]),
+});
+
+/**
+ * Book a quest into a week or a month.
+ *
+ * The instants are derived from the slot key on the server (`slotFromKey`),
+ * never taken from the form: the product promises Monday 06:00 and the 1st at
+ * 06:00, so those are computed, not submitted. A client that posts its own
+ * `openAt` is ignored, because there is no `openAt` field to post.
+ *
+ * Creating into an occupied slot is refused — one quest per slot is the whole
+ * point, and the unique index would refuse it anyway. Changing which quest
+ * fills a slot is `updateScheduleAction`, which is a different intent and
+ * reads as one at the call site.
+ */
+export async function createScheduleAction(formData: FormData): Promise<AdminResult> {
+  const admin = await requireAdmin();
+
+  const parsed = scheduleSchema.safeParse({
+    period: formData.get("period"),
+    slotKey: formData.get("slotKey"),
+    questId: formData.get("questId"),
+    audience: formData.get("audience") ?? "FREE",
+  });
+  if (!parsed.success) return { ok: false, message: "Those values don't look right." };
+
+  const { period, slotKey, questId, audience } = parsed.data;
+
+  const slot = slotFromKey(period, slotKey);
+  if (!slot) return { ok: false, message: "That isn't a slot on the calendar." };
+
+  const quest = await db.quest.findUnique({
+    where: { id: questId },
+    select: { id: true, published: true },
+  });
+  if (!quest) return { ok: false, message: "That quest is gone." };
+  if (!quest.published) {
+    return { ok: false, message: "Publish the quest before scheduling it." };
+  }
+
+  const taken = await db.questSchedule.findUnique({
+    where: { period_slotKey: { period, slotKey } },
+    select: { id: true },
+  });
+  if (taken) {
+    return { ok: false, message: "That slot already has a quest — edit it instead." };
+  }
+
+  await db.questSchedule.create({
+    data: {
+      period,
+      slotKey,
+      questId,
+      audience,
+      openAt: slot.openAt,
+      closeAt: slot.closeAt,
+      createdById: admin.id,
+    },
+  });
+
+  revalidatePath("/admin/schedule");
+  return { ok: true, message: `Booked into ${slotKey}.` };
+}
+
+/** Change which quest fills a slot, or who can see it. The slot itself is
+ *  fixed: moving a quest to a different week is a delete and a create. */
+export async function updateScheduleAction(formData: FormData): Promise<AdminResult> {
+  await requireAdmin();
+
+  const parsed = z
+    .object({
+      id: z.string().trim().min(1).max(60),
+      questId: z.string().trim().min(1).max(60),
+      audience: z.enum(["FREE", "EXPLORER", "ULTRA"]),
+    })
+    .safeParse({
+      id: formData.get("id"),
+      questId: formData.get("questId"),
+      audience: formData.get("audience") ?? "FREE",
+    });
+  if (!parsed.success) return { ok: false, message: "Those values don't look right." };
+
+  const quest = await db.quest.findUnique({
+    where: { id: parsed.data.questId },
+    select: { published: true },
+  });
+  if (!quest) return { ok: false, message: "That quest is gone." };
+  if (!quest.published) return { ok: false, message: "Publish the quest before scheduling it." };
+
+  await db.questSchedule.update({
+    where: { id: parsed.data.id },
+    data: { questId: parsed.data.questId, audience: parsed.data.audience },
+  });
+
+  revalidatePath("/admin/schedule");
+  return { ok: true, message: "Slot updated." };
+}
+
+/** Clear a slot. Refused once it has opened — an admin unbooking the quest
+ *  people are already out walking is not an edit, it is a disappearance. */
+export async function unscheduleAction(id: string): Promise<AdminResult> {
+  await requireAdmin();
+
+  const existing = await db.questSchedule.findUnique({
+    where: { id },
+    select: { openAt: true, slotKey: true },
+  });
+  if (!existing) return { ok: false, message: "That slot is already clear." };
+
+  if (existing.openAt.getTime() <= Date.now()) {
+    return { ok: false, message: "That slot has already opened — it can't be cleared." };
+  }
+
+  await db.questSchedule.delete({ where: { id } });
+  revalidatePath("/admin/schedule");
+  return { ok: true, message: `${existing.slotKey} cleared.` };
 }

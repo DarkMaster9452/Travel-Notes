@@ -5176,3 +5176,148 @@ select.input {
   width: 15px;
   height: 15px;
 }
+
+/* ---------------------------------------------------------------------------
+   The schedule calendar
+
+   A grid of slots, not of days. Each cell is a whole week or a whole month,
+   because the cadence is fixed and the only decision is which one — so the
+   calendar is drawn at the resolution of the decision rather than at the
+   resolution of a date picker.
+--------------------------------------------------------------------------- */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 118px;
+  padding: 12px 13px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  cursor: pointer;
+  transition:
+    border-color 0.16s var(--ease-field),
+    box-shadow 0.16s var(--ease-field),
+    transform 0.16s var(--ease-field);
+}
+.slot:hover {
+  border-color: var(--moss-2);
+  box-shadow: var(--shadow-field);
+  transform: translateY(-1px);
+}
+.slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.slot-head b {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.slot-flag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.slot-opens {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.slot-quest {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.slot-quest b {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.slot-quest span {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--moss-2);
+}
+.slot-quest em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.slot-empty {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.slot-empty.muted {
+  color: var(--ink-3);
+}
+
+/* A booked, still-future slot is the one state worth marking in green: it is
+   the thing the page exists to produce. */
+.slot.filled.is-future {
+  border-color: var(--moss-2);
+}
+/* Live and past slots are read-only, and say so by receding. */
+.slot.is-live {
+  border-color: var(--signal);
+  box-shadow: inset 3px 0 0 var(--signal);
+}
+.slot.is-past {
+  background: var(--glass);
+  opacity: 0.72;
+}
+.slot.is-past:hover,
+.slot.is-live:hover {
+  transform: none;
+}
+
+/* The cadence, restated on the schedule page. */
+.cadence-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cadence-list li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.cadence-list b {
+  flex: 0 0 34px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--signal);
+}
