@@ -117,3 +117,154 @@ export function mapsUrl(latitude: number, longitude: number, label?: string): st
   const query = encodeURIComponent(label ? `${label} ${latitude},${longitude}` : `${latitude},${longitude}`);
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Countries                                                                   */
+/* -------------------------------------------------------------------------- */
+
+export type Country = {
+  /** ISO 3166-1 alpha-2, used as the stored value. */
+  code: string;
+  name: string;
+  /** A point near the middle of the country. Quests are measured from here. */
+  latitude: number;
+  longitude: number;
+  europe: boolean;
+};
+
+/**
+ * Where an account says it is.
+ *
+ * Settings used to ask for a town, a difficulty, a time budget and a travel
+ * radius before the generator would say anything. It asks for a country now
+ * and nothing else: the rest were decisions the product exists to take off
+ * you, and a town was more precision than a quest catalogue at this scale can
+ * honour anyway.
+ *
+ * The coordinates are a rough national centre, not a home address — the
+ * safety notice promises no addresses and no exact coordinates, and choosing
+ * a country rather than a street is what keeps that true by construction.
+ *
+ * `europe` drives the plan gate: Explorer reaches this set, Ultra reaches all
+ * of it.
+ */
+export const COUNTRIES: Country[] = [
+  { code: "SK", name: "Slovakia", latitude: 48.669, longitude: 19.699, europe: true },
+  { code: "CZ", name: "Czechia", latitude: 49.817, longitude: 15.473, europe: true },
+  { code: "AT", name: "Austria", latitude: 47.516, longitude: 14.550, europe: true },
+  { code: "PL", name: "Poland", latitude: 51.919, longitude: 19.145, europe: true },
+  { code: "HU", name: "Hungary", latitude: 47.162, longitude: 19.503, europe: true },
+  { code: "DE", name: "Germany", latitude: 51.166, longitude: 10.452, europe: true },
+  { code: "CH", name: "Switzerland", latitude: 46.818, longitude: 8.228, europe: true },
+  { code: "IT", name: "Italy", latitude: 41.872, longitude: 12.567, europe: true },
+  { code: "SI", name: "Slovenia", latitude: 46.151, longitude: 14.995, europe: true },
+  { code: "HR", name: "Croatia", latitude: 45.100, longitude: 15.200, europe: true },
+  { code: "RO", name: "Romania", latitude: 45.943, longitude: 24.967, europe: true },
+  { code: "BG", name: "Bulgaria", latitude: 42.733, longitude: 25.486, europe: true },
+  { code: "RS", name: "Serbia", latitude: 44.017, longitude: 21.006, europe: true },
+  { code: "FR", name: "France", latitude: 46.228, longitude: 2.214, europe: true },
+  { code: "ES", name: "Spain", latitude: 40.464, longitude: -3.749, europe: true },
+  { code: "PT", name: "Portugal", latitude: 39.400, longitude: -8.224, europe: true },
+  { code: "GB", name: "United Kingdom", latitude: 55.378, longitude: -3.436, europe: true },
+  { code: "IE", name: "Ireland", latitude: 53.413, longitude: -8.244, europe: true },
+  { code: "NL", name: "Netherlands", latitude: 52.133, longitude: 5.291, europe: true },
+  { code: "BE", name: "Belgium", latitude: 50.503, longitude: 4.470, europe: true },
+  { code: "NO", name: "Norway", latitude: 60.472, longitude: 8.469, europe: true },
+  { code: "SE", name: "Sweden", latitude: 60.128, longitude: 18.644, europe: true },
+  { code: "FI", name: "Finland", latitude: 61.924, longitude: 25.748, europe: true },
+  { code: "DK", name: "Denmark", latitude: 56.264, longitude: 9.502, europe: true },
+  { code: "IS", name: "Iceland", latitude: 64.963, longitude: -19.021, europe: true },
+  { code: "GR", name: "Greece", latitude: 39.074, longitude: 21.824, europe: true },
+  { code: "UA", name: "Ukraine", latitude: 48.379, longitude: 31.166, europe: true },
+
+  { code: "US", name: "United States", latitude: 39.828, longitude: -98.579, europe: false },
+  { code: "CA", name: "Canada", latitude: 56.130, longitude: -106.347, europe: false },
+  { code: "MX", name: "Mexico", latitude: 23.635, longitude: -102.553, europe: false },
+  { code: "AR", name: "Argentina", latitude: -38.416, longitude: -63.617, europe: false },
+  { code: "CL", name: "Chile", latitude: -35.675, longitude: -71.543, europe: false },
+  { code: "BR", name: "Brazil", latitude: -14.235, longitude: -51.925, europe: false },
+  { code: "PE", name: "Peru", latitude: -9.190, longitude: -75.015, europe: false },
+  { code: "NZ", name: "New Zealand", latitude: -40.900, longitude: 174.886, europe: false },
+  { code: "AU", name: "Australia", latitude: -25.274, longitude: 133.775, europe: false },
+  { code: "JP", name: "Japan", latitude: 36.205, longitude: 138.253, europe: false },
+  { code: "NP", name: "Nepal", latitude: 28.394, longitude: 84.124, europe: false },
+  { code: "ZA", name: "South Africa", latitude: -30.559, longitude: 22.937, europe: false },
+  { code: "MA", name: "Morocco", latitude: 31.792, longitude: -7.093, europe: false },
+];
+
+/** Native and common names, so a stored "Slovensko" or "Deutschland" resolves. */
+const COUNTRY_ALIASES: Record<string, string> = {
+  slovensko: "SK",
+  cesko: "CZ",
+  ceska_republika: "CZ",
+  osterreich: "AT",
+  polska: "PL",
+  magyarorszag: "HU",
+  deutschland: "DE",
+  schweiz: "CH",
+  suisse: "CH",
+  italia: "IT",
+  slovenija: "SI",
+  hrvatska: "HR",
+  romania: "RO",
+  balgariya: "BG",
+  srbija: "RS",
+  espana: "ES",
+  uk: "GB",
+  britain: "GB",
+  "great britain": "GB",
+  eire: "IE",
+  nederland: "NL",
+  belgie: "BE",
+  norge: "NO",
+  sverige: "SE",
+  suomi: "FI",
+  danmark: "DK",
+  island: "IS",
+  ellada: "GR",
+  greece: "GR",
+  ukrayina: "UA",
+  usa: "US",
+  america: "US",
+  "united states of america": "US",
+};
+
+export function findCountry(nameOrCode: string): Country | null {
+  const q = normalise(nameOrCode);
+  if (!q) return null;
+  const direct = COUNTRIES.find((c) => normalise(c.code) === q || normalise(c.name) === q);
+  if (direct) return direct;
+
+  const aliased = COUNTRY_ALIASES[q] ?? COUNTRY_ALIASES[q.replace(/\s+/g, "_")];
+  return aliased ? (COUNTRIES.find((c) => c.code === aliased) ?? null) : null;
+}
+
+/**
+ * Resolve whatever is stored in `homeLocation` to a country.
+ *
+ * Accounts created before the chooser existed hold a *town* there, because
+ * settings used to ask for one. Rather than migrate the column and guess at
+ * rows we can't resolve, the town is mapped through the places gazetteer to
+ * its region and from there to a country — so an old account opens the
+ * settings page with the right thing already selected instead of an empty
+ * picker that silently loses where it set out from.
+ */
+export function countryForStoredLocation(stored: string | null | undefined): Country | null {
+  if (!stored) return null;
+
+  const direct = findCountry(stored);
+  if (direct) return direct;
+
+  const place = findPlace(stored);
+  if (!place) return null;
+
+  // Slovak regions are all "<something> kraj"; the foreign entries in the
+  // gazetteer carry their country as the region outright.
+  if (/kraj$/i.test(place.region)) return findCountry("SK");
+  return findCountry(place.region);
+}
+
+/** The countries a plan is allowed to set out from. */
+export function countriesFor(canGoWorldwide: boolean): Country[] {
+  return canGoWorldwide ? COUNTRIES : COUNTRIES.filter((c) => c.europe);
+}

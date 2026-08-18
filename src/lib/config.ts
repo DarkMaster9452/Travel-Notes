@@ -108,6 +108,14 @@ export const STICKER_ALLOWANCE: Record<PlanId, number> = {
 export const REFUND_WINDOW_DAYS = 7;
 
 /**
+ * What has to be typed out before anything irreversible happens.
+ *
+ * One constant so the dialog, the disabled state on its button and the
+ * server-side check can never disagree about what counts as confirmation.
+ */
+export const DELETE_PHRASE = "DELETE EVERYTHING";
+
+/**
  * When the money-back window closes for a subscription that began at `start`.
  *
  * Measured from the start of the *current period*, so it covers a new

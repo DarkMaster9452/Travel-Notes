@@ -413,6 +413,15 @@ export async function updateScheduleAction(formData: FormData): Promise<AdminRes
   if (!quest) return { ok: false, message: "That quest is gone." };
   if (!quest.published) return { ok: false, message: "Publish the quest before scheduling it." };
 
+  const slot = await db.questSchedule.findUnique({
+    where: { id: parsed.data.id },
+    select: { closeAt: true },
+  });
+  if (!slot) return { ok: false, message: "That slot is gone." };
+  if (slot.closeAt.getTime() <= Date.now()) {
+    return { ok: false, message: "That slot has closed — it can't be changed." };
+  }
+
   await db.questSchedule.update({
     where: { id: parsed.data.id },
     data: { questId: parsed.data.questId, audience: parsed.data.audience },
@@ -422,19 +431,25 @@ export async function updateScheduleAction(formData: FormData): Promise<AdminRes
   return { ok: true, message: "Slot updated." };
 }
 
-/** Clear a slot. Refused once it has opened — an admin unbooking the quest
- *  people are already out walking is not an edit, it is a disappearance. */
+/**
+ * Clear a slot.
+ *
+ * Refused only once the slot has *closed*. A live slot can still be cleared:
+ * the current period is the one an admin most often needs to correct, and
+ * refusing it meant a mistake made on the 1st stood for a month. A closed
+ * slot is history, and history is not an edit surface.
+ */
 export async function unscheduleAction(id: string): Promise<AdminResult> {
   await requireAdmin();
 
   const existing = await db.questSchedule.findUnique({
     where: { id },
-    select: { openAt: true, slotKey: true },
+    select: { closeAt: true, slotKey: true },
   });
   if (!existing) return { ok: false, message: "That slot is already clear." };
 
-  if (existing.openAt.getTime() <= Date.now()) {
-    return { ok: false, message: "That slot has already opened — it can't be cleared." };
+  if (existing.closeAt.getTime() <= Date.now()) {
+    return { ok: false, message: "That slot has closed — it can't be changed." };
   }
 
   await db.questSchedule.delete({ where: { id } });

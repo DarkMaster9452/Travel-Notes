@@ -40,9 +40,12 @@ const AUDIENCE_LABEL: Record<Audience, string> = {
  *
  * Every cell is a week or a month, never a date — the cadence is fixed
  * (Monday 06:00, the 1st at 06:00) so there is nothing to pick but *which*
- * one. A slot that already holds a quest can be edited; a slot that has
- * already opened is read-only, because unbooking the quest people are out
- * walking is a disappearance rather than an edit.
+ * one.
+ *
+ * Live slots are editable. They have to be: the current month is the one an
+ * admin most often needs to fill, and freezing it meant the only slot you
+ * could ever set was one that had not arrived yet. Closed slots stay
+ * read-only — those are history, and history is not an edit surface.
  *
  * Only one quest fits a slot. The empty state offers "Schedule", the filled
  * state offers "Edit" — there is deliberately no way to reach an "add a
@@ -115,7 +118,7 @@ export function ScheduleCalendar({
     <>
       <div className="slot-grid">
         {slots.map((slot) => {
-          const locked = slot.state !== "future";
+          const locked = slot.state === "past";
           return (
             <button
               key={slot.key}
@@ -155,9 +158,11 @@ export function ScheduleCalendar({
         title={editing ? editing.label : ""}
         description={
           editing
-            ? editing.state === "future"
-              ? `Opens ${editing.opensLabel}. One quest per slot — picking another replaces this one.`
-              : `Opened ${editing.opensLabel}. This slot has already run, so it can only be read.`
+            ? editing.state === "past"
+              ? `Opened ${editing.opensLabel}. This slot has closed, so it can only be read.`
+              : editing.state === "live"
+                ? `Live now — opened ${editing.opensLabel}. Changing it swaps the quest people are looking at today.`
+                : `Opens ${editing.opensLabel}. One quest per slot — picking another replaces this one.`
             : ""
         }
       >
@@ -170,7 +175,7 @@ export function ScheduleCalendar({
                 name="questId"
                 className="input"
                 defaultValue={editing.booked?.questId ?? ""}
-                disabled={editing.state !== "future"}
+                disabled={editing.state === "past"}
                 required
               >
                 <option value="" disabled>
@@ -191,7 +196,7 @@ export function ScheduleCalendar({
                 name="audience"
                 className="input"
                 defaultValue={editing.booked?.audience ?? "FREE"}
-                disabled={editing.state !== "future"}
+                disabled={editing.state === "past"}
               >
                 <option value="FREE">Everyone</option>
                 <option value="EXPLORER">Explorer and up</option>
@@ -199,7 +204,7 @@ export function ScheduleCalendar({
               </select>
             </div>
 
-            {editing.state === "future" ? (
+            {editing.state !== "past" ? (
               <div className="flex flex-wrap gap-2">
                 <button type="submit" className="btn btn-primary btn-sm" disabled={pending}>
                   {pending ? "Saving…" : editing.booked ? "Update slot" : "Schedule it"}

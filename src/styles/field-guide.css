@@ -547,7 +547,10 @@
   padding: 13px 16px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #fff;
+  /* Tokenised, not `#fff`: the text colour follows the theme, so a hardcoded
+     white field meant near-white type on white paper in dark mode — you
+     could not see what you were typing. */
+  background: var(--field);
   font: inherit;
   font-size: 14.5px;
   color: var(--ink);
@@ -2385,7 +2388,7 @@ textarea.input {
   align-items: center;
   justify-content: center;
   gap: 9px;
-  background: #fff;
+  background: var(--field);
   transition: 0.16s;
 }
 .oauth:hover:not(:disabled) {
@@ -3701,7 +3704,7 @@ a.plan-mark:hover {
   transition: background 0.2s;
 }
 .stat-cell:hover {
-  background: #fff;
+  background: var(--field);
 }
 .stat-cell dd {
   margin: 0;
@@ -5335,4 +5338,34 @@ select.input {
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--signal);
+}
+
+/* The appearance control on the settings page gets more room than the
+   sidebar version it replaced — it is the subject of its panel there, not a
+   footnote under the nav. */
+.theme-toggle-wide button {
+  flex-direction: row;
+  gap: 7px;
+  padding: 10px 6px;
+  font-size: 9.5px;
+}
+.theme-toggle-wide button svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* The renewal line on the membership card. */
+.plan-dates {
+  padding: 12px 20px 14px;
+  border-top: 1px dashed var(--line);
+}
+.plan-dates p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.plan-dates b {
+  color: var(--ink);
+  font-weight: 600;
 }

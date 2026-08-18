@@ -101,6 +101,28 @@ export default async function UpgradePage() {
                 </li>
               ))}
             </ul>
+            {/* When money next moves, or when access stops. A membership card
+                that doesn't say either is asking you to go and find out. */}
+            <div className="plan-dates">
+              {entitlement.cancelAtPeriodEnd ? (
+                <p>
+                  <b>Cancelled.</b>{" "}
+                  {entitlement.currentPeriodEnd
+                    ? `You keep ${entitlement.definition.name} until ${formatDate(entitlement.currentPeriodEnd)}, then it stops. Nothing is charged again.`
+                    : "Access runs to the end of the period you've paid for."}
+                </p>
+              ) : entitlement.currentPeriodEnd ? (
+                <p>
+                  <b>Next payment {formatDate(entitlement.currentPeriodEnd)}.</b> Cancel before then
+                  and you are not charged again.
+                </p>
+              ) : (
+                <p>
+                  <b>Active.</b> This account is on {entitlement.definition.name}.
+                </p>
+              )}
+            </div>
+
             <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-line px-5 py-4">
               <BillingActions enabled={isStripeEnabled()} />
               {!entitlement.cancelAtPeriodEnd && (

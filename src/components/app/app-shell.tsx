@@ -29,7 +29,7 @@ import type { PlanId } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 import { PlanMark } from "./plan-mark";
-import { ThemeToggle, type ThemeChoice } from "./theme-toggle";
+import type { ThemeChoice } from "./theme-toggle";
 
 /**
  * The signed-in shell.
@@ -90,13 +90,11 @@ function Sidebar({
   home,
   items,
   admin,
-  theme,
   children,
 }: {
   home: string;
   items: readonly NavItem[];
   admin?: boolean;
-  theme: ThemeChoice;
   children?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -179,10 +177,7 @@ function Sidebar({
           })}
         </nav>
 
-        <div className="app-side-foot">
-          <ThemeToggle value={theme} />
-          {children}
-        </div>
+        <div className="app-side-foot">{children}</div>
       </aside>
     </>
   );
@@ -223,7 +218,7 @@ export function AppShell({
       data-plan={plan}
       data-theme={theme.toLowerCase()}
     >
-      <Sidebar home="/dashboard" items={items} theme={theme}>
+      <Sidebar home="/dashboard" items={items}>
         {plan !== "free" && <PlanMark plan={plan} />}
         <AccountMenu
           userName={userName}
@@ -261,7 +256,7 @@ export function AdminShell({
       data-surface="admin"
       data-theme={theme.toLowerCase()}
     >
-      <Sidebar home="/admin" items={items} admin theme={theme}>
+      <Sidebar home="/admin" items={items} admin>
         {/* No plan mark, no settings, no billing: an admin account holds none
             of those, and a menu that offers them would be lying. */}
         <AccountMenu
