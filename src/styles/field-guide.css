@@ -3739,9 +3739,24 @@ a.plan-mark:hover {
 
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  /* Wide enough that the four cards land as 2×2 on a desktop rather than 3
+     and a lone orphan, and wide enough that a region name like "Strážovské
+     vrchy" fits without being cut to an ellipsis. */
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 18px;
-  align-items: start;
+  /* Stretch, not start: `align-items: start` let every card keep its natural
+     height, so a row of three cards with different amounts of content ended
+     in three different places and the grid read as rubble. Equal heights per
+     row is what makes a wall of panels look deliberate. */
+  align-items: stretch;
+}
+.chart-grid > * {
+  display: flex;
+  flex-direction: column;
+}
+.chart-grid > * > .chart,
+.chart-grid > .chart {
+  flex: 1;
 }
 /* Full-bleed charts are deliberately not offered: the SVG type is sized in
    viewBox units, so a chart stretched across the whole page scales its axis

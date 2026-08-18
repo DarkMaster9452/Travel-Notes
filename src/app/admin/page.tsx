@@ -93,41 +93,46 @@ export default async function AdminOverviewPage() {
         />
       </Reveal>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.9fr] lg:items-start">
+      {/* Quick actions sit beside the two trend charts rather than beside one.
+          Paired with a single tall chart it was a short card next to a long
+          one, and the column under it was dead space for most of the page. */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:items-start">
         <Reveal>
           <QuickActions pending={pending} />
         </Reveal>
 
-        <Reveal delay={stagger(1)}>
-          <TrendArea
-            title="Accounts opened · 30 days"
-            points={signups.map((point) => ({
-              label: point.label,
-              value: point.value,
-              part: point.part,
-            }))}
-            wholeLabel="Signed up"
-            partLabel="Now subscribed"
-            note="The dark band is the share of that day's cohort paying today, not the day they paid."
-          />
-        </Reveal>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Reveal delay={stagger(1)}>
+            <TrendArea
+              title="Accounts opened · 30 days"
+              points={signups.map((point) => ({
+                label: point.label,
+                value: point.value,
+                part: point.part,
+              }))}
+              wholeLabel="Signed up"
+              partLabel="Now subscribed"
+              note="The dark band is the share of that day's cohort paying today, not the day they paid."
+            />
+          </Reveal>
+
+          <Reveal delay={stagger(2)}>
+            <TrendArea
+              title="Quests issued · 30 days"
+              points={questSeries.map((point) => ({
+                label: point.label,
+                value: point.value,
+                part: point.part,
+              }))}
+              wholeLabel="Issued"
+              partLabel="Logged since"
+              note="Logged quests are counted on the day they were issued, so the bands nest."
+            />
+          </Reveal>
+        </div>
       </div>
 
-      <div className="chart-grid">
-        <Reveal delay={stagger(1)}>
-          <TrendArea
-            title="Quests issued · 30 days"
-            points={questSeries.map((point) => ({
-              label: point.label,
-              value: point.value,
-              part: point.part,
-            }))}
-            wholeLabel="Issued"
-            partLabel="Logged since"
-            note="Logged quests are counted on the day they were issued, so the bands nest."
-          />
-        </Reveal>
-
+      <div className="chart-grid mt-5">
         <Reveal delay={stagger(2)}>
           <SplitBar
             title="Accounts by plan"
