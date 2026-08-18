@@ -51,15 +51,23 @@ export async function reviewSubmissionAction(input: {
     select: { id: true, userId: true, questId: true, status: true },
   });
   if (!submission) return { ok: false, message: "That submission is gone." };
-  if (submission.status !== "PENDING") {
-    return { ok: false, message: "Someone already reviewed that one." };
+
+  // A decided submission can be decided again. Reviewers are people and the
+  // deck is fast, so an approval pressed by mistake used to be permanent —
+  // the customer's history said they had done a quest they had not. What is
+  // refused is re-recording the verdict it already has, which would only
+  // rewrite the timestamp and make the audit trail lie about when it was
+  // judged.
+  const next = approve ? "APPROVED" : "REJECTED";
+  if (submission.status === next) {
+    return { ok: false, message: `That one is already ${approve ? "approved" : "declined"}.` };
   }
 
   await db.$transaction([
     db.submission.update({
       where: { id: submissionId },
       data: {
-        status: approve ? "APPROVED" : "REJECTED",
+        status: next,
         reviewedById: admin.id,
         reviewedAt: new Date(),
         reviewNote: note || null,
@@ -76,7 +84,16 @@ export async function reviewSubmissionAction(input: {
   revalidatePath("/admin/review");
   revalidatePath("/admin/submissions");
   revalidatePath("/admin");
-  return { ok: true };
+  // The person who filed it sees the verdict on their own page, so that has
+  // to be stale too — otherwise a reversed decision shows only on our side.
+  revalidatePath("/submissions");
+  return {
+    ok: true,
+    message:
+      submission.status === "PENDING"
+        ? undefined
+        : `Changed from ${submission.status.toLowerCase()} to ${next.toLowerCase()}.`,
+  };
 }
 
 /* -------------------------------------------------------------------------- */

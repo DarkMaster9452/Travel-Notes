@@ -3,11 +3,11 @@ import Link from "next/link";
 
 import { StatGrid } from "@/components/admin/stat-grid";
 import { Reveal } from "@/components/app/motion";
-import { Avatar, Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
+import { SubmissionsTable } from "@/components/admin/submissions-table";
+import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { stagger } from "@/lib/motion";
-import { formatRelativeDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Submissions · Admin" };
 export const dynamic = "force-dynamic";
@@ -49,8 +49,19 @@ export default async function SubmissionsPage({
       orderBy: { createdAt: "desc" },
       take: 100,
       include: {
-        user: { select: { name: true } },
-        quest: { select: { title: true, location: true } },
+        user: { select: { id: true, name: true, email: true } },
+        quest: {
+          select: {
+            id: true,
+            title: true,
+            location: true,
+            region: true,
+            difficulty: true,
+            distance: true,
+            elevationGain: true,
+            duration: true,
+          },
+        },
         reviewedBy: { select: { name: true } },
       },
     }),
@@ -65,9 +76,9 @@ export default async function SubmissionsPage({
     <>
       <Reveal as="header" className="page-head">
         <div>
-          <Eyebrow>📥 The record</Eyebrow>
+          <Eyebrow>The record</Eyebrow>
           <h1>Submissions.</h1>
-          <p>What people filed, and what was decided. Reviewing happens in the deck.</p>
+          <p>What people filed, and what was decided. Open any one to read it and change the verdict.</p>
         </div>
         <Link href="/admin/review" className="btn btn-signal btn-sm">
           Open review deck
@@ -109,54 +120,25 @@ export default async function SubmissionsPage({
             </nav>
           </div>
 
-          {rows.length === 0 ? (
-            <p className="chart-empty">Nothing filed under that filter.</p>
-          ) : (
-            <ul>
-              {rows.map((row, index) => (
-                <Reveal
-                  as="li"
-                  key={row.id}
-                  delay={stagger(index, 8)}
-                  className="admin-row border-b border-line px-5 py-4 last:border-b-0"
-                >
-                  <Avatar
-                    name={row.user.name}
-                    className="size-9 flex-[0_0_2.25rem] rounded-[11px] text-[12px]"
-                  />
-                  <span className="min-w-[min(100%,15rem)] flex-1">
-                    <b className="block text-[15px] font-semibold">{row.quest.title}</b>
-                    <span className="meta normal-case tracking-[0.06em]">
-                      {row.user.name} · {row.quest.location}
-                    </span>
-                  </span>
-                  <span className="meta w-24 shrink-0">
-                    {row.photos.length} photo{row.photos.length === 1 ? "" : "s"}
-                  </span>
-                  <span className="meta hidden w-28 shrink-0 md:inline">
-                    {formatRelativeDate(row.createdAt)}
-                  </span>
-                  <span className="meta hidden w-32 shrink-0 lg:inline">
-                    {row.reviewedBy ? `by ${row.reviewedBy.name}` : "—"}
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    {row.retreated && <Tag tone="ghost">Retreat</Tag>}
-                    <Tag
-                      tone={
-                        row.status === "APPROVED"
-                          ? "pine"
-                          : row.status === "REJECTED"
-                            ? "warm"
-                            : "ghost"
-                      }
-                    >
-                      {row.status}
-                    </Tag>
-                  </span>
-                </Reveal>
-              ))}
-            </ul>
-          )}
+          <SubmissionsTable
+            rows={rows.map((row) => ({
+              id: row.id,
+              status: row.status,
+              note: row.note,
+              photos: row.photos,
+              stravaUrl: row.stravaUrl,
+              distance: row.distance,
+              elevation: row.elevation,
+              movingTime: row.movingTime,
+              retreated: row.retreated,
+              reviewNote: row.reviewNote,
+              reviewedAt: row.reviewedAt?.toISOString() ?? null,
+              reviewedBy: row.reviewedBy?.name ?? null,
+              createdAt: row.createdAt.toISOString(),
+              author: { id: row.user.id, name: row.user.name, email: row.user.email },
+              quest: row.quest,
+            }))}
+          />
         </Panel>
       </Reveal>
     </>
