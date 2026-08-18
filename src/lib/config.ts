@@ -107,6 +107,25 @@ export const STICKER_ALLOWANCE: Record<PlanId, number> = {
  */
 export const REFUND_WINDOW_DAYS = 7;
 
+/**
+ * When the money-back window closes for a subscription that began at `start`.
+ *
+ * Measured from the start of the *current period*, so it covers a new
+ * subscription's first week — the case the guarantee is actually for — rather
+ * than re-arming at every renewal for someone who has been a member a year.
+ */
+export function refundDeadline(start: Date | null): Date | null {
+  if (!start) return null;
+  return new Date(start.getTime() + REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+}
+
+/** Whether the guarantee is still open. Reading the clock lives here rather
+ *  than in a component body, where it would be an impure call during render. */
+export function isWithinRefundWindow(start: Date | null, now: Date = new Date()): boolean {
+  const deadline = refundDeadline(start);
+  return deadline !== null && now.getTime() <= deadline.getTime();
+}
+
 export const PLANS: PlanDefinition[] = [
   {
     id: "free",
@@ -241,6 +260,21 @@ export const CAPABILITY_COPY: Record<Capability, { title: string; detail: string
     detail: "Invite links, a closed board, group quests with one mail each.",
   },
 };
+
+/**
+ * The capabilities worth naming on a card, in order.
+ *
+ * Ultra holds `europe` as well as `worldwide` — it has to, or a Europe-only
+ * check would refuse the tier above it — but saying "Anywhere in Europe" to
+ * an Ultra member describes a limit they paid to remove. Superseded
+ * capabilities are dropped from the telling, not from the grant.
+ */
+export function headlineCapabilities(definition: PlanDefinition, limit = 3): Capability[] {
+  const held = new Set(definition.capabilities);
+  return definition.capabilities
+    .filter((capability) => !(capability === "europe" && held.has("worldwide")))
+    .slice(0, limit);
+}
 
 export function formatPrice(minorUnits: number, currency: PlanDefinition["currency"] = "EUR") {
   if (minorUnits === 0) return "Free";

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ProgressBar, Reveal } from "@/components/app/motion";
+import { PlanChip } from "@/components/app/plan-mark";
 import { stagger } from "@/lib/motion";
 import { Eyebrow, Panel, PanelHead, Sticker, StickerSheet, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
@@ -45,6 +46,7 @@ export default async function StickersPage() {
             moment you log the quest that earns it.
           </p>
         </div>
+        <PlanChip plan={entitlement.plan} />
       </Reveal>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_1.05fr] lg:items-start">

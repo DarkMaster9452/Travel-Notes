@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { UnlockCeremony } from "@/components/app/unlock-ceremony";
 import { requireClient } from "@/lib/auth/guards";
 import { syncFromCheckoutSession } from "@/lib/billing";
-import { EXPLORER_PLAN } from "@/lib/config";
+import { EXPLORER_PLAN, headlineCapabilities } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
 
 export const metadata: Metadata = { title: "Welcome" };
@@ -37,9 +37,10 @@ export default async function CheckoutSuccessPage({
   // Nothing confirmed yet: show the plan they bought rather than the free one
   // they are momentarily still recorded as holding.
   const plan = entitlement.isSubscribed ? entitlement.plan : EXPLORER_PLAN.id;
-  const capabilities = entitlement.isSubscribed
-    ? entitlement.definition.capabilities
-    : EXPLORER_PLAN.capabilities;
+  const capabilities = headlineCapabilities(
+    entitlement.isSubscribed ? entitlement.definition : EXPLORER_PLAN,
+    Infinity,
+  );
 
   return (
     <UnlockCeremony

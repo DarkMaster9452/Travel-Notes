@@ -8,7 +8,7 @@ import { PlanChip } from "@/components/app/plan-mark";
 import { DeleteAccount, NameForm, PreferencesForm } from "@/components/app/settings-forms";
 import { Avatar, Eyebrow, Panel, PanelHead } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
-import { CAPABILITY_COPY } from "@/lib/config";
+import { CAPABILITY_COPY, headlineCapabilities } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
@@ -63,7 +63,7 @@ export default async function SettingsPage() {
                 {entitlement.isSubscribed ? (
                   <>
                     <ul className="held-inline">
-                      {plan.capabilities.map((capability, index) => (
+                      {headlineCapabilities(plan, Infinity).map((capability, index) => (
                         <li
                           key={capability}
                           className="tick-in"

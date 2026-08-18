@@ -6,7 +6,9 @@ import { z } from "zod";
 import { getAchievements } from "@/lib/achievements";
 import { requireClient, requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { isWithinRefundWindow } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
+import { getStripe } from "@/lib/stripe";
 import { LOCATIONS } from "@/lib/quest/locations";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
 import { questIdSchema } from "@/lib/validation";
@@ -231,4 +233,122 @@ export async function setThemeAction(value: string): Promise<{ ok: boolean }> {
   // authenticated tree is stale after this, not just the page that set it.
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Membership                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type CancelResult = {
+  ok: boolean;
+  message?: string;
+  /** True when the cancellation was inside the guarantee and money is coming back. */
+  refunded?: boolean;
+};
+
+/**
+ * Cancel a subscription.
+ *
+ * Two different things depending on when you ask, and the difference is the
+ * whole point of the guarantee:
+ *
+ *  · Inside the first week — cancelled immediately and refunded in full. You
+ *    lose access now, because you are getting the money back for it.
+ *  · After that — cancelled at the end of the period you have already paid
+ *    for. Access holds until then; nothing is clawed back.
+ *
+ * Stripe is the payment authority but not the access authority: the
+ * subscription row is updated either way, so a deployment without Stripe keys
+ * still cancels properly instead of silently doing nothing.
+ */
+export async function cancelPlanAction(): Promise<CancelResult> {
+  const user = await requireClient();
+
+  const subscription = await db.subscription.findUnique({
+    where: { userId: user.id },
+    select: {
+      id: true,
+      status: true,
+      plan: true,
+      currentPeriodStart: true,
+      currentPeriodEnd: true,
+      cancelAtPeriodEnd: true,
+      stripeSubscriptionId: true,
+    },
+  });
+
+  if (!subscription || subscription.plan === "FREE") {
+    return { ok: false, message: "There's no paid plan on this account." };
+  }
+  if (subscription.cancelAtPeriodEnd) {
+    return { ok: false, message: "That plan is already set to stop." };
+  }
+
+  const withinGuarantee = isWithinRefundWindow(subscription.currentPeriodStart);
+
+  const stripe = getStripe();
+  if (stripe && subscription.stripeSubscriptionId) {
+    try {
+      if (withinGuarantee) {
+        // Cancel now and refund the latest invoice. Refunding before
+        // cancelling would leave a paid-for subscription with no money
+        // behind it if the cancel then failed.
+        const live = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
+        const invoiceId =
+          typeof live.latest_invoice === "string" ? live.latest_invoice : live.latest_invoice?.id;
+
+        await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
+
+        if (invoiceId) {
+          // On this API version an invoice links to its money through
+          // `payments`, not a bare `payment_intent`, so it has to be expanded
+          // to find what to refund.
+          const invoice = await stripe.invoices.retrieve(invoiceId, { expand: ["payments"] });
+          const payment = invoice.payments?.data.find(
+            (entry) => entry.payment?.payment_intent || entry.payment?.charge,
+          );
+          const intent = payment?.payment.payment_intent;
+          const charge = payment?.payment.charge;
+
+          const paymentIntentId = typeof intent === "string" ? intent : intent?.id;
+          const chargeId = typeof charge === "string" ? charge : charge?.id;
+
+          if (paymentIntentId) {
+            await stripe.refunds.create({ payment_intent: paymentIntentId });
+          } else if (chargeId) {
+            await stripe.refunds.create({ charge: chargeId });
+          }
+        }
+      } else {
+        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+          cancel_at_period_end: true,
+        });
+      }
+    } catch {
+      return {
+        ok: false,
+        message: "Stripe wouldn't accept that just now. Nothing was changed — try again.",
+      };
+    }
+  }
+
+  await db.subscription.update({
+    where: { id: subscription.id },
+    data: withinGuarantee
+      ? { status: "CANCELED", cancelAtPeriodEnd: false, currentPeriodEnd: new Date() }
+      : { cancelAtPeriodEnd: true },
+  });
+
+  revalidatePath("/upgrade");
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+  revalidatePath("/", "layout");
+
+  return {
+    ok: true,
+    refunded: withinGuarantee,
+    message: withinGuarantee
+      ? "Cancelled and refunded in full."
+      : "Cancelled. You keep everything until the period ends.",
+  };
 }

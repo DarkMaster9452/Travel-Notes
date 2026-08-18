@@ -126,7 +126,10 @@ export default async function QuestPage({ params }: Params) {
                 <p>
                   <b>Proof declined.</b>{" "}
                   {submission?.reviewNote ??
-                    "Usually a missing photo rather than a suspicion — file it again with more to go on."}
+                    "Usually a missing photo rather than a suspicion — file it again with more to go on."}{" "}
+                  <Link href="/submissions" className="underline">
+                    All your submissions
+                  </Link>
                 </p>
               </div>
             </Reveal>
