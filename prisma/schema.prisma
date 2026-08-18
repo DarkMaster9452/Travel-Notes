@@ -44,6 +44,11 @@ model User {
   /// the right palette on the first paint — a theme that arrives after
   /// hydration is a flash of the wrong one.
   theme          Theme   @default(SYSTEM)
+  /// Achievement ids this account has already been shown as earned. Stickers
+  /// are derived, so there is no row whose creation could mark the moment —
+  /// this is what makes "new since you last looked" answerable, and it is why
+  /// the sheet can celebrate an unlock exactly once.
+  seenAchievements String[] @default([]) @map("seen_achievements")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -19,6 +19,7 @@ import {
   IconMap,
   IconMarker,
   IconMountain,
+  IconShield,
   IconSparkle,
   IconSun,
   IconUsers,
@@ -66,6 +67,7 @@ const NAV_ICONS = {
   badge: IconBadge,
   gear: IconGear,
   sparkle: IconSparkle,
+  shield: IconShield,
 } satisfies Record<string, React.ComponentType<IconProps>>;
 
 export type NavIconKey = keyof typeof NAV_ICONS;

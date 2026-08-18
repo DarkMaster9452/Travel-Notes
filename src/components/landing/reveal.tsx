@@ -15,8 +15,6 @@ const SELECTOR = [
   ".step",
   ".terrain",
   ".plan",
-  ".mail-list li",
-  ".envelope",
   ".faq details",
   "#cta .wrap > *",
   ".shot",

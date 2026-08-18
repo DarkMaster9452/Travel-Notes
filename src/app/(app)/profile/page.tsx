@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import { countriesFor, countryForStoredLocation } from "@/lib/geo";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
+import { RULES, RULES_SUMMARY } from "@/lib/rules";
 import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -143,6 +144,33 @@ export default async function SettingsPage() {
                   Auto follows your device. The choice is saved to your account, so it holds on
                   every machine you sign in from.
                 </p>
+              </div>
+            </Panel>
+          </Reveal>
+
+          {/* The rules, in the place people go looking for them. The headings
+              come from `lib/rules` rather than being typed out again, so this
+              panel cannot end up advertising a section that no longer exists. */}
+          <Reveal delay={stagger(3)}>
+            <Panel flush>
+              <PanelHead title="The rules" />
+              <div className="flex flex-col gap-4 px-5 py-5">
+                <p className="text-[14.5px] leading-[1.55] text-ink-2">{RULES_SUMMARY}</p>
+                <ul className="rules-chips">
+                  {RULES.map((group) => (
+                    <li key={group.id}>
+                      <Link href={`/rules#${group.id}`}>{group.heading}</Link>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link href="/rules" className="btn btn-ghost btn-sm">
+                    Read the rules
+                  </Link>
+                  <Link href="/legal/safety" className="meta underline">
+                    Safety notice
+                  </Link>
+                </div>
               </div>
             </Panel>
           </Reveal>

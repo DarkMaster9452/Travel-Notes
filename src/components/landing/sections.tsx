@@ -86,113 +86,6 @@ export function HowItWorks() {
 }
 
 /* ========================================================================== */
-/* By mail                                                                    */
-/* ========================================================================== */
-
-const MAIL_POINTS = [
-  {
-    k: "06:00",
-    title: "It lands before you're properly awake",
-    body: "The morning you chose, before the excuses arrive.",
-  },
-  {
-    k: "ONE",
-    title: "One quest. No feed, no options.",
-    body: "Nothing to scroll. The weekly is the same for everybody.",
-  },
-  {
-    k: "LOG",
-    title: "Reply to log it",
-    body: "Answer with a photo or a word. It never gets issued again.",
-  },
-  {
-    k: "SKIP",
-    title: "Skip without guilt",
-    body: "One tap re-rolls it, or pauses you until you're ready.",
-  },
-];
-
-export function MailSection() {
-  return (
-    <section id="mail" className="section mail-section">
-      <div className="wrap mail-grid">
-        <div>
-          <span className="eyebrow">For subscribers</span>
-          <h2 className="h2">
-            The website is the demo.
-            <br />
-            The inbox is the product.
-          </h2>
-          <p className="lede mt-[18px]">
-            Subscribed, you stop visiting a site at all. The quest finds you, already decided and
-            timed to your daylight.
-          </p>
-          <ul className="mail-list">
-            {MAIL_POINTS.map((point) => (
-              <li key={point.k}>
-                <span className="k">{point.k}</span>
-                <div>
-                  <b>{point.title}</b>
-                  <p>{point.body}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* The mock every transactional template is built from. */}
-        <div className="envelope">
-          <div className="env-bar">
-            <i />
-            <i />
-            <i />
-            <span>Inbox — Saturday, 06:00</span>
-          </div>
-          <div className="env-body">
-            <div className="env-from">
-              <div className="env-av">
-                <svg viewBox="0 0 32 32" aria-hidden="true">
-                  <path
-                    d="M2 25 L11 10 L16.5 19 L20 13.5 L30 25 Z"
-                    fill="none"
-                    stroke="#F3EFE6"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <b>Summit Quest</b>
-                <span>quests@summitquest.app · to you</span>
-              </div>
-            </div>
-            <p className="env-sub">Quest № 0418 — you have until Sunday.</p>
-            <p className="env-text">
-              Good morning. The forecast opened a window on the Slovenský raj ladders and you
-              haven&apos;t been in a gorge this year. Boots by the door, headlamp in the bag.
-            </p>
-            <div className="env-quest">
-              <span className="qq">Suchá Belá Gorge · Slovakia</span>
-              <b>Climb the gorge ladders while the water is still loud.</b>
-              <div className="row">
-                <span>11.4 km</span>
-                <span>640 m ↑</span>
-                <span>Moderate</span>
-                <span>Start 07:15</span>
-              </div>
-            </div>
-            <span className="env-btn">Accept quest →</span>
-            <p className="env-text text-[13px] mt-[14px]">
-              Not today? <u>Re-roll</u> · <u>Pause me a week</u>
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ========================================================================== */
 /* Weekly + monthly                                                           */
 /* ========================================================================== */
 
@@ -1079,7 +972,7 @@ export function FaqSection() {
 
 export function FinalCta() {
   return (
-    <section id="cta" className="relative overflow-hidden py-[110px] text-center">
+    <section id="cta" className="cta-section relative overflow-hidden py-[110px] text-center">
       <ContoursBright />
       <div className="wrap">
         <span className="eyebrow justify-center">Your move</span>
@@ -1145,13 +1038,13 @@ export function LandingFooter() {
                 <a href="#how">How it works</a>
               </li>
               <li>
-                <a href="#mail">Quests by mail</a>
+                <a href="#weekly">The weekly and the monthly</a>
               </li>
               <li>
                 <a href="#together">Find a partner</a>
               </li>
               <li>
-                <a href="#weekly">Weekly quest</a>
+                <a href="#terrain">The ground itself</a>
               </li>
               <li>
                 <a href="#stickers">Sticker sheets</a>

@@ -30,6 +30,7 @@ function nav(awaiting: number): readonly NavItem[] {
 
     { section: "Account", href: "/profile", label: "Settings", icon: "gear" },
     { href: "/upgrade", label: "Plan", icon: "sparkle" },
+    { href: "/rules", label: "Rules", icon: "shield" },
   ];
 }
 

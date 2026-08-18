@@ -17,7 +17,7 @@
      04  quest card
      05  panels, fields, pills
      06  nav + hero
-     07  steps / flow / mail
+     07  steps / flow / closing band
      08  weekly + chat
      09  matches + board
      10  proof
@@ -844,7 +844,7 @@ textarea.input {
   color: var(--ink-3);
 }
 
-/* ------------------------ 07 steps / flow / mail ------------------------- */
+/* ------------------- 07 steps / flow / closing band ---------------------- */
 
 .demo-section {
   background: var(--paper-2);
@@ -944,185 +944,41 @@ textarea.input {
   stroke-linejoin: round;
 }
 
-.mail-section {
+/* The deep-green band. It used to sit halfway up the page under the email
+   mock; it belongs at the close, where the page stops explaining and asks. A
+   single dark surface reads as an ending — three of them read as stripes. */
+.cta-section {
   background: var(--forest);
   color: #ede7da;
   border-top: 1px solid var(--moss);
-  overflow: hidden;
 }
-.mail-section .eyebrow {
+.cta-section .eyebrow {
   color: #a8c49a;
 }
-.mail-section .h2 {
+.cta-section .h2 {
   color: #f7f2e7;
 }
-.mail-section .lede {
+.cta-section .lede {
   color: rgba(237, 231, 218, 0.72);
 }
-.mail-grid {
-  display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
-  gap: 52px;
-  align-items: center;
+/* The contour lines are drawn for paper. On the forest they need to be the
+   light in the dark rather than the shading on the light. */
+.cta-section .contours path {
+  stroke: #a8c49a;
+  opacity: 0.16;
 }
-.mail-list {
-  margin-top: 34px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0;
+.cta-section .contours path:nth-child(3n) {
+  stroke: #d8e4cd;
+  opacity: 0.2;
 }
-.mail-list li {
-  list-style: none;
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 16px 0;
-  border-top: 1px solid rgba(237, 231, 218, 0.14);
+.cta-section .btn-ghost {
+  color: #ede7da;
+  border-color: rgba(237, 231, 218, 0.34);
+  background: transparent;
 }
-.mail-list li:last-child {
-  border-bottom: 1px solid rgba(237, 231, 218, 0.14);
-}
-.mail-list .k {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  color: #a8c49a;
-  flex: 0 0 42px;
-  padding-top: 3px;
-}
-.mail-list b {
-  display: block;
-  font-size: 15.5px;
-  font-weight: 600;
-  color: #f7f2e7;
-}
-.mail-list p {
-  font-size: 14.5px;
-  color: rgba(237, 231, 218, 0.68);
-  margin-top: 3px;
-}
-
-/* The email mock. Transactional templates reuse this treatment. */
-.envelope {
-  background: var(--card);
-  border-radius: var(--r);
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.6);
-  overflow: hidden;
-  transform: rotate(-0.7deg);
-}
-.env-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: var(--paper-2);
-  border-bottom: 1px solid var(--line);
-}
-.env-bar i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--ink-3);
-  opacity: 0.4;
-  display: block;
-}
-.env-bar span {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-3);
-  margin-left: 6px;
-  letter-spacing: 0.06em;
-}
-.env-body {
-  padding: 22px 24px 26px;
-  color: var(--ink);
-}
-.env-from {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line-2);
-}
-.env-av {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--pine);
-  display: grid;
-  place-items: center;
-  flex: 0 0 32px;
-}
-.env-av svg {
-  width: 18px;
-  height: 18px;
-}
-.env-from b {
-  font-size: 14px;
-  display: block;
-  letter-spacing: -0.01em;
-}
-.env-from span {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-3);
-}
-.env-sub {
-  font-family: var(--serif);
-  font-size: 23px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  margin-top: 16px;
-  line-height: 1.15;
-}
-.env-text {
-  font-size: 14.5px;
-  color: var(--ink-2);
-  margin-top: 11px;
-  line-height: 1.55;
-}
-.env-quest {
-  margin-top: 16px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px 15px;
-  background: rgba(21, 24, 26, 0.02);
-}
-.env-quest .qq {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--moss-2);
-}
-.env-quest b {
-  display: block;
-  font-family: var(--serif);
-  font-size: 19px;
-  letter-spacing: -0.02em;
-  margin-top: 6px;
-}
-.env-quest .row {
-  display: flex;
-  gap: 16px;
-  margin-top: 11px;
-  flex-wrap: wrap;
-}
-.env-quest .row span {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-2);
-}
-.env-btn {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 11px 20px;
-  border-radius: var(--radius-pill);
-  background: var(--pine);
-  color: #f2f4ea;
-  font-size: 13.5px;
-  font-weight: 600;
+.cta-section .btn-ghost:hover {
+  border-color: rgba(237, 231, 218, 0.6);
+  background: rgba(237, 231, 218, 0.08);
 }
 
 /* --------------------------- 08 weekly + chat ---------------------------- */
@@ -1860,17 +1716,41 @@ textarea.input {
   transform: scale(1.09) rotate(0deg) !important;
   z-index: 2;
 }
-/* Colour and tilt come from position on the sheet, so a printed sheet reads
-   as a sheet rather than a grid of identical discs. */
-.sticker:nth-child(3n) {
-  background: var(--signal);
+/* The ten inks the sheet is printed in.
+   Colour belongs to the sticker rather than to its position — see the note in
+   `components/field/sticker.tsx` for why that changed. Tilt is still
+   positional, because tilt is decoration and colour is identity. */
+.sticker[data-tone="pine"] {
+  background: var(--pine);
 }
-.sticker:nth-child(3n + 2) {
+.sticker[data-tone="moss"] {
   background: var(--moss-2);
 }
-.sticker:nth-child(4n) {
+.sticker[data-tone="signal"] {
+  background: var(--signal);
+}
+.sticker[data-tone="night"] {
+  background: #2f3a63;
+}
+.sticker[data-tone="stone"] {
+  background: #5a6b74;
+}
+.sticker[data-tone="clay"] {
   background: #8a6a4a;
 }
+.sticker[data-tone="water"] {
+  background: #2b7a86;
+}
+.sticker[data-tone="berry"] {
+  background: #6d3a55;
+}
+.sticker[data-tone="gold"] {
+  background: #a97c25;
+}
+.sticker[data-tone="copper"] {
+  background: #9c5533;
+}
+
 .sticker:nth-child(odd) {
   transform: rotate(-7deg);
 }
@@ -1951,6 +1831,142 @@ textarea.input {
   opacity: 0.5;
   background-image: var(--lock-glyph);
 }
+/* ---------------------------------------------------------------------------
+   Earning one
+
+   A sticker you have just earned should arrive rather than simply be there.
+   It drops in overshooting slightly, as if pressed down by a thumb, and a
+   single band of light travels across it once. Both are one-shot: the sticker
+   ends in exactly the resting state every other sticker is already in, so
+   nothing on the sheet is permanently louder than its neighbours.
+
+   `animation-delay` is set inline per sticker so a run earned together lands
+   one after another instead of all at once.
+--------------------------------------------------------------------------- */
+.sticker.is-fresh {
+  animation: sticker-land 720ms cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+  z-index: 3;
+}
+.sticker.is-fresh::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%
+  );
+  background-size: 280% 100%;
+  animation: sticker-shine 900ms ease-out 420ms backwards;
+  opacity: 0;
+}
+
+@keyframes sticker-land {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-18deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.16) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sticker-shine {
+  0% {
+    opacity: 1;
+    background-position: 180% 0;
+  }
+  100% {
+    opacity: 0;
+    background-position: -80% 0;
+  }
+}
+
+/* The count of new ones, above the sheet. Not a modal: the sheet is already
+   the right place to look, and a dialog would put a click between somebody
+   and the thing they earned. */
+.fresh-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--r-sm);
+  background: var(--forest);
+  color: #eef2e7;
+  animation: fresh-banner-in 520ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+.fresh-banner b {
+  font-size: 15px;
+  font-weight: 650;
+}
+.fresh-banner span {
+  font-size: 14px;
+  color: rgba(238, 242, 231, 0.74);
+}
+.fresh-banner .fresh-spark {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  color: #e6c463;
+  animation: fresh-spark 1.6s ease-in-out 3;
+}
+.fresh-banner .fresh-spark svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes fresh-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fresh-spark {
+  0%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  40% {
+    transform: rotate(18deg) scale(1.18);
+  }
+  70% {
+    transform: rotate(-10deg) scale(1.05);
+  }
+}
+
+/* A sticker landing is celebration, not information — under reduced motion it
+   is simply already on the sheet. */
+@media (prefers-reduced-motion: reduce) {
+  .sticker.is-fresh,
+  .sticker.is-fresh::before,
+  .fresh-banner,
+  .fresh-banner .fresh-spark {
+    animation: none;
+  }
+  .sticker.is-fresh::before {
+    display: none;
+  }
+}
+
 /* The one upgrade prompt on the stickers page, under the sheet. */
 .sheet-upsell {
   margin-top: 16px;
@@ -4146,8 +4162,7 @@ a.plan-mark:hover {
 
 @media (max-width: 980px) {
   .hero-grid,
-  .demo-grid,
-  .mail-grid {
+  .demo-grid {
     grid-template-columns: 1fr;
     gap: 38px;
   }
@@ -5107,8 +5122,8 @@ select.input {
    The monthly headline, on the client dashboard
 
    The one element on the page that is allowed to be loud. It sits on the dark
-   forest surface the design system already uses for emphasis (the mail
-   section, the feature plan card), which is what separates it from the
+   forest surface the design system already uses for emphasis (the closing
+   band, the feature plan card), which is what separates it from the
    panels around it without inventing a new treatment. It stays dark in both
    palettes for the same reason the admin sidebar does: it is a surface, not
    a shade of the page.
@@ -5812,4 +5827,104 @@ select.input {
   border: 1px solid var(--line);
   background: var(--paper-2);
   box-shadow: var(--shadow-field);
+}
+
+/* ---------------------------------------------------------------------------
+   The rules
+
+   Numbered, because rules are numbered, and set in the same dashed-panel
+   language as everything else so the page reads as part of the product rather
+   than as a legal document that wandered in.
+--------------------------------------------------------------------------- */
+.rules-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.rules-jump a {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-2);
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.rules-jump a:hover {
+  border-color: var(--moss);
+  color: var(--ink);
+}
+.rules-intro {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--line);
+}
+.rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.rules-list li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 0;
+  border-bottom: 1px dashed var(--line-2);
+}
+.rules-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.rules-n {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--moss-2);
+  flex: 0 0 26px;
+  padding-top: 3px;
+}
+.rules-list b {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.rules-list p {
+  margin-top: 4px;
+  font-size: 14.5px;
+  line-height: 1.58;
+  color: var(--ink-2);
+}
+/* The rules, condensed into Settings: the headings as chips, straight to the
+   anchor on the full page. */
+.rules-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.rules-chips a {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-2);
+  color: var(--ink-3);
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.rules-chips a:hover {
+  border-color: var(--moss);
+  color: var(--ink);
 }
