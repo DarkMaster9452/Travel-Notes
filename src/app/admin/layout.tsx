@@ -41,6 +41,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       items={nav(pending)}
       userName={user.name}
       userEmail={user.email}
+      theme={user.theme}
       logout={logoutAction}
     >
       {children}

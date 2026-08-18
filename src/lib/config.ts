@@ -41,6 +41,9 @@ export type PlanId = "free" | "explorer" | "ultra";
  */
 export type Capability =
   | "unlimited"
+  /** Explorer's range: anywhere in Europe. */
+  | "europe"
+  /** Ultra's range: every continent in the catalogue. */
   | "worldwide"
   | "mail"
   | "reroll"
@@ -73,12 +76,36 @@ export type PlanDefinition = {
 
 const EXPLORER_CAPABILITIES = [
   "unlimited",
-  "worldwide",
+  "europe",
   "mail",
   "reroll",
   "matching",
   "printedStickers",
 ] as const satisfies readonly Capability[];
+
+/**
+ * How many stickers each tier can hold.
+ *
+ * The sheet is the same for everyone — what changes is how much of it an
+ * account can reach. A free account gets the first row, which is enough to
+ * see that the sheet is real; the rest stay on the sheet as blanks rather
+ * than being hidden, because a sticker you can see you haven't got is the
+ * whole mechanic.
+ */
+export const STICKER_ALLOWANCE: Record<PlanId, number> = {
+  free: 6,
+  explorer: 10,
+  ultra: 30,
+};
+
+/**
+ * Cancel any time, and a full refund inside this window.
+ *
+ * Stated in one place because it is a promise: the plan card, the cancel
+ * dialog and the confirmation all read this number, so the guarantee can
+ * never be advertised as one length and honoured as another.
+ */
+export const REFUND_WINDOW_DAYS = 7;
 
 export const PLANS: PlanDefinition[] = [
   {
@@ -89,7 +116,11 @@ export const PLANS: PlanDefinition[] = [
     description: "Three real quests, to find out whether being told what to do suits you.",
     price: { monthly: 0, yearly: 0 },
     currency: "EUR",
-    features: ["3 real quests", "Your own country", "History & digital stickers"],
+    features: [
+      `${FREE_QUEST_ALLOWANCE} real quests`,
+      "Your own country",
+      `The first ${STICKER_ALLOWANCE.free} stickers`,
+    ],
     missing: ["No inbox delivery", "No partner matching"],
     capabilities: [],
   },
@@ -98,17 +129,19 @@ export const PLANS: PlanDefinition[] = [
     name: "Explorer",
     tier: 1,
     kicker: "Unlimited quests",
-    description: "Unlimited quests, worldwide, in your inbox on the morning you pick.",
+    description: "Unlimited quests anywhere in Europe, in your inbox on the morning you pick.",
     price: { monthly: 1100, yearly: 9400 },
     currency: "EUR",
     features: [
       "Unlimited quests",
-      "Worldwide range",
+      "Anywhere in Europe",
+      `${STICKER_ALLOWANCE.explorer} stickers to collect`,
       "Quests by mail",
       "Re-roll, skip and pause",
       "Partner matching & the board",
       "Printed sticker sheets, posted",
     ],
+    missing: ["Europe only — not worldwide"],
     badge: "Most taken",
     capabilities: EXPLORER_CAPABILITIES,
   },
@@ -116,19 +149,28 @@ export const PLANS: PlanDefinition[] = [
     id: "ultra",
     name: "Ultra Explorer",
     tier: 2,
-    kicker: "Everything, priority",
-    description: "For quests built around something specific — a season, a range, a goal.",
+    kicker: "Worldwide, priority",
+    description: "Every range on the map, and quests built around something specific.",
     price: { monthly: 3100, yearly: 26400 },
     currency: "EUR",
     features: [
       "Everything in Explorer",
+      "Worldwide range, every continent",
+      `All ${STICKER_ALLOWANCE.ultra} stickers`,
       "Custom quests you commission",
       "Multi-day and trip-week quests",
       "Priority support, real replies",
       "Private crews & invite links",
     ],
     highlight: true,
-    capabilities: [...EXPLORER_CAPABILITIES, "customQuests", "multiDay", "priority", "crews"],
+    capabilities: [
+      ...EXPLORER_CAPABILITIES,
+      "worldwide",
+      "customQuests",
+      "multiDay",
+      "priority",
+      "crews",
+    ],
   },
 ];
 
@@ -158,9 +200,13 @@ export const CAPABILITY_COPY: Record<Capability, { title: string; detail: string
     title: "Unlimited quests",
     detail: "The counter is gone. Take another the moment you log one.",
   },
+  europe: {
+    title: "Anywhere in Europe",
+    detail: "Every European range in the catalogue, not just your own country.",
+  },
   worldwide: {
     title: "Worldwide range",
-    detail: "Every range in the catalogue, not just your own country.",
+    detail: "Every continent in the catalogue. Explorer stops at Europe.",
   },
   mail: {
     title: "Quests by mail",

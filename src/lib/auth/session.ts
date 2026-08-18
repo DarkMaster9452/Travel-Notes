@@ -3,7 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 
-import type { Role } from "@prisma/client";
+import type { Role, Theme } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -22,6 +22,8 @@ export type SessionUser = {
   /** USER or ADMIN. Set in the database only — nothing in the product writes it. */
   role: Role;
   freeQuestsUsed: number;
+  /** Which palette the signed-in app renders in. Read by the shells. */
+  theme: Theme;
   createdAt: Date;
 };
 
@@ -52,6 +54,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
           avatar: true,
           role: true,
           freeQuestsUsed: true,
+          theme: true,
           createdAt: true,
         },
       },

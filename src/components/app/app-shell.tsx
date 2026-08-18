@@ -29,6 +29,7 @@ import type { PlanId } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 import { PlanMark } from "./plan-mark";
+import { ThemeToggle, type ThemeChoice } from "./theme-toggle";
 
 /**
  * The signed-in shell.
@@ -89,11 +90,13 @@ function Sidebar({
   home,
   items,
   admin,
+  theme,
   children,
 }: {
   home: string;
   items: readonly NavItem[];
   admin?: boolean;
+  theme: ThemeChoice;
   children?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -176,7 +179,10 @@ function Sidebar({
           })}
         </nav>
 
-        <div className="app-side-foot">{children}</div>
+        <div className="app-side-foot">
+          <ThemeToggle value={theme} />
+          {children}
+        </div>
       </aside>
     </>
   );
@@ -196,6 +202,7 @@ export function AppShell({
   userEmail,
   plan,
   planName,
+  theme,
   logout,
 }: {
   children: React.ReactNode;
@@ -206,11 +213,17 @@ export function AppShell({
   plan: PlanId;
   /** "Free plan", "Explorer" — shown in the account menu. */
   planName: string;
+  /** The account's palette. Rendered on the server so there is no flash. */
+  theme: ThemeChoice;
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="app-frame bg-paper text-ink" data-plan={plan}>
-      <Sidebar home="/dashboard" items={items}>
+    <div
+      className="app-frame bg-paper text-ink"
+      data-plan={plan}
+      data-theme={theme.toLowerCase()}
+    >
+      <Sidebar home="/dashboard" items={items} theme={theme}>
         {plan !== "free" && <PlanMark plan={plan} />}
         <AccountMenu
           userName={userName}
@@ -232,17 +245,23 @@ export function AdminShell({
   items,
   userName,
   userEmail,
+  theme,
   logout,
 }: {
   children: React.ReactNode;
   items: readonly NavItem[];
   userName: string;
   userEmail: string;
+  theme: ThemeChoice;
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="app-frame bg-paper text-ink" data-surface="admin">
-      <Sidebar home="/admin" items={items} admin>
+    <div
+      className="app-frame bg-paper text-ink"
+      data-surface="admin"
+      data-theme={theme.toLowerCase()}
+    >
+      <Sidebar home="/admin" items={items} admin theme={theme}>
         {/* No plan mark, no settings, no billing: an admin account holds none
             of those, and a menu that offers them would be lying. */}
         <AccountMenu

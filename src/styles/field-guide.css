@@ -147,11 +147,11 @@
 .btn-ghost {
   border: 1px solid var(--line);
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--glass);
 }
 .btn-ghost:hover:not(:disabled) {
   border-color: var(--ink);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--glass-strong);
 }
 /* Destructive actions — reject, block, delete. Stamp ink, used sparingly. */
 .btn-danger {
@@ -1443,7 +1443,7 @@ textarea.input {
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   padding: 8px 15px;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--glass);
 }
 .rope-steps li b {
   color: var(--moss-2);
@@ -1456,7 +1456,7 @@ textarea.input {
   padding: 15px 17px;
   border-radius: 12px;
   border: 1px dashed var(--line);
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--glass);
 }
 .safety svg {
   flex: 0 0 17px;
@@ -1914,6 +1914,62 @@ textarea.input {
   box-shadow: none;
   opacity: 0.7;
 }
+
+/* Out of reach on this plan, rather than merely unearned.
+   Blurred hard enough that neither the artwork nor the label can be read —
+   the point is that you can see a sticker is there and that it isn't yours.
+   A lighter treatment would leak the whole set to an account that can't
+   hold it, which is the one thing this state exists to prevent. */
+.sticker.plan-locked {
+  position: relative;
+  background: transparent !important;
+  border-color: var(--card);
+  outline: 1px dashed var(--line);
+  box-shadow: none;
+  cursor: default;
+}
+.sticker.plan-locked > div {
+  filter: blur(5px);
+  opacity: 0.45;
+  user-select: none;
+}
+.sticker.plan-locked:hover {
+  transform: none;
+}
+/* A padlock over the blur, so the state reads as "locked" rather than as a
+   rendering fault. */
+.sticker.plan-locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+  opacity: 0.5;
+  background-image: var(--lock-glyph);
+}
+/* The one upgrade prompt on the stickers page, under the sheet. */
+.sheet-upsell {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+.sheet-upsell p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.sheet-upsell b {
+  color: var(--ink);
+}
+
 .unlocks {
   margin-top: 30px;
   display: grid;
@@ -2562,11 +2618,82 @@ textarea.input {
   padding: 12px;
   border-top: 1px solid var(--line);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
 }
 .admin-side .app-side-foot {
   border-top-color: rgba(238, 242, 231, 0.14);
+}
+
+/* ---------------------------------------------------------------------------
+   Appearance control — Light / Auto / Dark
+
+   Lives in the sidebar foot on both sides of the product. A segmented control
+   rather than a switch because there are three states: the third one, "follow
+   the device", is a real choice and not the absence of one.
+--------------------------------------------------------------------------- */
+.theme-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--glass);
+}
+.theme-toggle button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px 5px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  transition:
+    background 0.16s var(--ease-field),
+    color 0.16s var(--ease-field);
+}
+.theme-toggle button svg {
+  width: 14px;
+  height: 14px;
+}
+.theme-toggle button:hover {
+  color: var(--ink);
+}
+.theme-toggle button.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-field);
+}
+.theme-toggle[data-pending] {
+  opacity: 0.75;
+}
+
+/* The admin sidebar is a dark forest surface in *both* palettes, so its
+   controls read against that rather than against the page. */
+.admin-side .theme-toggle {
+  border-color: rgba(238, 242, 231, 0.16);
+  background: rgba(238, 242, 231, 0.05);
+}
+.admin-side .theme-toggle button {
+  color: rgba(238, 242, 231, 0.55);
+}
+.admin-side .theme-toggle button:hover {
+  color: #eef2e7;
+}
+.admin-side .theme-toggle button.active {
+  background: rgba(238, 242, 231, 0.14);
+  color: #eef2e7;
+  box-shadow: none;
 }
 
 .app-side-account {

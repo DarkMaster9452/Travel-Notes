@@ -33,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       items={NAV}
       userName={user.name}
       userEmail={user.email}
+      theme={user.theme}
       plan={entitlement.plan}
       planName={
         entitlement.isSubscribed

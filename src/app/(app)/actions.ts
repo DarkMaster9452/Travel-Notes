@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getAchievements } from "@/lib/achievements";
-import { requireClient } from "@/lib/auth/guards";
+import { requireClient, requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { getEntitlement } from "@/lib/entitlements";
 import { LOCATIONS } from "@/lib/quest/locations";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
 import { questIdSchema } from "@/lib/validation";
@@ -174,8 +175,13 @@ export async function logQuestAction(rawQuestId: string): Promise<LogResult> {
   // Snapshot what was already earned, so the difference afterwards is exactly
   // what this log unlocked. Recomputing thresholds by hand here would drift
   // from the achievement definitions the moment either side changed.
+  //
+  // The plan is passed on both sides: stickers past this account's allowance
+  // are never "earned", so the ceremony can't announce one the account cannot
+  // actually hold.
+  const { plan } = await getEntitlement(user.id);
   const before = new Set(
-    getAchievements(await getUserStats(user.id))
+    getAchievements(await getUserStats(user.id), plan)
       .filter((achievement) => achievement.earned)
       .map((achievement) => achievement.id),
   );
@@ -187,11 +193,42 @@ export async function logQuestAction(rawQuestId: string): Promise<LogResult> {
   });
 
   const unlocked = completed
-    ? getAchievements(await getUserStats(user.id))
+    ? getAchievements(await getUserStats(user.id), plan)
         .filter((achievement) => achievement.earned && !before.has(achievement.id))
         .map(({ id, label, description }) => ({ id, label, description }))
     : [];
 
   revalidateQuestPaths(questId);
   return { ok: true, completed, unlocked };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Appearance                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const themeSchema = z.enum(["SYSTEM", "LIGHT", "DARK"]);
+
+/**
+ * Set the palette the signed-in app renders in.
+ *
+ * Stored on the account rather than in `localStorage` so the server can put
+ * the right palette on the shell in its first response. A theme read on the
+ * client after hydration is a theme that arrives one paint too late, and the
+ * flash of the wrong one is exactly what someone turning on dark mode is
+ * trying to get away from.
+ *
+ * Admins share the setting — it is a property of the person, not of which
+ * side of the product they happen to be looking at.
+ */
+export async function setThemeAction(value: string): Promise<{ ok: boolean }> {
+  const user = await requireUser();
+  const parsed = themeSchema.safeParse(value);
+  if (!parsed.success) return { ok: false };
+
+  await db.user.update({ where: { id: user.id }, data: { theme: parsed.data } });
+
+  // Every signed-in surface reads the theme off the shell, so the whole
+  // authenticated tree is stale after this, not just the page that set it.
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

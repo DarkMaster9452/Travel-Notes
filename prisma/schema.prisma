@@ -24,6 +24,14 @@ enum Role {
   ADMIN
 }
 
+/// Which palette the signed-in app renders in. `SYSTEM` follows the device;
+/// the other two are a deliberate choice and outrank it.
+enum Theme {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
 model User {
   id             String  @id @default(cuid())
   email          String  @unique
@@ -32,6 +40,10 @@ model User {
   passwordHash   String  @map("password_hash")
   role           Role    @default(USER)
   freeQuestsUsed Int     @default(0) @map("free_quests_used")
+  /// Stored on the account rather than in localStorage so the server can render
+  /// the right palette on the first paint — a theme that arrives after
+  /// hydration is a flash of the wrong one.
+  theme          Theme   @default(SYSTEM)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -44,6 +56,7 @@ model User {
   generations  QuestGeneration[]
   history      QuestHistory[]
   savedQuests  SavedQuest[]
+  scheduled    QuestSchedule[]   @relation("ScheduleAuthor")
 
   @@map("users")
 }
@@ -227,11 +240,57 @@ model Quest {
   history     QuestHistory[]
   saved       SavedQuest[]
   submissions Submission[]
+  schedules   QuestSchedule[]
 
   @@index([isShowcase])
   @@index([published])
   @@index([signature])
   @@map("quests")
+}
+
+/// The two cadences the product runs on. The monthly is the headline quest;
+/// the weekly is the smaller one alongside it.
+enum SchedulePeriod {
+  WEEKLY
+  MONTHLY
+}
+
+/// A quest booked into a specific week or month.
+///
+/// One quest per slot, enforced by the database rather than by the form: two
+/// quests claiming the same Monday is not a state the product has an answer
+/// for, so it is made unrepresentable. Editing which quest fills a slot is
+/// allowed; adding a second to an occupied slot is not.
+///
+/// `openAt` is derived on write from the slot itself — Monday 06:00 for a
+/// weekly, the 1st at 06:00 for a monthly — and stored so the query that asks
+/// "what is live?" is a plain timestamp comparison rather than date arithmetic
+/// repeated at every call site.
+model QuestSchedule {
+  id      String         @id @default(cuid())
+  period  SchedulePeriod
+  /// `2026-W34` for a weekly, `2026-09` for a monthly. Unique with `period`.
+  slotKey String         @map("slot_key")
+  questId String         @map("quest_id")
+
+  /// Lowest plan this slot is visible to. `FREE` means everyone.
+  audience Plan @default(FREE)
+
+  /// When the slot opens. Monday 06:00 weekly, the 1st 06:00 monthly.
+  openAt DateTime @map("open_at")
+  /// When the log closes — the instant the next slot opens.
+  closeAt DateTime @map("close_at")
+
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  quest     Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("ScheduleAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([period, slotKey])
+  @@index([openAt])
+  @@map("quest_schedules")
 }
 
 /// Immutable audit log: every generation event, with the parameters used.
