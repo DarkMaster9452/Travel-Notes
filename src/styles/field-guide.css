@@ -147,11 +147,11 @@
 .btn-ghost {
   border: 1px solid var(--line);
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--glass);
 }
 .btn-ghost:hover:not(:disabled) {
   border-color: var(--ink);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--glass-strong);
 }
 /* Destructive actions — reject, block, delete. Stamp ink, used sparingly. */
 .btn-danger {
@@ -547,7 +547,10 @@
   padding: 13px 16px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #fff;
+  /* Tokenised, not `#fff`: the text colour follows the theme, so a hardcoded
+     white field meant near-white type on white paper in dark mode — you
+     could not see what you were typing. */
+  background: var(--field);
   font: inherit;
   font-size: 14.5px;
   color: var(--ink);
@@ -1443,7 +1446,7 @@ textarea.input {
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   padding: 8px 15px;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--glass);
 }
 .rope-steps li b {
   color: var(--moss-2);
@@ -1456,7 +1459,7 @@ textarea.input {
   padding: 15px 17px;
   border-radius: 12px;
   border: 1px dashed var(--line);
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--glass);
 }
 .safety svg {
   flex: 0 0 17px;
@@ -1914,6 +1917,62 @@ textarea.input {
   box-shadow: none;
   opacity: 0.7;
 }
+
+/* Out of reach on this plan, rather than merely unearned.
+   Blurred hard enough that neither the artwork nor the label can be read —
+   the point is that you can see a sticker is there and that it isn't yours.
+   A lighter treatment would leak the whole set to an account that can't
+   hold it, which is the one thing this state exists to prevent. */
+.sticker.plan-locked {
+  position: relative;
+  background: transparent !important;
+  border-color: var(--card);
+  outline: 1px dashed var(--line);
+  box-shadow: none;
+  cursor: default;
+}
+.sticker.plan-locked > div {
+  filter: blur(5px);
+  opacity: 0.45;
+  user-select: none;
+}
+.sticker.plan-locked:hover {
+  transform: none;
+}
+/* A padlock over the blur, so the state reads as "locked" rather than as a
+   rendering fault. */
+.sticker.plan-locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+  opacity: 0.5;
+  background-image: var(--lock-glyph);
+}
+/* The one upgrade prompt on the stickers page, under the sheet. */
+.sheet-upsell {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+.sheet-upsell p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.sheet-upsell b {
+  color: var(--ink);
+}
+
 .unlocks {
   margin-top: 30px;
   display: grid;
@@ -2329,7 +2388,7 @@ textarea.input {
   align-items: center;
   justify-content: center;
   gap: 9px;
-  background: #fff;
+  background: var(--field);
   transition: 0.16s;
 }
 .oauth:hover:not(:disabled) {
@@ -2562,11 +2621,82 @@ textarea.input {
   padding: 12px;
   border-top: 1px solid var(--line);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
 }
 .admin-side .app-side-foot {
   border-top-color: rgba(238, 242, 231, 0.14);
+}
+
+/* ---------------------------------------------------------------------------
+   Appearance control — Light / Auto / Dark
+
+   Lives in the sidebar foot on both sides of the product. A segmented control
+   rather than a switch because there are three states: the third one, "follow
+   the device", is a real choice and not the absence of one.
+--------------------------------------------------------------------------- */
+.theme-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--glass);
+}
+.theme-toggle button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px 5px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  transition:
+    background 0.16s var(--ease-field),
+    color 0.16s var(--ease-field);
+}
+.theme-toggle button svg {
+  width: 14px;
+  height: 14px;
+}
+.theme-toggle button:hover {
+  color: var(--ink);
+}
+.theme-toggle button.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-field);
+}
+.theme-toggle[data-pending] {
+  opacity: 0.75;
+}
+
+/* The admin sidebar is a dark forest surface in *both* palettes, so its
+   controls read against that rather than against the page. */
+.admin-side .theme-toggle {
+  border-color: rgba(238, 242, 231, 0.16);
+  background: rgba(238, 242, 231, 0.05);
+}
+.admin-side .theme-toggle button {
+  color: rgba(238, 242, 231, 0.55);
+}
+.admin-side .theme-toggle button:hover {
+  color: #eef2e7;
+}
+.admin-side .theme-toggle button.active {
+  background: rgba(238, 242, 231, 0.14);
+  color: #eef2e7;
+  box-shadow: none;
 }
 
 .app-side-account {
@@ -3574,7 +3704,7 @@ a.plan-mark:hover {
   transition: background 0.2s;
 }
 .stat-cell:hover {
-  background: #fff;
+  background: var(--field);
 }
 .stat-cell dd {
   margin: 0;
@@ -3612,9 +3742,24 @@ a.plan-mark:hover {
 
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  /* Wide enough that the four cards land as 2×2 on a desktop rather than 3
+     and a lone orphan, and wide enough that a region name like "Strážovské
+     vrchy" fits without being cut to an ellipsis. */
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 18px;
-  align-items: start;
+  /* Stretch, not start: `align-items: start` let every card keep its natural
+     height, so a row of three cards with different amounts of content ended
+     in three different places and the grid read as rubble. Equal heights per
+     row is what makes a wall of panels look deliberate. */
+  align-items: stretch;
+}
+.chart-grid > * {
+  display: flex;
+  flex-direction: column;
+}
+.chart-grid > * > .chart,
+.chart-grid > .chart {
+  flex: 1;
 }
 /* Full-bleed charts are deliberately not offered: the SVG type is sized in
    viewBox units, so a chart stretched across the whole page scales its axis
@@ -4421,7 +4566,11 @@ a.plan-mark:hover {
 .world-map-land path {
   fill: var(--paper-2);
   stroke: var(--line);
-  stroke-width: 0.6;
+  /* Measured in screen pixels rather than user units. Without this the
+     border scales with the viewBox, so at 200× a hairline coastline became a
+     100px white band across the map. */
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
 }
 .world-map-pin {
   cursor: pointer;
@@ -4438,7 +4587,11 @@ a.plan-mark:hover {
 .world-map-pin-dot {
   fill: var(--moss-2);
   stroke: var(--card);
+  /* Screen pixels, like the coastline. In user units this 1.5 became a ~330px
+     halo once the map was zoomed to 200×, which is what turned a field of
+     pins into a field of enormous pale rings. */
   stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
   transition:
     fill 0.2s var(--ease-field),
     transform 0.2s var(--ease-field);
@@ -4614,13 +4767,18 @@ a.plan-mark:hover {
   max-height: 240px;
   overflow-y: auto;
 }
-.world-map-picker-list a {
+.world-map-picker-list button {
   display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
   padding: 7px 8px;
   border-radius: 8px;
   transition: background 0.15s var(--ease-field);
 }
-.world-map-picker-list a:hover {
+.world-map-picker-list button:hover {
   background: var(--paper-2);
 }
 .world-map-picker-list b {
@@ -4864,4 +5022,794 @@ select.input {
   color: var(--ink-3);
   white-space: nowrap;
   padding-top: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   A filed submission, on the customer's side of the desk
+
+   The mirror of the admin review card: same evidence, read back to the person
+   who filed it, plus the verdict. A decline shows the reviewer's reason —
+   without it the state is just a closed door, and re-filing becomes guesswork.
+--------------------------------------------------------------------------- */
+.submission-card {
+  padding: 16px 20px 18px;
+}
+.submission-where {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--moss-2);
+  margin: 0 0 10px;
+}
+.submission-note {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.submission-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.submission-facts a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--signal);
+}
+.submission-facts a:hover {
+  text-decoration: underline;
+}
+.submission-facts svg {
+  width: 13px;
+  height: 13px;
+}
+.submission-verdict {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.submission-verdict p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.submission-verdict b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.submission-verdict blockquote {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-left: 2px solid var(--signal);
+  background: var(--glass);
+  border-radius: 0 8px 8px 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.submission-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   The monthly headline, on the client dashboard
+
+   The one element on the page that is allowed to be loud. It sits on the dark
+   forest surface the design system already uses for emphasis (the mail
+   section, the feature plan card), which is what separates it from the
+   panels around it without inventing a new treatment. It stays dark in both
+   palettes for the same reason the admin sidebar does: it is a surface, not
+   a shade of the page.
+--------------------------------------------------------------------------- */
+.headline-quest {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  padding: 22px 24px 24px;
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, var(--forest) 0%, var(--forest-deep) 100%);
+  color: var(--color-forest-ink);
+  box-shadow: var(--shadow-field-lg);
+  transition:
+    transform 0.2s var(--ease-field),
+    box-shadow 0.2s var(--ease-field);
+}
+.headline-quest:hover {
+  transform: translateY(-2px);
+}
+/* A contour hint, the same device the landing hero uses. Decorative, and
+   kept faint enough that the type never has to fight it. */
+.headline-quest::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 1px solid rgba(238, 242, 231, 0.09);
+  box-shadow:
+    inset 0 0 0 22px rgba(238, 242, 231, 0.035),
+    inset 0 0 0 46px rgba(238, 242, 231, 0.05);
+  pointer-events: none;
+}
+.headline-quest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.headline-quest-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+.headline-quest h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(26px, 3.4vw, 36px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  max-width: 20ch;
+}
+.headline-quest-where {
+  margin: 10px 0 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(238, 242, 231, 0.62);
+}
+.headline-quest-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 16px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-forest-ink);
+}
+.headline-quest-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 11px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-forest-ink);
+  color: var(--forest-deep);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.18s var(--ease-field);
+}
+.headline-quest:hover .headline-quest-cta {
+  background: #fff;
+}
+.headline-quest-cta svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------------------------------------------------------------------------
+   The schedule calendar
+
+   A grid of slots, not of days. Each cell is a whole week or a whole month,
+   because the cadence is fixed and the only decision is which one — so the
+   calendar is drawn at the resolution of the decision rather than at the
+   resolution of a date picker.
+--------------------------------------------------------------------------- */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 118px;
+  padding: 12px 13px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  cursor: pointer;
+  transition:
+    border-color 0.16s var(--ease-field),
+    box-shadow 0.16s var(--ease-field),
+    transform 0.16s var(--ease-field);
+}
+.slot:hover {
+  border-color: var(--moss-2);
+  box-shadow: var(--shadow-field);
+  transform: translateY(-1px);
+}
+.slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.slot-head b {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.slot-flag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.slot-opens {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.slot-quest {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.slot-quest b {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.slot-quest span {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--moss-2);
+}
+.slot-quest em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.slot-empty {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.slot-empty.muted {
+  color: var(--ink-3);
+}
+
+/* A booked, still-future slot is the one state worth marking in green: it is
+   the thing the page exists to produce. */
+.slot.filled.is-future {
+  border-color: var(--moss-2);
+}
+/* Live and past slots are read-only, and say so by receding. */
+.slot.is-live {
+  border-color: var(--signal);
+  box-shadow: inset 3px 0 0 var(--signal);
+}
+.slot.is-past {
+  background: var(--glass);
+  opacity: 0.72;
+}
+.slot.is-past:hover,
+.slot.is-live:hover {
+  transform: none;
+}
+
+/* The cadence, restated on the schedule page. */
+.cadence-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cadence-list li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.cadence-list b {
+  flex: 0 0 34px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--signal);
+}
+
+/* The appearance control on the settings page gets more room than the
+   sidebar version it replaced — it is the subject of its panel there, not a
+   footnote under the nav. */
+.theme-toggle-wide button {
+  flex-direction: row;
+  gap: 7px;
+  padding: 10px 6px;
+  font-size: 9.5px;
+}
+.theme-toggle-wide button svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* The renewal line on the membership card. */
+.plan-dates {
+  padding: 12px 20px 14px;
+  border-top: 1px dashed var(--line);
+}
+.plan-dates p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.plan-dates b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The current zoom, so "how far in am I" is answerable without guessing. */
+.world-map-scale {
+  position: absolute;
+  left: 30px;
+  bottom: 22px;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   The place sheet
+
+   Opened from a map pin: every quest set at that place, and what people have
+   filed against each one. Deliberately a reading surface — nothing here is
+   editable, because a panel you can accidentally change while browsing a map
+   is a panel you stop trusting.
+--------------------------------------------------------------------------- */
+.place-sheet {
+  max-width: 720px;
+  width: min(720px, calc(100vw - 32px));
+}
+.place-quests {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+  margin-top: 14px;
+  padding-right: 4px;
+}
+.place-quest {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 15px 16px;
+  background: var(--card);
+}
+.place-quest > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.place-quest > header b {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.place-quest > header span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.place-quest-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.place-quest-cover {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: 12px;
+  border: 1px solid var(--line-2);
+}
+.place-quest-objective {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.place-quest-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 12px 0 0;
+}
+.place-quest-figures div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.place-quest-figures dt {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.place-quest-figures dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.place-subs {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.place-sub {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--glass);
+  border: 1px solid var(--line-2);
+}
+.place-sub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.place-sub-head b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.place-sub p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.place-sub-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+   The submission sheet
+
+   Opened from a row in the record. Everything a verdict should rest on —
+   what they wrote, what they photographed, how their figures compare — with
+   the decision underneath it rather than on the row above.
+--------------------------------------------------------------------------- */
+.sub-row {
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 16px 20px;
+  transition: background 0.15s var(--ease-field);
+}
+.sub-row:hover {
+  background: var(--glass);
+}
+
+.sub-sheet {
+  max-width: 640px;
+  width: min(640px, calc(100vw - 32px));
+}
+.sub-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+  max-height: min(72vh, 660px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.sub-person {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.sub-person b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sub-person span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+}
+.sub-person > div {
+  flex: 1;
+  min-width: 0;
+}
+.sub-note {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--glass);
+  border: 1px solid var(--line-2);
+}
+.sub-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.sub-photos img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+}
+
+.sub-figures {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+.sub-figure {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.sub-figure dt {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sub-figure dd {
+  margin: 3px 0 0;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sub-figure dd em {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.sub-figure dd .muted {
+  color: var(--ink-3);
+  font-weight: 400;
+  font-size: 13px;
+}
+/* Stamp ink, because this is a flag rather than a fact. */
+.sub-figure.flagged {
+  border-color: rgba(196, 72, 27, 0.45);
+}
+.sub-figure.flagged dd,
+.sub-figure.flagged dd em {
+  color: var(--signal);
+}
+
+.sub-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.sub-extras a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--signal);
+}
+.sub-extras a:hover {
+  text-decoration: underline;
+}
+.sub-extras svg {
+  width: 14px;
+  height: 14px;
+}
+.sub-retreat {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--signal);
+}
+
+.sub-verdict {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px dashed var(--line);
+}
+.sub-verdict p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.sub-verdict b {
+  color: var(--ink);
+}
+.sub-verdict blockquote {
+  margin: 8px 0 0;
+  padding-left: 11px;
+  border-left: 2px solid var(--signal);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.sub-decide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.sub-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(196, 72, 27, 0.4);
+  background: rgba(196, 72, 27, 0.06);
+}
+.sub-confirm p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.sub-confirm b {
+  color: var(--ink);
+}
+
+/* The account sheet in the panel: the stickers, and what can be done to them. */
+.admin-stickers {
+  padding: 6px 20px 14px;
+}
+.admin-sticker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 440px;
+  overflow-y: auto;
+}
+/* The sticker itself, shrunk to a row chip. The sheet's own sizing comes
+   from its grid, so it has to be overridden rather than inherited here. */
+.admin-sticker-list .admin-sticker-chip {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  margin: 0;
+  transform: none;
+  font-size: 5px;
+}
+.admin-sticker-list .admin-sticker-chip svg {
+  width: 15px;
+  height: 15px;
+}
+.admin-sticker-list .admin-sticker-chip:hover {
+  transform: none;
+}
+.admin-sticker-who {
+  flex: 1;
+  min-width: 0;
+}
+.admin-sticker-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border-bottom: 1px solid var(--line-2);
+}
+.admin-sticker-list li:last-child {
+  border-bottom: 0;
+}
+.admin-sticker-list li:hover {
+  background: var(--glass);
+}
+.admin-sticker-who b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.admin-sticker-who em {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-top: 1px;
+}
+.admin-sticker-empty {
+  justify-content: flex-start;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+/* The photograph attached to a quest, above its sheet. */
+.quest-cover {
+  width: 100%;
+  height: clamp(180px, 26vw, 320px);
+  object-fit: cover;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+  box-shadow: var(--shadow-field);
 }

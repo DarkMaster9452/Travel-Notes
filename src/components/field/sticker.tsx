@@ -129,6 +129,234 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
       </>
     ),
   },
+
+  /* ---- The rest of the sheet. -------------------------------------------
+     Same hand throughout: a 24×24 grid, 1.6 stroke, round caps, no fills.
+     Each design says what the achievement counts rather than decorating it —
+     ascent stickers stack, distance stickers run off the edge of the frame,
+     and the counted tiers keep the tally mark they started with. */
+
+  "second-wind": {
+    label: ["SECOND", "WIND"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M3 9h11a3 3 0 100-6" />
+        <path d="M3 15h14a3 3 0 110 6" />
+      </>
+    ),
+  },
+  "into-the-trees": {
+    label: ["INTO THE", "TREES"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M8 3l4 6H9.5l3.5 5.5H5L8.5 9H6z" />
+        <path d="M8 14.5V21" />
+        <path d="M16 8l3.5 5.5H17l2.5 4h-6l2.5-4h-2.5z" />
+        <path d="M16 17.5V21" />
+      </>
+    ),
+  },
+  "first-ridge": {
+    label: ["FIRST", "RIDGE"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M2 18l6-9 4 5.5 3-4 7 7.5z" />
+        <path d="M8 9l1.8 2.6" />
+      </>
+    ),
+  },
+  "twenty-five": {
+    label: ["25", "KM"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M3 18c4-1.5 7-5 9-9s5-5 9-5" />
+        <path d="M6.5 16.5v3M13 11v3M19 4v3" />
+      </>
+    ),
+  },
+  "twenty-five-logged": {
+    label: ["25", "LOGGED"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M6 6v12M10 6v12M14 6v12M18 6v12M4 16.5l16-9" />
+        <path d="M3 3h4M3 21h4" />
+      </>
+    ),
+  },
+  "two-hundred-logged": {
+    label: ["TWO", "HUNDRED"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M6 6v12M10 6v12M14 6v12M18 6v12M4 16.5l16-9" />
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="6.5" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
+  },
+  "five-thousand-up": {
+    label: ["5000 m", "UP"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M2 20l5-7 3 4 3.5-6 8.5 9z" />
+        <path d="M12 8V2M9 4.5L12 2l3 2.5" />
+      </>
+    ),
+  },
+  everest: {
+    label: ["8848", "METRES"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M2 20l7-13 4 7 2.5-4L22 20z" />
+        <path d="M6.6 12.6h4.8M15.3 12.3h3" />
+        <path d="M9 7l1.5-2.5 2 1" />
+      </>
+    ),
+  },
+  "ten-thousand-up": {
+    label: ["10 000 m", "UP"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M2 21l4-6 2.5 3.5L12 12l3 5 2.5-3.5L22 21z" />
+        <path d="M12 9V2M8.8 5L12 2l3.2 3" />
+      </>
+    ),
+  },
+  "twenty-five-thousand-up": {
+    label: ["25 000 m", "UP"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M2 21l3.5-5 2 3L11 13l2.5 4 2-3L22 21z" />
+        <path d="M4 9.5l4-4 3 2.5 3.5-4.5 4 4" />
+      </>
+    ),
+  },
+  "two-fifty-km": {
+    label: ["250", "KM"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M2 19c3-.5 5-3 6.5-6S12 7 15 6s5-1.5 7-3" />
+        <path d="M5 18v3M10 12v3M15.5 6.5v3M21 2.5v3" />
+      </>
+    ),
+  },
+  "five-hundred-km": {
+    label: ["500", "KM"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M3 20c2-1 3-3 3.5-5.5S8 9 11 7.5 17 6 21 4" />
+        <path d="M3.5 18.5v3M7 12.5v3M11.5 6.5v3M16 5v3M20.5 3v3" />
+      </>
+    ),
+  },
+  "thousand-km": {
+    label: ["1000", "KM"],
+    shape: "square",
+    path: (
+      <>
+        <circle cx="12" cy="12" r="9.5" />
+        <path d="M2.5 12h19" />
+        <path d="M12 2.5c2.6 2.6 4 5.9 4 9.5s-1.4 6.9-4 9.5c-2.6-2.6-4-5.9-4-9.5s1.4-6.9 4-9.5z" />
+      </>
+    ),
+  },
+  "ten-regions": {
+    label: ["TEN", "REGIONS"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" />
+        <path d="M9 4v13M15 6.5v13" />
+        <path d="M6 11.5h1.5M11.5 9h1.5M17.5 12h1.5" />
+      </>
+    ),
+  },
+  "twenty-regions": {
+    label: ["TWENTY", "REGIONS"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z" />
+        <path d="M9 4v13M15 6.5v13" />
+        <path d="M5.5 10h2M5.5 14h2M11 8.5h2M11 13h2M17 10.5h2M17 14.5h2" />
+      </>
+    ),
+  },
+  "border-crosser": {
+    label: ["BORDER", "CROSSER"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M12 2v20" strokeDasharray="2.5 2.5" />
+        <path d="M4 15c2.5-2 4-4.5 5-7" />
+        <path d="M20 9c-2.5 2-4 4.5-5 7" />
+      </>
+    ),
+  },
+  "five-countries": {
+    label: ["FIVE", "COUNTRIES"],
+    shape: "square",
+    path: (
+      <>
+        <circle cx="12" cy="12" r="9.5" />
+        <path d="M2.5 12h19M12 2.5a14 14 0 010 19a14 14 0 010-19z" />
+        <path d="M5 6.5h3M16 17.5h3" />
+      </>
+    ),
+  },
+  "peak-bagger": {
+    label: ["PEAK", "BAGGER"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M2 20l5.5-9 3.5 5 3-5 8 9z" />
+        <path d="M7.5 11l-1-2.5 2.5.5M14 11l-1-2.5 2.5.5" />
+      </>
+    ),
+  },
+  "lake-district": {
+    label: ["LAKE", "DISTRICT"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M3 16c2.5-2 5-2 7.5 0s5 2 7.5 0" />
+        <path d="M3 20c2.5-2 5-2 7.5 0s5 2 7.5 0" />
+        <path d="M6 11l4-6 4 6" />
+      </>
+    ),
+  },
+  "waterfall-chaser": {
+    label: ["WATERFALL", "CHASER"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M6 3v10M10 3v13M14 3v11M18 3v9" />
+        <path d="M3 19c2.5-2 5-2 7.5 0s5 2 7.5 0" />
+      </>
+    ),
+  },
+  "ruin-hunter": {
+    label: ["RUIN", "HUNTER"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M4 21V9l3-2 3 2v3h4V7l3-2 3 2v14z" />
+        <path d="M4 12h3M17 12h3M11 21v-4h2v4" />
+      </>
+    ),
+  },
 };
 
 /** Anything not in the registry still renders — as the summit mark. */
@@ -143,6 +371,7 @@ export function Sticker({
   label,
   shape,
   locked,
+  planLocked,
   title,
   className,
 }: {
@@ -153,6 +382,14 @@ export function Sticker({
   shape?: "round" | "square";
   /** Locked stickers show the shape as an outline — visible, not yet yours. */
   locked?: boolean;
+  /**
+   * Out of reach on this plan, as opposed to merely unearned. Rendered as a
+   * blur with the artwork and text unreadable: you can see there is something
+   * there and that it isn't yours, and nothing else. Deliberately not just
+   * `opacity` — the label must not be legible, or the sheet gives away the
+   * whole set to an account that can't hold it.
+   */
+  planLocked?: boolean;
   /** Accessible name, e.g. "First Light — locked". */
   title?: string;
   className?: string;
@@ -163,11 +400,19 @@ export function Sticker({
 
   return (
     <div
-      className={cn("sticker", resolvedShape === "square" && "sq", locked && "locked", className)}
+      className={cn(
+        "sticker",
+        resolvedShape === "square" && "sq",
+        locked && "locked",
+        planLocked && "plan-locked",
+        className,
+      )}
       role="img"
-      aria-label={title ?? `${top} ${bottom}`}
+      // The blurred artwork is still readable to a screen reader unless the
+      // name says otherwise, so locked-by-plan stickers announce only that.
+      aria-label={planLocked ? "Locked sticker — upgrade to reach it" : (title ?? `${top} ${bottom}`)}
     >
-      <div>
+      <div aria-hidden={planLocked || undefined}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           {art.path}
         </svg>

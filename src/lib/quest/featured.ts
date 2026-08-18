@@ -7,7 +7,10 @@ import {
   type GeneratedQuest,
   type HistoryItem,
 } from "@/lib/quest/engine";
+import { getEntitlement } from "@/lib/entitlements";
+import type { PlanId } from "@/lib/config";
 import { paletteForSrc } from "@/lib/images";
+import { toQuestSummary } from "@/types/quest";
 import type { QuestSummary } from "@/types/quest";
 
 /**
@@ -62,9 +65,59 @@ export function periodEnds(period: FeaturedPeriod, now = new Date()): Date {
 export type FeaturedQuest = {
   period: FeaturedPeriod;
   key: string;
-  quest: GeneratedQuest;
+  /** Absent when the slot was filled by an admin rather than generated. */
+  quest: GeneratedQuest | null;
   summary: QuestSummary;
+  /** True when an admin booked this slot. Those are the same quest for
+   *  everybody; a generated one is different per account. */
+  scheduled: boolean;
 };
+
+/** Plan ranks, for the audience gate on a scheduled slot. */
+const PLAN_RANK: Record<string, number> = { FREE: 0, EXPLORER: 1, ULTRA: 2 };
+
+/**
+ * Quests an admin has booked into the current week and month.
+ *
+ * A booked slot wins over a generated one: the whole reason to schedule a
+ * quest is that everybody gets *that* quest, and a per-account generation
+ * would quietly ignore the booking. Slots aimed at a higher tier than this
+ * account holds are skipped, and the generator fills the gap — a free account
+ * seeing an empty panel where an Ultra-only monthly sits would be worse than
+ * seeing a quest of its own.
+ */
+async function getScheduledFeatured(
+  plan: PlanId,
+  now: Date,
+): Promise<Map<FeaturedPeriod, FeaturedQuest>> {
+  const rank = PLAN_RANK[plan.toUpperCase()] ?? 0;
+
+  const rows = await db.questSchedule.findMany({
+    where: {
+      OR: [
+        { period: "WEEKLY", slotKey: isoWeekKey(now) },
+        { period: "MONTHLY", slotKey: monthKey(now) },
+      ],
+      openAt: { lte: now },
+      closeAt: { gt: now },
+    },
+    include: { quest: true },
+  });
+
+  const found = new Map<FeaturedPeriod, FeaturedQuest>();
+  for (const row of rows) {
+    if ((PLAN_RANK[row.audience] ?? 0) > rank) continue;
+    const period: FeaturedPeriod = row.period === "WEEKLY" ? "week" : "month";
+    found.set(period, {
+      period,
+      key: row.slotKey,
+      quest: null,
+      summary: toQuestSummary(row.quest),
+      scheduled: true,
+    });
+  }
+  return found;
+}
 
 /** Project a generated (unsaved) quest into the shape the quest UI renders. */
 function toSummary(quest: GeneratedQuest, id: string): QuestSummary {
@@ -100,8 +153,17 @@ export async function getFeaturedQuests(
   periods: FeaturedPeriod[] = ["week", "month"],
   now = new Date(),
 ): Promise<FeaturedQuest[]> {
+  // What an admin booked comes first, and is the same quest for everyone who
+  // can see it. Only the slots they left empty fall through to the generator.
+  const { plan } = await getEntitlement(userId);
+  const scheduled = await getScheduledFeatured(plan, now);
+
   const preferences = await db.userPreferences.findUnique({ where: { userId } });
-  if (!preferences) return [];
+  if (!preferences) {
+    return CANONICAL_ORDER.map((period) => scheduled.get(period)).filter(
+      (entry): entry is FeaturedQuest => entry !== undefined && periods.includes(entry.period),
+    );
+  }
 
   const enginePreferences = {
     homeLocation: preferences.homeLocation,
@@ -132,6 +194,28 @@ export async function getFeaturedQuests(
   // the requested period would give it a different (shorter) history and so a
   // different quest — the /monthly page has to agree with the dashboard card.
   for (const period of CANONICAL_ORDER) {
+    const booked = scheduled.get(period);
+    if (booked) {
+      featured.push(booked);
+      // Still counted as history for the *next* period's generation, so a
+      // generated weekly can't land on the same place as a booked monthly.
+      preceding.push({
+        locationId: booked.summary.location,
+        region: booked.summary.region,
+        features: booked.summary.features,
+        terrain: booked.summary.terrain,
+        difficulty: booked.summary.difficulty,
+        distance: booked.summary.distance,
+        signature: `scheduled:${booked.key}`,
+        title: booked.summary.title,
+        titleTemplateId: null,
+        objectiveTemplateId: null,
+        bonusTemplateId: null,
+        generatedAt: now,
+      });
+      continue;
+    }
+
     const key = periodKey(period, now);
     try {
       const { quest } = generateQuest({
@@ -140,7 +224,13 @@ export async function getFeaturedQuests(
         history: preceding,
         now,
       });
-      featured.push({ period, key, quest, summary: toSummary(quest, `${period}-${key}`) });
+      featured.push({
+        period,
+        key,
+        quest,
+        summary: toSummary(quest, `${period}-${key}`),
+        scheduled: false,
+      });
       preceding.push({
         locationId: quest.routeData.locationId,
         region: quest.region,

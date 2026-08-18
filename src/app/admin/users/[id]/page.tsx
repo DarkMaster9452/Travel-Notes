@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { AccountControls } from "@/components/admin/account-controls";
 import { Reveal } from "@/components/app/motion";
+import { StatGrid } from "@/components/admin/stat-grid";
 import {
   Avatar,
   Eyebrow,
@@ -21,6 +22,10 @@ import {
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { LIVE_STATUSES } from "@/lib/admin/stats";
+import { getAchievements } from "@/lib/achievements";
+import { planIdFromRecord } from "@/lib/config";
+import { getUserStats } from "@/lib/quest/service";
+import { AccountStickers } from "@/components/admin/account-stickers";
 import { stagger } from "@/lib/motion";
 import { formatDate } from "@/lib/utils";
 
@@ -53,13 +58,25 @@ const TIMELINE_ICON: Record<TimelineKind, React.ComponentType<{ className?: stri
  * audit log, because a log that only starts recording the day it's added
  * would be empty for every account that matters right now.
  */
+const LOG_FILTERS = [
+  { key: "all", label: "Everything", kinds: null },
+  { key: "quests", label: "Quests", kinds: ["issued", "completed"] },
+  { key: "proof", label: "Proof", kinds: ["filed", "approved", "rejected"] },
+  { key: "access", label: "Sign-ins", kinds: ["session"] },
+] as const;
+
 export default async function AccountDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ log?: string }>;
 }) {
   const admin = await requireAdmin();
   const { id } = await params;
+  const { log: rawLog } = await searchParams;
+  const logFilter =
+    LOG_FILTERS.find((filter) => filter.key === rawLog) ?? LOG_FILTERS[0];
 
   const user = await db.user.findUnique({
     where: { id },
@@ -76,7 +93,7 @@ export default async function AccountDetailPage({
   });
   if (!user) notFound();
 
-  const [history, submissions, sessions, adminCount] = await Promise.all([
+  const [history, submissions, sessions, adminCount, stats, revocations] = await Promise.all([
     db.questHistory.findMany({
       where: { userId: id },
       orderBy: { generatedAt: "desc" },
@@ -110,7 +127,13 @@ export default async function AccountDetailPage({
       select: { id: true, createdAt: true, expiresAt: true },
     }),
     db.user.count({ where: { role: "ADMIN" } }),
+    getUserStats(id),
+    db.achievementRevocation.findMany({
+      where: { userId: id },
+      select: { achievementId: true },
+    }),
   ]);
+
 
   const timeline: TimelineEntry[] = [];
   for (const row of history) {
@@ -160,8 +183,23 @@ export default async function AccountDetailPage({
   }
   timeline.sort((a, b) => b.at.getTime() - a.at.getTime());
 
+  // Filtered after assembly rather than in the queries: the log is built from
+  // four tables, and filtering each one separately would mean four more round
+  // trips to answer a question the page already has the data for.
+  const shown = logFilter.kinds
+    ? timeline.filter((entry) => (logFilter.kinds as readonly string[]).includes(entry.kind))
+    : timeline;
+
   const live = user.subscription && LIVE_STATUSES.includes(user.subscription.status as "ACTIVE");
   const plan = live ? (user.subscription?.plan ?? "FREE") : "FREE";
+
+  // The sheet as this account actually sees it: gated by their plan, minus
+  // anything an admin has taken back.
+  const stickers = getAchievements(
+    stats,
+    planIdFromRecord(plan),
+    revocations.map((row) => row.achievementId),
+  );
 
   const isSelf = user.id === admin.id;
   const isLastAdmin = user.role === "ADMIN" && adminCount <= 1;
@@ -200,6 +238,46 @@ export default async function AccountDetailPage({
         </Panel>
       </Reveal>
 
+      <Reveal delay={stagger(0)} className="mb-5">
+        <StatGrid
+          items={[
+            { label: "Issued", value: user._count.history },
+            { label: "Logged", value: stats.completedCount },
+            { label: "Kilometres", value: Math.round(stats.kmExplored) },
+            { label: "Metres up", value: Math.round(stats.elevation) },
+            {
+              label: "Regions",
+              value: stats.regions,
+              foot: `${stats.countries} ${stats.countries === 1 ? "country" : "countries"}`,
+            },
+            {
+              label: "Stickers",
+              value: stickers.filter((sticker) => sticker.earned).length,
+              foot: `${user._count.submissions} filed`,
+            },
+          ]}
+        />
+      </Reveal>
+
+      <Reveal delay={stagger(1)} className="mb-5">
+        <Panel flush>
+          <PanelHead
+            title="Stickers"
+            aside={<Tag tone="ghost">{stickers.filter((s) => s.earned).length} earned</Tag>}
+          />
+          <AccountStickers userId={user.id} stickers={stickers.map((sticker) => ({
+            id: sticker.id,
+            label: sticker.label,
+            description: sticker.description,
+            sticker: sticker.sticker,
+            earned: sticker.earned,
+            planLocked: sticker.planLocked,
+            revoked: sticker.revoked,
+            progressLabel: sticker.progressLabel,
+          }))} />
+        </Panel>
+      </Reveal>
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,360px)_1fr]">
         <Reveal delay={stagger(1)}>
           <Panel>
@@ -224,12 +302,28 @@ export default async function AccountDetailPage({
 
         <Reveal delay={stagger(2)}>
           <Panel flush>
-            <PanelHead title="Activity" aside={<Tag tone="ghost">{timeline.length}</Tag>} />
-            {timeline.length === 0 ? (
+            <PanelHead title="Activity" aside={<Tag tone="ghost">{shown.length}</Tag>} />
+
+            <div className="admin-filters">
+              <nav aria-label="Filter the log">
+                {LOG_FILTERS.map((filter) => (
+                  <Link
+                    key={filter.key}
+                    href={`/admin/users/${user.id}?log=${filter.key}`}
+                    aria-current={filter.key === logFilter.key ? "page" : undefined}
+                    scroll={false}
+                  >
+                    {filter.label}
+                  </Link>
+                ))}
+              </nav>
+              <p className="meta">{timeline.length} in total</p>
+            </div>
+            {shown.length === 0 ? (
               <p className="chart-empty">Nothing yet.</p>
             ) : (
               <ul className="account-timeline">
-                {timeline.map((entry) => {
+                {shown.map((entry) => {
                   const Icon = TIMELINE_ICON[entry.kind];
                   return (
                     <li key={entry.id} className={`account-timeline-item is-${entry.kind}`}>

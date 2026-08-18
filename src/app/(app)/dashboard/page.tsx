@@ -16,7 +16,7 @@ import {
   Tag,
 } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
-import { CAPABILITY_COPY } from "@/lib/config";
+import { CAPABILITY_COPY, headlineCapabilities } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { getFeaturedQuests } from "@/lib/quest/featured";
@@ -49,6 +49,11 @@ export default async function TodayPage() {
   const firstName = user.name.split(" ")[0] || user.name;
   const quest = current ? toQuestSummary(current.quest, { generatedAt: current.generatedAt }) : null;
 
+  // Pulled apart rather than mapped over: the two are not peers on this page,
+  // and rendering them from one loop is what made them look like peers.
+  const monthly = featured.find((item) => item.period === "month") ?? null;
+  const weekly = featured.find((item) => item.period === "week") ?? null;
+
   return (
     <>
       <Reveal as="header" className="page-head">
@@ -74,6 +79,39 @@ export default async function TodayPage() {
           <IssueQuestButton disabled={!entitlement.canUnlock} />
         )}
       </Reveal>
+
+      {/* The monthly, first and on its own.
+          It is the headline the product is built around — "the big one",
+          opened on the 1st — and it used to sit in the right-hand column as
+          the second of two identical panels, which is how a dashboard ends up
+          reading as one undifferentiated block. Full width and on the dark
+          forest surface, it is the one thing on this page that cannot be
+          mistaken for the thing next to it. */}
+      {monthly && (
+        <Reveal className="mb-5">
+          <Link href="/monthly" className="headline-quest">
+            <div className="headline-quest-head">
+              <span className="headline-quest-kicker">
+                {periodLabel(monthly.period, monthly.key)} · the big one
+              </span>
+              <Tag tone="inverse">Everyone</Tag>
+            </div>
+            <h2>{monthly.summary.title}</h2>
+            <p className="headline-quest-where">
+              {monthly.summary.location} · {monthly.summary.region}
+            </p>
+            <div className="headline-quest-facts">
+              <span>{monthly.summary.distance.toFixed(1)} km</span>
+              <span>{Math.round(monthly.summary.elevationGain)} m ↑</span>
+              <span>{monthly.summary.difficulty}</span>
+            </div>
+            <span className="headline-quest-cta">
+              Open the monthly
+              <IconArrowRight />
+            </span>
+          </Link>
+        </Reveal>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr] lg:items-start">
         <Reveal delay={stagger(0)}>
@@ -112,9 +150,9 @@ export default async function TodayPage() {
                 {entitlement.isSubscribed ? (
                   <MemberLine
                     planName={entitlement.definition.name}
-                    lines={entitlement.definition.capabilities
-                      .slice(0, 3)
-                      .map((capability) => CAPABILITY_COPY[capability].title)}
+                    lines={headlineCapabilities(entitlement.definition).map(
+                      (capability) => CAPABILITY_COPY[capability].title,
+                    )}
                   />
                 ) : (
                   <FreeAllowance
@@ -126,28 +164,27 @@ export default async function TodayPage() {
             </Panel>
           </Reveal>
 
-          {featured.map((item, index) => (
-            <Reveal key={item.key} delay={stagger(index + 2)}>
+          {/* The weekly, deliberately smaller and second. */}
+          {weekly && (
+            <Reveal delay={stagger(2)}>
               <Panel flush>
                 <PanelHead
-                  title={periodLabel(item.period, item.key)}
-                  aside={<Tag tone={item.period === "week" ? "pine" : "warm"}>Everyone</Tag>}
+                  title={periodLabel(weekly.period, weekly.key)}
+                  aside={<Tag tone="ghost">Alongside</Tag>}
                 />
                 <div className="px-5 py-5">
-                  <span className="qc-loc">{item.summary.region}</span>
+                  <span className="qc-loc">{weekly.summary.region}</span>
                   <h3 className="mt-2 font-serif text-[19px] font-semibold leading-[1.2] tracking-[-0.02em]">
-                    <Link href={item.period === "week" ? "/weekly" : "/monthly"}>
-                      {item.summary.title}
-                    </Link>
+                    <Link href="/weekly">{weekly.summary.title}</Link>
                   </h3>
                   <p className="mt-3 flex flex-wrap gap-4 font-mono text-[11px] text-ink-2">
-                    <span>{item.summary.distance.toFixed(1)} km</span>
-                    <span>{Math.round(item.summary.elevationGain)} m ↑</span>
+                    <span>{weekly.summary.distance.toFixed(1)} km</span>
+                    <span>{Math.round(weekly.summary.elevationGain)} m ↑</span>
                   </p>
                 </div>
               </Panel>
             </Reveal>
-          ))}
+          )}
         </div>
       </div>
     </>

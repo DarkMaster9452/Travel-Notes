@@ -117,6 +117,21 @@ export function QuestForm() {
           <Field label="Safety notes" name="safetyNotes" error={errors.safetyNotes} hint="Optional.">
             <input id="safetyNotes" name="safetyNotes" className="input" />
           </Field>
+
+          <Field
+            label="Cover photo"
+            name="coverImage"
+            error={errors.coverImage}
+            hint="One image for this quest — a full https:// link. Shown on the quest sheet and in the panel."
+          >
+            <input
+              id="coverImage"
+              name="coverImage"
+              type="url"
+              className="input"
+              placeholder="https://…"
+            />
+          </Field>
         </div>
       </Panel>
 

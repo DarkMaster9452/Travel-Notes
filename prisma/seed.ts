@@ -63,7 +63,7 @@ const ACCOUNTS: SeedAccount[] = [
     plan: "EXPLORER",
     freeQuestsUsed: 3,
     history: 6,
-    note: "Explorer €11 — unlimited, worldwide, mail, board, stickers",
+    note: "Explorer €11 — unlimited, Europe, mail, board, 10 stickers",
   },
   {
     email: "ultra@demo.com",
@@ -176,7 +176,11 @@ async function main() {
     console.log(`✓ ${account.email.padEnd(26)} ${account.note}`);
   }
 
-  const crowd = await seedCrowd(passwordHash, quests);
+  const adminAccount = await db.user.findUnique({
+    where: { email: "admin@demo.com" },
+    select: { id: true },
+  });
+  const crowd = await seedCrowd(passwordHash, quests, adminAccount!.id);
   console.log(`✓ ${crowd.people} demo accounts with ${crowd.submissions} submissions`);
 
   console.log(`\nAll accounts share the password: ${PASSWORD}`);
@@ -196,6 +200,14 @@ const CROWD = [
 ];
 
 /** What people actually write when they file proof. Dry, specific, uneven. */
+const DECLINE_REASONS = [
+  "The photos are all from the car park — we need one from the objective itself.",
+  "Distance and ascent don't match the route; looks like a different trail.",
+  "No shot of the summit marker, so there's nothing to check this against.",
+  "The Strava track stops halfway. Re-file with the full activity.",
+  "Photos have no date on them and the account is new — one more from the ridge would settle it.",
+];
+
 const NOTES = [
   "Left the car park at 05:10 in the dark. Cloud broke about ten minutes after we got to the top, which was the whole point. Chains were greasy but fine if you take your time.",
   "Longer than the map suggested — the last viewpoint is a good twenty minutes past where you think it is. Worth it. Nobody else up there.",
@@ -215,7 +227,12 @@ const NOTES = [
  * sized product: twenty people, a spread of plans, and submissions in all
  * three states with the pending ones weighted so the deck has work in it.
  */
-async function seedCrowd(passwordHash: string, quests: { id: string }[]) {
+async function seedCrowd(
+  passwordHash: string,
+  quests: { id: string }[],
+  /** Who the seeded decisions are attributed to. */
+  reviewerId: string,
+) {
   // Deterministic, so a reseed produces the same demo rather than a new one.
   let n = 1337;
   const rand = () => ((n = (n * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
@@ -289,6 +306,13 @@ async function seedCrowd(passwordHash: string, quests: { id: string }[]) {
           startedAt: filedAt,
           retreated,
           status: status as "PENDING" | "APPROVED" | "REJECTED",
+          // A decided submission carries who decided it and when, and a
+          // decline carries the reason — the customer's submissions page
+          // shows that reason back to them, so seeding declines without one
+          // left the most useful half of that page permanently blank.
+          reviewedById: status === "PENDING" ? null : reviewerId,
+          reviewedAt: status === "PENDING" ? null : new Date(filedAt.getTime() + 36 * 3600 * 1000),
+          reviewNote: status === "REJECTED" ? pick(DECLINE_REASONS) : null,
           createdAt: filedAt,
         },
       });

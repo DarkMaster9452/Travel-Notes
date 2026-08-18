@@ -5,19 +5,21 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
+  clearMyDataAction,
   deleteAccountAction,
   updatePreferencesAction,
   updateProfileAction,
   type ProfileState,
 } from "@/app/(app)/profile/actions";
-import { Modal, Pill, useToast } from "@/components/field";
+import { Modal, useToast } from "@/components/field";
+import { DELETE_PHRASE } from "@/lib/config";
 
 /**
  * Settings.
  *
- * Two small forms rather than one long one, because they are answerable at
- * different times: your name is a fact, your preferences are a mood. Both save
- * on their own and say so.
+ * Small forms rather than one long one, because they are answerable at
+ * different times: your name is a fact, your country is a circumstance. Each
+ * saves on its own and says so.
  */
 
 function SaveButton({ children = "Save" }: { children?: React.ReactNode }) {
@@ -73,156 +75,185 @@ export function NameForm({ name }: { name: string }) {
   );
 }
 
-const DIFFICULTIES = [
-  { value: "EASY", label: "Easy" },
-  { value: "MODERATE", label: "Moderate" },
-  { value: "HARD", label: "Hard" },
-  { value: "SURPRISE", label: "Surprise me" },
-] as const;
-
-const TIMES = [
-  { value: "SHORT", label: "A couple of hours" },
-  { value: "HALF", label: "Half a day" },
-  { value: "LONG", label: "A long day" },
-  { value: "FULL", label: "The whole thing" },
-  { value: "SURPRISE", label: "Whatever fits" },
-] as const;
-
-export function PreferencesForm({
-  homeLocation,
-  difficulty,
-  maxDistance,
-  timeAvailable,
+export function CountryForm({
+  country,
+  countries,
+  worldwide,
 }: {
-  homeLocation: string;
-  difficulty: string;
-  maxDistance: number;
-  timeAvailable: string;
+  /** The stored country name, or "" when nothing is set yet. */
+  country: string;
+  countries: { code: string; name: string; europe: boolean }[];
+  /** Whether this plan reaches past Europe. */
+  worldwide: boolean;
 }) {
   const [state, action] = useActionState<ProfileState, FormData>(
     updatePreferencesAction,
     undefined,
   );
-  useSavedToast(state, "Preferences saved.");
+  useSavedToast(state, "Country saved.");
 
-  const [chosenDifficulty, setDifficulty] = React.useState(difficulty);
-  const [chosenTime, setTime] = React.useState(timeAvailable);
-  const [radius, setRadius] = React.useState(maxDistance);
+  const europe = countries.filter((c) => c.europe);
+  const rest = countries.filter((c) => !c.europe);
 
   return (
-    <form action={action} className="flex flex-col gap-6 px-5 py-5">
-      <input type="hidden" name="difficulty" value={chosenDifficulty} />
-      <input type="hidden" name="timeAvailable" value={chosenTime} />
-
+    <form action={action} className="flex flex-col gap-4 px-5 py-5">
       <div className="field">
         <div className="field-label">
           <b>Where do you set out from?</b>
-          <span>Home</span>
+          <span>Country</span>
         </div>
-        <input
+        <select
           className="input"
-          name="homeLocation"
-          defaultValue={homeLocation}
-          maxLength={80}
+          name="country"
+          defaultValue={country}
+          aria-label="Country"
           required
-        />
-        {state?.errors?.homeLocation && <p className="form-error">{state.errors.homeLocation}</p>}
-        <p className="note">A town, not an address. It only sets where quests are measured from.</p>
-      </div>
-
-      <div className="field">
-        <div className="field-label">
-          <b>How hard should it be?</b>
-          <span>Difficulty</span>
-        </div>
-        <div className="pills">
-          {DIFFICULTIES.map((option) => (
-            <Pill
-              key={option.value}
-              pressed={chosenDifficulty === option.value}
-              onClick={() => setDifficulty(option.value)}
-            >
-              {option.label}
-            </Pill>
-          ))}
-        </div>
-      </div>
-
-      <div className="field">
-        <div className="field-label">
-          <b>How long have you got?</b>
-          <span>Time</span>
-        </div>
-        <div className="pills">
-          {TIMES.map((option) => (
-            <Pill
-              key={option.value}
-              pressed={chosenTime === option.value}
-              onClick={() => setTime(option.value)}
-            >
-              {option.label}
-            </Pill>
-          ))}
-        </div>
-      </div>
-
-      <div className="field">
-        <div className="field-label">
-          <b>How far will you travel?</b>
-          <span>{radius} km</span>
-        </div>
-        <input
-          type="range"
-          name="maxDistance"
-          min={10}
-          max={300}
-          step={5}
-          value={radius}
-          onChange={(event) => setRadius(Number(event.target.value))}
-          className="w-full accent-pine"
-        />
+        >
+          <option value="" disabled>
+            Pick a country…
+          </option>
+          <optgroup label="Europe">
+            {europe.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </optgroup>
+          {worldwide && rest.length > 0 && (
+            <optgroup label="Rest of the world">
+              {rest.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+        {state?.errors?.country && <p className="form-error">{state.errors.country}</p>}
+        <p className="note">
+          A country, not a town or an address — it only sets where quests are measured from.
+          {!worldwide && " Outside Europe is Ultra."}
+        </p>
       </div>
 
       <div>
-        <SaveButton>Save preferences</SaveButton>
+        <SaveButton>Save country</SaveButton>
       </div>
     </form>
   );
 }
 
 /**
- * Deleting an account is irreversible, so it asks once — plainly, without
- * trying to talk you out of it.
+ * The two irreversible things, both behind the same typed phrase.
+ *
+ * A dialog you dismiss with one press is a dialog people press through. The
+ * phrase has to be typed exactly, and the server checks it too — a
+ * confirmation that lives only in the client is one an accidental POST walks
+ * straight past.
  */
-export function DeleteAccount() {
-  const [open, setOpen] = React.useState(false);
+function DangerDialog({
+  open,
+  onClose,
+  title,
+  description,
+  confirmLabel,
+  action,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  action: (formData: FormData) => Promise<ProfileState>;
+}) {
+  const [typed, setTyped] = React.useState("");
+  const [state, formAction] = useActionState<ProfileState, FormData>(
+    async (_prev, formData) => action(formData),
+    undefined,
+  );
+
+  // Clear the box whenever the dialog reopens, so a previous attempt can't
+  // leave it pre-armed.
+  const [wasOpen, setWasOpen] = React.useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setTyped("");
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={title} description={description}>
+      <form action={formAction} className="modal-form">
+        <label className="meta" htmlFor="danger-confirm">
+          Type {DELETE_PHRASE} to confirm
+        </label>
+        <input
+          id="danger-confirm"
+          name="confirm"
+          className="input"
+          value={typed}
+          onChange={(event) => setTyped(event.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={DELETE_PHRASE}
+        />
+        {state?.errors?.confirm && <p className="form-error">{state.errors.confirm}</p>}
+
+        <div className="flex flex-wrap gap-2">
+          <button type="submit" className="btn btn-danger" disabled={typed.trim() !== DELETE_PHRASE}>
+            {confirmLabel}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+export function DangerZone() {
+  const [deleting, setDeleting] = React.useState(false);
+  const [clearing, setClearing] = React.useState(false);
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-5">
-        <p className="text-[14.5px] text-ink-2">
-          Delete the account and everything in it — history, stickers, preferences.
-        </p>
-        <button type="button" className="btn btn-danger btn-sm" onClick={() => setOpen(true)}>
-          Delete account
-        </button>
+      <div className="flex flex-col gap-4 px-5 py-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[14.5px] text-ink-2">
+            Erase your quest history, submissions and stickers. The account stays.
+          </p>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setClearing(true)}>
+            Clear my data
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-line pt-4">
+          <p className="text-[14.5px] text-ink-2">
+            Delete the account and everything in it.
+          </p>
+          <button type="button" className="btn btn-danger btn-sm" onClick={() => setDeleting(true)}>
+            Delete account
+          </button>
+        </div>
       </div>
 
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
+      <DangerDialog
+        open={clearing}
+        onClose={() => setClearing(false)}
+        title="Erase everything you've done?"
+        description="History, submissions, saved quests and every sticker earned from them. Your login stays and your free allowance resets."
+        confirmLabel="Erase my data"
+        action={clearMyDataAction}
+      />
+
+      <DangerDialog
+        open={deleting}
+        onClose={() => setDeleting(false)}
         title="Delete your account?"
         description="Your quest history, your stickers and your preferences go with it. This cannot be undone."
-      >
-        <form action={deleteAccountAction} className="modal-form">
-          <button type="submit" className="btn btn-danger">
-            Yes, delete it
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
-            Keep my account
-          </button>
-        </form>
-      </Modal>
+        confirmLabel="Delete my account"
+        action={deleteAccountAction}
+      />
     </>
   );
 }

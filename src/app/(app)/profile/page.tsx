@@ -5,14 +5,15 @@ import { BillingActions } from "@/components/app/billing-actions";
 import { Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
 import { PlanChip } from "@/components/app/plan-mark";
-import { DeleteAccount, NameForm, PreferencesForm } from "@/components/app/settings-forms";
+import { CountryForm, DangerZone, NameForm } from "@/components/app/settings-forms";
+import { ThemeToggle } from "@/components/app/theme-toggle";
 import { Avatar, Eyebrow, Panel, PanelHead } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
-import { CAPABILITY_COPY } from "@/lib/config";
+import { CAPABILITY_COPY, headlineCapabilities } from "@/lib/config";
 import { db } from "@/lib/db";
+import { countriesFor, countryForStoredLocation } from "@/lib/geo";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
-import { DEFAULT_PREFERENCES } from "@/lib/preferences";
 import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -28,13 +29,23 @@ export default async function SettingsPage() {
 
   const plan = entitlement.definition;
 
+  // The chooser only offers what the plan can actually set out from, and the
+  // stored value is matched back to a code so the current pick shows selected.
+  const worldwide = entitlement.can("worldwide");
+  const countries = countriesFor(worldwide).map(({ code, name, europe }) => ({
+    code,
+    name,
+    europe,
+  }));
+  const current = countryForStoredLocation(preferences?.homeLocation);
+
   return (
     <>
       <Reveal as="header" className="page-head">
         <div>
           <Eyebrow>Your account</Eyebrow>
           <h1>Settings.</h1>
-          <p>What we call you, what the generator reads, and what you pay for.</p>
+          <p>What we call you, where you set out from, and what you pay for.</p>
         </div>
         <div className="flex items-center gap-3">
           <Avatar name={user.name} className="size-11 flex-[0_0_2.75rem]" />
@@ -63,7 +74,7 @@ export default async function SettingsPage() {
                 {entitlement.isSubscribed ? (
                   <>
                     <ul className="held-inline">
-                      {plan.capabilities.map((capability, index) => (
+                      {headlineCapabilities(plan, Infinity).map((capability, index) => (
                         <li
                           key={capability}
                           className="tick-in"
@@ -105,23 +116,37 @@ export default async function SettingsPage() {
 
           <Reveal delay={stagger(2)}>
             <Panel flush>
-              <PanelHead title="Leaving" />
-              <DeleteAccount />
+              <PanelHead title="Danger zone" />
+              <DangerZone />
             </Panel>
           </Reveal>
         </div>
 
-        <Reveal delay={stagger(1)}>
-          <Panel flush>
-            <PanelHead title="What the generator reads" />
-            <PreferencesForm
-              homeLocation={preferences?.homeLocation ?? DEFAULT_PREFERENCES.homeLocation}
-              difficulty={preferences?.difficulty ?? DEFAULT_PREFERENCES.difficulty}
-              maxDistance={preferences?.maxDistance ?? DEFAULT_PREFERENCES.maxDistance}
-              timeAvailable={preferences?.timeAvailable ?? DEFAULT_PREFERENCES.timeAvailable}
-            />
-          </Panel>
-        </Reveal>
+        <div className="flex flex-col gap-5">
+          <Reveal delay={stagger(1)}>
+            <Panel flush>
+              <PanelHead title="Where you set out from" />
+              <CountryForm
+                country={current?.code ?? ""}
+                countries={countries}
+                worldwide={worldwide}
+              />
+            </Panel>
+          </Reveal>
+
+          <Reveal delay={stagger(2)}>
+            <Panel flush>
+              <PanelHead title="Appearance" />
+              <div className="flex flex-col gap-3 px-5 py-5">
+                <ThemeToggle value={user.theme} className="theme-toggle-wide" />
+                <p className="note mt-0">
+                  Auto follows your device. The choice is saved to your account, so it holds on
+                  every machine you sign in from.
+                </p>
+              </div>
+            </Panel>
+          </Reveal>
+        </div>
       </div>
     </>
   );

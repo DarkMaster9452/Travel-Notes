@@ -38,15 +38,12 @@ export default async function AdminQuestsPage() {
       getTopRegions(6),
       getTopLocations(8),
       db.quest.aggregate({
-        where: { isShowcase: false },
         _avg: { distance: true, elevationGain: true, duration: true },
       }),
       db.quest.findMany({
-        where: { isShowcase: false },
         select: { signature: true, location: true },
       }),
       db.quest.findMany({
-        where: { isShowcase: false },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: {

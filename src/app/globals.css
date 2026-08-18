@@ -146,6 +146,167 @@
   --serif: var(--font-serif);
   --mono: var(--font-mono);
   --maxw: 1180px;
+
+  /* Translucent surfaces that used to be hardcoded white. Tokenised so the
+     dark palette can flip them — a white wash over a dark ground is a smear,
+     not a highlight. */
+  --glass: rgba(255, 255, 255, 0.45);
+  --glass-strong: rgba(255, 255, 255, 0.85);
+  /* The surface of anything you type into. One step brighter than the card
+     in light, one step lighter than it in dark — either way it has to read
+     as a well you can put text in. */
+  --field: #ffffff;
+  /* Stroke colour baked into the inline SVG data-URIs (the padlock on a
+     locked sticker). A data-URI can't read a custom property, so the two
+     themes carry two encodings of the same drawing. */
+  --lock-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2347544b' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='4.5' y='10.5' width='15' height='10' rx='2.2'/%3E%3Cpath d='M8 10.5V7a4 4 0 018 0v3.5'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------------------
+   The dark palette.
+
+   Scoped to `[data-theme]` rather than applied at `:root`, because only the
+   signed-in app is themeable: the landing page is a printed field guide and
+   is always on paper. `data-theme` is written on the app shell from the
+   account's stored preference, so the server renders the right palette on the
+   first paint instead of flashing light and correcting after hydration.
+
+   The rules the light palette encodes still hold here — green is structure,
+   orange is stamp ink. What changes is which end of each ramp is the ground:
+   paper becomes the darkest forest, ink becomes the lightest, and the greens
+   move up a few steps so they still separate from the surface behind them.
+--------------------------------------------------------------------------- */
+/* The palette itself, written once and applied by two selectors below.
+   Overrides the `--color-*` tokens rather than the short aliases: the aliases
+   are defined as `--paper: var(--color-paper)`, so redefining the source
+   re-resolves them inside this subtree *and* carries the Tailwind utilities
+   (`bg-paper`, `text-ink`, `border-line`) along with it. Overriding the
+   aliases alone would leave every utility class on the light palette. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-paper: #17191b;
+  --color-paper-2: #1f2225;
+  --color-paper-3: #292d31;
+  --color-card: #1d2023;
+
+  --color-ink: #e9ebe8;
+  --color-ink-2: #a9afb1;
+  --color-ink-3: #7c8285;
+
+  /* `--pine` still carries light text on the primary button, so it stays a
+     mid green rather than following the surface down. */
+  --color-pine: #3f6b4f;
+  --color-pine-2: #4d7d5e;
+  --color-moss: #4a7359;
+  --color-moss-2: #7fae8d;
+  --color-sage: #93b39a;
+
+  --color-signal: #ff7d4a;
+  --color-signal-2: #ff9468;
+
+  --color-line: rgba(233, 235, 232, 0.14);
+  --color-line-2: rgba(233, 235, 232, 0.07);
+
+  --glass: rgba(233, 235, 232, 0.045);
+  --glass-strong: rgba(233, 235, 232, 0.11);
+  --field: #24282c;
+
+  --lock-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0bdaf' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='4.5' y='10.5' width='15' height='10' rx='2.2'/%3E%3Cpath d='M8 10.5V7a4 4 0 018 0v3.5'/%3E%3C/svg%3E");
+
+  /* Elevation reads as a darker well rather than a cast shadow once the
+     ground is already dark. */
+
+  /* Custom properties inherit as *computed* values: `--card: var(--color-card)`
+     was already substituted at `:root`, so redefining `--color-card` here does
+     not re-resolve it. The aliases have to be re-declared in this scope too —
+     the `--color-*` set drives the Tailwind utilities, this set drives the
+     field-guide component classes, and both have to move together. */
+  --paper: var(--color-paper);
+  --paper-2: var(--color-paper-2);
+  --paper-3: var(--color-paper-3);
+  --card: var(--color-card);
+  --ink: var(--color-ink);
+  --ink-2: var(--color-ink-2);
+  --ink-3: var(--color-ink-3);
+  --pine: var(--color-pine);
+  --pine-2: var(--color-pine-2);
+  --moss: var(--color-moss);
+  --moss-2: var(--color-moss-2);
+  --sage: var(--color-sage);
+  --signal: var(--color-signal);
+  --signal-2: var(--color-signal-2);
+  --line: var(--color-line);
+  --line-2: var(--color-line-2);
+
+  --shadow-field: 0 1px 2px rgba(0, 0, 0, 0.32), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-field-lg: 0 2px 4px rgba(0, 0, 0, 0.34), 0 24px 60px -24px rgba(0, 0, 0, 0.72);
+  --shadow: var(--shadow-field);
+  --shadow-lg: var(--shadow-field-lg);
+}
+
+/* "Follow the device" is the default, and it is the only setting that needs a
+   media query: an explicit Light or Dark choice is already stamped on the
+   element and must win over whatever the OS says. */
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --color-paper: #17191b;
+    --color-paper-2: #1f2225;
+    --color-paper-3: #292d31;
+    --color-card: #1d2023;
+
+    --color-ink: #e9ebe8;
+    --color-ink-2: #a9afb1;
+    --color-ink-3: #7c8285;
+
+    --color-pine: #3f6b4f;
+    --color-pine-2: #4d7d5e;
+    --color-moss: #4a7359;
+    --color-moss-2: #7fae8d;
+    --color-sage: #93b39a;
+
+    --color-signal: #ff7d4a;
+    --color-signal-2: #ff9468;
+
+    --color-line: rgba(233, 235, 232, 0.14);
+    --color-line-2: rgba(233, 235, 232, 0.07);
+
+    --glass: rgba(233, 235, 232, 0.045);
+    --glass-strong: rgba(233, 235, 232, 0.11);
+  --field: #24282c;
+
+    --lock-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0bdaf' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='4.5' y='10.5' width='15' height='10' rx='2.2'/%3E%3Cpath d='M8 10.5V7a4 4 0 018 0v3.5'/%3E%3C/svg%3E");
+
+  
+  /* Custom properties inherit as *computed* values: `--card: var(--color-card)`
+     was already substituted at `:root`, so redefining `--color-card` here does
+     not re-resolve it. The aliases have to be re-declared in this scope too —
+     the `--color-*` set drives the Tailwind utilities, this set drives the
+     field-guide component classes, and both have to move together. */
+  --paper: var(--color-paper);
+  --paper-2: var(--color-paper-2);
+  --paper-3: var(--color-paper-3);
+  --card: var(--color-card);
+  --ink: var(--color-ink);
+  --ink-2: var(--color-ink-2);
+  --ink-3: var(--color-ink-3);
+  --pine: var(--color-pine);
+  --pine-2: var(--color-pine-2);
+  --moss: var(--color-moss);
+  --moss-2: var(--color-moss-2);
+  --sage: var(--color-sage);
+  --signal: var(--color-signal);
+  --signal-2: var(--color-signal-2);
+  --line: var(--color-line);
+  --line-2: var(--color-line-2);
+
+  --shadow-field: 0 1px 2px rgba(0, 0, 0, 0.32), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+    --shadow-field-lg: 0 2px 4px rgba(0, 0, 0, 0.34), 0 24px 60px -24px rgba(0, 0, 0, 0.72);
+    --shadow: var(--shadow-field);
+    --shadow-lg: var(--shadow-field-lg);
+
+    color-scheme: dark;
+  }
 }
 
 @layer base {

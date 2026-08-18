@@ -29,6 +29,7 @@ import type { PlanId } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 import { PlanMark } from "./plan-mark";
+import type { ThemeChoice } from "./theme-toggle";
 
 /**
  * The signed-in shell.
@@ -196,6 +197,7 @@ export function AppShell({
   userEmail,
   plan,
   planName,
+  theme,
   logout,
 }: {
   children: React.ReactNode;
@@ -206,10 +208,16 @@ export function AppShell({
   plan: PlanId;
   /** "Free plan", "Explorer" — shown in the account menu. */
   planName: string;
+  /** The account's palette. Rendered on the server so there is no flash. */
+  theme: ThemeChoice;
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="app-frame bg-paper text-ink" data-plan={plan}>
+    <div
+      className="app-frame bg-paper text-ink"
+      data-plan={plan}
+      data-theme={theme.toLowerCase()}
+    >
       <Sidebar home="/dashboard" items={items}>
         {plan !== "free" && <PlanMark plan={plan} />}
         <AccountMenu
@@ -232,16 +240,22 @@ export function AdminShell({
   items,
   userName,
   userEmail,
+  theme,
   logout,
 }: {
   children: React.ReactNode;
   items: readonly NavItem[];
   userName: string;
   userEmail: string;
+  theme: ThemeChoice;
   logout: () => Promise<void>;
 }) {
   return (
-    <div className="app-frame bg-paper text-ink" data-surface="admin">
+    <div
+      className="app-frame bg-paper text-ink"
+      data-surface="admin"
+      data-theme={theme.toLowerCase()}
+    >
       <Sidebar home="/admin" items={items} admin>
         {/* No plan mark, no settings, no billing: an admin account holds none
             of those, and a menu that offers them would be lying. */}

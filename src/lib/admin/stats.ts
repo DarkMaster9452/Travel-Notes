@@ -83,7 +83,11 @@ export async function getAdminOverview() {
     db.user.count({ where: { createdAt: { gte: fortnightAgo, lt: weekAgo } } }),
     db.questHistory.count({ where: { generatedAt: { gte: weekAgo } } }),
     db.questHistory.count({ where: { generatedAt: { gte: fortnightAgo, lt: weekAgo } } }),
-    db.quest.count({ where: { isShowcase: false } }),
+    // Counts the whole catalogue. `isShowcase` used to separate seeded demo
+    // quests from real ones, but every quest is admin-authored now and is
+    // flagged showcase so it can be read without being owned — filtering it
+    // out here left these figures permanently at zero.
+    db.quest.count(),
   ]);
 
   return {
@@ -217,7 +221,6 @@ const DIFFICULTY_LABEL: Record<string, string> = {
 export async function getDifficultySplit() {
   const rows = await db.quest.groupBy({
     by: ["difficulty"],
-    where: { isShowcase: false },
     _count: { _all: true },
   });
 
@@ -232,7 +235,6 @@ export async function getDifficultySplit() {
 export async function getTopRegions(limit = 6) {
   const rows = await db.quest.groupBy({
     by: ["region"],
-    where: { isShowcase: false },
     _count: { _all: true },
     orderBy: { _count: { region: "desc" } },
     take: limit,
@@ -249,7 +251,6 @@ export async function getTopRegions(limit = 6) {
 export async function getTopLocations(limit = 8) {
   const rows = await db.quest.groupBy({
     by: ["location"],
-    where: { isShowcase: false },
     _count: { _all: true },
     orderBy: { _count: { location: "desc" } },
     take: limit,

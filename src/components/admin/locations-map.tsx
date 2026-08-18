@@ -26,17 +26,18 @@ type Cluster = {
 type View = { x: number; y: number; w: number; h: number };
 
 const MIN_SCALE = 1;
-/** How far in a click of the zoom-in button, or one wheel notch, goes. */
-const STEP = 1.35;
-const MAX_SCALE = 40;
-/** Points within this many screen pixels of each other merge into one pin.
- * Slovak quests often sit a few kilometres apart in the same range, which is
- * still a handful of pixels apart at any sane map zoom — a cluster with a
- * count is the honest way to show that, the way any real map does. */
-const CLUSTER_PX = 15;
+/** One wheel notch, or one press of the zoom buttons. */
+const STEP = 1.4;
+/**
+ * Deep enough to pull apart peaks a few kilometres apart. The old ceiling of
+ * 40× bottomed out while a Slovak range was still a single smudge, which is
+ * what "can't zoom enough" meant.
+ */
+const MAX_SCALE = 400;
+/** Points closer than this on screen merge into one pin. */
+const CLUSTER_PX = 13;
 
-/** Greedy single-link clustering by on-screen distance, recomputed as the
- * view changes so pins split apart the further in an admin zooms. */
+/** Greedy single-link clustering by on-screen distance. */
 function clusterPoints(points: MapPoint[], scale: number): Cluster[] {
   const threshold = CLUSTER_PX / scale;
   const used = new Array(points.length).fill(false);
@@ -48,9 +49,7 @@ function clusterPoints(points: MapPoint[], scale: number): Cluster[] {
     used[i] = true;
     for (let j = i + 1; j < points.length; j++) {
       if (used[j]) continue;
-      const dx = points[i].x - points[j].x;
-      const dy = points[i].y - points[j].y;
-      if (Math.hypot(dx, dy) <= threshold) {
+      if (Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y) <= threshold) {
         group.push(points[j]);
         used[j] = true;
       }
@@ -67,30 +66,38 @@ function clusterPoints(points: MapPoint[], scale: number): Cluster[] {
 }
 
 /**
- * The world, drawn once, with a pin per place a quest has sent someone.
+ * The world, with a pin per place a quest has sent someone.
  *
- * The countries are a static path list computed on the server — this
- * component only ever draws them and reacts to the pointer. Clicking a lone
- * pin jumps to that row in the table below via its id, the same trick a
- * table of contents uses, so there is no state to keep in sync between the
- * map and the table. Clicking a cluster zooms in on it instead — the same
- * two-step every map does, because at a world scale two mountains in the
- * same range are a few pixels apart no matter how far you're allowed to zoom.
+ * Countries are static path strings computed on the server. The page ships
+ * the coarse set so the map is there immediately, then this fetches the
+ * detailed one and swaps it in — zooming into a country used to show a
+ * six-sided polygon, because 110m geometry is drawn for a world view and
+ * nothing closer.
+ *
+ * Clicking a lone pin opens that place: the quests set there, and the
+ * submissions people have filed against them. Clicking a cluster zooms in
+ * and lists what is underneath, because at world scale two mountains in the
+ * same range are a few pixels apart no matter how far you are allowed to
+ * zoom.
  */
 export function LocationsMap({
   width,
   height,
   countryPaths,
   points,
+  onOpen,
 }: {
   width: number;
   height: number;
   countryPaths: string[];
   points: MapPoint[];
+  /** Opens the detail sheet for a place. */
+  onOpen: (slug: string) => void;
 }) {
   const [active, setActive] = React.useState<string | null>(null);
   const [view, setView] = React.useState<View>({ x: 0, y: 0, w: width, h: height });
   const [picker, setPicker] = React.useState<MapPoint[] | null>(null);
+  const [detailed, setDetailed] = React.useState<string[] | null>(null);
   const svgRef = React.useRef<SVGSVGElement>(null);
   const dragRef = React.useRef<{ x: number; y: number; moved: boolean; view: View } | null>(null);
   const [dragging, setDragging] = React.useState(false);
@@ -100,13 +107,32 @@ export function LocationsMap({
   const maxCount = Math.max(1, ...clusters.map((c) => c.count));
   const activeCluster = clusters.find((c) => c.key === active) ?? null;
 
+  // The detailed coastline, fetched once and cached hard by the browser.
+  // Failure is not worth surfacing: the coarse outline is already drawn and
+  // the map stays usable, it just stays blocky.
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/admin/locations/geometry")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { paths?: string[] } | null) => {
+        if (!cancelled && data?.paths?.length) setDetailed(data.paths);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const clampView = React.useCallback(
     (next: View): View => {
       const w = Math.min(width / MIN_SCALE, Math.max(width / MAX_SCALE, next.w));
       const h = w * (height / width);
-      const x = Math.min(width - w, Math.max(0, next.x));
-      const y = Math.min(height - h, Math.max(0, next.y));
-      return { x, y, w, h };
+      return {
+        w,
+        h,
+        x: Math.min(width - w, Math.max(0, next.x)),
+        y: Math.min(height - h, Math.max(0, next.y)),
+      };
     },
     [width, height],
   );
@@ -116,17 +142,19 @@ export function LocationsMap({
       setView((current) => {
         const w = current.w / factor;
         const h = current.h / factor;
-        const x = cx - ((cx - current.x) * w) / current.w;
-        const y = cy - ((cy - current.y) * h) / current.h;
-        return clampView({ x, y, w, h });
+        return clampView({
+          w,
+          h,
+          x: cx - ((cx - current.x) * w) / current.w,
+          y: cy - ((cy - current.y) * h) / current.h,
+        });
       });
     },
     [clampView],
   );
 
   // Wheel-zoom needs a non-passive listener to call preventDefault — React's
-  // synthetic onWheel is passive by default and can't stop the page under it
-  // from scrolling while the cursor is over the map.
+  // synthetic onWheel is passive and can't stop the page scrolling under it.
   React.useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
@@ -153,12 +181,16 @@ export function LocationsMap({
     const drag = dragRef.current;
     if (!drag || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const dx = ((event.clientX - drag.x) / rect.width) * drag.view.w;
-    const dy = ((event.clientY - drag.y) / rect.height) * drag.view.h;
     if (Math.abs(event.clientX - drag.x) > 2 || Math.abs(event.clientY - drag.y) > 2) {
       drag.moved = true;
     }
-    setView(clampView({ ...drag.view, x: drag.view.x - dx, y: drag.view.y - dy }));
+    setView(
+      clampView({
+        ...drag.view,
+        x: drag.view.x - ((event.clientX - drag.x) / rect.width) * drag.view.w,
+        y: drag.view.y - ((event.clientY - drag.y) / rect.height) * drag.view.h,
+      }),
+    );
   }
 
   function endDrag() {
@@ -166,11 +198,8 @@ export function LocationsMap({
     setDragging(false);
   }
 
-  function reset() {
-    setView({ x: 0, y: 0, w: width, h: height });
-  }
-
   const zoomedIn = view.w < width - 0.5;
+  const paths = detailed ?? countryPaths;
 
   return (
     <div className="world-map-wrap">
@@ -187,19 +216,21 @@ export function LocationsMap({
         onPointerCancel={endDrag}
       >
         <g className="world-map-land">
-          {countryPaths.map((d, index) => (
+          {paths.map((d, index) => (
             <path key={index} d={d} />
           ))}
         </g>
 
         <g className="world-map-pins">
           {clusters.map((cluster) => {
-            const radius = (4 + (cluster.count / maxCount) * 6) / scale;
+            // Pins keep a constant *screen* size: dividing by the scale is
+            // what stops a zoomed-in map being three enormous blobs.
+            const radius = (3 + (cluster.count / maxCount) * 3.5) / scale;
             const isActive = active === cluster.key;
             const isGroup = cluster.items.length > 1;
             const solo = cluster.items[0];
 
-            const shared = {
+            const hover = {
               onPointerEnter: () => setActive(cluster.key),
               onPointerLeave: () =>
                 setActive((current) => (current === cluster.key ? null : current)),
@@ -207,67 +238,56 @@ export function LocationsMap({
               onBlur: () => setActive((current) => (current === cluster.key ? null : current)),
             };
 
-            if (isGroup) {
-              return (
-                <g
-                  key={cluster.key}
-                  className={cn("world-map-pin world-map-cluster", isActive && "active")}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${cluster.items.length} places here, ${cluster.count} quests — press to zoom in and list them`}
-                  onClick={() => {
-                    zoomAt(4, cluster.x, cluster.y);
-                    setPicker(cluster.items);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      zoomAt(4, cluster.x, cluster.y);
-                      setPicker(cluster.items);
-                    }
-                  }}
-                  {...shared}
-                >
-                  <circle
-                    cx={cluster.x}
-                    cy={cluster.y}
-                    r={radius + 8 / scale}
-                    className="world-map-pin-halo"
-                  />
-                  <circle cx={cluster.x} cy={cluster.y} r={radius + 2 / scale} className="world-map-pin-dot" />
+            const open = () => {
+              if (dragRef.current?.moved) return;
+              if (isGroup) {
+                zoomAt(4, cluster.x, cluster.y);
+                setPicker(cluster.items);
+              } else {
+                setPicker(null);
+                onOpen(solo.slug);
+              }
+            };
+
+            return (
+              <g
+                key={cluster.key}
+                className={cn("world-map-pin", isGroup && "world-map-cluster", isActive && "active")}
+                role="button"
+                tabIndex={0}
+                aria-label={
+                  isGroup
+                    ? `${cluster.items.length} places here — press to zoom in`
+                    : `${solo.location}, ${solo.region} — ${solo.count} quest${solo.count === 1 ? "" : "s"}`
+                }
+                onClick={open}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    open();
+                  }
+                }}
+                {...hover}
+              >
+                <circle
+                  cx={cluster.x}
+                  cy={cluster.y}
+                  r={radius + 5 / scale}
+                  className="world-map-pin-halo"
+                />
+                <circle cx={cluster.x} cy={cluster.y} r={radius} className="world-map-pin-dot" />
+                {isGroup && (
                   <text
                     x={cluster.x}
                     y={cluster.y}
                     dy="0.35em"
                     className="world-map-cluster-count"
-                    style={{ fontSize: 9 / scale }}
+                    style={{ fontSize: 7 / scale }}
                   >
                     {cluster.items.length}
                   </text>
-                </g>
-              );
-            }
-
-            return (
-              <a
-                key={cluster.key}
-                href={`#${solo.slug}`}
-                className={cn("world-map-pin", isActive && "active")}
-                aria-label={`${solo.location}, ${solo.region} — ${solo.count} quest${solo.count === 1 ? "" : "s"}`}
-                onClick={(event) => {
-                  if (dragRef.current?.moved) event.preventDefault();
-                  else setPicker(null);
-                }}
-                {...shared}
-              >
-                <circle
-                  cx={cluster.x}
-                  cy={cluster.y}
-                  r={radius + 6 / scale}
-                  className="world-map-pin-halo"
-                />
-                <circle cx={cluster.x} cy={cluster.y} r={radius} className="world-map-pin-dot" />
-              </a>
+                )}
+              </g>
             );
           })}
         </g>
@@ -289,11 +309,18 @@ export function LocationsMap({
           −
         </button>
         {zoomedIn && (
-          <button type="button" onClick={reset} className="world-map-reset" aria-label="Reset view">
+          <button
+            type="button"
+            onClick={() => setView({ x: 0, y: 0, w: width, h: height })}
+            className="world-map-reset"
+            aria-label="Reset view"
+          >
             Reset
           </button>
         )}
       </div>
+
+      {zoomedIn && <span className="world-map-scale">{Math.round(scale)}×</span>}
 
       {picker && (
         <div className="world-map-picker">
@@ -306,17 +333,23 @@ export function LocationsMap({
           <ul className="world-map-picker-list">
             {picker.map((point) => (
               <li key={point.slug}>
-                <a href={`#${point.slug}`} onClick={() => setPicker(null)}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPicker(null);
+                    onOpen(point.slug);
+                  }}
+                >
                   <b>{point.location}</b>
                   <span>{point.region}</span>
-                </a>
+                </button>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {activeCluster && (
+      {activeCluster && !picker && (
         <div
           className="world-map-tooltip"
           style={{
@@ -334,7 +367,7 @@ export function LocationsMap({
                 {activeCluster.items[0].region}, {activeCluster.items[0].country}
               </span>
               <span className="world-map-tooltip-count">
-                {activeCluster.count} quest{activeCluster.count === 1 ? "" : "s"}
+                {activeCluster.count} quest{activeCluster.count === 1 ? "" : "s"} · click to open
               </span>
             </>
           ) : (
@@ -344,7 +377,7 @@ export function LocationsMap({
                 {activeCluster.items.length} places
               </b>
               <span>{activeCluster.items.map((p) => p.location).slice(0, 4).join(", ")}</span>
-              <span className="world-map-tooltip-count">Click to zoom in and list them</span>
+              <span className="world-map-tooltip-count">Click to zoom in</span>
             </>
           )}
         </div>

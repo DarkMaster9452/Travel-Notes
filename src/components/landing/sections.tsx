@@ -920,10 +920,10 @@ const PLANS: {
     name: "Explorer",
     price: "€11",
     period: "/ month",
-    desc: "Unlimited quests, worldwide, in your inbox on the morning you pick.",
+    desc: "Unlimited quests anywhere in Europe, in your inbox on the morning you pick.",
     features: [
       { text: "Unlimited quest generation" },
-      { text: "Worldwide range, any terrain" },
+      { text: "Anywhere in Europe, any terrain" },
       { text: "Quests by mail, on your schedule" },
       { text: "Saved quests & full history" },
       { text: "Re-roll, skip and pause" },
@@ -932,7 +932,7 @@ const PLANS: {
     ],
     cta: "Start with Explorer",
     ctaClass: "btn btn-signal",
-    note: "Billed via Stripe · cancel anytime",
+    note: "Billed via Stripe · cancel anytime · 7-day refund",
     flag: "Most taken",
     feature: true,
   },
@@ -940,9 +940,10 @@ const PLANS: {
     name: "Ultra Explorer",
     price: "€31",
     period: "/ month",
-    desc: "For quests built around something specific — a season, a range, a goal.",
+    desc: "Every range on the map, and quests built around something specific.",
     features: [
       { text: "Everything in Explorer" },
+      { text: "Worldwide range, every continent" },
       { text: "Custom quests you commission" },
       { text: "Multi-day and trip-week quests" },
       { text: "Priority support, real replies" },
@@ -951,7 +952,7 @@ const PLANS: {
     ],
     cta: "Go Ultra",
     ctaClass: "btn btn-primary",
-    note: "Billed via Stripe · cancel anytime",
+    note: "Billed via Stripe · cancel anytime · 7-day refund",
   },
 ];
 
@@ -962,7 +963,10 @@ export function PricingSection() {
         <div className="sec-head center">
           <span className="eyebrow centered">Plans</span>
           <h2 className="h2">Try it here. Subscribe to stop deciding.</h2>
-          <p className="lede">Cancel any time, from the footer of any quest mail.</p>
+          <p className="lede">
+            Cancel any time, from the footer of any quest mail. Changed your mind inside a week?
+            Full refund, no questions.
+          </p>
         </div>
 
         <div className="plans">
@@ -1008,7 +1012,7 @@ const FAQ = [
   },
   {
     q: "What does the free version actually give me?",
-    a: "Three real quests in your own country, no card, plus your history and digital stickers. Inbox delivery, worldwide range, matching and printed sheets start at Explorer.",
+    a: "Three real quests in your own country, no card, plus your history and the first six stickers. Inbox delivery, the rest of Europe, matching and printed sheets start at Explorer; worldwide range is Ultra.",
   },
   {
     q: "Why do I need an account?",

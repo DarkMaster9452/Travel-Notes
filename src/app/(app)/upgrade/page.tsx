@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 
 import { BillingActions } from "@/components/app/billing-actions";
+import { CancelPlan } from "@/components/app/cancel-plan";
 import { Reveal } from "@/components/app/motion";
 import { PlanBoard } from "@/components/app/plan-board";
 import { PlanChip } from "@/components/app/plan-mark";
 import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
-import { CAPABILITY_COPY, PLANS } from "@/lib/config";
+import {
+  CAPABILITY_COPY,
+  headlineCapabilities,
+  PLANS,
+  REFUND_WINDOW_DAYS,
+  refundDeadline,
+  isWithinRefundWindow,
+} from "@/lib/config";
+import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled, isUltraEnabled } from "@/lib/env";
 import { stagger } from "@/lib/motion";
@@ -28,7 +37,18 @@ export const dynamic = "force-dynamic";
 export default async function UpgradePage() {
   const user = await requireClient();
   const entitlement = await getEntitlement(user.id);
-  const held = entitlement.definition.capabilities;
+  const held = headlineCapabilities(entitlement.definition, Infinity);
+
+  // The guarantee is measured from the start of the current period, so it
+  // covers a new subscription's first week rather than re-arming on renewal.
+  const subscription = entitlement.isSubscribed
+    ? await db.subscription.findUnique({
+        where: { userId: user.id },
+        select: { currentPeriodStart: true },
+      })
+    : null;
+  const deadline = refundDeadline(subscription?.currentPeriodStart ?? null);
+  const refundable = isWithinRefundWindow(subscription?.currentPeriodStart ?? null);
 
   return (
     <>
@@ -81,8 +101,45 @@ export default async function UpgradePage() {
                 </li>
               ))}
             </ul>
-            <div className="border-t border-dashed border-line px-5 py-4">
+            {/* When money next moves, or when access stops. A membership card
+                that doesn't say either is asking you to go and find out. */}
+            <div className="plan-dates">
+              {entitlement.cancelAtPeriodEnd ? (
+                <p>
+                  <b>Cancelled.</b>{" "}
+                  {entitlement.currentPeriodEnd
+                    ? `You keep ${entitlement.definition.name} until ${formatDate(entitlement.currentPeriodEnd)}, then it stops. Nothing is charged again.`
+                    : "Access runs to the end of the period you've paid for."}
+                </p>
+              ) : entitlement.currentPeriodEnd ? (
+                <p>
+                  <b>Next payment {formatDate(entitlement.currentPeriodEnd)}.</b> Cancel before then
+                  and you are not charged again.
+                </p>
+              ) : (
+                <p>
+                  <b>Active.</b> This account is on {entitlement.definition.name}.
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-line px-5 py-4">
               <BillingActions enabled={isStripeEnabled()} />
+              {!entitlement.cancelAtPeriodEnd && (
+                <CancelPlan
+                  planName={entitlement.definition.name}
+                  refundable={refundable}
+                  refundDeadline={deadline ? formatDate(deadline) : null}
+                  periodEnd={
+                    entitlement.currentPeriodEnd ? formatDate(entitlement.currentPeriodEnd) : null
+                  }
+                />
+              )}
+              {refundable && (
+                <span className="meta text-moss-2">
+                  {REFUND_WINDOW_DAYS}-day money-back guarantee still open
+                </span>
+              )}
             </div>
           </Panel>
         </Reveal>
@@ -99,7 +156,8 @@ export default async function UpgradePage() {
 
       <Reveal delay={stagger(2)}>
         <p className="note text-center">
-          Cancel any time, from the footer of any quest you&apos;ve ever been sent.
+          Cancel any time. Changed your mind inside {REFUND_WINDOW_DAYS} days of paying? Full
+          refund, no questions asked.
         </p>
       </Reveal>
     </>

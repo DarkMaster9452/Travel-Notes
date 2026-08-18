@@ -8,12 +8,19 @@ import { cn } from "@/lib/utils";
 
 import { useAuthModal } from "./auth-modal";
 
+/**
+ * The nav is a shortlist, not a table of contents.
+ *
+ * The sections it skips are still on the page and still linked from the
+ * footer — they are simply not what someone deciding whether to sign up
+ * needs jumped to. The monthly quest is the product's headline, so the
+ * cadence section is reached through "How it works" rather than given a tab
+ * that would sell the weekly as the main event.
+ */
 const LINKS = [
   { href: "#demo", label: "Try it" },
   { href: "#how", label: "How it works" },
-  { href: "#mail", label: "By mail" },
   { href: "#together", label: "Go together" },
-  { href: "#weekly", label: "Weekly" },
   { href: "#stickers", label: "Stickers" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },

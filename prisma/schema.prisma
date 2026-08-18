@@ -24,6 +24,14 @@ enum Role {
   ADMIN
 }
 
+/// Which palette the signed-in app renders in. `SYSTEM` follows the device;
+/// the other two are a deliberate choice and outrank it.
+enum Theme {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
 model User {
   id             String  @id @default(cuid())
   email          String  @unique
@@ -32,6 +40,10 @@ model User {
   passwordHash   String  @map("password_hash")
   role           Role    @default(USER)
   freeQuestsUsed Int     @default(0) @map("free_quests_used")
+  /// Stored on the account rather than in localStorage so the server can render
+  /// the right palette on the first paint — a theme that arrives after
+  /// hydration is a flash of the wrong one.
+  theme          Theme   @default(SYSTEM)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -44,6 +56,9 @@ model User {
   generations  QuestGeneration[]
   history      QuestHistory[]
   savedQuests  SavedQuest[]
+  scheduled    QuestSchedule[]   @relation("ScheduleAuthor")
+  revocations  AchievementRevocation[] @relation("RevocationSubject")
+  revoked      AchievementRevocation[] @relation("RevocationAuthor")
 
   @@map("users")
 }
@@ -227,11 +242,57 @@ model Quest {
   history     QuestHistory[]
   saved       SavedQuest[]
   submissions Submission[]
+  schedules   QuestSchedule[]
 
   @@index([isShowcase])
   @@index([published])
   @@index([signature])
   @@map("quests")
+}
+
+/// The two cadences the product runs on. The monthly is the headline quest;
+/// the weekly is the smaller one alongside it.
+enum SchedulePeriod {
+  WEEKLY
+  MONTHLY
+}
+
+/// A quest booked into a specific week or month.
+///
+/// One quest per slot, enforced by the database rather than by the form: two
+/// quests claiming the same Monday is not a state the product has an answer
+/// for, so it is made unrepresentable. Editing which quest fills a slot is
+/// allowed; adding a second to an occupied slot is not.
+///
+/// `openAt` is derived on write from the slot itself — Monday 06:00 for a
+/// weekly, the 1st at 06:00 for a monthly — and stored so the query that asks
+/// "what is live?" is a plain timestamp comparison rather than date arithmetic
+/// repeated at every call site.
+model QuestSchedule {
+  id      String         @id @default(cuid())
+  period  SchedulePeriod
+  /// `2026-W34` for a weekly, `2026-09` for a monthly. Unique with `period`.
+  slotKey String         @map("slot_key")
+  questId String         @map("quest_id")
+
+  /// Lowest plan this slot is visible to. `FREE` means everyone.
+  audience Plan @default(FREE)
+
+  /// When the slot opens. Monday 06:00 weekly, the 1st 06:00 monthly.
+  openAt DateTime @map("open_at")
+  /// When the log closes — the instant the next slot opens.
+  closeAt DateTime @map("close_at")
+
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  quest     Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("ScheduleAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([period, slotKey])
+  @@index([openAt])
+  @@map("quest_schedules")
 }
 
 /// Immutable audit log: every generation event, with the parameters used.
@@ -319,6 +380,35 @@ model Submission {
   @@unique([userId, questId])
   @@index([status, createdAt])
   @@map("submissions")
+}
+
+/// A sticker taken back from an account.
+///
+/// Achievements are *derived* — a pure function of quest history — so there is
+/// no row to delete when an admin needs to remove one. This is that row: an
+/// explicit revocation, checked when the sheet is computed. Storing the
+/// exception rather than the whole sheet keeps the achievement definitions the
+/// single source of truth and means a threshold can still be changed without a
+/// backfill.
+///
+/// Deliberately not reversible by earning it again: the point of taking a
+/// sticker back is usually that the history behind it was wrong, and a badge
+/// that silently returned on the next quest would undo the correction. An
+/// admin lifts it by deleting the revocation.
+model AchievementRevocation {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  /// Matches `Achievement["id"]` in `lib/achievements`.
+  achievementId String   @map("achievement_id")
+  reason        String?
+  revokedById   String?  @map("revoked_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user      User  @relation("RevocationSubject", fields: [userId], references: [id], onDelete: Cascade)
+  revokedBy User? @relation("RevocationAuthor", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, achievementId])
+  @@map("achievement_revocations")
 }
 
 model SavedQuest {

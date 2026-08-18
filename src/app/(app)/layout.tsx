@@ -1,6 +1,7 @@
 import { logoutAction } from "@/app/(auth)/actions";
 import { AppShell, type NavItem } from "@/components/app/app-shell";
 import { requireClient } from "@/lib/auth/guards";
+import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 
 /**
@@ -12,27 +13,41 @@ import { getEntitlement } from "@/lib/entitlements";
  * There is nothing to browse and nothing to save: the nav is the product's
  * whole surface, which is the point. You are issued a quest, you log it, and
  * it is retired.
+ *
+ * Monthly sits above Weekly because the monthly quest is the headline — the
+ * big one, opened on the 1st — and the weekly is the smaller thing alongside
+ * it. The order of this list is the only place that hierarchy is stated, so
+ * it states it.
  */
-const NAV: readonly NavItem[] = [
-  { href: "/dashboard", label: "Today", icon: "sun" },
-  { href: "/weekly", label: "Weekly", icon: "calendar" },
-  { href: "/monthly", label: "Monthly", icon: "mountain" },
-  { href: "/history", label: "History", icon: "book" },
-  { href: "/achievements", label: "Stickers", icon: "badge" },
+function nav(awaiting: number): readonly NavItem[] {
+  return [
+    { href: "/dashboard", label: "Today", icon: "sun" },
+    { href: "/monthly", label: "Monthly", icon: "mountain" },
+    { href: "/weekly", label: "Weekly", icon: "calendar" },
+    { href: "/submissions", label: "Submissions", icon: "inbox", badge: awaiting },
+    { href: "/history", label: "History", icon: "book" },
+    { href: "/achievements", label: "Stickers", icon: "badge" },
 
-  { section: "Account", href: "/profile", label: "Settings", icon: "gear" },
-  { href: "/upgrade", label: "Plan", icon: "sparkle" },
-];
+    { section: "Account", href: "/profile", label: "Settings", icon: "gear" },
+    { href: "/upgrade", label: "Plan", icon: "sparkle" },
+  ];
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireClient();
-  const entitlement = await getEntitlement(user.id);
+  const [entitlement, awaiting] = await Promise.all([
+    getEntitlement(user.id),
+    // The one number worth carrying in the chrome: proof you filed that
+    // nobody has read yet is the only thing on this side you are waiting on.
+    db.submission.count({ where: { userId: user.id, status: "PENDING" } }),
+  ]);
 
   return (
     <AppShell
-      items={NAV}
+      items={nav(awaiting)}
       userName={user.name}
       userEmail={user.email}
+      theme={user.theme}
       plan={entitlement.plan}
       planName={
         entitlement.isSubscribed

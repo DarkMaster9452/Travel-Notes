@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 import { Reveal } from "@/components/app/motion";
-import { LocationsMap, type MapPoint } from "@/components/admin/locations-map";
+import { LocationsExplorer } from "@/components/admin/locations-explorer";
+import type { MapPoint } from "@/components/admin/locations-map";
 import { StatGrid } from "@/components/admin/stat-grid";
 import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -72,7 +73,7 @@ export default async function LocationsPage() {
     <>
       <Reveal as="header" className="page-head">
         <div>
-          <Eyebrow>📍 The map</Eyebrow>
+          <Eyebrow>The map</Eyebrow>
           <h1>Locations.</h1>
           <p>Every place a quest points at, and how often people have been sent there.</p>
         </div>
@@ -97,8 +98,8 @@ export default async function LocationsPage() {
       {points.length > 0 && (
         <Reveal delay={stagger(1)} className="mb-5">
           <Panel flush>
-            <PanelHead title="World map" aside={<Tag tone="ghost">{points.length} places</Tag>} />
-            <LocationsMap
+            <PanelHead title="World map" aside={<Tag tone="ghost">{points.length} places · click a pin</Tag>} />
+            <LocationsExplorer
               width={MAP_WIDTH}
               height={MAP_HEIGHT}
               countryPaths={getCountryPaths()}

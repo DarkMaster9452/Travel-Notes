@@ -22,6 +22,7 @@ function nav(pending: number): readonly NavItem[] {
     { href: "/admin/submissions", label: "Submissions", icon: "inbox" },
     { href: "/admin/users", label: "Users", icon: "users" },
     { href: "/admin/quests", label: "Quests", icon: "map" },
+    { href: "/admin/schedule", label: "Schedule", icon: "calendar" },
     { href: "/admin/locations", label: "Locations", icon: "marker" },
 
     { section: "Analytics", href: "/admin/revenue", label: "Revenue", icon: "coin" },
@@ -41,6 +42,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       items={nav(pending)}
       userName={user.name}
       userEmail={user.email}
+      theme={user.theme}
       logout={logoutAction}
     >
       {children}
