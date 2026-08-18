@@ -165,6 +165,66 @@ export function QuestForm() {
         </div>
       </Panel>
 
+      {/* Getting there. Every field optional — plenty of starts are a bus
+          stop, and a half-filled parking panel is worse than none, so the
+          reader's page shows nothing at all unless the coordinates are here. */}
+      <Panel flush>
+        <PanelHead title="Getting there" />
+        <div className="flex flex-col gap-4 px-5 py-5">
+          <div className="admin-grid">
+            <Field
+              label="Car park"
+              name="parkingName"
+              error={errors.parkingName}
+              hint="What it is called on the ground."
+            >
+              <input id="parkingName" name="parkingName" className="input" placeholder="Štefanová lower car park" />
+            </Field>
+            <Field label="Parking latitude" name="parkingLat" error={errors.parkingLat}>
+              <input id="parkingLat" name="parkingLat" type="number" step="0.00001" className="input" />
+            </Field>
+            <Field label="Parking longitude" name="parkingLng" error={errors.parkingLng}>
+              <input id="parkingLng" name="parkingLng" type="number" step="0.00001" className="input" />
+            </Field>
+            <Field
+              label="Walk to the start (min)"
+              name="approachTime"
+              error={errors.approachTime}
+            >
+              <input id="approachTime" name="approachTime" type="number" min="0" className="input" />
+            </Field>
+          </div>
+
+          <Field
+            label="What to know about parking"
+            name="parkingNote"
+            error={errors.parkingNote}
+            hint="Cost, when it fills, barriers, anything that ruins a morning."
+          >
+            <input
+              id="parkingNote"
+              name="parkingNote"
+              className="input"
+              placeholder="€5 for the day, full by 08:30 at weekends."
+            />
+          </Field>
+
+          <Field
+            label="Without a car"
+            name="transitNote"
+            error={errors.transitNote}
+            hint="Optional. Leave empty if there is genuinely no way."
+          >
+            <input
+              id="transitNote"
+              name="transitNote"
+              className="input"
+              placeholder="Bus 32 from Žilina to Terchová, then 20 minutes on foot."
+            />
+          </Field>
+        </div>
+      </Panel>
+
       <Panel flush>
         <PanelHead title="The figures" />
         <div className="admin-grid px-5 py-5">

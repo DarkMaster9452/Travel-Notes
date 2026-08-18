@@ -6028,3 +6028,276 @@ select.input {
     height: 130px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Filing proof: the part about you
+
+   Folded away once the account has it saved. The first log is the one where
+   this matters; after that it is a section you scroll past.
+--------------------------------------------------------------------------- */
+.log-details {
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--paper-2) 60%, transparent);
+}
+.log-details > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 620;
+  color: var(--ink);
+  list-style: none;
+}
+.log-details > summary::-webkit-details-marker {
+  display: none;
+}
+.log-details > summary span {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.log-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 14px 14px;
+}
+
+/* The two tick-boxes at the foot of the form. Same shape, so neither reads as
+   more consequential than the other by accident. */
+.proof-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: var(--field);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   The slot clock
+
+   The weekly and the monthly are compulsory and the window shuts, so the
+   deadline is the loudest thing on those two pages. On the forest surface,
+   because this is the one element that is allowed to be — the same reason the
+   monthly headline card on the dashboard is.
+--------------------------------------------------------------------------- */
+.slot-clock {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-radius: var(--r);
+  background: var(--forest);
+  color: #eef2e7;
+  border: 1px solid var(--moss);
+}
+.slot-clock.is-done {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.slot-clock.is-closed {
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border-color: var(--line);
+  border-style: dashed;
+}
+.slot-clock-icon {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  opacity: 0.85;
+}
+.slot-clock-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.slot-clock-body {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.slot-clock-body b {
+  display: block;
+  font-size: 16px;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+}
+.slot-clock-body span {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  opacity: 0.72;
+}
+
+/* The digits. Tabular so the width does not jitter every time a minute ticks
+   over — a countdown that reflows the row it sits in is worse than none. */
+.slot-clock-time {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-left: auto;
+  /* Reserved before the numbers land, so nothing jumps on hydration. */
+  min-height: 34px;
+  min-width: 132px;
+  justify-content: flex-end;
+}
+.countdown-unit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.countdown-unit b {
+  font-family: var(--mono);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.countdown-unit i {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+.countdown-closed {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* What the quest asks for, as a plain two-column list. */
+.quest-facts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.quest-facts li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 20px;
+  border-bottom: 1px dashed var(--line-2);
+}
+.quest-facts li:last-child {
+  border-bottom: 0;
+}
+.quest-facts span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.quest-facts b {
+  font-size: 14.5px;
+  font-weight: 620;
+  color: var(--ink);
+  text-align: right;
+}
+
+.quest-note {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.quest-note.is-warm {
+  color: var(--signal);
+}
+
+/* ---------------------------------------------------------------------------
+   The approach map
+
+   Static OpenStreetMap tiles as plain images. If they fail the frame still
+   holds both pins in the right places, so the card degrades to a schematic
+   rather than to a hole.
+--------------------------------------------------------------------------- */
+.approach-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+}
+.approach-tiles {
+  position: absolute;
+  inset: 0;
+}
+.approach-tiles img {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+.approach-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+.approach-pin i {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+.approach-pin b {
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.approach-pin.is-parking i,
+.approach-pin.is-parking b {
+  background: var(--signal);
+}
+.approach-pin.is-start i,
+.approach-pin.is-start b {
+  background: var(--pine);
+}
+.approach-credit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  font-size: 9.5px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #333;
+  border-top-left-radius: 4px;
+}
+.approach-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+.approach-foot {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}

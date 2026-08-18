@@ -99,6 +99,14 @@ const proofSchema = z.object({
   elevation: z.coerce.number().int().min(0).max(20000).optional(),
   movingTime: z.coerce.number().int().min(0).max(20000).optional(),
   retreated: z.coerce.boolean().optional(),
+  // The parts of the form that describe the person rather than the day.
+  usualStart: z.string().trim().max(5).optional().or(z.literal("")),
+  partySize: z.coerce.number().int().min(1).max(40).optional(),
+  gear: z.string().trim().max(300).optional().or(z.literal("")),
+  pace: z.coerce.number().min(0).max(60).optional(),
+  stravaProfile: z.string().trim().url().max(300).optional().or(z.literal("")),
+  /** The checkbox. Nothing about the account changes unless this is ticked. */
+  saveDetails: z.coerce.boolean().optional(),
 });
 
 export type ProofResult = { ok: boolean; message?: string };
@@ -125,6 +133,12 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
     elevation: formData.get("elevation") || undefined,
     movingTime: formData.get("movingTime") || undefined,
     retreated: formData.get("retreated") === "true",
+    usualStart: formData.get("usualStart") || undefined,
+    partySize: formData.get("partySize") || undefined,
+    gear: formData.get("gear") || undefined,
+    pace: formData.get("pace") || undefined,
+    stravaProfile: formData.get("stravaProfile") || undefined,
+    saveDetails: formData.get("saveDetails") === "true",
   });
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the form." };
@@ -172,7 +186,33 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
     create: { userId: user.id, questId: proof.questId, ...values },
   });
 
+  // Only if asked. Filing a log is not consent to rewrite your account, and a
+  // form that quietly remembered things would be the kind of surprise that
+  // makes people stop filling forms in honestly.
+  if (proof.saveDetails) {
+    const defaults = {
+      stravaProfile: proof.stravaProfile || null,
+      usualStart: proof.usualStart || null,
+      partySize: proof.partySize ?? null,
+      gear: proof.gear || null,
+      pace: proof.pace ?? null,
+      // Remembered so the next form can show them beside the empty fields.
+      // Never filled in for you — see the note on the model for why.
+      lastDistance: proof.distance ?? null,
+      lastElevation: proof.elevation ?? null,
+      lastMovingTime: proof.movingTime ?? null,
+    };
+    await db.userLogDefaults.upsert({
+      where: { userId: user.id },
+      update: defaults,
+      create: { userId: user.id, ...defaults },
+    });
+  }
+
   revalidateQuestPaths(proof.questId);
+  revalidatePath("/weekly");
+  revalidatePath("/monthly");
+  revalidatePath("/submissions");
   return { ok: true };
 }
 

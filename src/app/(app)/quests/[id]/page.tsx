@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { SubmitProofButton } from "@/components/app/submit-proof";
 import { Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
+import { GettingThere } from "@/components/app/getting-there";
 import { QuestSheet } from "@/components/app/quest-sheet";
 import { Eyebrow, IconShield, Panel, PanelHead, QuestArt, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
@@ -120,6 +121,10 @@ export default async function QuestPage({ params }: Params) {
                 )}
               </div>
             </Panel>
+          </Reveal>
+
+          <Reveal delay={stagger(2)}>
+            <GettingThere quest={quest} />
           </Reveal>
 
           {quest.terrain.length > 0 && (
