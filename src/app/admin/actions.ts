@@ -456,3 +456,121 @@ export async function unscheduleAction(id: string): Promise<AdminResult> {
   revalidatePath("/admin/schedule");
   return { ok: true, message: `${existing.slotKey} cleared.` };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Reads for the map                                                           */
+/* -------------------------------------------------------------------------- */
+
+export type PlaceQuest = {
+  id: string;
+  title: string;
+  subtitle: string;
+  objective: string;
+  difficulty: string;
+  distance: number;
+  elevationGain: number;
+  duration: number;
+  published: boolean;
+  category: string | null;
+  coverImage: string | null;
+  issued: number;
+  completed: number;
+  submissions: {
+    id: string;
+    author: string;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    note: string;
+    photos: string[];
+    distance: number | null;
+    elevation: number | null;
+    createdAt: string;
+  }[];
+};
+
+export type PlaceDetail = {
+  location: string;
+  region: string;
+  country: string;
+  quests: PlaceQuest[];
+};
+
+/**
+ * Everything about one place, for the map's detail sheet.
+ *
+ * Fetched on demand rather than shipped with the map: a panel that carries
+ * every quest and every submission for two hundred places would dwarf the
+ * geometry it sits next to, and almost none of it is ever opened.
+ */
+export async function getPlaceDetailAction(location: string): Promise<PlaceDetail | null> {
+  await requireAdmin();
+
+  const quests = await db.quest.findMany({
+    where: { location },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      title: true,
+      subtitle: true,
+      objective: true,
+      difficulty: true,
+      distance: true,
+      elevationGain: true,
+      duration: true,
+      published: true,
+      category: true,
+      coverImage: true,
+      region: true,
+      country: true,
+      _count: { select: { history: true } },
+      history: { where: { completed: true }, select: { id: true } },
+      submissions: {
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          status: true,
+          note: true,
+          photos: true,
+          distance: true,
+          elevation: true,
+          createdAt: true,
+          user: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  if (quests.length === 0) return null;
+
+  return {
+    location,
+    region: quests[0].region,
+    country: quests[0].country,
+    quests: quests.map((quest) => ({
+      id: quest.id,
+      title: quest.title,
+      subtitle: quest.subtitle,
+      objective: quest.objective,
+      difficulty: quest.difficulty,
+      distance: quest.distance,
+      elevationGain: quest.elevationGain,
+      duration: quest.duration,
+      published: quest.published,
+      category: quest.category,
+      coverImage: quest.coverImage || null,
+      issued: quest._count.history,
+      completed: quest.history.length,
+      submissions: quest.submissions.map((s) => ({
+        id: s.id,
+        author: s.user.name,
+        status: s.status,
+        note: s.note,
+        photos: s.photos,
+        distance: s.distance,
+        elevation: s.elevation,
+        createdAt: s.createdAt.toISOString(),
+      })),
+    })),
+  };
+}

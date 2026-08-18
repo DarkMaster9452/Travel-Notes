@@ -4566,7 +4566,11 @@ a.plan-mark:hover {
 .world-map-land path {
   fill: var(--paper-2);
   stroke: var(--line);
-  stroke-width: 0.6;
+  /* Measured in screen pixels rather than user units. Without this the
+     border scales with the viewBox, so at 200× a hairline coastline became a
+     100px white band across the map. */
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
 }
 .world-map-pin {
   cursor: pointer;
@@ -4583,7 +4587,11 @@ a.plan-mark:hover {
 .world-map-pin-dot {
   fill: var(--moss-2);
   stroke: var(--card);
+  /* Screen pixels, like the coastline. In user units this 1.5 became a ~330px
+     halo once the map was zoomed to 200×, which is what turned a field of
+     pins into a field of enormous pale rings. */
   stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
   transition:
     fill 0.2s var(--ease-field),
     transform 0.2s var(--ease-field);
@@ -4759,13 +4767,18 @@ a.plan-mark:hover {
   max-height: 240px;
   overflow-y: auto;
 }
-.world-map-picker-list a {
+.world-map-picker-list button {
   display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
   padding: 7px 8px;
   border-radius: 8px;
   transition: background 0.15s var(--ease-field);
 }
-.world-map-picker-list a:hover {
+.world-map-picker-list button:hover {
   background: var(--paper-2);
 }
 .world-map-picker-list b {
@@ -5368,4 +5381,153 @@ select.input {
 .plan-dates b {
   color: var(--ink);
   font-weight: 600;
+}
+
+/* The current zoom, so "how far in am I" is answerable without guessing. */
+.world-map-scale {
+  position: absolute;
+  left: 30px;
+  bottom: 22px;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   The place sheet
+
+   Opened from a map pin: every quest set at that place, and what people have
+   filed against each one. Deliberately a reading surface — nothing here is
+   editable, because a panel you can accidentally change while browsing a map
+   is a panel you stop trusting.
+--------------------------------------------------------------------------- */
+.place-sheet {
+  max-width: 720px;
+  width: min(720px, calc(100vw - 32px));
+}
+.place-quests {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+  margin-top: 14px;
+  padding-right: 4px;
+}
+.place-quest {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 15px 16px;
+  background: var(--card);
+}
+.place-quest > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.place-quest > header b {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.place-quest > header span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.place-quest-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.place-quest-cover {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: 12px;
+  border: 1px solid var(--line-2);
+}
+.place-quest-objective {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.place-quest-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 12px 0 0;
+}
+.place-quest-figures div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.place-quest-figures dt {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.place-quest-figures dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.place-subs {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.place-sub {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--glass);
+  border: 1px solid var(--line-2);
+}
+.place-sub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.place-sub-head b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.place-sub p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.place-sub-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
 }
