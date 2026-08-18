@@ -5928,3 +5928,103 @@ select.input {
   border-color: var(--moss);
   color: var(--ink);
 }
+
+/* ---------------------------------------------------------------------------
+   The quest mark
+
+   An engraved landscape generated from the quest's id — see
+   `lib/quest/art.ts`. It is texture, never content: inside a card it sits
+   behind the type at an opacity chosen so the objective is still the first
+   thing read, and the card's own background is what it is drawn onto rather
+   than a second surface.
+
+   Tone drives `currentColor`, so every stroke and fill in the drawing takes
+   its colour from one declaration and the SVG itself never names a colour.
+--------------------------------------------------------------------------- */
+.quest-art {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.quest-art[data-tone="pine"] {
+  color: var(--pine);
+}
+.quest-art[data-tone="moss"] {
+  color: #4d7a4f;
+}
+.quest-art[data-tone="stone"] {
+  color: #52646f;
+}
+.quest-art[data-tone="water"] {
+  color: #2b6f7c;
+}
+.quest-art[data-tone="clay"] {
+  color: #86644a;
+}
+.quest-art[data-tone="dusk"] {
+  color: #5a5578;
+}
+.quest-art-ridge {
+  fill: currentColor;
+  stroke: none;
+}
+.quest-art-crest {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+  /* The viewBox is scaled hard by `slice`, and a stroke in user units would
+     scale with it. Same lesson as the admin world map. */
+  vector-effect: non-scaling-stroke;
+  opacity: 0.5;
+}
+.quest-art-disc {
+  fill: currentColor;
+  opacity: 0.28;
+}
+.quest-art-mark {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0.4;
+}
+
+/* Inside a card: a horizon behind the header, fading out before the body so
+   the type never sits on a busy patch. */
+.quest-art.quest-art-mark {
+  height: 132px;
+  opacity: 0.9;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+}
+.quest-card.has-art {
+  position: relative;
+  overflow: hidden;
+}
+.quest-card.has-art > .qc-head,
+.quest-card.has-art > .qc-body,
+.quest-card.has-art > .qc-foot {
+  position: relative;
+  z-index: 1;
+}
+
+/* The full-width version, where a quest has no photograph. Taller, louder,
+   and framed like the cover image it stands in for — without pretending to
+   be a picture of anywhere. */
+.quest-art.quest-art-band {
+  position: relative;
+  height: 170px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  opacity: 0.95;
+}
+
+@media (max-width: 640px) {
+  .quest-art.quest-art-band {
+    height: 130px;
+  }
+}

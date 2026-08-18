@@ -44,6 +44,7 @@ export {
   type IconProps,
 } from "./icons";
 export { Modal } from "./modal";
+export { QuestArt } from "./quest-art";
 export { Eyebrow, Panel, PanelHead } from "./panel";
 export { Pill, PillGroup } from "./pill";
 export {
