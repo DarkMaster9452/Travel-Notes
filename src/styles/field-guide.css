@@ -5733,3 +5733,83 @@ select.input {
 .sub-confirm b {
   color: var(--ink);
 }
+
+/* The account sheet in the panel: the stickers, and what can be done to them. */
+.admin-stickers {
+  padding: 6px 20px 14px;
+}
+.admin-sticker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 440px;
+  overflow-y: auto;
+}
+/* The sticker itself, shrunk to a row chip. The sheet's own sizing comes
+   from its grid, so it has to be overridden rather than inherited here. */
+.admin-sticker-list .admin-sticker-chip {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  margin: 0;
+  transform: none;
+  font-size: 5px;
+}
+.admin-sticker-list .admin-sticker-chip svg {
+  width: 15px;
+  height: 15px;
+}
+.admin-sticker-list .admin-sticker-chip:hover {
+  transform: none;
+}
+.admin-sticker-who {
+  flex: 1;
+  min-width: 0;
+}
+.admin-sticker-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border-bottom: 1px solid var(--line-2);
+}
+.admin-sticker-list li:last-child {
+  border-bottom: 0;
+}
+.admin-sticker-list li:hover {
+  background: var(--glass);
+}
+.admin-sticker-who b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.admin-sticker-who em {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-top: 1px;
+}
+.admin-sticker-empty {
+  justify-content: flex-start;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+/* The photograph attached to a quest, above its sheet. */
+.quest-cover {
+  width: 100%;
+  height: clamp(180px, 26vw, 320px);
+  object-fit: cover;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+  box-shadow: var(--shadow-field);
+}

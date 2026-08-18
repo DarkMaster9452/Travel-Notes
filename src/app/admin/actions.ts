@@ -229,6 +229,7 @@ const questSchema = z.object({
   duration: z.coerce.number().int().min(10).max(10080),
   difficulty: z.enum(["EASY", "MODERATE", "HARD", "EXPERT"]),
   published: z.coerce.boolean().optional(),
+  coverImage: z.string().trim().url("That needs to be a full https:// link.").max(500).optional().or(z.literal("")),
 });
 
 export type QuestFormState =
@@ -282,7 +283,7 @@ export async function createQuestAction(
       elevationGain: q.elevationGain,
       duration: q.duration,
       difficulty: q.difficulty,
-      coverImage: "",
+      coverImage: q.coverImage || "",
       signature,
       isShowcase: true,
       published: q.published ?? true,
@@ -590,4 +591,71 @@ export async function getPlaceDetailAction(location: string): Promise<PlaceDetai
       })),
     })),
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Stickers                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Take a sticker back from an account.
+ *
+ * Achievements are derived from quest history, so there is nothing to delete —
+ * this records an exception the sheet checks. Usually needed because the
+ * history behind the badge turned out to be wrong (a submission approved by
+ * mistake, since reversed), and the badge would otherwise stand on evidence
+ * that no longer exists.
+ */
+export async function revokeStickerAction(
+  userId: string,
+  achievementId: string,
+  reason?: string,
+): Promise<AdminResult> {
+  const admin = await requireAdmin();
+
+  const parsed = z
+    .object({
+      userId: z.string().trim().min(1).max(60),
+      achievementId: z.string().trim().min(1).max(60),
+      reason: z.string().trim().max(300).optional(),
+    })
+    .safeParse({ userId, achievementId, reason });
+  if (!parsed.success) return { ok: false, message: "Those values don't look right." };
+
+  await db.achievementRevocation.upsert({
+    where: {
+      userId_achievementId: {
+        userId: parsed.data.userId,
+        achievementId: parsed.data.achievementId,
+      },
+    },
+    update: { reason: parsed.data.reason || null, revokedById: admin.id },
+    create: {
+      userId: parsed.data.userId,
+      achievementId: parsed.data.achievementId,
+      reason: parsed.data.reason || null,
+      revokedById: admin.id,
+    },
+  });
+
+  revalidatePath(`/admin/users/${parsed.data.userId}`);
+  revalidatePath("/achievements");
+  return { ok: true, message: "Sticker withdrawn." };
+}
+
+/** Give it back. Deleting the exception is all it takes — the sheet
+ *  recomputes from history the moment the revocation is gone. */
+export async function restoreStickerAction(
+  userId: string,
+  achievementId: string,
+): Promise<AdminResult> {
+  await requireAdmin();
+
+  await db.achievementRevocation
+    .delete({ where: { userId_achievementId: { userId, achievementId } } })
+    .catch(() => undefined);
+
+  revalidatePath(`/admin/users/${userId}`);
+  revalidatePath("/achievements");
+  return { ok: true, message: "Sticker restored." };
 }

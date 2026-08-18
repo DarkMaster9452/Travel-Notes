@@ -34,6 +34,9 @@ export type Achievement = {
   planLocked: boolean;
   /** The lowest plan that can hold this sticker. */
   requiredPlan: PlanId;
+  /** Taken back by an admin. Distinct again from both other locked states:
+   *  the work was done and the plan reaches it, but it has been withdrawn. */
+  revoked: boolean;
 };
 
 type Definition = {
@@ -324,17 +327,24 @@ function requiredPlanFor(index: number): PlanId {
  * the sheet is meant to be seen in full, with the unreachable ones blurred.
  * Callers that need only the reachable slice can filter on `planLocked`.
  */
-export function getAchievements(stats: UserStats, plan: PlanId = "ultra"): Achievement[] {
+export function getAchievements(
+  stats: UserStats,
+  plan: PlanId = "ultra",
+  /** Achievement ids an admin has taken back from this account. */
+  revokedIds: readonly string[] = [],
+): Achievement[] {
   const allowance = stickerAllowance(plan);
+  const revokedSet = new Set(revokedIds);
 
   return DEFINITIONS.map((definition, index) => {
     const value = definition.value(stats);
     const planLocked = index >= allowance;
+    const revoked = revokedSet.has(definition.id);
     // A sticker beyond the plan is never "earned", however far along the
     // underlying stat is — otherwise upgrading would hand over a fistful of
     // stickers the account was quietly holding all along, and the count on
     // the free sheet would be describing work the account can't collect.
-    const earned = !planLocked && value >= definition.target;
+    const earned = !planLocked && !revoked && value >= definition.target;
     const unit = definition.unit ? ` ${definition.unit}` : "";
 
     return {
@@ -344,11 +354,14 @@ export function getAchievements(stats: UserStats, plan: PlanId = "ultra"): Achie
       sticker: definition.sticker,
       progress: Math.min(1, definition.target === 0 ? 1 : value / definition.target),
       earned,
-      progressLabel: earned
-        ? "Earned"
-        : `${Math.min(value, definition.target)}${unit} / ${definition.target}${unit}`,
+      progressLabel: revoked
+        ? "Withdrawn"
+        : earned
+          ? "Earned"
+          : `${Math.min(value, definition.target)}${unit} / ${definition.target}${unit}`,
       planLocked,
       requiredPlan: requiredPlanFor(index),
+      revoked,
     };
   });
 }

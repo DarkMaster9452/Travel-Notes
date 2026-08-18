@@ -57,6 +57,8 @@ model User {
   history      QuestHistory[]
   savedQuests  SavedQuest[]
   scheduled    QuestSchedule[]   @relation("ScheduleAuthor")
+  revocations  AchievementRevocation[] @relation("RevocationSubject")
+  revoked      AchievementRevocation[] @relation("RevocationAuthor")
 
   @@map("users")
 }
@@ -378,6 +380,35 @@ model Submission {
   @@unique([userId, questId])
   @@index([status, createdAt])
   @@map("submissions")
+}
+
+/// A sticker taken back from an account.
+///
+/// Achievements are *derived* — a pure function of quest history — so there is
+/// no row to delete when an admin needs to remove one. This is that row: an
+/// explicit revocation, checked when the sheet is computed. Storing the
+/// exception rather than the whole sheet keeps the achievement definitions the
+/// single source of truth and means a threshold can still be changed without a
+/// backfill.
+///
+/// Deliberately not reversible by earning it again: the point of taking a
+/// sticker back is usually that the history behind it was wrong, and a badge
+/// that silently returned on the next quest would undo the correction. An
+/// admin lifts it by deleting the revocation.
+model AchievementRevocation {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  /// Matches `Achievement["id"]` in `lib/achievements`.
+  achievementId String   @map("achievement_id")
+  reason        String?
+  revokedById   String?  @map("revoked_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user      User  @relation("RevocationSubject", fields: [userId], references: [id], onDelete: Cascade)
+  revokedBy User? @relation("RevocationAuthor", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, achievementId])
+  @@map("achievement_revocations")
 }
 
 model SavedQuest {

@@ -59,6 +59,22 @@ export default async function QuestPage({ params }: Params) {
         {record.owned && <SubmitProofButton questId={quest.id} status={proofStatus} />}
       </Reveal>
 
+      {/* The one photograph an admin attached to this quest. Optional by
+          design — a quest without one is still a quest, and a broken image
+          box would be worse than no image at all. */}
+      {record.quest.coverImage && (
+        <Reveal className="mb-5">
+          {/* eslint-disable-next-line @next/next/no-img-element -- an arbitrary
+              remote host an admin pasted; not a build-time known domain. */}
+          <img
+            src={record.quest.coverImage}
+            alt=""
+            className="quest-cover"
+            loading="lazy"
+          />
+        </Reveal>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <Reveal delay={stagger(0)}>
           <QuestSheet
