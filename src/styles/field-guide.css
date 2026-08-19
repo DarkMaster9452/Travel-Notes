@@ -611,8 +611,8 @@ textarea.input {
   opacity: 0.6;
 }
 
-/* Avatar. Three colour variants, initials only — there are no photos and no
-   browsable profiles in this product. */
+/* Avatar. Three colour variants, initials only. Nobody uploads a picture of
+   themselves anywhere in this product, published profiles included. */
 .av {
   width: 44px;
   height: 44px;
@@ -6300,4 +6300,427 @@ select.input {
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Public profiles
+
+   A page about a person, for the people they might walk with. It borrows the
+   quest mark for its banner — same generator, seeded from the handle — so
+   nobody has to upload anything for their page to be recognisable, and the
+   accent they pick is the ink it is drawn in.
+--------------------------------------------------------------------------- */
+.profile-banner {
+  position: relative;
+  margin-bottom: 22px;
+  --accent: var(--pine);
+}
+.profile-banner[data-accent="moss"],
+.person-card[data-accent="moss"] {
+  --accent: #4d7a4f;
+}
+.profile-banner[data-accent="stone"],
+.person-card[data-accent="stone"] {
+  --accent: #52646f;
+}
+.profile-banner[data-accent="water"],
+.person-card[data-accent="water"] {
+  --accent: #2b6f7c;
+}
+.profile-banner[data-accent="clay"],
+.person-card[data-accent="clay"] {
+  --accent: #86644a;
+}
+.profile-banner[data-accent="dusk"],
+.person-card[data-accent="dusk"] {
+  --accent: #5a5578;
+}
+.profile-banner[data-accent="signal"],
+.person-card[data-accent="signal"] {
+  --accent: var(--signal);
+}
+
+.profile-band.quest-art-band {
+  height: 150px;
+  color: var(--accent) !important;
+}
+.profile-identity {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  /* Lifted over the band so the avatar breaks the edge — the one place in the
+     product where an element is allowed to sit across a boundary. */
+  margin-top: -34px;
+  padding: 0 22px;
+  position: relative;
+  z-index: 1;
+}
+/* The avatar takes the accent rather than its name-derived colour. On a page
+   whose whole visual identity is one chosen colour, an avatar picking its own
+   is the one element that looks like it wandered in from another design. */
+.profile-avatar.av,
+.person-avatar.av {
+  background: var(--accent);
+  color: #f4f7f0;
+}
+.profile-avatar.av {
+  width: 78px;
+  height: 78px;
+  flex: 0 0 78px;
+  border-radius: 20px;
+  font-size: 25px;
+  border: 4px solid var(--paper);
+  box-shadow: var(--shadow-lg);
+}
+.profile-identity h1 {
+  font-family: var(--serif);
+  font-size: clamp(26px, 3.4vw, 34px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.profile-headline {
+  margin-top: 4px;
+  font-size: 15.5px;
+  color: var(--ink-2);
+}
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.profile-edit {
+  margin-left: auto;
+  margin-bottom: 4px;
+}
+
+.profile-bio {
+  padding: 18px 20px;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--ink-2);
+  white-space: pre-line;
+}
+
+.profile-socials {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.profile-socials a {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px dashed var(--line-2);
+  transition: background 0.16s ease;
+}
+.profile-socials li:last-child a {
+  border-bottom: 0;
+}
+.profile-socials a:hover {
+  background: var(--paper-2);
+}
+.profile-socials span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.profile-socials b {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--accent, var(--pine));
+}
+
+.profile-stickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 18px 20px;
+  margin: 0;
+}
+
+/* --------------------------------- the feed ------------------------------ */
+
+.feed-item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px 20px 20px;
+  box-shadow: var(--shadow);
+}
+.feed-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.feed-art.quest-art {
+  position: relative;
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+}
+.feed-head-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.feed-when {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.feed-head-body h3 {
+  margin-top: 3px;
+  font-family: var(--serif);
+  font-size: 20px;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.feed-head-body h3 a:hover {
+  color: var(--moss-2);
+}
+.feed-where {
+  margin-top: 3px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.feed-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  list-style: none;
+  padding: 14px 0 0;
+  margin: 14px 0 0;
+  border-top: 1px dashed var(--line-2);
+}
+.feed-figures li {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.feed-figures b {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.feed-figures span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.feed-note {
+  margin-top: 14px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  white-space: pre-line;
+}
+.feed-photos {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+/* One photograph gets the room; the rest are evidence and sit under it. */
+.feed-photos.count-1 {
+  grid-template-columns: 1fr;
+}
+.feed-photos.count-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.feed-photos.count-3,
+.feed-photos.count-4 {
+  grid-template-columns: 1fr 1fr;
+}
+.feed-photos.count-3 img:first-child,
+.feed-photos.count-4 img:first-child {
+  grid-column: 1 / -1;
+}
+.feed-photos img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--paper-2);
+  display: block;
+}
+.feed-photos.count-1 img,
+.feed-photos.count-3 img:first-child,
+.feed-photos.count-4 img:first-child {
+  aspect-ratio: 16 / 10;
+}
+
+/* ------------------------------ the directory ---------------------------- */
+
+.people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.person-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 18px 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1), border-color 0.18s ease;
+  --accent: var(--pine);
+}
+.person-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+.person-band.quest-art-band {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 84px;
+  border: 0;
+  border-radius: 0;
+  color: var(--accent) !important;
+}
+.person-avatar.av {
+  position: relative;
+  margin-top: 54px;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 15px;
+  font-size: 17px;
+  border: 3px solid var(--card);
+}
+.person-card b {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.person-card em {
+  margin-top: 3px;
+  font-style: normal;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.person-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.person-foot i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ------------------------------- the editor ------------------------------ */
+
+.handle-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.handle-field > span {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.handle-field .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.accent-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  border: 0;
+  padding: 0;
+}
+.accent-row legend {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.accent-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  --accent: var(--pine);
+}
+.accent-row label span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: block;
+}
+.accent-row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.accent-row label:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.accent-row label[data-accent="moss"] {
+  --accent: #4d7a4f;
+}
+.accent-row label[data-accent="stone"] {
+  --accent: #52646f;
+}
+.accent-row label[data-accent="water"] {
+  --accent: #2b6f7c;
+}
+.accent-row label[data-accent="clay"] {
+  --accent: #86644a;
+}
+.accent-row label[data-accent="dusk"] {
+  --accent: #5a5578;
+}
+.accent-row label[data-accent="signal"] {
+  --accent: var(--signal);
 }

@@ -22,9 +22,9 @@ export function avatarVariant(seed: string): AvatarVariant {
 /**
  * Reduce a name to initials.
  *
- * The product shows first names and initials only — never a full surname, no
- * photographs, no browsable profiles — so this is the whole of a person's
- * visual identity and it lives in one function.
+ * The product shows first names and initials only — never a full surname and
+ * never an uploaded photograph, even on a published profile — so this is the
+ * whole of a person's visual identity and it lives in one function.
  */
 export function initialsFrom(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);

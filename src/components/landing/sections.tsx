@@ -287,8 +287,8 @@ export function TogetherSection() {
           <div className="safety">
             <IconShield />
             <p>
-              <b>How we keep it sane:</b> first names only, no addresses, no profiles to browse.
-              Either of you can unmatch, block or report without explaining.
+              <b>How we keep it sane:</b> first names only, no addresses, and a page only if you
+              publish one. Either of you can unmatch, block or report without explaining.
             </p>
           </div>
         </div>

@@ -27,6 +27,7 @@ function nav(awaiting: number): readonly NavItem[] {
     { href: "/submissions", label: "Submissions", icon: "inbox", badge: awaiting },
     { href: "/history", label: "History", icon: "book" },
     { href: "/achievements", label: "Stickers", icon: "badge" },
+    { href: "/people", label: "People", icon: "users" },
 
     { section: "Account", href: "/profile", label: "Settings", icon: "gear" },
     { href: "/upgrade", label: "Plan", icon: "sparkle" },

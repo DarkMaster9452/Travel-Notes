@@ -55,6 +55,7 @@ model User {
 
   preferences  UserPreferences?
   logDefaults  UserLogDefaults?
+  profile      Profile?
   submissions  Submission[]            @relation("SubmissionAuthor")
   reviewed     Submission[]            @relation("SubmissionReviewer")
   subscription Subscription?
@@ -441,6 +442,72 @@ model UserLogDefaults {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_log_defaults")
+}
+
+/// The ink a profile is printed in. A short list on purpose: somebody should
+/// be recognisable by their colour, which stops working at twenty of them.
+enum ProfileAccent {
+  PINE
+  MOSS
+  STONE
+  WATER
+  CLAY
+  DUSK
+  SIGNAL
+}
+
+/// A page about a person, for the people they might walk with.
+///
+/// Off by default and off until they say otherwise. `published` is the whole
+/// privacy model: an unpublished profile is visible to its owner and to nobody
+/// else, and un-publishing takes it away again immediately rather than
+/// scheduling a deletion. Even published, it is only visible to signed-in
+/// accounts — this is a members' product and a page meant for the person you
+/// are about to meet at a trailhead has no business being indexed.
+///
+/// Every field on it is optional and every section can be switched off. What
+/// somebody chooses not to fill in is simply absent from the page, never shown
+/// as a blank or a prompt to the reader: an empty profile should read as
+/// private rather than as unfinished.
+///
+/// Deliberately not on `User`. The account is the thing that signs in and gets
+/// billed; this is a thing they publish, and the two have different lifetimes,
+/// different privacy rules and different people looking at them.
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  /// The bit after `/people/`. Theirs to choose, unique across the product.
+  handle    String  @unique
+  published Boolean @default(false)
+
+  /// What to call them here, if not the name on the account.
+  displayName String? @map("display_name")
+  /// One line, under the name. "Weekend ridges and cold water."
+  headline    String?
+  bio         String?
+
+  /// Handles, not URLs — the URL is built when it is rendered, so nothing
+  /// somebody pastes can turn into a link to somewhere else entirely.
+  instagram String?
+  facebook  String?
+  strava    String?
+
+  accent ProfileAccent @default(PINE)
+
+  /// What the page shows. Each one is a real switch, not a hint.
+  showStats      Boolean @default(true) @map("show_stats")
+  showCountry    Boolean @default(true) @map("show_country")
+  showActivities Boolean @default(true) @map("show_activities")
+  showStickers   Boolean @default(true) @map("show_stickers")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([published])
+  @@map("profiles")
 }
 
 /// A sticker taken back from an account.

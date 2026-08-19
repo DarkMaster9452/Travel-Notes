@@ -53,7 +53,15 @@ export default function SafetyPage() {
           Partner matching is off by default and is per-account opt-in. You are matched on the quest
           rather than on a profile — same range, same morning, similar pace. You see a first name, a
           rough distance and how many quests someone has logged; nothing is exchanged until you have
-          both accepted. There are no profiles to browse.
+          both accepted.
+        </p>
+        <p>
+          You can also publish a page about yourself, and that is the only way anybody browses
+          anybody here. It is off until you switch it on, off again the instant you switch it back,
+          visible to signed-in accounts only, and kept out of search engines. What goes on it —
+          your figures, your logs, the photographs you filed, your country, links to your accounts
+          elsewhere — is a set of switches you hold. Anything you leave off is not fetched at all,
+          not merely hidden.
         </p>
         <p>
           Either side can unmatch, block or report at any point, without giving a reason. Blocks work

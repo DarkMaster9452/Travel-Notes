@@ -88,6 +88,9 @@ export default async function AccountDetailPage({
       freeQuestsUsed: true,
       createdAt: true,
       subscription: { select: { plan: true, status: true, cancelAtPeriodEnd: true } },
+      // So a moderator can see what this account is showing the world without
+      // having to guess the handle.
+      profile: { select: { handle: true, published: true } },
       // What they have chosen to have remembered between logs. Read-only from
       // here: it is theirs, an admin needs to see it to make sense of a
       // submission, and nothing is served by letting one edit it.
@@ -266,6 +269,11 @@ export default async function AccountDetailPage({
             {user.subscription?.cancelAtPeriodEnd && <Tag tone="warm">Cancelling</Tag>}
             {user.role === "ADMIN" && <Tag tone="warm">Admin</Tag>}
           </div>
+          {user.profile?.published && (
+            <Link href={`/people/${user.profile.handle}`} className="meta underline">
+              /people/{user.profile.handle}
+            </Link>
+          )}
           <span className="meta ml-auto">Joined {formatDate(user.createdAt)}</span>
           <span className="meta">{user._count.history} issued</span>
           <span className="meta">{user._count.submissions} filed</span>
