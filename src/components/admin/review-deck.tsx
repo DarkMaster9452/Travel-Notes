@@ -1,5 +1,6 @@
 "use client";
 
+import { animate, utils } from "animejs";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -15,6 +16,8 @@ import {
   Tag,
   useToast,
 } from "@/components/field";
+import { unstyle, usePrefersReducedMotion } from "@/components/motion/anime";
+import { EASE_FIELD } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { formatRelativeDate } from "@/lib/utils";
 
@@ -28,6 +31,12 @@ import { formatRelativeDate } from "@/lib/utils";
  *
  * Three ways to answer the same question, because reviewing fifty of these by
  * mouse is miserable: drag the card, press the buttons, or use the arrow keys.
+ *
+ * The two moments that are not a drag are animated with anime.js, because both
+ * are about weight: a card released short of the commit line springs back into
+ * the deck rather than gliding back, so an accidental nudge is unmistakably not
+ * a verdict; and the next submission is dealt onto the pile rather than
+ * appearing, so a reviewer can see that the queue moved on.
  */
 
 export type ReviewCard = {
@@ -69,11 +78,63 @@ export function ReviewDeck({ cards }: { cards: ReviewCard[] }) {
   const [browseOpen, setBrowseOpen] = React.useState(false);
 
   const current = queue[0];
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const reduced = usePrefersReducedMotion();
   const dragging = React.useRef(false);
   const startX = React.useRef(0);
   // Mirrors `dragging.current` into render-safe state — a ref can be read in
   // an event handler but not in the JSX below, which runs during render.
   const [isDragging, setIsDragging] = React.useState(false);
+  // True while anime.js is driving the card home, which is also when the CSS
+  // transition has to stay out of the way: two things easing the same transform
+  // is what makes a spring look like a stutter.
+  const [springing, setSpringing] = React.useState(false);
+
+  /** Let go of the card short of a verdict: it springs back into the deck. */
+  const springBack = React.useCallback(
+    (from: number) => {
+      if (reduced || from === 0) {
+        setDrag(0);
+        return;
+      }
+      const held = { x: from };
+      setSpringing(true);
+      animate(held, {
+        x: 0,
+        duration: 620,
+        ease: "outElastic(1, .6)",
+        onUpdate: () => setDrag(held.x),
+        onComplete: () => {
+          setDrag(0);
+          setSpringing(false);
+        },
+      });
+    },
+    [reduced],
+  );
+
+  // Each new submission is dealt onto the pile.
+  React.useEffect(() => {
+    const card = cardRef.current;
+    if (reduced || !card || !current) return;
+
+    // Opacity only, deliberately: this element's `transform` is the drag
+    // position, written on every render from React state, so an animation that
+    // also wrote transform would be overwritten mid-flight by the first render
+    // — and would fight the throw if a reviewer grabbed the card immediately.
+    utils.set(card, { opacity: 0 });
+    const dealt = animate(card, {
+      opacity: [0, 1],
+      duration: 380,
+      ease: EASE_FIELD,
+      onComplete: () => unstyle(card, ["opacity"]),
+    });
+
+    return () => {
+      dealt.pause();
+      unstyle(card, ["opacity"]);
+    };
+  }, [current?.id, current, reduced]);
 
   /** Bring a chosen submission to the front of the queue without losing the rest. */
   const jumpTo = React.useCallback((id: string) => {
@@ -171,10 +232,11 @@ export function ReviewDeck({ cards }: { cards: ReviewCard[] }) {
       {browseList}
 
       <div
+        ref={cardRef}
         className={cn("review-card", leaving && "leaving")}
         style={{
           transform: `translateX(${offset}px) rotate(${offset * 0.04}deg)`,
-          transition: isDragging ? "none" : "transform .24s var(--ease-field)",
+          transition: isDragging || springing ? "none" : "transform .24s var(--ease-field)",
         }}
         onPointerDown={(event) => {
           if (pending) return;
@@ -193,7 +255,7 @@ export function ReviewDeck({ cards }: { cards: ReviewCard[] }) {
           setIsDragging(false);
           if (drag > COMMIT_PX) decide(true);
           else if (drag < -COMMIT_PX) decide(false);
-          else setDrag(0);
+          else springBack(drag);
         }}
       >
         {/* The stamps fade in as the card is thrown, so the verdict is legible

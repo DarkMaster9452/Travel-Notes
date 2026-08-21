@@ -1,4 +1,4 @@
-import { CountUp } from "@/components/app/motion";
+import { CountUp, Stagger } from "@/components/app/motion";
 
 export type StatItem = {
   label: string;
@@ -15,15 +15,21 @@ export type StatItem = {
 /**
  * The row of figures at the top of an admin page.
  *
- * The numbers count up when they arrive because it draws the eye to the one
- * thing that changed since the last look; the deltas do not, because a delta is
- * read once and a moving minus sign is just noise.
+ * The cells are dealt left to right and the numbers count up when they arrive,
+ * because that draws the eye to the one thing that changed since the last look.
+ * The deltas do neither: a delta is read once, and a moving minus sign is just
+ * noise next to a figure that is already moving.
  */
 export function StatGrid({ items }: { items: StatItem[] }) {
   return (
-    <dl className="stat-grid" style={{ ["--stat-columns" as string]: String(items.length) }}>
-      {items.map((item, index) => (
-        <div key={item.label} className="stat-cell" style={{ animationDelay: `${index * 70}ms` }}>
+    <Stagger
+      as="dl"
+      className="stat-grid"
+      select=".stat-cell"
+      style={{ ["--stat-columns" as string]: String(items.length) }}
+    >
+      {items.map((item) => (
+        <div key={item.label} className="stat-cell">
           <dt className="meta">{item.label}</dt>
           <dd>
             <span className="stat-value">
@@ -39,6 +45,6 @@ export function StatGrid({ items }: { items: StatItem[] }) {
           </dd>
         </div>
       ))}
-    </dl>
+    </Stagger>
   );
 }

@@ -19,3 +19,22 @@ export const STAGGER_MS = 70;
 export function stagger(index: number, max = 6): number {
   return Math.min(index, max) * STAGGER_MS;
 }
+
+/**
+ * The house easing, as an anime.js ease string.
+ *
+ * The same curve the stylesheet calls `--ease-field`, so a scripted entrance
+ * and a CSS hover on the same element agree about how this product moves.
+ */
+export const EASE_FIELD = "cubicBezier(.2,.8,.3,1)";
+
+/** A little overshoot. Stamps, stickers, anything that should land physically. */
+export const EASE_BACK = "outBack(1.7)";
+
+/** Entrance durations, in milliseconds. Short enough to never gate a reader. */
+export const DURATION = {
+  micro: 180,
+  quick: 320,
+  base: 560,
+  slow: 760,
+} as const;
