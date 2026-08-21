@@ -88,6 +88,25 @@ export default async function AccountDetailPage({
       freeQuestsUsed: true,
       createdAt: true,
       subscription: { select: { plan: true, status: true, cancelAtPeriodEnd: true } },
+      // So a moderator can see what this account is showing the world without
+      // having to guess the handle.
+      profile: { select: { handle: true, published: true } },
+      // What they have chosen to have remembered between logs. Read-only from
+      // here: it is theirs, an admin needs to see it to make sense of a
+      // submission, and nothing is served by letting one edit it.
+      logDefaults: {
+        select: {
+          stravaProfile: true,
+          usualStart: true,
+          partySize: true,
+          gear: true,
+          pace: true,
+          lastDistance: true,
+          lastElevation: true,
+          lastMovingTime: true,
+          updatedAt: true,
+        },
+      },
       _count: { select: { sessions: true, history: true, submissions: true } },
     },
   });
@@ -201,6 +220,25 @@ export default async function AccountDetailPage({
     revocations.map((row) => row.achievementId),
   );
 
+  // Their saved logging details, as a plain list. Anything they have not
+  // filled in is simply absent rather than shown as a blank row.
+  const defaults = user.logDefaults;
+  const saved: { label: string; value: string }[] = [];
+  if (defaults) {
+    if (defaults.usualStart) saved.push({ label: "Usual start", value: defaults.usualStart });
+    if (defaults.partySize != null)
+      saved.push({ label: "Party", value: `${defaults.partySize} ${defaults.partySize === 1 ? "person" : "people"}` });
+    if (defaults.pace != null) saved.push({ label: "Pace", value: `${defaults.pace} min/km` });
+    if (defaults.gear) saved.push({ label: "Carries", value: defaults.gear });
+    if (defaults.stravaProfile) saved.push({ label: "Strava", value: defaults.stravaProfile });
+    if (defaults.lastDistance != null)
+      saved.push({ label: "Last distance", value: `${defaults.lastDistance.toFixed(1)} km` });
+    if (defaults.lastElevation != null)
+      saved.push({ label: "Last ascent", value: `${defaults.lastElevation} m` });
+    if (defaults.lastMovingTime != null)
+      saved.push({ label: "Last moving time", value: `${defaults.lastMovingTime} min` });
+  }
+
   const isSelf = user.id === admin.id;
   const isLastAdmin = user.role === "ADMIN" && adminCount <= 1;
   const canDelete = !isSelf && !isLastAdmin;
@@ -231,6 +269,11 @@ export default async function AccountDetailPage({
             {user.subscription?.cancelAtPeriodEnd && <Tag tone="warm">Cancelling</Tag>}
             {user.role === "ADMIN" && <Tag tone="warm">Admin</Tag>}
           </div>
+          {user.profile?.published && (
+            <Link href={`/people/${user.profile.handle}`} className="meta underline">
+              /people/{user.profile.handle}
+            </Link>
+          )}
           <span className="meta ml-auto">Joined {formatDate(user.createdAt)}</span>
           <span className="meta">{user._count.history} issued</span>
           <span className="meta">{user._count.submissions} filed</span>
@@ -258,6 +301,29 @@ export default async function AccountDetailPage({
           ]}
         />
       </Reveal>
+
+      {saved.length > 0 && (
+        <Reveal delay={stagger(1)} className="mb-5">
+          <Panel flush>
+            <PanelHead
+              title="What they log with"
+              aside={
+                user.logDefaults?.updatedAt ? (
+                  <Tag tone="ghost">Saved {formatDate(user.logDefaults.updatedAt)}</Tag>
+                ) : undefined
+              }
+            />
+            <ul className="quest-facts">
+              {saved.map((entry) => (
+                <li key={entry.label}>
+                  <span>{entry.label}</span>
+                  <b>{entry.value}</b>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </Reveal>
+      )}
 
       <Reveal delay={stagger(1)} className="mb-5">
         <Panel flush>

@@ -33,6 +33,12 @@ export type QuestCardProps = {
   footRight?: React.ReactNode;
   /** Party block, actions, proof state — anything below the bonus. */
   children?: React.ReactNode;
+  /**
+   * The quest's own engraved landscape, behind the type. Optional because a
+   * card is also used for samples and locked states that are not a quest
+   * anybody holds, and those should not wear somebody's mark.
+   */
+  art?: React.ReactNode;
   className?: string;
   /** Set while a value is being rolled, to soften the type mid-animation. */
   rolling?: boolean;
@@ -51,6 +57,7 @@ export function QuestCard({
   footLeft,
   footRight,
   children,
+  art,
   className,
   rolling,
 }: QuestCardProps) {
@@ -58,7 +65,8 @@ export function QuestCard({
     headerAside ?? (difficulty ? <DifficultyTag difficulty={difficulty} /> : null);
 
   return (
-    <article className={cn("quest-card", rolling && "rolling", className)}>
+    <article className={cn("quest-card", art && "has-art", rolling && "rolling", className)}>
+      {art}
       <div className="qc-head">
         <span className="qc-id">{documentId}</span>
         {aside}

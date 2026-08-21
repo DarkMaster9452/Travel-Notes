@@ -429,9 +429,21 @@ export function generateQuest(options: GenerateOptions): GenerationResult {
   // Walk the ranked candidates. A candidate whose signature the user has
   // already seen is skipped rather than reshaped, so a "repeat" costs one
   // cheap iteration instead of a whole regeneration.
+  //
+  // No candidate is ever accepted with a signature this account has already
+  // been given. The loop used to give up on that rule after twenty tries and
+  // hand back a repeat rather than fail; it no longer does, because "you
+  // never get the same quest twice" is a promise and a promise with an
+  // escape hatch is a preference. Running out is a real outcome, reported as
+  // one, and the caller answers it by trying somewhere else.
   const shortlist = scored.slice(0, Math.min(12, scored.length));
 
-  for (let i = 0; i < 24; i++) {
+  // Each iteration redraws the route and the primary feature from the same
+  // stream, so a pinned location keeps producing different shapes; it just
+  // needs more turns of the wheel than a field of twelve does.
+  const rounds = options.locationId ? 64 : 32;
+
+  for (let i = 0; i < rounds; i++) {
     attempts++;
     const candidate =
       i < 3
@@ -453,7 +465,7 @@ export function generateQuest(options: GenerateOptions): GenerationResult {
       ].join("|"),
     );
 
-    if (usedSignatures.has(signature) && i < 20) {
+    if (usedSignatures.has(signature)) {
       collisions.push(signature);
       continue;
     }
@@ -538,13 +550,25 @@ export function generateQuest(options: GenerateOptions): GenerationResult {
     };
   }
 
-  // Unreachable in practice: the loop always returns by iteration 20.
-  throw new QuestGenerationError("Could not assemble a quest that you haven't already been given.");
+  // Every shape this location can take is already in this account's history.
+  // Reachable, and increasingly likely the longer somebody stays: the caller
+  // is expected to move on to the next place rather than treat it as a fault.
+  throw new QuestGenerationError(
+    "Every quest this place can offer is already in your history.",
+    "exhausted",
+  );
 }
 
 export class QuestGenerationError extends Error {
-  constructor(message: string) {
+  /**
+   * `exhausted` means the location has nothing new left for this account —
+   * an ordinary end state, not a bug. Anything else is a genuine failure.
+   */
+  readonly code: "exhausted" | "invalid";
+
+  constructor(message: string, code: "exhausted" | "invalid" = "invalid") {
     super(message);
     this.name = "QuestGenerationError";
+    this.code = code;
   }
 }

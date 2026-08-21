@@ -35,9 +35,16 @@ function revalidateQuestPaths(questId?: string) {
 /**
  * Issue a quest.
  *
- * Somewhere the account has not been sent is preferred — that is the promise
- * the landing page makes, and it is why accounts exist — but someone who has
- * worked through the whole catalogue still gets a quest rather than an error.
+ * No account is ever sent the same quest twice. The engine enforces that on
+ * the signature — the place, the shape and the timing together — and refuses
+ * rather than repeating; this side of it only decides the order in which
+ * places are offered up.
+ *
+ * That order is: somewhere new first, in random order, because being sent
+ * somewhere you have never been is the point of the product. Once the whole
+ * catalogue has been visited the places come back round, longest-ago first,
+ * and the engine builds a different day out of the same ground — a second
+ * visit to a valley is not a repeat, being handed the same walk is.
  *
  * Every guard that matters (entitlement, rate limit, quota) lives in
  * `unlockQuestForUser`, on the server, reading database state.
@@ -47,19 +54,41 @@ export async function issueQuestAction(): Promise<IssueState> {
 
   const visited = await db.questHistory.findMany({
     where: { userId: user.id },
-    select: { quest: { select: { location: true } } },
+    orderBy: { generatedAt: "desc" },
+    select: { generatedAt: true, quest: { select: { location: true } } },
   });
-  const seen = new Set(visited.map((entry) => entry.quest.location));
 
-  const unseen = LOCATIONS.filter((location) => !seen.has(location.name));
-  const pool = unseen.length > 0 ? unseen : LOCATIONS;
-  const pick = pool[Math.floor(Math.random() * pool.length)]!;
+  // Newest first, so the first sighting recorded for a place is the latest.
+  const lastSeen = new Map<string, number>();
+  for (const entry of visited) {
+    if (!lastSeen.has(entry.quest.location)) {
+      lastSeen.set(entry.quest.location, entry.generatedAt.getTime());
+    }
+  }
 
-  const outcome = await unlockQuestForUser(user.id, pick.id);
+  const unseen = shuffle(LOCATIONS.filter((location) => !lastSeen.has(location.name)));
+  const revisit = LOCATIONS.filter((location) => lastSeen.has(location.name)).sort(
+    (a, b) => lastSeen.get(a.name)! - lastSeen.get(b.name)!,
+  );
+
+  const outcome = await unlockQuestForUser(
+    user.id,
+    [...unseen, ...revisit].map((location) => location.id),
+  );
   if (!outcome.ok) return { ok: false, message: outcome.message };
 
   revalidateQuestPaths(outcome.quest.id);
   return { ok: true, questId: outcome.quest.id, title: outcome.quest.title };
+}
+
+/** Fisher–Yates. Order matters here, so a comparator returning noise won't do. */
+function shuffle<T>(items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
 }
 
 const proofSchema = z.object({
@@ -70,6 +99,14 @@ const proofSchema = z.object({
   elevation: z.coerce.number().int().min(0).max(20000).optional(),
   movingTime: z.coerce.number().int().min(0).max(20000).optional(),
   retreated: z.coerce.boolean().optional(),
+  // The parts of the form that describe the person rather than the day.
+  usualStart: z.string().trim().max(5).optional().or(z.literal("")),
+  partySize: z.coerce.number().int().min(1).max(40).optional(),
+  gear: z.string().trim().max(300).optional().or(z.literal("")),
+  pace: z.coerce.number().min(0).max(60).optional(),
+  stravaProfile: z.string().trim().url().max(300).optional().or(z.literal("")),
+  /** The checkbox. Nothing about the account changes unless this is ticked. */
+  saveDetails: z.coerce.boolean().optional(),
 });
 
 export type ProofResult = { ok: boolean; message?: string };
@@ -96,6 +133,12 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
     elevation: formData.get("elevation") || undefined,
     movingTime: formData.get("movingTime") || undefined,
     retreated: formData.get("retreated") === "true",
+    usualStart: formData.get("usualStart") || undefined,
+    partySize: formData.get("partySize") || undefined,
+    gear: formData.get("gear") || undefined,
+    pace: formData.get("pace") || undefined,
+    stravaProfile: formData.get("stravaProfile") || undefined,
+    saveDetails: formData.get("saveDetails") === "true",
   });
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the form." };
@@ -143,7 +186,33 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
     create: { userId: user.id, questId: proof.questId, ...values },
   });
 
+  // Only if asked. Filing a log is not consent to rewrite your account, and a
+  // form that quietly remembered things would be the kind of surprise that
+  // makes people stop filling forms in honestly.
+  if (proof.saveDetails) {
+    const defaults = {
+      stravaProfile: proof.stravaProfile || null,
+      usualStart: proof.usualStart || null,
+      partySize: proof.partySize ?? null,
+      gear: proof.gear || null,
+      pace: proof.pace ?? null,
+      // Remembered so the next form can show them beside the empty fields.
+      // Never filled in for you — see the note on the model for why.
+      lastDistance: proof.distance ?? null,
+      lastElevation: proof.elevation ?? null,
+      lastMovingTime: proof.movingTime ?? null,
+    };
+    await db.userLogDefaults.upsert({
+      where: { userId: user.id },
+      update: defaults,
+      create: { userId: user.id, ...defaults },
+    });
+  }
+
   revalidateQuestPaths(proof.questId);
+  revalidatePath("/weekly");
+  revalidatePath("/monthly");
+  revalidatePath("/submissions");
   return { ok: true };
 }
 
@@ -351,4 +420,51 @@ export async function cancelPlanAction(): Promise<CancelResult> {
       ? "Cancelled and refunded in full."
       : "Cancelled. You keep everything until the period ends.",
   };
+}
+
+/**
+ * Record that these stickers have been celebrated.
+ *
+ * Called by the sheet once the unlock animation has played. Ids are filtered
+ * against the account's actual earned set before being written: this arrives
+ * from the browser, and without that check anyone could post the whole
+ * catalogue and quietly switch off their own celebrations for ever.
+ */
+export async function markStickersSeenAction(ids: string[]): Promise<void> {
+  const user = await requireClient();
+  if (!Array.isArray(ids) || ids.length === 0) return;
+
+  const [stats, entitlement, revocations] = await Promise.all([
+    getUserStats(user.id),
+    getEntitlement(user.id),
+    db.achievementRevocation.findMany({
+      where: { userId: user.id },
+      select: { achievementId: true },
+    }),
+  ]);
+
+  const earned = new Set(
+    getAchievements(
+      stats,
+      entitlement.plan,
+      revocations.map((row) => row.achievementId),
+    )
+      .filter((achievement) => achievement.earned)
+      .map((achievement) => achievement.id),
+  );
+
+  const record = await db.user.findUnique({
+    where: { id: user.id },
+    select: { seenAchievements: true },
+  });
+
+  const merged = new Set(record?.seenAchievements ?? []);
+  for (const id of ids) if (earned.has(id)) merged.add(id);
+
+  await db.user.update({
+    where: { id: user.id },
+    data: { seenAchievements: [...merged] },
+  });
+
+  revalidatePath("/achievements");
 }

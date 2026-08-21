@@ -3,7 +3,7 @@ import "server-only";
 import { buildShowcaseQuests } from "../../../prisma/seed-data";
 import { db } from "@/lib/db";
 import { paletteForSrc } from "@/lib/images";
-import type { QuestSummary } from "@/types/quest";
+import { toQuestSummary, type QuestSummary } from "@/types/quest";
 
 /**
  * Example quests for the marketing pages.
@@ -24,6 +24,8 @@ function generateFallback(): QuestSummary[] {
     subtitle: quest.subtitle,
     location: quest.location,
     region: quest.region,
+    latitude: quest.latitude,
+    longitude: quest.longitude,
     distance: quest.distance,
     duration: quest.duration,
     difficulty: quest.difficulty,
@@ -36,6 +38,12 @@ function generateFallback(): QuestSummary[] {
     mood: quest.mood,
     objective: quest.objective,
     generatedAt: null,
+    parkingName: null,
+    parkingLat: null,
+    parkingLng: null,
+    parkingNote: null,
+    approachTime: null,
+    transitNote: null,
   }));
   return memo;
 }
@@ -49,26 +57,9 @@ export async function getShowcaseQuests(limit = 6): Promise<QuestSummary[]> {
     });
 
     if (rows.length > 0) {
-      return rows.map((quest) => ({
-        id: quest.id,
-        number: quest.number,
-        title: quest.title,
-        subtitle: quest.subtitle,
-        location: quest.location,
-        region: quest.region,
-        distance: quest.distance,
-        duration: quest.duration,
-        difficulty: quest.difficulty,
-        elevationGain: quest.elevationGain,
-        travelTime: quest.travelTime,
-        coverImage: quest.coverImage,
-        palette: paletteForSrc(quest.coverImage),
-        features: quest.features,
-        terrain: quest.terrain,
-        mood: quest.mood,
-        objective: quest.objective,
-        generatedAt: null,
-      }));
+      // The same projection every other quest in the product goes through, so
+      // a field added to `QuestSummary` cannot go missing on the landing page.
+      return rows.map((quest) => ({ ...toQuestSummary(quest), generatedAt: null }));
     }
   } catch (error) {
     console.warn("[showcase] database unavailable, generating in memory", error);

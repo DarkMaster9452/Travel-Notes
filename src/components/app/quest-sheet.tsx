@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { QuestCard, Tag, formatMetres } from "@/components/field";
+import { QuestArt, QuestCard, Tag, formatMetres } from "@/components/field";
 import type { QuestSummary } from "@/types/quest";
 import { formatDuration } from "@/lib/utils";
 
@@ -71,6 +71,7 @@ export function QuestSheet({
       seal={seal === undefined ? (quest.completed ? "LOGGED" : "ISSUED") : seal}
       footLeft={quest.subtitle}
       footRight={quest.travelTime ? `${Math.round(quest.travelTime)} min from you` : undefined}
+      art={<QuestArt seed={quest.id} tags={[...quest.terrain, ...quest.features]} />}
     >
       {children}
     </QuestCard>
