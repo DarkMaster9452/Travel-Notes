@@ -137,11 +137,19 @@ function Sidebar({
   home,
   items,
   admin,
+  tools,
   children,
 }: {
   home: string;
   items: readonly NavItem[];
   admin?: boolean;
+  /**
+   * Chrome that belongs beside the logo rather than in the account menu — the
+   * panel's notification bell. Rendered in both the phone bar and the sidebar
+   * head, which is safe because the two never appear at once: the topbar is
+   * hidden from `lg` up, where the sidebar becomes the chrome.
+   */
+  tools?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -183,7 +191,10 @@ function Sidebar({
           <LogoMark />
           Summit&nbsp;Quest
         </Link>
-        <div className="ml-auto flex items-center gap-2">{children}</div>
+        <div className="ml-auto flex items-center gap-2">
+          {tools}
+          {children}
+        </div>
       </header>
 
       {open && (
@@ -197,10 +208,13 @@ function Sidebar({
 
       <aside className={cn("app-side", admin && "admin-side", open && "open")}>
         <div className="app-side-head">
-          <Link href={home} className="logo logo-live" aria-label="Summit Quest">
-            <LogoMark />
-            Summit&nbsp;Quest
-          </Link>
+          <div className="app-side-brand">
+            <Link href={home} className="logo logo-live" aria-label="Summit Quest">
+              <LogoMark />
+              Summit&nbsp;Quest
+            </Link>
+            {tools}
+          </div>
           {admin && <span className="admin-flag">Admin panel</span>}
         </div>
 
@@ -284,6 +298,7 @@ export function AdminShell({
   userName,
   userEmail,
   theme,
+  notices,
   logout,
 }: {
   children: React.ReactNode;
@@ -291,6 +306,8 @@ export function AdminShell({
   userName: string;
   userEmail: string;
   theme: ThemeChoice;
+  /** The notification bell, built by the layout from live conditions. */
+  notices?: React.ReactNode;
   logout: () => Promise<void>;
 }) {
   return (
@@ -299,7 +316,7 @@ export function AdminShell({
       data-surface="admin"
       data-theme={theme.toLowerCase()}
     >
-      <Sidebar home="/admin" items={items} admin>
+      <Sidebar home="/admin" items={items} admin tools={notices}>
         {/* No plan mark, no settings, no billing: an admin account holds none
             of those, and a menu that offers them would be lying. */}
         <AccountMenu
