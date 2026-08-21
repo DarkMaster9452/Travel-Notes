@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { issueQuestAction, type IssueState } from "@/app/(app)/actions";
 import { IconArrowRight, useToast } from "@/components/field";
+import { shake } from "@/components/motion/anime";
 
 /**
  * "Issue me one."
@@ -12,6 +13,11 @@ import { IconArrowRight, useToast } from "@/components/field";
  * The single way a quest enters an account. Quota, rate limiting and the
  * no-repeat rule are all decided by the server action — this button only knows
  * how to ask and where to go afterwards.
+ *
+ * A refusal shakes the button as well as raising the toast. The toast carries
+ * the reason, but it appears in the corner of the screen while the reader is
+ * looking at the button they just pressed — the shake is what tells them, where
+ * they are already looking, that the press was heard and the answer was no.
  */
 export function IssueQuestButton({
   disabled,
@@ -25,6 +31,13 @@ export function IssueQuestButton({
   const router = useRouter();
   const toast = useToast();
   const [pending, setPending] = React.useState(false);
+  const button = React.useRef<HTMLButtonElement>(null);
+
+  function refuse(title: string, detail: string) {
+    setPending(false);
+    shake(button.current);
+    toast({ title, detail, tone: "warm" });
+  }
 
   async function issue() {
     if (pending || disabled) return;
@@ -33,8 +46,7 @@ export function IssueQuestButton({
     try {
       result = await issueQuestAction();
     } catch {
-      setPending(false);
-      toast({ title: "That didn't go through.", detail: "Try again in a moment.", tone: "warm" });
+      refuse("That didn't go through.", "Try again in a moment.");
       return;
     }
 
@@ -45,16 +57,17 @@ export function IssueQuestButton({
       return;
     }
 
-    setPending(false);
-    toast({
-      title: "No quest issued.",
-      detail: result?.message ?? "Something went wrong.",
-      tone: "warm",
-    });
+    refuse("No quest issued.", result?.message ?? "Something went wrong.");
   }
 
   return (
-    <button type="button" className={className} onClick={issue} disabled={pending || disabled}>
+    <button
+      ref={button}
+      type="button"
+      className={className}
+      onClick={issue}
+      disabled={pending || disabled}
+    >
       {pending && <span className="spinner" aria-hidden="true" />}
       {pending ? "Choosing…" : label}
       {!pending && <IconArrowRight />}

@@ -1,8 +1,11 @@
 "use client";
 
+import { animate } from "animejs";
 import * as React from "react";
 import { createPortal } from "react-dom";
 
+import { unstyle, usePrefersReducedMotion } from "@/components/motion/anime";
+import { EASE_FIELD } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { IconClose } from "./icons";
@@ -32,6 +35,13 @@ function useIsHydrated(): boolean {
  * and a scrim click both dismiss, and Tab is trapped inside — the admin queue
  * is driven from the keyboard, so a dialog that leaks focus is a real problem
  * rather than a nicety.
+ *
+ * It opens in two parts, which is the whole reason the entrance is anime.js
+ * rather than a CSS keyframe: the scrim fades the page back first and the card
+ * arrives a beat later, so the dialog reads as being placed on top of the page
+ * instead of the page being replaced. Closing is not animated on purpose — the
+ * dialog unmounts, and a reader who has dismissed something should not have to
+ * watch it leave.
  */
 export function Modal({
   open,
@@ -51,8 +61,33 @@ export function Modal({
   className?: string;
 }) {
   const cardRef = React.useRef<HTMLDivElement>(null);
+  const scrimRef = React.useRef<HTMLDivElement>(null);
   const restoreRef = React.useRef<HTMLElement | null>(null);
   const hydrated = useIsHydrated();
+  const reduced = usePrefersReducedMotion();
+
+  React.useEffect(() => {
+    if (!open || reduced) return;
+    const scrim = scrimRef.current;
+    const card = cardRef.current;
+    if (!scrim || !card) return;
+
+    const opening = animate(scrim, { opacity: [0, 1], duration: 200, ease: "outQuad" });
+    const landing = animate(card, {
+      opacity: [0, 1],
+      translateY: [14, 0],
+      scale: [0.97, 1],
+      duration: 380,
+      delay: 60,
+      ease: EASE_FIELD,
+      onComplete: () => unstyle(card),
+    });
+
+    return () => {
+      opening.pause();
+      landing.pause();
+    };
+  }, [open, reduced]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -104,6 +139,7 @@ export function Modal({
 
   return createPortal(
     <div
+      ref={scrimRef}
       className="modal-scrim"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();

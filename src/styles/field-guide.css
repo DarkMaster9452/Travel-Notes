@@ -2320,7 +2320,6 @@ textarea.input {
   box-shadow: var(--shadow-lg);
   padding: 30px 28px 26px;
   position: relative;
-  animation: cardIn 0.35s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .modal-card h3 {
   font-family: var(--serif);
@@ -2438,7 +2437,6 @@ textarea.input {
   background: var(--pine);
   color: #eef2e7;
   box-shadow: var(--shadow-lg);
-  animation: cardIn 0.28s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .toast b {
   font-size: 14px;
@@ -2939,28 +2937,10 @@ textarea.input {
     opacity: 1;
   }
 }
-@keyframes reveal {
-  from {
-    clip-path: inset(0 0 100% 0);
-    transform: scale(1.06);
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-    transform: scale(1);
-  }
-}
 
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-}
-.reveal.in {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.7s cubic-bezier(0.2, 0.8, 0.3, 1),
-    transform 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
+/* Scroll entrances are no longer a class the stylesheet flips: `RevealOnScroll`
+   writes both frames with anime.js, so nothing on this page is ever hidden by
+   CSS a reader's browser might apply without the script that undoes it. */
 
 /* ===========================================================================
    17  micro-interactions
@@ -3004,26 +2984,6 @@ textarea.input {
     transform: none;
   }
 }
-@keyframes dropIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 /* A stamp lands: overshoot, settle, very slightly off-square on the way in. */
 @keyframes stampIn {
   0% {
@@ -3037,38 +2997,6 @@ textarea.input {
   100% {
     opacity: 1;
     transform: none;
-  }
-}
-@keyframes growY {
-  from {
-    transform: scaleY(0);
-  }
-  to {
-    transform: scaleY(1);
-  }
-}
-@keyframes growX {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-@keyframes wipeIn {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-@keyframes drawStroke {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
   }
 }
 @keyframes spin {
@@ -3090,34 +3018,12 @@ textarea.input {
 
 /* -------------------------------- the hero ------------------------------- */
 
-/* Everything above the fold arrives in order — eyebrow, headline, promise,
-   buttons, figures, then the quest itself — so the page reads as being dealt
-   out rather than switched on. */
-.hero-enter > div > *,
-.hero-enter > div:last-child {
-  animation: riseIn 0.62s var(--ease-field) backwards;
-}
-.hero-enter > div > *:nth-child(1) {
-  animation-delay: 0.05s;
-}
-.hero-enter > div > *:nth-child(2) {
-  animation-delay: 0.13s;
-}
-.hero-enter > div > *:nth-child(3) {
-  animation-delay: 0.22s;
-}
-.hero-enter > div > *:nth-child(4) {
-  animation-delay: 0.31s;
-}
-.hero-enter > div > *:nth-child(5) {
-  animation-delay: 0.4s;
-}
-/* The issued quest lands last, and lands like a document. */
-.hero-enter > div:last-child {
-  animation-name: cardIn;
-  animation-duration: 0.7s;
-  animation-delay: 0.34s;
-}
+/* Everything above the fold arrives in order — contour lines, eyebrow,
+   headline, promise, buttons, figures, then the quest itself — so the page
+   reads as being dealt out rather than switched on. That sequence is an
+   anime.js timeline in `HeroMotion`: it is a *sequence*, with the map drawing
+   under the headline and the card landing over the top of both, and staged
+   `animation-delay`s could only ever approximate it. */
 
 /* The figures under the headline tick up as the eye reaches them. */
 .hero-meta b {
@@ -3135,25 +3041,20 @@ textarea.input {
 .tick-in {
   animation: tickIn 0.42s var(--ease-field) backwards;
 }
-.drop-in {
-  animation: dropIn 0.2s var(--ease-field) backwards;
-}
-.slide-in {
-  animation: slideIn 0.28s var(--ease-field) backwards;
-}
 .stamp-in {
   animation: stampIn 0.46s var(--ease-field) backwards;
 }
 
-/* Anything that should visibly accept a press. */
+/* Anything that should visibly accept a press.
+   The hover lift is a *state*, so it stays here. The press itself is an
+   *event*, and `PressFeedback` animates it with anime.js so the control
+   springs back on release rather than easing back — see that module for why
+   the difference is worth a listener. */
 .press {
   transition: transform 0.16s var(--ease-field);
 }
 .press:hover {
   transform: translateY(-1px);
-}
-.press:active {
-  transform: scale(0.94);
 }
 
 .spinner {
@@ -3177,9 +3078,6 @@ textarea.input {
 }
 .btn:not(:disabled):hover {
   transform: translateY(-1px);
-}
-.btn:not(:disabled):active {
-  transform: translateY(0) scale(0.975);
 }
 
 /* Marketing nav: a rule draws itself under the link from the left. */
@@ -3308,9 +3206,7 @@ textarea.input {
     border-color 0.18s,
     color 0.18s;
 }
-.pill:active {
-  transform: scale(0.95);
-}
+
 
 .input {
   transition:
@@ -3569,7 +3465,6 @@ a.plan-mark:hover {
 .ceremony-seal {
   display: flex;
   justify-content: center;
-  animation: stampIn 0.6s var(--ease-field) backwards;
 }
 .member-stamp {
   width: 96px;
@@ -3598,7 +3493,6 @@ a.plan-mark:hover {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--moss-2);
-  animation: riseIn 0.5s var(--ease-field) 0.12s backwards;
 }
 .ceremony-title {
   margin-top: 10px;
@@ -3607,7 +3501,6 @@ a.plan-mark:hover {
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.04;
-  animation: riseIn 0.55s var(--ease-field) 0.18s backwards;
 }
 .ceremony-stop {
   color: var(--signal);
@@ -3618,7 +3511,6 @@ a.plan-mark:hover {
   font-size: 16.5px;
   line-height: 1.55;
   color: var(--ink-2);
-  animation: riseIn 0.5s var(--ease-field) 0.26s backwards;
 }
 .ceremony-list {
   list-style: none;
@@ -3633,7 +3525,6 @@ a.plan-mark:hover {
   align-items: flex-start;
   padding: 15px 4px;
   border-bottom: 1px dashed var(--line);
-  animation: tickIn 0.44s var(--ease-field) backwards;
 }
 .ceremony-line b {
   display: block;
@@ -3660,12 +3551,11 @@ a.plan-mark:hover {
   place-items: center;
   margin-top: 1px;
 }
-/* Drawn at rest, so the stroke stays put once the animation hands the
-   element back to its own styles. */
+/* Drawn at rest: with the script off, or under reduced motion, the tick is
+   simply there. The timeline draws it from nothing when it does run. */
 .ceremony-check {
   stroke-dasharray: 1;
   stroke-dashoffset: 0;
-  animation: drawStroke 0.34s var(--ease-field) backwards;
 }
 .ceremony-actions {
   display: flex;
@@ -3673,10 +3563,6 @@ a.plan-mark:hover {
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 34px;
-  animation: riseIn 0.5s var(--ease-field) backwards;
-}
-.ceremony-foot {
-  animation: riseIn 0.5s var(--ease-field) backwards;
 }
 
 /* ===========================================================================
@@ -3700,7 +3586,6 @@ a.plan-mark:hover {
 .stat-cell {
   background: var(--card);
   padding: 18px 20px 16px;
-  animation: riseIn 0.5s var(--ease-field) backwards;
   transition: background 0.2s;
 }
 .stat-cell:hover {
@@ -4018,19 +3903,21 @@ a.plan-mark:hover {
   text-align: right;
 }
 
-/* Chart entrances. A bar grows out of its baseline; a series wipes in. */
+/* Chart entrances. A bar grows out of its baseline; a series wipes in.
+   The classes are now hooks rather than animations: `ChartPlot` picks them out
+   of the rendered SVG and staggers them with anime.js when the chart scrolls
+   into view, which is what lets a bar chart deal left to right instead of every
+   bar carrying its own `animation-delay`. What stays here is the geometry —
+   which edge each shape grows from — because that belongs to the drawing. */
 .grow-y {
   transform-origin: bottom;
   transform-box: fill-box;
-  animation: growY 0.62s var(--ease-field) backwards;
 }
 .grow-x {
   transform-origin: left;
-  animation: growX 0.66s var(--ease-field) backwards;
 }
 .wipe {
   transform-origin: left;
-  animation: wipeIn 0.85s var(--ease-field) backwards;
 }
 
 /* --------------------------- admin furniture ----------------------------- */

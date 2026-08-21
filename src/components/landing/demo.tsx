@@ -1,7 +1,10 @@
 "use client";
 
+import { createTimeline, stagger, utils } from "animejs";
 import * as React from "react";
 
+import { unstyle, usePrefersReducedMotion } from "@/components/motion/anime";
+import { EASE_BACK, EASE_FIELD } from "@/lib/motion";
 import {
   Avatar,
   Panel,
@@ -127,6 +130,73 @@ const SAMPLE_CREDITS = 3;
 const SPIN_TICKS = 6;
 const SPIN_INTERVAL_MS = 55;
 
+/**
+ * The sample quest landing on the desk, every time the generator is run.
+ *
+ * The spin above it is a slot machine; this is the moment it stops. The card
+ * settles out of a slight tilt and its lines fill in from the top — number,
+ * place, objective, figures, bonus — so a reader watches the assignment being
+ * written rather than being handed a block of text that swapped itself out.
+ *
+ * Keyed on the sample index, so it replays on every generation and not only on
+ * the first, and skipped entirely while the title is still rolling: two things
+ * animating over each other is a fruit machine, not a document.
+ */
+function useDealtCard(shown: number, rolling: boolean) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const reduced = usePrefersReducedMotion();
+
+  React.useEffect(() => {
+    const card = ref.current?.querySelector<HTMLElement>(".quest-card");
+    if (reduced || rolling || !card) return;
+
+    const lines = Array.from(card.querySelectorAll<HTMLElement>(".qc-head, .qc-body > *, .qc-foot"));
+    const seal = card.querySelector<HTMLElement>(".seal");
+
+    const timeline = createTimeline({
+      defaults: { ease: EASE_FIELD },
+      onComplete: () => unstyle([card, ...lines, ...(seal ? [seal] : [])]),
+    });
+
+    timeline
+      .add(card, {
+        opacity: [0, 1],
+        translateY: [18, 0],
+        rotate: [-0.8, 0],
+        scale: [0.985, 1],
+        duration: 560,
+        onComplete: () => unstyle(card),
+      })
+      .add(
+        lines,
+        {
+          opacity: [0, 1],
+          translateY: [10, 0],
+          duration: 420,
+          delay: stagger(50),
+          onComplete: () => unstyle(lines),
+        },
+        120,
+      );
+
+    if (seal) {
+      // The sample stamp lands last, the way a stamp does.
+      timeline.add(
+        seal,
+        { opacity: [0, 1], scale: [1.6, 1], rotate: [-10, 0], duration: 460, ease: EASE_BACK },
+        420,
+      );
+    }
+
+    return () => {
+      timeline.revert();
+      utils.set([card, ...lines], { opacity: 1, translateY: 0, rotate: 0, scale: 1 });
+    };
+  }, [shown, rolling, reduced]);
+
+  return ref;
+}
+
 export function DemoGenerator() {
   const { open } = useAuthModal();
 
@@ -144,6 +214,7 @@ export function DemoGenerator() {
 
   const quest = DEMO[shown];
   const rolling = rollingTitle !== null;
+  const result = useDealtCard(shown, rolling);
 
   const generate = () => {
     if (credits <= 0) {
@@ -241,7 +312,7 @@ export function DemoGenerator() {
             </div>
           </Panel>
 
-          <div className="result">
+          <div className="result" ref={result}>
             {credits <= 0 ? (
               <QuestLocked
                 title="That is as much as the demo knows."
