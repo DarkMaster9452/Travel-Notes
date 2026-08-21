@@ -1,5 +1,7 @@
 import { logoutAction } from "@/app/(auth)/actions";
+import { NotificationCenter } from "@/components/admin/notification-center";
 import { AdminShell, type NavItem } from "@/components/app/app-shell";
+import { getAdminNotices } from "@/lib/admin/notifications";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 
@@ -33,9 +35,14 @@ function nav(pending: number): readonly NavItem[] {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin();
 
-  // The review badge is the one number an admin needs before they have chosen
-  // a page, so it is fetched with the shell rather than inside it.
-  const pending = await db.submission.count({ where: { status: "PENDING" } });
+  // Both of these belong to the shell rather than to any one page: the review
+  // badge is the number an admin needs before they have chosen where to go,
+  // and the notices are the panel saying what is wrong on whichever page they
+  // happen to be standing on.
+  const [pending, notices] = await Promise.all([
+    db.submission.count({ where: { status: "PENDING" } }),
+    getAdminNotices(),
+  ]);
 
   return (
     <AdminShell
@@ -43,6 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       userName={user.name}
       userEmail={user.email}
       theme={user.theme}
+      notices={<NotificationCenter notices={notices} />}
       logout={logoutAction}
     >
       {children}

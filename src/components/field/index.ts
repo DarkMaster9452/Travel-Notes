@@ -10,9 +10,11 @@ export { Avatar, avatarVariant, initialsFrom, type AvatarVariant } from "./avata
 export { EmptyState } from "./empty-state";
 export {
   Contours,
+  IconAlert,
   IconApproved,
   IconArrowRight,
   IconBadge,
+  IconBell,
   IconBonus,
   IconBook,
   IconCalendarDays,

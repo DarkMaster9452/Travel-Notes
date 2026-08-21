@@ -3920,6 +3920,273 @@ a.plan-mark:hover {
   transform-origin: left;
 }
 
+/* ------------------------------- notices --------------------------------- */
+
+/* What the panel is asking an admin to deal with.
+
+   The colour rule for the whole product holds here too: green is structure,
+   stamp ink means look at this. So the two loud tones are the *same* orange at
+   two weights rather than two different oranges — `critical` fills, `warning`
+   outlines — and green carries anything merely worth knowing. Reading down a
+   list, a filled chip against an outlined one separates faster than two
+   adjacent hues ever would, and it survives being printed, dimmed, or read by
+   somebody who does not see the difference between orange and amber.
+
+   Nothing here is encoded by colour alone: every tone also carries its own
+   icon and its own word. */
+
+.notice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.notice {
+  position: relative;
+  padding: 15px 18px 15px 21px;
+  border-bottom: 1px dashed var(--line-2);
+}
+.notice:last-child {
+  border-bottom: 0;
+}
+/* The rule down the left edge is the tone at a glance, before any reading. */
+.notice::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--notice-ink, transparent);
+}
+
+/* The four tones, as a pair of custom properties each: the ink the chip and
+   the rule are drawn in, and the wash the row sits on. */
+.notice-critical {
+  --notice-ink: var(--signal);
+  --notice-wash: rgba(196, 72, 27, 0.07);
+}
+.notice-warning {
+  --notice-ink: var(--signal);
+  --notice-wash: rgba(196, 72, 27, 0.035);
+}
+.notice-info {
+  --notice-ink: var(--moss-2);
+  --notice-wash: transparent;
+}
+.notice-clear {
+  --notice-ink: var(--ink-3);
+  --notice-wash: transparent;
+}
+.notice.notice-critical,
+.notice.notice-warning {
+  background: var(--notice-wash);
+}
+
+.notice-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* The chip. Filled for the urgent tone, outlined for everything below it —
+   which is the weight half of the severity scale. */
+.notice-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--notice-ink);
+  color: var(--notice-ink);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.notice-badge.notice-critical {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fdf6f1;
+}
+.notice-badge-icon {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+}
+
+/* The figure the notice is about, when there is one worth reading first. */
+.notice-count {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--notice-ink);
+}
+
+.notice-title {
+  margin-top: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.notice-detail {
+  margin-top: 3px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.notice-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--notice-ink);
+  transition: gap 0.2s var(--ease-field);
+}
+.notice-action:hover {
+  gap: 10px;
+}
+
+/* Nothing to do. Said out loud, because an empty list and a list that failed
+   to load look identical otherwise. */
+.notice-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  --notice-ink: var(--moss-2);
+}
+.notice-empty p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------- the bell ----------------------------------- */
+
+.notice-center {
+  position: relative;
+}
+
+.notice-bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: rgba(238, 242, 231, 0.7);
+  border: 1px solid transparent;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s;
+}
+.notice-bell:hover {
+  background: rgba(238, 242, 231, 0.1);
+  color: #eef2e7;
+}
+.notice-bell[aria-expanded="true"] {
+  background: rgba(238, 242, 231, 0.12);
+  color: #eef2e7;
+  border-color: rgba(238, 242, 231, 0.2);
+}
+/* An unread count is green; an urgent one is stamp ink. Same rule as the
+   list it opens. */
+.notice-bell-count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  background: var(--moss-2);
+  color: #eef2e7;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1.5px solid var(--forest-deep);
+}
+.notice-bell.is-loud .notice-bell-count {
+  background: var(--signal);
+}
+
+.notice-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 80;
+  width: min(370px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  transform-origin: top right;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+/* In the sidebar the bell sits at the top-left of a 244px column, so the
+   panel opens rightwards out of it rather than off the edge of the screen. */
+.app-side .notice-panel {
+  left: 0;
+  right: auto;
+  transform-origin: top left;
+  width: min(360px, calc(100vw - 24px));
+}
+/* Under `lg` the bell lives in the phone bar, where it shares the row with the
+   account menu and so does not sit at the edge. A 370px panel anchored to a
+   button in the middle of that row hangs off the screen, so at this size the
+   panel stops being a dropdown and becomes a sheet pinned under the bar. */
+@media (max-width: 1023px) {
+  .notice-panel {
+    position: fixed;
+    top: 66px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: min(70vh, 520px);
+    transform-origin: top center;
+  }
+}
+
+.notice-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px dashed var(--line);
+}
+.notice-panel-body {
+  overflow-y: auto;
+}
+
+.app-side-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 /* --------------------------- admin furniture ----------------------------- */
 
 .admin-filters {
