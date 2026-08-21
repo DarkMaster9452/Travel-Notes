@@ -1,5 +1,6 @@
 "use client";
 
+import { animate, stagger, utils } from "animejs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
@@ -25,7 +26,10 @@ import {
   LogoMark,
 } from "@/components/field";
 import type { IconProps } from "@/components/field/icons";
+import { unstyle, usePrefersReducedMotion } from "@/components/motion/anime";
+import { PageTransition } from "@/components/motion/page-transition";
 import type { PlanId } from "@/lib/config";
+import { DURATION, EASE_FIELD } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { PlanMark } from "./plan-mark";
@@ -86,6 +90,49 @@ export type NavItem = {
   badge?: number;
 };
 
+/**
+ * The menu deals itself in when the shell first mounts.
+ *
+ * One anime.js stagger across the whole nav rather than a delay written onto
+ * every link: the item count varies by role — a customer sees six entries, an
+ * admin sixteen across four sections — and a stagger that is a function of the
+ * set is the only version of this that stays a rhythm at both sizes.
+ *
+ * It runs once per mount, not per navigation. Re-dealing the sidebar every time
+ * someone opens a page would make the chrome the loudest thing on screen.
+ */
+function useSidebarEntrance() {
+  const reduced = usePrefersReducedMotion();
+  const ref = React.useRef<HTMLElement>(null);
+
+  React.useEffect(() => {
+    const nav = ref.current;
+    if (reduced || !nav) return;
+
+    const links = Array.from(nav.querySelectorAll<HTMLElement>("a, .app-side-section"));
+    if (links.length === 0) return;
+
+    utils.set(links, { opacity: 0, translateX: -10 });
+    const animation = animate(links, {
+      opacity: [0, 1],
+      translateX: [-10, 0],
+      duration: DURATION.quick,
+      ease: EASE_FIELD,
+      // Capped by `stagger`'s own maximum through the item count: past a dozen
+      // rows the rhythm stops reading as rhythm and starts reading as lag.
+      delay: stagger(Math.min(30, 360 / links.length)),
+      onComplete: () => unstyle(links),
+    });
+
+    return () => {
+      animation.pause();
+      utils.set(links, { opacity: 1, translateX: 0 });
+    };
+  }, [reduced]);
+
+  return ref;
+}
+
 function Sidebar({
   home,
   items,
@@ -99,6 +146,7 @@ function Sidebar({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
+  const nav = useSidebarEntrance();
 
   // Close the drawer whenever the route changes, so following a link on a
   // phone doesn't leave the menu sitting over the page you just opened.
@@ -156,18 +204,13 @@ function Sidebar({
           {admin && <span className="admin-flag">Admin panel</span>}
         </div>
 
-        <nav className="app-side-nav" aria-label="Main">
-          {items.map((item, index) => {
+        <nav className="app-side-nav" aria-label="Main" ref={nav}>
+          {items.map((item) => {
             const Icon = item.icon ? NAV_ICONS[item.icon] : null;
             return (
               <React.Fragment key={item.href}>
                 {item.section && <p className="app-side-section">{item.section}</p>}
-                <Link
-                  href={item.href}
-                  aria-current={isActive(item.href) ? "page" : undefined}
-                  style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
-                  className="slide-in"
-                >
+                <Link href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
                   {Icon && <Icon className="app-side-icon" />}
                   <span className="app-side-label">{item.label}</span>
                   {item.badge ? <span className="app-side-badge">{item.badge}</span> : null}
@@ -229,7 +272,7 @@ export function AppShell({
         />
       </Sidebar>
       <main className="app-main">
-        <div className="app-canvas">{children}</div>
+        <PageTransition>{children}</PageTransition>
       </main>
     </div>
   );
@@ -269,10 +312,39 @@ export function AdminShell({
         />
       </Sidebar>
       <main className="app-main">
-        <div className="app-canvas">{children}</div>
+        <PageTransition>{children}</PageTransition>
       </main>
     </div>
   );
+}
+
+/** The account menu, dropping out of the button that opened it. */
+function useMenuEntrance(open: boolean) {
+  const reduced = usePrefersReducedMotion();
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const menu = ref.current;
+    if (!open || reduced || !menu) return;
+
+    const animation = animate(menu, {
+      opacity: [0, 1],
+      translateY: [6, 0],
+      // Scaled from its bottom edge (`origin-bottom` on the element), because
+      // the menu opens upwards out of the account button beneath it.
+      scale: [0.97, 1],
+      duration: DURATION.micro,
+      ease: EASE_FIELD,
+      onComplete: () => unstyle(menu),
+    });
+
+    return () => {
+      animation.pause();
+      utils.set(menu, { opacity: 1, translateY: 0, scale: 1 });
+    };
+  }, [open, reduced]);
+
+  return ref;
 }
 
 function AccountMenu({
@@ -292,6 +364,7 @@ function AccountMenu({
 }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  const menu = useMenuEntrance(open);
 
   React.useEffect(() => {
     if (!open) return;
@@ -329,7 +402,8 @@ function AccountMenu({
         <div
           role="menu"
           aria-label="Account"
-          className="drop-in absolute bottom-full left-0 z-50 mb-2 w-64 overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-field-lg)]"
+          ref={menu}
+          className="absolute bottom-full left-0 z-50 mb-2 w-64 origin-bottom overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-field-lg)]"
         >
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-semibold text-ink">{userName}</p>

@@ -1,6 +1,7 @@
 import { Contours, QuestCard } from "@/components/field";
 
 import { AuthButton } from "./auth-button";
+import { HeroMotion } from "./hero-motion";
 
 const META = [
   { value: "3 min", label: "To set up" },
@@ -16,8 +17,12 @@ export function Hero() {
 
       {/* The hero is above the fold, so it animates on load rather than on
           scroll — the reveal observer would fire for all of it at once and
-          land the whole block in a single beat. */}
-      <div className="wrap hero-grid hero-enter">
+          land the whole block in a single beat. The sequence itself is an
+          anime.js timeline in `HeroMotion`, which reaches into this markup
+          rather than wrapping it: the grid is two columns and a wrapper per
+          animated part would break the layout it is animating. */}
+      <HeroMotion />
+      <div className="wrap hero-grid">
         <div>
           <span className="eyebrow">Est. 2025 · Field-issued adventures</span>
           <h1 className="h1">

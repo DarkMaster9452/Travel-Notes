@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 
 import { ToastProvider } from "@/components/field/toast";
+import { PressFeedback } from "@/components/motion/interactions";
 
 import "./globals.css";
 
@@ -65,6 +66,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-dvh">
+        {/* Press feedback is mounted once, for the whole product: the landing
+            page, the app and the panel all press the same way. */}
+        <PressFeedback />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

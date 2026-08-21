@@ -1,7 +1,10 @@
 "use client";
 
+import { animate, stagger, utils } from "animejs";
 import * as React from "react";
 
+import { unstyle, useAnimeInView, usePrefersReducedMotion } from "@/components/motion/anime";
+import { DURATION, EASE_FIELD } from "@/lib/motion";
 import {
   AXIS,
   BAND_PART,
@@ -87,7 +90,7 @@ export function ChartFrame({
         </ul>
       )}
 
-      <div className="chart-plot">{children}</div>
+      <ChartPlot>{children}</ChartPlot>
 
       {note && <p className="chart-note">{note}</p>}
 
@@ -119,6 +122,87 @@ export function ChartFrame({
         </details>
       )}
     </figure>
+  );
+}
+
+/**
+ * The plot area, and the entrance every chart in the panel shares.
+ *
+ * A chart should look measured rather than printed, so the bars grow out of
+ * their baseline, the trend wipes in from the left, and the numbers arrive
+ * after the shapes they label. anime.js drives it — the parts are SVG nodes
+ * scattered through each chart's markup, and a stagger across a queried set is
+ * exactly the thing a per-element CSS delay cannot express.
+ *
+ * It waits for the chart to be on screen: the admin overview stacks eight of
+ * these, and the ones below the fold should still be worth scrolling to.
+ */
+function ChartPlot({ children }: { children: React.ReactNode }) {
+  const reduced = usePrefersReducedMotion();
+
+  const ref = useAnimeInView<HTMLDivElement>({
+    enabled: !reduced,
+    threshold: 0.15,
+    prepare: (plot) => {
+      utils.set(plot.querySelectorAll(".grow-y"), { scaleY: 0 });
+      utils.set(plot.querySelectorAll(".grow-x"), { scaleX: 0 });
+      utils.set(plot.querySelectorAll(".wipe"), { scaleX: 0 });
+      utils.set(plot.querySelectorAll(".chart-value"), { opacity: 0 });
+    },
+    play: (plot) => {
+      const bars = Array.from(plot.querySelectorAll<SVGElement>(".grow-y"));
+      const tracks = Array.from(plot.querySelectorAll<SVGElement | HTMLElement>(".grow-x"));
+      const wipes = Array.from(plot.querySelectorAll<SVGElement>(".wipe"));
+      const labels = Array.from(plot.querySelectorAll<SVGTextElement>(".chart-value"));
+
+      if (bars.length) {
+        animate(bars, {
+          scaleY: [0, 1],
+          duration: DURATION.base,
+          ease: EASE_FIELD,
+          delay: stagger(70),
+          onComplete: () => unstyle(bars, ["transform"]),
+        });
+      }
+      if (tracks.length) {
+        animate(tracks, {
+          scaleX: [0, 1],
+          duration: 660,
+          ease: EASE_FIELD,
+          delay: stagger(70),
+          onComplete: () => unstyle(tracks, ["transform"]),
+        });
+      }
+      if (wipes.length) {
+        animate(wipes, {
+          scaleX: [0, 1],
+          duration: 850,
+          ease: EASE_FIELD,
+          onComplete: () => unstyle(wipes, ["transform"]),
+        });
+      }
+      if (labels.length) {
+        animate(labels, {
+          opacity: [0, 1],
+          translateY: [4, 0],
+          duration: DURATION.quick,
+          delay: stagger(70, { start: 240 }),
+          onComplete: () => unstyle(labels),
+        });
+      }
+    },
+    // Whatever was mid-flight, the chart is left drawn at full size: a bar
+    // frozen at a third of its height is a chart that lies.
+    reset: (plot) => {
+      utils.set(plot.querySelectorAll(".grow-y, .grow-x, .wipe"), { scaleX: 1, scaleY: 1 });
+      utils.set(plot.querySelectorAll(".chart-value"), { opacity: 1, translateY: 0 });
+    },
+  });
+
+  return (
+    <div className="chart-plot" ref={ref}>
+      {children}
+    </div>
   );
 }
 
@@ -419,7 +503,7 @@ export function BarSeries({
 
           return (
             <g key={point.key}>
-              <g className="grow-y" style={{ animationDelay: `${index * 80}ms` }}>
+              <g className="grow-y">
                 <path d={barPath(x, y, width, height)} fill={color}>
                   <title>{`${point.label}: ${point.value} ${unitLabel}`}</title>
                 </path>
@@ -480,7 +564,7 @@ export function RankBars({
       table={{ columns: ["Name", unitLabel], rows: rows.map((row) => [row.label, row.value]) }}
     >
       <ul className="rank-rows">
-        {rows.map((row, index) => (
+        {rows.map((row) => (
           <li key={row.key}>
             <span className="rank-label" title={row.label}>
               {row.label}
@@ -491,7 +575,6 @@ export function RankBars({
                 style={{
                   width: `${Math.max(2, (row.value / max) * 100)}%`,
                   background: color,
-                  animationDelay: `${index * 70}ms`,
                 }}
               />
             </span>
@@ -555,14 +638,13 @@ export function SplitBar({
       <div className="split-bar" role="img" aria-label={title}>
         {segments
           .filter((segment) => segment.value > 0)
-          .map((segment, index) => (
+          .map((segment) => (
             <span
               key={segment.key}
               className="grow-x"
               style={{
                 flexGrow: segment.value,
                 background: segment.color,
-                animationDelay: `${index * 90}ms`,
               }}
               title={`${segment.label}: ${segment.value} (${Math.round(
                 (segment.value / total) * 100,
