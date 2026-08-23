@@ -26,13 +26,10 @@ export const metadata: Metadata = { title: "Stickers" };
  */
 export default async function StickersPage() {
   const user = await requireClient();
-  const [stats, entitlement, awards] = await Promise.all([
+  const [stats, entitlement, awards, account, revocations] = await Promise.all([
     getUserStats(user.id),
     getEntitlement(user.id),
     getHeldAwards(user.id),
-  const [stats, entitlement, account, revocations] = await Promise.all([
-    getUserStats(user.id),
-    getEntitlement(user.id),
     db.user.findUnique({ where: { id: user.id }, select: { seenAchievements: true } }),
     db.achievementRevocation.findMany({
       where: { userId: user.id },
@@ -77,7 +74,7 @@ export default async function StickersPage() {
           finishing in the top three of a week or a month somebody else was
           also walking. Putting them on the same sheet as "twenty-five
           kilometres" would quietly reclassify them as another threshold. */}
-      {awards.length > 0 && (
+      {awards.length > 0 ? (
         <Reveal className="mb-5">
           <Panel flush>
             <PanelHead
@@ -89,7 +86,7 @@ export default async function StickersPage() {
                 <div key={award.id} className="award">
                   <Sticker
                     achievementKey={award.sticker}
-                    className={`medal medal-${award.medal.toLowerCase()}`}
+                    className="medal"
                     title={`${medalLabel(award.medal)} — ${award.label}`}
                   />
                   <b>{award.label}</b>
@@ -110,9 +107,7 @@ export default async function StickersPage() {
             </p>
           </Panel>
         </Reveal>
-      )}
-
-      {awards.length === 0 && (
+      ) : (
         <Reveal className="mb-5">
           <Panel>
             <PanelHead title="Podium finishes" aside={<Tag tone="ghost">None yet</Tag>} />

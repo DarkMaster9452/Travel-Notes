@@ -12,6 +12,7 @@ import {
   IconPin,
   Panel,
   PanelHead,
+  QuestArt,
   Tag,
 } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
@@ -221,6 +222,8 @@ export default async function QuestDatabasePage({
         duration: true,
         category: true,
         coverImage: true,
+        terrain: true,
+        features: true,
         submissions: { where: { userId: user.id }, select: { status: true }, take: 1 },
       },
     }),
@@ -403,7 +406,16 @@ export default async function QuestDatabasePage({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img className="qdb-cover" src={quest.coverImage} alt="" loading="lazy" />
                   ) : (
-                    <div className="qdb-cover qdb-cover-blank" aria-hidden="true" />
+                    /* No photograph: the quest's own mark takes the space,
+                       the same as on its page. It says nothing about the
+                       place, which is why it is safe where a picture of
+                       somewhere real would be a claim we cannot make. */
+                    <QuestArt
+                      seed={quest.id}
+                      tags={[...quest.terrain, ...quest.features]}
+                      variant="band"
+                      className="qdb-cover"
+                    />
                   )}
 
                   <div className="qdb-body">

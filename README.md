@@ -122,8 +122,10 @@ medals. There is no cron.
 
 The six podium stickers are distinct designs: a weekly gold is not a monthly
 gold. Cadence sets the motif (a medal on a ribbon, a summit under a pennant),
-the place is counted in dots, and the metal is the only colour in the product
-that is neither green nor stamp ink.
+and the place is counted in dots — a numeral at that size is a smudge. The
+metals are three of the sheet's own ten inks (`gold`, `stone`, `copper`)
+rather than a palette of their own, so a medal is coloured by exactly the
+mechanism every other sticker is.
 
 ---
 
@@ -175,7 +177,7 @@ src/
   app/
     (auth)/           login, signup, auth actions
     (app)/            everything behind authentication
-      dashboard/ history/ profile/ upgrade/ submissions/
+      dashboard/ history/ profile/ upgrade/ submissions/ people/ rules/
       weekly/ monthly/ leaderboard/ achievements/ quests/ quests/[id]/
     onboarding/       seven-step preference flow
     api/

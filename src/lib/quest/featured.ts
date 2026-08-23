@@ -276,170 +276,6 @@ export async function getFeaturedQuest(
   return featured ?? null;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Filing proof against a featured quest                                       */
-/* -------------------------------------------------------------------------- */
-
-/**
- * The quest row a featured slot's proof can be filed against.
- *
- * A booked slot already is a row — everybody gets the same quest, and its id
- * is the one on the page. A generated one is not: it is derived from the
- * period and the account, held nowhere, and costs no quota precisely because
- * nothing is written. That was fine while the featured quests were only
- * something to look at, and stops being fine the moment somebody can log one:
- * a submission needs a quest to point at.
- *
- * So the row is written on first use and not before. The signature is the
- * seed the quest was generated from, which makes the write idempotent without
- * a second identity to keep in step — filing again, or filing after an
- * account came back to the same week, finds the row rather than making a
- * second one.
- *
- * `published: false` keeps it out of the browsable catalogue. It is one
- * account's copy of one week, not a quest anybody else should be offered.
- */
-export async function ensureFeaturedQuestId(
-  userId: string,
-  period: FeaturedPeriod,
-  now = new Date(),
-): Promise<{ ok: true; questId: string; slotKey: string } | { ok: false; message: string }> {
-  const featured = await getFeaturedQuest(userId, period, now);
-  if (!featured) {
-    return {
-      ok: false,
-      message: "There's no quest placed for this period — widen your range in settings.",
-    };
-  }
-
-  if (featured.quest === null) {
-    // Booked by an admin: the summary id is a real row.
-    await claimFeatured(userId, featured.summary.id);
-    return { ok: true, questId: featured.summary.id, slotKey: featured.key };
-  }
-
-  const generated = featured.quest;
-  const signature = `featured:${period}:${featured.key}:${userId}`;
-
-  const existing = await db.quest.findFirst({
-    where: { signature },
-    select: { id: true },
-  });
-  if (existing) {
-    await claimFeatured(userId, existing.id);
-    return { ok: true, questId: existing.id, slotKey: featured.key };
-  }
-
-  const quest = await db.quest.create({
-    data: {
-      title: generated.title,
-      subtitle: generated.subtitle,
-      description: generated.description,
-      objective: generated.objective,
-      bonus: generated.bonus,
-      safetyNotes: generated.safetyNotes,
-      location: generated.location,
-      region: generated.region,
-      country: generated.country,
-      latitude: generated.latitude,
-      longitude: generated.longitude,
-      distance: generated.distance,
-      duration: generated.duration,
-      travelTime: generated.travelTime,
-      difficulty: generated.difficulty,
-      elevationGain: generated.elevationGain,
-      terrain: generated.terrain,
-      features: generated.features,
-      mood: generated.mood,
-      coverImage: generated.coverImage,
-      routeData: generated.routeData as unknown as Prisma.InputJsonValue,
-      signature,
-      isShowcase: false,
-      published: false,
-      category: period === "week" ? "Weekly" : "Monthly",
-    },
-    select: { id: true },
-  });
-
-  await claimFeatured(userId, quest.id);
-  return { ok: true, questId: quest.id, slotKey: featured.key };
-}
-
-/**
- * Record that this account has taken the featured quest.
- *
- * Taking one has always been implicit — everybody gets it, nobody unlocks it —
- * but proof needs somewhere to hang: an approval marks a `quest_history` row
- * complete, and the stats and the sticker sheet are computed from those rows.
- * So the row is written the moment somebody files, and never before. It costs
- * no quota: nothing was issued, they just went.
- */
-async function claimFeatured(userId: string, questId: string): Promise<void> {
-  await db.questHistory.upsert({
-    where: { userId_questId: { userId, questId } },
-    update: {},
-    create: { userId, questId },
-  });
-}
-
-/** `week`/`month` as the schedule spells it. */
-function schedulePeriod(period: FeaturedPeriod): "WEEKLY" | "MONTHLY" {
-  return period === "week" ? "WEEKLY" : "MONTHLY";
-}
-
-/**
- * Where this account's proof for a featured quest sits.
- *
- * Looked up by the same signature the row would have been written under, so
- * an account that has never logged a featured quest costs one indexed read
- * and no writes — the row is still only created when somebody actually files.
- */
-export async function getFeaturedProofStatus(
-  userId: string,
-  featured: FeaturedQuest | null,
-): Promise<{ status: "NONE" | "PENDING" | "APPROVED" | "REJECTED"; reviewNote: string | null }> {
-  if (!featured) return { status: "NONE", reviewNote: null };
-
-  let questId = featured.summary.id;
-  if (featured.quest !== null) {
-    const row = await db.quest.findFirst({
-      where: { signature: `featured:${featured.period}:${featured.key}:${userId}` },
-      select: { id: true },
-    });
-    if (!row) return { status: "NONE", reviewNote: null };
-    questId = row.id;
-  }
-
-  const submission = await db.submission.findUnique({
-    where: { userId_questId: { userId, questId } },
-    select: { status: true, reviewNote: true },
-  });
-
-  return {
-    status: submission?.status ?? "NONE",
-    reviewNote: submission?.reviewNote ?? null,
-  };
-}
-
-/**
- * How many people filed against this slot, and how many were approved.
- *
- * Only meaningful for a slot an admin booked — that is the case where
- * everyone is looking at the same quest. A generated featured quest is one
- * account's alone, and a count of "everyone else" who did it would be a count
- * of one, dressed up as a community.
- */
-export async function getFeaturedSlotCounters(
-  featured: FeaturedQuest | null,
-): Promise<{ filed: number; approved: number } | null> {
-  if (!featured || !featured.scheduled) return null;
-
-  const where = { period: schedulePeriod(featured.period), slotKey: featured.key };
-  const [filed, approved] = await Promise.all([
-    db.submission.count({ where }),
-    db.submission.count({ where: { ...where, status: "APPROVED" } }),
-  ]);
-  return { filed, approved };
 
 // ---------------------------------------------------------------------------
 // Making a featured quest real
@@ -549,4 +385,33 @@ export async function materialiseFeatured(
     await tx.questHistory.create({ data: { userId, questId: quest.id } });
     return quest.id;
   });
+}
+
+/**
+ * How many people filed against this slot, and how many were approved.
+ *
+ * Only meaningful for a slot an admin booked — that is the case where
+ * everybody is looking at the same quest. A generated featured quest is one
+ * account's alone, and a count of "everyone else" who did it would be a count
+ * of one, dressed up as a community.
+ *
+ * Counted off the cadence stamp on the submission rather than off the quest,
+ * because that is what the slot actually is: the same quest booked again next
+ * March is a different week's work, and would otherwise be added to this
+ * week's tally.
+ */
+export async function getFeaturedSlotCounters(
+  featured: FeaturedQuest | null,
+): Promise<{ filed: number; approved: number } | null> {
+  if (!featured || !featured.scheduled) return null;
+
+  const where = {
+    period: featured.period === "week" ? ("WEEKLY" as const) : ("MONTHLY" as const),
+    slotKey: featured.key,
+  };
+  const [filed, approved] = await Promise.all([
+    db.submission.count({ where }),
+    db.submission.count({ where: { ...where, status: "APPROVED" } }),
+  ]);
+  return { filed, approved };
 }

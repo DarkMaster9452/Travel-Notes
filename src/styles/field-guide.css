@@ -5995,259 +5995,6 @@ select.input {
   box-shadow: var(--shadow-field);
 }
 
-/* -------------------------- 16 cadence + boards -------------------------- */
-
-/* --- podium stickers ------------------------------------------------------
-   The three metals are the only colours in the product that aren't green or
-   stamp ink. They are allowed here and nowhere else: a podium drawn in the
-   house palette doesn't read as a podium. Declared after the sheet's
-   nth-child tinting so they win it, tilt included — a medal is pinned
-   straight, not stuck on at an angle like the rest of the sheet. */
-/* Pinned straight rather than stuck on at an angle like the rest of the
-   sheet. `:not(:hover)` so the lift on hover still reads — the tilt is what
-   is being cancelled, not the interaction. */
-.sticker.medal:not(:hover) {
-  transform: none !important;
-}
-.sticker.medal-gold {
-  background: var(--medal-gold);
-}
-.sticker.medal-silver {
-  background: var(--medal-silver);
-}
-.sticker.medal-bronze {
-  background: var(--medal-bronze);
-}
-
-/* --- the podium ----------------------------------------------------------- */
-.podium {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  padding: 22px 18px;
-  border-bottom: 1px solid var(--line);
-}
-@media (max-width: 640px) {
-  .podium {
-    grid-template-columns: 1fr;
-  }
-}
-.podium-place {
-  display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: 6px;
-  padding: 18px 12px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r);
-  background: var(--glass);
-  transition:
-    transform 0.22s var(--ease-field),
-    border-color 0.2s;
-}
-.podium-place:hover {
-  transform: translateY(-2px);
-}
-.podium-place.is-you {
-  border-color: var(--moss-2);
-}
-.podium-place .sticker {
-  width: 64px;
-}
-.podium-place > b {
-  font-family: var(--serif);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-top: 4px;
-}
-.podium-score {
-  font-family: var(--mono);
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-.podium-place.medal-gold .podium-score {
-  color: var(--medal-gold);
-}
-.podium-place.medal-silver .podium-score {
-  color: var(--medal-silver);
-}
-.podium-place.medal-bronze .podium-score {
-  color: var(--medal-bronze);
-}
-
-/* --- the rest of the board ------------------------------------------------ */
-.board-rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.board-rows li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 20px;
-  border-bottom: 1px solid var(--line-2);
-  transition: background 0.16s;
-}
-.board-rows li:last-child {
-  border-bottom: 0;
-}
-.board-rows li:hover {
-  background: var(--glass);
-}
-.board-rows li.is-you {
-  background: var(--glass-strong);
-  box-shadow: inset 3px 0 0 var(--moss-2);
-}
-.board-rank {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-3);
-  width: 30px;
-  flex: 0 0 30px;
-}
-.board-name {
-  flex: 1;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.board-quests {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-3);
-  white-space: nowrap;
-}
-.board-score {
-  font-family: var(--mono);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  width: 60px;
-  text-align: right;
-  flex: 0 0 60px;
-}
-
-/* --- the podium shelf on the stickers page -------------------------------- */
-.award-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
-  padding: 20px;
-}
-.award {
-  display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: 5px;
-}
-.award .sticker {
-  width: 74px;
-}
-.award b {
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-/* --- the admin quest table ------------------------------------------------ */
-.quest-row {
-  display: grid;
-  gap: 8px;
-}
-.quest-row-main {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.quest-row-title {
-  flex: 1;
-  min-width: min(100%, 16rem);
-}
-.quest-row-title b {
-  display: block;
-  font-family: var(--serif);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.quest-row-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-.quest-row-desc {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--ink-2);
-  max-width: 78ch;
-}
-.quest-row-desc b {
-  color: var(--ink);
-  font-weight: 600;
-}
-.quest-row-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-
-/* --- the customer-facing database ----------------------------------------- */
-.qdb-filters .qdb-search {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--line-2);
-}
-.qdb-search .input {
-  flex: 1;
-  padding: 10px 16px;
-}
-.qdb-filter-row {
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  padding: 9px 18px;
-  border-bottom: 1px solid var(--line-2);
-}
-.qdb-filter-row:last-child {
-  border-bottom: 0;
-}
-.qdb-filter-row > b {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  width: 62px;
-  flex: 0 0 62px;
-  padding-top: 6px;
-}
-.qdb-filter-row nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-.qdb-filter-row nav a {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
 /* ---------------------------------------------------------------------------
    The rules
 
@@ -6946,41 +6693,6 @@ select.input {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 7px 12px;
-  border-radius: var(--radius-pill);
-  color: var(--ink-3);
-  transition:
-    background 0.2s var(--ease-field),
-    color 0.16s,
-    transform 0.16s var(--ease-field);
-}
-.qdb-filter-row nav a:hover {
-  color: var(--ink);
-  background: var(--glass);
-  transform: translateY(-1px);
-}
-.qdb-filter-row nav a[aria-current="page"] {
-  background: var(--pine);
-  color: #eef2e7;
-}
-.qdb-filter-row nav a em {
-  font-style: normal;
-  opacity: 0.6;
-}
-
-.qdb-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 18px;
-  align-items: stretch;
-}
-.qdb-grid > * {
-  display: flex;
-}
-.qdb-card {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
   color: var(--ink-3);
 }
 .feed-note {
@@ -7046,98 +6758,6 @@ select.input {
   border-radius: var(--r);
   overflow: hidden;
   box-shadow: var(--shadow);
-  transition:
-    transform 0.25s var(--ease-field),
-    box-shadow 0.25s var(--ease-field);
-}
-.qdb-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-}
-.qdb-cover {
-  width: 100%;
-  height: 132px;
-  object-fit: cover;
-  border-bottom: 1px solid var(--line-2);
-}
-.qdb-cover-blank {
-  background: linear-gradient(160deg, var(--paper-2), var(--paper-3));
-}
-.qdb-body {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  padding: 16px 17px 17px;
-  flex: 1;
-}
-.qdb-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.qdb-where {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.qdb-title {
-  font-family: var(--serif);
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-.qdb-title a:hover {
-  color: var(--moss-2);
-}
-.qdb-desc {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--ink-2);
-}
-.qdb-desc b {
-  color: var(--ink);
-  font-weight: 600;
-}
-.qdb-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--line-2);
-  border: 1px solid var(--line-2);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: auto;
-}
-.qdb-stats > div {
-  background: var(--card);
-  padding: 9px 10px;
-}
-.qdb-stats dt {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.qdb-stats dd {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-top: 2px;
-}
-.qdb-foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding-top: 3px;
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1), border-color 0.18s ease;
   --accent: var(--pine);
 }
@@ -7269,4 +6889,371 @@ select.input {
 }
 .accent-row label[data-accent="signal"] {
   --accent: var(--signal);
+}
+
+/* -------------------------- 16 cadence + boards -------------------------- */
+
+/* --- podium stickers ------------------------------------------------------
+   The metals come from the sheet's own ink list (`gold`, `stone`, `copper`)
+   via `data-tone`, so a medal is coloured by the same mechanism as every
+   other sticker. All that is left here is the tilt: a medal is pinned
+   straight rather than stuck on at an angle. `:not(:hover)` so the lift on
+   hover still reads — the tilt is what is cancelled, not the interaction. */
+.sticker.medal:not(:hover) {
+  transform: none !important;
+}
+
+/* --- the podium ----------------------------------------------------------- */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 22px 18px;
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width: 640px) {
+  .podium {
+    grid-template-columns: 1fr;
+  }
+}
+.podium-place {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 18px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--glass);
+  transition:
+    transform 0.22s var(--ease-field),
+    border-color 0.2s;
+}
+.podium-place:hover {
+  transform: translateY(-2px);
+}
+.podium-place.is-you {
+  border-color: var(--moss-2);
+}
+.podium-place .sticker {
+  width: 64px;
+}
+.podium-place > b {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 4px;
+}
+.podium-score {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* --- the rest of the board ------------------------------------------------ */
+.board-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.board-rows li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line-2);
+  transition: background 0.16s;
+}
+.board-rows li:last-child {
+  border-bottom: 0;
+}
+.board-rows li:hover {
+  background: var(--glass);
+}
+.board-rows li.is-you {
+  background: var(--glass-strong);
+  box-shadow: inset 3px 0 0 var(--moss-2);
+}
+.board-rank {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  width: 30px;
+  flex: 0 0 30px;
+}
+.board-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-quests {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.board-score {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  width: 60px;
+  text-align: right;
+  flex: 0 0 60px;
+}
+
+/* --- the podium shelf on the stickers page -------------------------------- */
+.award-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  padding: 20px;
+}
+.award {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 5px;
+}
+.award .sticker {
+  width: 74px;
+}
+.award b {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* --- the admin quest table ------------------------------------------------ */
+.quest-row {
+  display: grid;
+  gap: 8px;
+}
+.quest-row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.quest-row-title {
+  flex: 1;
+  min-width: min(100%, 16rem);
+}
+.quest-row-title b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.quest-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.quest-row-desc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 78ch;
+}
+.quest-row-desc b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.quest-row-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* --- the customer-facing database ----------------------------------------- */
+.qdb-filters .qdb-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line-2);
+}
+.qdb-search .input {
+  flex: 1;
+  padding: 10px 16px;
+}
+.qdb-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--line-2);
+}
+.qdb-filter-row:last-child {
+  border-bottom: 0;
+}
+.qdb-filter-row > b {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  width: 62px;
+  flex: 0 0 62px;
+  padding-top: 6px;
+}
+.qdb-filter-row nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.qdb-filter-row nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-3);
+  transition:
+    background 0.2s var(--ease-field),
+    color 0.16s,
+    transform 0.16s var(--ease-field);
+}
+.qdb-filter-row nav a:hover {
+  color: var(--ink);
+  background: var(--glass);
+  transform: translateY(-1px);
+}
+.qdb-filter-row nav a[aria-current="page"] {
+  background: var(--pine);
+  color: #eef2e7;
+}
+.qdb-filter-row nav a em {
+  font-style: normal;
+  opacity: 0.6;
+}
+
+.qdb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+.qdb-grid > * {
+  display: flex;
+}
+.qdb-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.25s var(--ease-field),
+    box-shadow 0.25s var(--ease-field);
+}
+.qdb-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+.qdb-cover {
+  width: 100%;
+  height: 132px;
+  object-fit: cover;
+  border-bottom: 1px solid var(--line-2);
+}
+.qdb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 17px 17px;
+  flex: 1;
+}
+.qdb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.qdb-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.qdb-title {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.qdb-title a:hover {
+  color: var(--moss-2);
+}
+.qdb-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.qdb-desc b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.qdb-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line-2);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: auto;
+}
+.qdb-stats > div {
+  background: var(--card);
+  padding: 9px 10px;
+}
+.qdb-stats dt {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.qdb-stats dd {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+}
+.qdb-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 3px;
 }

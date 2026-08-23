@@ -79,15 +79,14 @@ export function LeaderboardBoard({
                   {podium.map((row) => (
                     <div
                       key={row.userId}
-                      className={cn(
-                        "podium-place",
-                        `medal-${row.medal!.toLowerCase()}`,
-                        row.userId === viewerId && "is-you",
-                      )}
+                      className={cn("podium-place", row.userId === viewerId && "is-you")}
                     >
+                      {/* The metal is the sticker's own ink, carried by the
+                          artwork rather than applied here — see the note in
+                          `components/field/sticker.tsx`. */}
                       <Sticker
                         achievementKey={medalSticker(board.period, row.medal!)}
-                        className={`medal medal-${row.medal!.toLowerCase()}`}
+                        className="medal"
                         title={`${medalLabel(row.medal!)} — ${board.label}`}
                       />
                       <b>{row.username}</b>
