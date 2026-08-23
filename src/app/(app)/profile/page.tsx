@@ -7,13 +7,14 @@ import { stagger } from "@/lib/motion";
 import { PlanChip } from "@/components/app/plan-mark";
 import { CountryForm, DangerZone, NameForm } from "@/components/app/settings-forms";
 import { ThemeToggle } from "@/components/app/theme-toggle";
-import { Avatar, Eyebrow, Panel, PanelHead } from "@/components/field";
+import { Avatar, Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
 import { CAPABILITY_COPY, headlineCapabilities } from "@/lib/config";
 import { db } from "@/lib/db";
 import { countriesFor, countryForStoredLocation } from "@/lib/geo";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled } from "@/lib/env";
+import { RULES, RULES_SUMMARY } from "@/lib/rules";
 import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -22,9 +23,13 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const user = await requireClient();
 
-  const [preferences, entitlement] = await Promise.all([
+  const [preferences, entitlement, profile] = await Promise.all([
     db.userPreferences.findUnique({ where: { userId: user.id } }),
     getEntitlement(user.id),
+    db.profile.findUnique({
+      where: { userId: user.id },
+      select: { handle: true, published: true },
+    }),
   ]);
 
   const plan = entitlement.definition;
@@ -123,6 +128,38 @@ export default async function SettingsPage() {
         </div>
 
         <div className="flex flex-col gap-5">
+          {/* The public page. Its own panel rather than a line in this one:
+              it is the only setting here that anybody else can see. */}
+          <Reveal delay={stagger(0)}>
+            <Panel flush>
+              <PanelHead
+                title="Your public page"
+                aside={
+                  <Tag tone={profile?.published ? "pine" : "ghost"}>
+                    {profile?.published ? "Published" : "Private"}
+                  </Tag>
+                }
+              />
+              <div className="flex flex-col gap-4 px-5 py-5">
+                <p className="text-[14.5px] leading-[1.55] text-ink-2">
+                  {profile?.published
+                    ? "Anybody signed in can find you. Your figures, your logs and the photographs you filed — whichever of those you left switched on."
+                    : "Somewhere for the person deciding whether to spend a Saturday with you. Off until you publish it, and off again the moment you change your mind."}
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link href="/profile/public" className="btn btn-ghost btn-sm">
+                    {profile ? "Edit your page" : "Set one up"}
+                  </Link>
+                  {profile?.published && (
+                    <Link href={`/people/${profile.handle}`} className="meta underline">
+                      /people/{profile.handle}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </Panel>
+          </Reveal>
+
           <Reveal delay={stagger(1)}>
             <Panel flush>
               <PanelHead title="Where you set out from" />
@@ -143,6 +180,33 @@ export default async function SettingsPage() {
                   Auto follows your device. The choice is saved to your account, so it holds on
                   every machine you sign in from.
                 </p>
+              </div>
+            </Panel>
+          </Reveal>
+
+          {/* The rules, in the place people go looking for them. The headings
+              come from `lib/rules` rather than being typed out again, so this
+              panel cannot end up advertising a section that no longer exists. */}
+          <Reveal delay={stagger(3)}>
+            <Panel flush>
+              <PanelHead title="The rules" />
+              <div className="flex flex-col gap-4 px-5 py-5">
+                <p className="text-[14.5px] leading-[1.55] text-ink-2">{RULES_SUMMARY}</p>
+                <ul className="rules-chips">
+                  {RULES.map((group) => (
+                    <li key={group.id}>
+                      <Link href={`/rules#${group.id}`}>{group.heading}</Link>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link href="/rules" className="btn btn-ghost btn-sm">
+                    Read the rules
+                  </Link>
+                  <Link href="/legal/safety" className="meta underline">
+                    Safety notice
+                  </Link>
+                </div>
               </div>
             </Panel>
           </Reveal>

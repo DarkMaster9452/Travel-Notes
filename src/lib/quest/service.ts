@@ -29,6 +29,7 @@ export type UnlockFailure =
   | { ok: false; code: "no_preferences"; message: string }
   | { ok: false; code: "quota_exhausted"; message: string; entitlement: Entitlement }
   | { ok: false; code: "rate_limited"; message: string; retryAfter: number }
+  | { ok: false; code: "catalogue_exhausted"; message: string }
   | { ok: false; code: "unlock_failed"; message: string };
 
 export type UnlockSuccess = {
@@ -96,17 +97,51 @@ export async function loadHistory(userId: string, take = 40): Promise<HistoryIte
 }
 
 /**
- * Unlock one catalogue place as a quest and persist it.
+ * Every signature this account has ever been given.
+ *
+ * Deliberately not derived from `loadHistory`, which stops at forty rows
+ * because that is as far back as recency-weighted scoring is worth reading.
+ * Non-repetition is not a weighting — a quest issued two years ago is still
+ * one you have had — so this reads the whole column, and reads only that
+ * column so the cost stays flat as a history grows.
+ */
+export async function loadSeenSignatures(userId: string): Promise<Set<string>> {
+  const rows = await db.questHistory.findMany({
+    where: { userId },
+    select: { quest: { select: { signature: true } } },
+  });
+  return new Set(rows.map((row) => row.quest.signature));
+}
+
+/**
+ * Unlock a catalogue place as a quest and persist it.
  *
  * Every guard that matters runs here rather than in the UI: entitlement,
  * rate limiting, and the quota increment all happen server-side, and the
  * increment shares a transaction with the quest insert so a crash can never
  * hand out a free quest without recording it (or vice versa).
+ *
+ * `locations` is a *ranked preference*, not a single instruction. The engine
+ * refuses to hand back a quest this account has already had, so a place whose
+ * every shape is spent has nothing to give and the next place on the list is
+ * tried instead. One place is still a legitimate list — it just means "here
+ * or nowhere", which is what a reader who picked a place off the map meant.
+ *
+ * The guards run once, before the walk: trying four places is one unlock, not
+ * four, and must cost one quota.
  */
 export async function unlockQuestForUser(
   userId: string,
-  locationId: string,
+  locations: string | readonly string[],
 ): Promise<UnlockOutcome> {
+  const ranked = typeof locations === "string" ? [locations] : [...locations];
+  if (ranked.length === 0) {
+    return {
+      ok: false,
+      code: "unlock_failed",
+      message: "We couldn't add that quest right now. Try again.",
+    };
+  }
   const preferences = await db.userPreferences.findUnique({ where: { userId } });
   if (!preferences) {
     return {
@@ -140,22 +175,48 @@ export async function unlockQuestForUser(
     };
   }
 
-  const history = await loadHistory(userId);
+  const [history, usedSignatures] = await Promise.all([
+    loadHistory(userId),
+    loadSeenSignatures(userId),
+  ]);
+  const enginePreferences = toEnginePreferences(preferences);
 
-  let built;
-  try {
-    built = generateQuest({
-      preferences: toEnginePreferences(preferences),
-      history,
-      locationId,
-      seed: newSeed(),
-      now: new Date(),
-    });
-  } catch (error) {
-    if (error instanceof QuestGenerationError) {
-      return { ok: false, code: "unlock_failed", message: error.message };
+  // Walk the ranked places until one has something this account has not had.
+  let built: ReturnType<typeof generateQuest> | null = null;
+  let locationId = ranked[0]!;
+  let lastInvalid: QuestGenerationError | null = null;
+
+  for (const candidate of ranked) {
+    try {
+      built = generateQuest({
+        preferences: enginePreferences,
+        history,
+        usedSignatures,
+        locationId: candidate,
+        seed: newSeed(),
+        now: new Date(),
+      });
+      locationId = candidate;
+      break;
+    } catch (error) {
+      if (!(error instanceof QuestGenerationError)) throw error;
+      // A place with nothing new left is expected; a place the catalogue does
+      // not have is a bug in the caller's list, and worth reporting if the
+      // whole walk comes up empty.
+      if (error.code !== "exhausted") lastInvalid = error;
     }
-    throw error;
+  }
+
+  if (!built) {
+    if (lastInvalid) {
+      return { ok: false, code: "unlock_failed", message: lastInvalid.message };
+    }
+    return {
+      ok: false,
+      code: "catalogue_exhausted",
+      message:
+        "You have been everywhere we know. Nothing here would be new — new places are added as we walk them.",
+    };
   }
 
   const { quest: blueprint, trace } = built;

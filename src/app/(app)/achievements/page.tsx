@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { FreshStickers } from "@/components/app/fresh-stickers";
 import { ProgressBar, Reveal } from "@/components/app/motion";
 import { PlanChip } from "@/components/app/plan-mark";
 import { stagger } from "@/lib/motion";
 import { Eyebrow, Panel, PanelHead, Sticker, StickerSheet, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
 import { countEarned, countReachable, getAchievements } from "@/lib/achievements";
+import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { getHeldAwards, medalLabel } from "@/lib/leaderboard";
 import { getUserStats } from "@/lib/quest/service";
@@ -28,12 +30,31 @@ export default async function StickersPage() {
     getUserStats(user.id),
     getEntitlement(user.id),
     getHeldAwards(user.id),
+  const [stats, entitlement, account, revocations] = await Promise.all([
+    getUserStats(user.id),
+    getEntitlement(user.id),
+    db.user.findUnique({ where: { id: user.id }, select: { seenAchievements: true } }),
+    db.achievementRevocation.findMany({
+      where: { userId: user.id },
+      select: { achievementId: true },
+    }),
   ]);
 
-  const achievements = getAchievements(stats, entitlement.plan);
+  const achievements = getAchievements(
+    stats,
+    entitlement.plan,
+    revocations.map((row) => row.achievementId),
+  );
   const earned = countEarned(achievements);
   const reachable = countReachable(achievements);
   const beyondPlan = achievements.length - reachable;
+
+  // Earned, and not yet celebrated. A sticker earned before this column
+  // existed counts as already seen — see `markStickersSeenAction`, which is
+  // what closes the loop after the animation has played.
+  const seen = new Set(account?.seenAchievements ?? []);
+  const fresh = achievements.filter((achievement) => achievement.earned && !seen.has(achievement.id));
+  const freshIds = new Set(fresh.map((achievement) => achievement.id));
 
   return (
     <>
@@ -110,6 +131,10 @@ export default async function StickersPage() {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_1.05fr] lg:items-start">
         <Reveal delay={stagger(0)}>
+          <FreshStickers
+            ids={fresh.map((achievement) => achievement.id)}
+            labels={fresh.map((achievement) => achievement.label)}
+          />
           <StickerSheet tag={`Sheet 01 · ${earned} of ${reachable}`}>
             {achievements.map((achievement) => (
               <Sticker
@@ -117,6 +142,12 @@ export default async function StickersPage() {
                 achievementKey={achievement.sticker}
                 locked={!achievement.earned && !achievement.planLocked}
                 planLocked={achievement.planLocked}
+                fresh={freshIds.has(achievement.id)}
+                freshDelay={
+                  freshIds.has(achievement.id)
+                    ? fresh.findIndex((entry) => entry.id === achievement.id) * 220
+                    : undefined
+                }
                 title={`${achievement.label} — ${achievement.earned ? "unlocked" : "locked"}`}
               />
             ))}

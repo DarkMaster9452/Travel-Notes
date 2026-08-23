@@ -131,6 +131,40 @@ export function IconClock(props: IconProps) {
   );
 }
 
+/**
+ * Warning triangle. Reserved for the panel's notices, where it marks the two
+ * loud tones — nothing else in the product raises an alarm.
+ */
+export function IconAlert(props: IconProps) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M8 1.9l6.4 11.2H1.6L8 1.9z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M8 6.2v3.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="8" cy="11.2" r="0.85" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Bell. Opens the panel's notices, and carries their count. */
+export function IconBell(props: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M4.4 12.4V8.2a4.6 4.6 0 019.2 0v4.2l1.2 1.7H3.2l1.2-1.7z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M7.3 15.3a1.8 1.8 0 003.4 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Small ring used to bullet the fact list on a board post. */
 export function IconDot(props: IconProps) {
   return (

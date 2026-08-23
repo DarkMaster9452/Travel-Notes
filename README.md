@@ -156,6 +156,17 @@ than left to call sites:
 - Uppercase mono for all metadata; serif for anything handed to you.
 - Paper grain and contour lines are marketing surfaces only. The app interior
   drops both and keeps the palette.
+- **Severity is weight, not a third hue.** The panel's notices need four levels
+  and the product has two colours, so `critical` is filled stamp ink, `warning`
+  is the same ink outlined, `info` is green and `clear` is paper. Each also
+  carries its own icon and its own word, so none of it is encoded by colour
+  alone.
+
+The mark is drawn twice on purpose. `LogoMark` is the outlined version used in
+the chrome; `src/app/icon.svg` is the same mountain as a silhouette, because at
+16px the outline's 1.7px strokes fall below a device pixel. That icon backs the
+favicon, the Apple touch icon and the web manifest, so the tab, the home screen
+and an installed window all show the same thing.
 
 ## Architecture
 
@@ -185,6 +196,28 @@ Server components do the data fetching; client components exist only where
 there is interaction (generation overlay, onboarding, toggles, forms). Prisma
 records are mapped to a `QuestSummary` projection before crossing to the
 client, so no database row is shipped to the browser.
+
+---
+
+## Admin notices
+
+The panel tells an admin what is wrong before they go looking. Every notice is a
+**live condition** derived on each request in `src/lib/admin/notifications.ts` —
+never a stored message — so it cannot go stale, cannot describe something that
+was already fixed, and needs no background job to clean up. Book the empty week
+and the notice is gone on the next load.
+
+What it watches: the weekly and monthly slots that are live now and the ones
+opening within the horizon, the size *and the age* of the review queue, how many
+published quests there are to draw from, unpublished drafts, and subscriptions
+Stripe could not charge. The thresholds are policy rather than logic and live
+together in one `THRESHOLDS` object at the top of that module.
+
+They surface in two places, from one list: the bell in the panel chrome, and a
+"Needs attention" block above the figures on the overview. Which of them an
+admin has already seen is kept in `localStorage` — "seen" is a property of a
+person at a screen, not of the account, and it should never cost a write to the
+database.
 
 ---
 

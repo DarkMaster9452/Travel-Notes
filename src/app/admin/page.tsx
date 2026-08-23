@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BarSeries, RankBars, SplitBar, TrendArea } from "@/components/admin/charts";
+import { NoticeList } from "@/components/admin/notices";
 import { QuickActions } from "@/components/admin/quick-actions";
 import { StatGrid } from "@/components/admin/stat-grid";
 import { Reveal } from "@/components/app/motion";
-import { Eyebrow } from "@/components/field";
+import { Eyebrow, Panel, PanelHead } from "@/components/field";
+import { getAdminNotices } from "@/lib/admin/notifications";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { RAMP_3, STATUS_COLOR } from "@/lib/admin/palette";
@@ -33,8 +35,9 @@ export const dynamic = "force-dynamic";
 export default async function AdminOverviewPage() {
   await requireAdmin();
 
-  const [overview, signups, questSeries, planSplit, statusSplit, difficulty, regions, pending, decided] =
+  const [notices, overview, signups, questSeries, planSplit, statusSplit, difficulty, regions, pending, decided] =
     await Promise.all([
+      getAdminNotices(),
       getAdminOverview(),
       getSignupSeries(30),
       getQuestSeries(30),
@@ -57,6 +60,24 @@ export default async function AdminOverviewPage() {
         <Link href="/admin/database" className="btn btn-ghost btn-sm">
           Inspect the database
         </Link>
+      </Reveal>
+
+      {/* Above the figures, deliberately. The counts describe how the product
+          is doing; these describe what is currently wrong with it, and a
+          reader who only looks at the top of this page should see the second
+          thing first. */}
+      <Reveal className="mb-5">
+        <Panel flush>
+          <PanelHead
+            title="Needs attention"
+            aside={
+              <span className="meta">
+                {notices.length === 0 ? "All clear" : `${notices.length} open`}
+              </span>
+            }
+          />
+          <NoticeList notices={notices} className="notice-list-panel" />
+        </Panel>
       </Reveal>
 
       <Reveal>

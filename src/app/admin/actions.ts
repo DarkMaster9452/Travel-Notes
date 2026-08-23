@@ -230,7 +230,22 @@ const questSchema = z.object({
   difficulty: z.enum(["EASY", "MODERATE", "HARD", "EXPERT"]),
   published: z.coerce.boolean().optional(),
   coverImage: z.string().trim().url("That needs to be a full https:// link.").max(500).optional().or(z.literal("")),
+
+  // Getting there. Optional throughout: a start with no car park is an
+  // ordinary start, and the reader's page shows nothing rather than a panel
+  // with holes in it.
+  parkingName: z.string().trim().max(120).optional().or(z.literal("")),
+  parkingLat: z.coerce.number().min(-90).max(90).optional().or(z.literal("")),
+  parkingLng: z.coerce.number().min(-180).max(180).optional().or(z.literal("")),
+  parkingNote: z.string().trim().max(300).optional().or(z.literal("")),
+  approachTime: z.coerce.number().int().min(0).max(600).optional().or(z.literal("")),
+  transitNote: z.string().trim().max(300).optional().or(z.literal("")),
 });
+
+/** An empty form field is "not set", not zero. */
+function optionalNumber(value: number | "" | undefined): number | null {
+  return typeof value === "number" ? value : null;
+}
 
 export type QuestFormState =
   | { ok: true; questId: string }
@@ -284,6 +299,17 @@ export async function createQuestAction(
       duration: q.duration,
       difficulty: q.difficulty,
       coverImage: q.coverImage || "",
+      parkingName: q.parkingName || null,
+      // Only a complete pair is worth storing: one coordinate on its own
+      // cannot be drawn and would fail the reader's "is there parking" check
+      // in a way that depends on which half was filled in.
+      parkingLat:
+        typeof q.parkingLat === "number" && typeof q.parkingLng === "number" ? q.parkingLat : null,
+      parkingLng:
+        typeof q.parkingLat === "number" && typeof q.parkingLng === "number" ? q.parkingLng : null,
+      parkingNote: q.parkingNote || null,
+      approachTime: optionalNumber(q.approachTime),
+      transitNote: q.transitNote || null,
       signature,
       isShowcase: true,
       published: q.published ?? true,

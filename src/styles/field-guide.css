@@ -17,7 +17,7 @@
      04  quest card
      05  panels, fields, pills
      06  nav + hero
-     07  steps / flow / mail
+     07  steps / flow / closing band
      08  weekly + chat
      09  matches + board
      10  proof
@@ -611,8 +611,8 @@ textarea.input {
   opacity: 0.6;
 }
 
-/* Avatar. Three colour variants, initials only — there are no photos and no
-   browsable profiles in this product. */
+/* Avatar. Three colour variants, initials only. Nobody uploads a picture of
+   themselves anywhere in this product, published profiles included. */
 .av {
   width: 44px;
   height: 44px;
@@ -844,7 +844,7 @@ textarea.input {
   color: var(--ink-3);
 }
 
-/* ------------------------ 07 steps / flow / mail ------------------------- */
+/* ------------------- 07 steps / flow / closing band ---------------------- */
 
 .demo-section {
   background: var(--paper-2);
@@ -944,185 +944,53 @@ textarea.input {
   stroke-linejoin: round;
 }
 
-.mail-section {
+/* The deep-green band. It used to sit halfway up the page under the email
+   mock; it belongs at the close, where the page stops explaining and asks. A
+   single dark surface reads as an ending — three of them read as stripes. */
+.cta-section {
   background: var(--forest);
   color: #ede7da;
   border-top: 1px solid var(--moss);
-  overflow: hidden;
 }
-.mail-section .eyebrow {
+.cta-section .eyebrow {
   color: #a8c49a;
 }
-.mail-section .h2 {
+.cta-section .h2 {
   color: #f7f2e7;
 }
-.mail-section .lede {
+.cta-section .lede {
   color: rgba(237, 231, 218, 0.72);
 }
-.mail-grid {
-  display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
-  gap: 52px;
-  align-items: center;
+/* The contour lines are drawn for paper. On the forest they need to be the
+   light in the dark rather than the shading on the light. */
+.cta-section .contours path {
+  stroke: #a8c49a;
+  opacity: 0.16;
 }
-.mail-list {
-  margin-top: 34px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0;
+.cta-section .contours path:nth-child(3n) {
+  stroke: #d8e4cd;
+  opacity: 0.2;
 }
-.mail-list li {
-  list-style: none;
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 16px 0;
-  border-top: 1px solid rgba(237, 231, 218, 0.14);
+/* Both buttons invert on the dark band. The primary one is pine on paper
+   everywhere else, which on the forest is pine on pine — a shape you can only
+   find by looking for it. Here the paper is the ink. */
+.cta-section .btn-signal {
+  background: #f2f4ea;
+  color: var(--forest);
+  box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.7);
 }
-.mail-list li:last-child {
-  border-bottom: 1px solid rgba(237, 231, 218, 0.14);
+.cta-section .btn-signal:hover:not(:disabled) {
+  background: #fff;
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.8);
 }
-.mail-list .k {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  color: #a8c49a;
-  flex: 0 0 42px;
-  padding-top: 3px;
+.cta-section .btn-ghost {
+  color: #ede7da;
+  border-color: rgba(237, 231, 218, 0.34);
+  background: transparent;
 }
-.mail-list b {
-  display: block;
-  font-size: 15.5px;
-  font-weight: 600;
-  color: #f7f2e7;
-}
-.mail-list p {
-  font-size: 14.5px;
-  color: rgba(237, 231, 218, 0.68);
-  margin-top: 3px;
-}
-
-/* The email mock. Transactional templates reuse this treatment. */
-.envelope {
-  background: var(--card);
-  border-radius: var(--r);
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.6);
-  overflow: hidden;
-  transform: rotate(-0.7deg);
-}
-.env-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: var(--paper-2);
-  border-bottom: 1px solid var(--line);
-}
-.env-bar i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--ink-3);
-  opacity: 0.4;
-  display: block;
-}
-.env-bar span {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-3);
-  margin-left: 6px;
-  letter-spacing: 0.06em;
-}
-.env-body {
-  padding: 22px 24px 26px;
-  color: var(--ink);
-}
-.env-from {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line-2);
-}
-.env-av {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--pine);
-  display: grid;
-  place-items: center;
-  flex: 0 0 32px;
-}
-.env-av svg {
-  width: 18px;
-  height: 18px;
-}
-.env-from b {
-  font-size: 14px;
-  display: block;
-  letter-spacing: -0.01em;
-}
-.env-from span {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--ink-3);
-}
-.env-sub {
-  font-family: var(--serif);
-  font-size: 23px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  margin-top: 16px;
-  line-height: 1.15;
-}
-.env-text {
-  font-size: 14.5px;
-  color: var(--ink-2);
-  margin-top: 11px;
-  line-height: 1.55;
-}
-.env-quest {
-  margin-top: 16px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px 15px;
-  background: rgba(21, 24, 26, 0.02);
-}
-.env-quest .qq {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--moss-2);
-}
-.env-quest b {
-  display: block;
-  font-family: var(--serif);
-  font-size: 19px;
-  letter-spacing: -0.02em;
-  margin-top: 6px;
-}
-.env-quest .row {
-  display: flex;
-  gap: 16px;
-  margin-top: 11px;
-  flex-wrap: wrap;
-}
-.env-quest .row span {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-2);
-}
-.env-btn {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 11px 20px;
-  border-radius: var(--radius-pill);
-  background: var(--pine);
-  color: #f2f4ea;
-  font-size: 13.5px;
-  font-weight: 600;
+.cta-section .btn-ghost:hover {
+  border-color: rgba(237, 231, 218, 0.6);
+  background: rgba(237, 231, 218, 0.08);
 }
 
 /* --------------------------- 08 weekly + chat ---------------------------- */
@@ -1860,17 +1728,41 @@ textarea.input {
   transform: scale(1.09) rotate(0deg) !important;
   z-index: 2;
 }
-/* Colour and tilt come from position on the sheet, so a printed sheet reads
-   as a sheet rather than a grid of identical discs. */
-.sticker:nth-child(3n) {
-  background: var(--signal);
+/* The ten inks the sheet is printed in.
+   Colour belongs to the sticker rather than to its position — see the note in
+   `components/field/sticker.tsx` for why that changed. Tilt is still
+   positional, because tilt is decoration and colour is identity. */
+.sticker[data-tone="pine"] {
+  background: var(--pine);
 }
-.sticker:nth-child(3n + 2) {
+.sticker[data-tone="moss"] {
   background: var(--moss-2);
 }
-.sticker:nth-child(4n) {
+.sticker[data-tone="signal"] {
+  background: var(--signal);
+}
+.sticker[data-tone="night"] {
+  background: #2f3a63;
+}
+.sticker[data-tone="stone"] {
+  background: #5a6b74;
+}
+.sticker[data-tone="clay"] {
   background: #8a6a4a;
 }
+.sticker[data-tone="water"] {
+  background: #2b7a86;
+}
+.sticker[data-tone="berry"] {
+  background: #6d3a55;
+}
+.sticker[data-tone="gold"] {
+  background: #a97c25;
+}
+.sticker[data-tone="copper"] {
+  background: #9c5533;
+}
+
 .sticker:nth-child(odd) {
   transform: rotate(-7deg);
 }
@@ -1951,6 +1843,142 @@ textarea.input {
   opacity: 0.5;
   background-image: var(--lock-glyph);
 }
+/* ---------------------------------------------------------------------------
+   Earning one
+
+   A sticker you have just earned should arrive rather than simply be there.
+   It drops in overshooting slightly, as if pressed down by a thumb, and a
+   single band of light travels across it once. Both are one-shot: the sticker
+   ends in exactly the resting state every other sticker is already in, so
+   nothing on the sheet is permanently louder than its neighbours.
+
+   `animation-delay` is set inline per sticker so a run earned together lands
+   one after another instead of all at once.
+--------------------------------------------------------------------------- */
+.sticker.is-fresh {
+  animation: sticker-land 720ms cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+  z-index: 3;
+}
+.sticker.is-fresh::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%
+  );
+  background-size: 280% 100%;
+  animation: sticker-shine 900ms ease-out 420ms backwards;
+  opacity: 0;
+}
+
+@keyframes sticker-land {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-18deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.16) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sticker-shine {
+  0% {
+    opacity: 1;
+    background-position: 180% 0;
+  }
+  100% {
+    opacity: 0;
+    background-position: -80% 0;
+  }
+}
+
+/* The count of new ones, above the sheet. Not a modal: the sheet is already
+   the right place to look, and a dialog would put a click between somebody
+   and the thing they earned. */
+.fresh-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--r-sm);
+  background: var(--forest);
+  color: #eef2e7;
+  animation: fresh-banner-in 520ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+.fresh-banner b {
+  font-size: 15px;
+  font-weight: 650;
+}
+.fresh-banner span {
+  font-size: 14px;
+  color: rgba(238, 242, 231, 0.74);
+}
+.fresh-banner .fresh-spark {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  color: #e6c463;
+  animation: fresh-spark 1.6s ease-in-out 3;
+}
+.fresh-banner .fresh-spark svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes fresh-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fresh-spark {
+  0%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  40% {
+    transform: rotate(18deg) scale(1.18);
+  }
+  70% {
+    transform: rotate(-10deg) scale(1.05);
+  }
+}
+
+/* A sticker landing is celebration, not information — under reduced motion it
+   is simply already on the sheet. */
+@media (prefers-reduced-motion: reduce) {
+  .sticker.is-fresh,
+  .sticker.is-fresh::before,
+  .fresh-banner,
+  .fresh-banner .fresh-spark {
+    animation: none;
+  }
+  .sticker.is-fresh::before {
+    display: none;
+  }
+}
+
 /* The one upgrade prompt on the stickers page, under the sheet. */
 .sheet-upsell {
   margin-top: 16px;
@@ -3920,6 +3948,273 @@ a.plan-mark:hover {
   transform-origin: left;
 }
 
+/* ------------------------------- notices --------------------------------- */
+
+/* What the panel is asking an admin to deal with.
+
+   The colour rule for the whole product holds here too: green is structure,
+   stamp ink means look at this. So the two loud tones are the *same* orange at
+   two weights rather than two different oranges — `critical` fills, `warning`
+   outlines — and green carries anything merely worth knowing. Reading down a
+   list, a filled chip against an outlined one separates faster than two
+   adjacent hues ever would, and it survives being printed, dimmed, or read by
+   somebody who does not see the difference between orange and amber.
+
+   Nothing here is encoded by colour alone: every tone also carries its own
+   icon and its own word. */
+
+.notice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.notice {
+  position: relative;
+  padding: 15px 18px 15px 21px;
+  border-bottom: 1px dashed var(--line-2);
+}
+.notice:last-child {
+  border-bottom: 0;
+}
+/* The rule down the left edge is the tone at a glance, before any reading. */
+.notice::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--notice-ink, transparent);
+}
+
+/* The four tones, as a pair of custom properties each: the ink the chip and
+   the rule are drawn in, and the wash the row sits on. */
+.notice-critical {
+  --notice-ink: var(--signal);
+  --notice-wash: rgba(196, 72, 27, 0.07);
+}
+.notice-warning {
+  --notice-ink: var(--signal);
+  --notice-wash: rgba(196, 72, 27, 0.035);
+}
+.notice-info {
+  --notice-ink: var(--moss-2);
+  --notice-wash: transparent;
+}
+.notice-clear {
+  --notice-ink: var(--ink-3);
+  --notice-wash: transparent;
+}
+.notice.notice-critical,
+.notice.notice-warning {
+  background: var(--notice-wash);
+}
+
+.notice-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* The chip. Filled for the urgent tone, outlined for everything below it —
+   which is the weight half of the severity scale. */
+.notice-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--notice-ink);
+  color: var(--notice-ink);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.notice-badge.notice-critical {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fdf6f1;
+}
+.notice-badge-icon {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+}
+
+/* The figure the notice is about, when there is one worth reading first. */
+.notice-count {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--notice-ink);
+}
+
+.notice-title {
+  margin-top: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.notice-detail {
+  margin-top: 3px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.notice-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--notice-ink);
+  transition: gap 0.2s var(--ease-field);
+}
+.notice-action:hover {
+  gap: 10px;
+}
+
+/* Nothing to do. Said out loud, because an empty list and a list that failed
+   to load look identical otherwise. */
+.notice-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  --notice-ink: var(--moss-2);
+}
+.notice-empty p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------- the bell ----------------------------------- */
+
+.notice-center {
+  position: relative;
+}
+
+.notice-bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: rgba(238, 242, 231, 0.7);
+  border: 1px solid transparent;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s;
+}
+.notice-bell:hover {
+  background: rgba(238, 242, 231, 0.1);
+  color: #eef2e7;
+}
+.notice-bell[aria-expanded="true"] {
+  background: rgba(238, 242, 231, 0.12);
+  color: #eef2e7;
+  border-color: rgba(238, 242, 231, 0.2);
+}
+/* An unread count is green; an urgent one is stamp ink. Same rule as the
+   list it opens. */
+.notice-bell-count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  background: var(--moss-2);
+  color: #eef2e7;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1.5px solid var(--forest-deep);
+}
+.notice-bell.is-loud .notice-bell-count {
+  background: var(--signal);
+}
+
+.notice-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 80;
+  width: min(370px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  transform-origin: top right;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+/* In the sidebar the bell sits at the top-left of a 244px column, so the
+   panel opens rightwards out of it rather than off the edge of the screen. */
+.app-side .notice-panel {
+  left: 0;
+  right: auto;
+  transform-origin: top left;
+  width: min(360px, calc(100vw - 24px));
+}
+/* Under `lg` the bell lives in the phone bar, where it shares the row with the
+   account menu and so does not sit at the edge. A 370px panel anchored to a
+   button in the middle of that row hangs off the screen, so at this size the
+   panel stops being a dropdown and becomes a sheet pinned under the bar. */
+@media (max-width: 1023px) {
+  .notice-panel {
+    position: fixed;
+    top: 66px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: min(70vh, 520px);
+    transform-origin: top center;
+  }
+}
+
+.notice-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px dashed var(--line);
+}
+.notice-panel-body {
+  overflow-y: auto;
+}
+
+.app-side-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 /* --------------------------- admin furniture ----------------------------- */
 
 .admin-filters {
@@ -4033,8 +4328,7 @@ a.plan-mark:hover {
 
 @media (max-width: 980px) {
   .hero-grid,
-  .demo-grid,
-  .mail-grid {
+  .demo-grid {
     grid-template-columns: 1fr;
     gap: 38px;
   }
@@ -4994,8 +5288,8 @@ select.input {
    The monthly headline, on the client dashboard
 
    The one element on the page that is allowed to be loud. It sits on the dark
-   forest surface the design system already uses for emphasis (the mail
-   section, the feature plan card), which is what separates it from the
+   forest surface the design system already uses for emphasis (the closing
+   band, the feature plan card), which is what separates it from the
    panels around it without inventing a new treatment. It stays dark in both
    palettes for the same reason the admin sidebar does: it is a surface, not
    a shade of the page.
@@ -5954,6 +6248,700 @@ select.input {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+/* ---------------------------------------------------------------------------
+   The rules
+
+   Numbered, because rules are numbered, and set in the same dashed-panel
+   language as everything else so the page reads as part of the product rather
+   than as a legal document that wandered in.
+--------------------------------------------------------------------------- */
+.rules-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.rules-jump a {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-2);
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.rules-jump a:hover {
+  border-color: var(--moss);
+  color: var(--ink);
+}
+.rules-intro {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--line);
+}
+.rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.rules-list li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 0;
+  border-bottom: 1px dashed var(--line-2);
+}
+.rules-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.rules-n {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--moss-2);
+  flex: 0 0 26px;
+  padding-top: 3px;
+}
+.rules-list b {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.rules-list p {
+  margin-top: 4px;
+  font-size: 14.5px;
+  line-height: 1.58;
+  color: var(--ink-2);
+}
+/* The rules, condensed into Settings: the headings as chips, straight to the
+   anchor on the full page. */
+.rules-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.rules-chips a {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-2);
+  color: var(--ink-3);
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.rules-chips a:hover {
+  border-color: var(--moss);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------
+   The quest mark
+
+   An engraved landscape generated from the quest's id — see
+   `lib/quest/art.ts`. It is texture, never content: inside a card it sits
+   behind the type at an opacity chosen so the objective is still the first
+   thing read, and the card's own background is what it is drawn onto rather
+   than a second surface.
+
+   Tone drives `currentColor`, so every stroke and fill in the drawing takes
+   its colour from one declaration and the SVG itself never names a colour.
+--------------------------------------------------------------------------- */
+.quest-art {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.quest-art[data-tone="pine"] {
+  color: var(--pine);
+}
+.quest-art[data-tone="moss"] {
+  color: #4d7a4f;
+}
+.quest-art[data-tone="stone"] {
+  color: #52646f;
+}
+.quest-art[data-tone="water"] {
+  color: #2b6f7c;
+}
+.quest-art[data-tone="clay"] {
+  color: #86644a;
+}
+.quest-art[data-tone="dusk"] {
+  color: #5a5578;
+}
+.quest-art-ridge {
+  fill: currentColor;
+  stroke: none;
+}
+.quest-art-crest {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+  /* The viewBox is scaled hard by `slice`, and a stroke in user units would
+     scale with it. Same lesson as the admin world map. */
+  vector-effect: non-scaling-stroke;
+  opacity: 0.5;
+}
+.quest-art-disc {
+  fill: currentColor;
+  opacity: 0.28;
+}
+.quest-art-mark {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0.4;
+}
+
+/* Inside a card: a horizon behind the header, fading out before the body so
+   the type never sits on a busy patch. */
+.quest-art.quest-art-mark {
+  height: 132px;
+  opacity: 0.9;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+}
+.quest-card.has-art {
+  position: relative;
+  overflow: hidden;
+}
+.quest-card.has-art > .qc-head,
+.quest-card.has-art > .qc-body,
+.quest-card.has-art > .qc-foot {
+  position: relative;
+  z-index: 1;
+}
+
+/* The full-width version, where a quest has no photograph. Taller, louder,
+   and framed like the cover image it stands in for — without pretending to
+   be a picture of anywhere. */
+.quest-art.quest-art-band {
+  position: relative;
+  height: 170px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  opacity: 0.95;
+}
+
+@media (max-width: 640px) {
+  .quest-art.quest-art-band {
+    height: 130px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Filing proof: the part about you
+
+   Folded away once the account has it saved. The first log is the one where
+   this matters; after that it is a section you scroll past.
+--------------------------------------------------------------------------- */
+.log-details {
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--paper-2) 60%, transparent);
+}
+.log-details > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 620;
+  color: var(--ink);
+  list-style: none;
+}
+.log-details > summary::-webkit-details-marker {
+  display: none;
+}
+.log-details > summary span {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.log-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 14px 14px;
+}
+
+/* The two tick-boxes at the foot of the form. Same shape, so neither reads as
+   more consequential than the other by accident. */
+.proof-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: var(--field);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   The slot clock
+
+   The weekly and the monthly are compulsory and the window shuts, so the
+   deadline is the loudest thing on those two pages. On the forest surface,
+   because this is the one element that is allowed to be — the same reason the
+   monthly headline card on the dashboard is.
+--------------------------------------------------------------------------- */
+.slot-clock {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-radius: var(--r);
+  background: var(--forest);
+  color: #eef2e7;
+  border: 1px solid var(--moss);
+}
+.slot-clock.is-done {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.slot-clock.is-closed {
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border-color: var(--line);
+  border-style: dashed;
+}
+.slot-clock-icon {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  opacity: 0.85;
+}
+.slot-clock-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.slot-clock-body {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.slot-clock-body b {
+  display: block;
+  font-size: 16px;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+}
+.slot-clock-body span {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  opacity: 0.72;
+}
+
+/* The digits. Tabular so the width does not jitter every time a minute ticks
+   over — a countdown that reflows the row it sits in is worse than none. */
+.slot-clock-time {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-left: auto;
+  /* Reserved before the numbers land, so nothing jumps on hydration. */
+  min-height: 34px;
+  min-width: 132px;
+  justify-content: flex-end;
+}
+.countdown-unit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.countdown-unit b {
+  font-family: var(--mono);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.countdown-unit i {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+.countdown-closed {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* What the quest asks for, as a plain two-column list. */
+.quest-facts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.quest-facts li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 20px;
+  border-bottom: 1px dashed var(--line-2);
+}
+.quest-facts li:last-child {
+  border-bottom: 0;
+}
+.quest-facts span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.quest-facts b {
+  font-size: 14.5px;
+  font-weight: 620;
+  color: var(--ink);
+  text-align: right;
+}
+
+.quest-note {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.quest-note.is-warm {
+  color: var(--signal);
+}
+
+/* ---------------------------------------------------------------------------
+   The approach map
+
+   Static OpenStreetMap tiles as plain images. If they fail the frame still
+   holds both pins in the right places, so the card degrades to a schematic
+   rather than to a hole.
+--------------------------------------------------------------------------- */
+.approach-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+}
+.approach-tiles {
+  position: absolute;
+  inset: 0;
+}
+.approach-tiles img {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+.approach-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+.approach-pin i {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+.approach-pin b {
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.approach-pin.is-parking i,
+.approach-pin.is-parking b {
+  background: var(--signal);
+}
+.approach-pin.is-start i,
+.approach-pin.is-start b {
+  background: var(--pine);
+}
+.approach-credit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  font-size: 9.5px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #333;
+  border-top-left-radius: 4px;
+}
+.approach-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+.approach-foot {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------------------
+   Public profiles
+
+   A page about a person, for the people they might walk with. It borrows the
+   quest mark for its banner — same generator, seeded from the handle — so
+   nobody has to upload anything for their page to be recognisable, and the
+   accent they pick is the ink it is drawn in.
+--------------------------------------------------------------------------- */
+.profile-banner {
+  position: relative;
+  margin-bottom: 22px;
+  --accent: var(--pine);
+}
+.profile-banner[data-accent="moss"],
+.person-card[data-accent="moss"] {
+  --accent: #4d7a4f;
+}
+.profile-banner[data-accent="stone"],
+.person-card[data-accent="stone"] {
+  --accent: #52646f;
+}
+.profile-banner[data-accent="water"],
+.person-card[data-accent="water"] {
+  --accent: #2b6f7c;
+}
+.profile-banner[data-accent="clay"],
+.person-card[data-accent="clay"] {
+  --accent: #86644a;
+}
+.profile-banner[data-accent="dusk"],
+.person-card[data-accent="dusk"] {
+  --accent: #5a5578;
+}
+.profile-banner[data-accent="signal"],
+.person-card[data-accent="signal"] {
+  --accent: var(--signal);
+}
+
+.profile-band.quest-art-band {
+  height: 150px;
+  color: var(--accent) !important;
+}
+.profile-identity {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  /* Lifted over the band so the avatar breaks the edge — the one place in the
+     product where an element is allowed to sit across a boundary. */
+  margin-top: -34px;
+  padding: 0 22px;
+  position: relative;
+  z-index: 1;
+}
+/* The avatar takes the accent rather than its name-derived colour. On a page
+   whose whole visual identity is one chosen colour, an avatar picking its own
+   is the one element that looks like it wandered in from another design. */
+.profile-avatar.av,
+.person-avatar.av {
+  background: var(--accent);
+  color: #f4f7f0;
+}
+.profile-avatar.av {
+  width: 78px;
+  height: 78px;
+  flex: 0 0 78px;
+  border-radius: 20px;
+  font-size: 25px;
+  border: 4px solid var(--paper);
+  box-shadow: var(--shadow-lg);
+}
+.profile-identity h1 {
+  font-family: var(--serif);
+  font-size: clamp(26px, 3.4vw, 34px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.profile-headline {
+  margin-top: 4px;
+  font-size: 15.5px;
+  color: var(--ink-2);
+}
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.profile-edit {
+  margin-left: auto;
+  margin-bottom: 4px;
+}
+
+.profile-bio {
+  padding: 18px 20px;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--ink-2);
+  white-space: pre-line;
+}
+
+.profile-socials {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.profile-socials a {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px dashed var(--line-2);
+  transition: background 0.16s ease;
+}
+.profile-socials li:last-child a {
+  border-bottom: 0;
+}
+.profile-socials a:hover {
+  background: var(--paper-2);
+}
+.profile-socials span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.profile-socials b {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--accent, var(--pine));
+}
+
+.profile-stickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 18px 20px;
+  margin: 0;
+}
+
+/* --------------------------------- the feed ------------------------------ */
+
+.feed-item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px 20px 20px;
+  box-shadow: var(--shadow);
+}
+.feed-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.feed-art.quest-art {
+  position: relative;
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+}
+.feed-head-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.feed-when {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.feed-head-body h3 {
+  margin-top: 3px;
+  font-family: var(--serif);
+  font-size: 20px;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.feed-head-body h3 a:hover {
+  color: var(--moss-2);
+}
+.feed-where {
+  margin-top: 3px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.feed-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  list-style: none;
+  padding: 14px 0 0;
+  margin: 14px 0 0;
+  border-top: 1px dashed var(--line-2);
+}
+.feed-figures li {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.feed-figures b {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.feed-figures span {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.1em;
@@ -5993,6 +6981,66 @@ select.input {
   display: flex;
   flex-direction: column;
   width: 100%;
+  color: var(--ink-3);
+}
+.feed-note {
+  margin-top: 14px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  white-space: pre-line;
+}
+.feed-photos {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+/* One photograph gets the room; the rest are evidence and sit under it. */
+.feed-photos.count-1 {
+  grid-template-columns: 1fr;
+}
+.feed-photos.count-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.feed-photos.count-3,
+.feed-photos.count-4 {
+  grid-template-columns: 1fr 1fr;
+}
+.feed-photos.count-3 img:first-child,
+.feed-photos.count-4 img:first-child {
+  grid-column: 1 / -1;
+}
+.feed-photos img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--paper-2);
+  display: block;
+}
+.feed-photos.count-1 img,
+.feed-photos.count-3 img:first-child,
+.feed-photos.count-4 img:first-child {
+  aspect-ratio: 16 / 10;
+}
+
+/* ------------------------------ the directory ---------------------------- */
+
+.people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.person-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 18px 18px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--r);
@@ -6090,4 +7138,135 @@ select.input {
   gap: 8px;
   align-items: center;
   padding-top: 3px;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1), border-color 0.18s ease;
+  --accent: var(--pine);
+}
+.person-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+.person-band.quest-art-band {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 84px;
+  border: 0;
+  border-radius: 0;
+  color: var(--accent) !important;
+}
+.person-avatar.av {
+  position: relative;
+  margin-top: 54px;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 15px;
+  font-size: 17px;
+  border: 3px solid var(--card);
+}
+.person-card b {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.person-card em {
+  margin-top: 3px;
+  font-style: normal;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.person-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.person-foot i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ------------------------------- the editor ------------------------------ */
+
+.handle-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.handle-field > span {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.handle-field .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.accent-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  border: 0;
+  padding: 0;
+}
+.accent-row legend {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.accent-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  --accent: var(--pine);
+}
+.accent-row label span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: block;
+}
+.accent-row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.accent-row label:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.accent-row label[data-accent="moss"] {
+  --accent: #4d7a4f;
+}
+.accent-row label[data-accent="stone"] {
+  --accent: #52646f;
+}
+.accent-row label[data-accent="water"] {
+  --accent: #2b6f7c;
+}
+.accent-row label[data-accent="clay"] {
+  --accent: #86644a;
+}
+.accent-row label[data-accent="dusk"] {
+  --accent: #5a5578;
+}
+.accent-row label[data-accent="signal"] {
+  --accent: var(--signal);
 }

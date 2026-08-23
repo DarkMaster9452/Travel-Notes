@@ -57,13 +57,12 @@ const GROUPS: {
   // Sequences read left to right, so they enter that way.
   { select: ".step, .flow > div", from: { opacity: 0, translateY: 18 }, stagger: 90 },
   {
-    select: ".mail-list li, .unlocks li, .rope-steps li",
+    select: ".unlocks li, .rope-steps li",
     from: { opacity: 0, translateX: -14 },
     duration: DURATION.quick,
     stagger: 55,
   },
 
-  { select: ".envelope", from: { opacity: 0, translateY: 18, rotate: -1.5 }, duration: DURATION.slow },
   { select: ".faq details", from: { opacity: 0, translateY: 12 }, duration: DURATION.quick, stagger: 45 },
   { select: "#cta .wrap > *", from: { opacity: 0, translateY: 18 }, stagger: 70 },
   { select: ".safety", from: { opacity: 0, translateY: 16 } },

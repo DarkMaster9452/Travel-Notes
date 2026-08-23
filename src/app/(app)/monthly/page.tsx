@@ -8,6 +8,7 @@ import {
   getFeaturedSlotCounters,
   periodEnds,
 } from "@/lib/quest/featured";
+import { loadFeaturedSlot } from "@/lib/quest/slot";
 
 export const metadata: Metadata = { title: "Monthly quest" };
 export const dynamic = "force-dynamic";
@@ -30,6 +31,15 @@ export default async function MonthlyQuestPage() {
       blurb="One a month, harder than the weekly, open from the first. Everyone gets the same one."
       counters={counters}
       proof={proof}
+  const slot = await loadFeaturedSlot(user.id, "month");
+
+  return (
+    <FeaturedQuestPage
+      {...slot}
+      label="This month"
+      eyebrow="The big one"
+      blurb="One a month, harder than the weekly, open from the first. Everyone gets the same one, and everyone files it."
+      counters={{ accepted: 61, logged: 14 }}
     />
   );
 }

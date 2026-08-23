@@ -33,30 +33,37 @@ enum Theme {
 }
 
 model User {
-  id             String  @id @default(cuid())
-  email          String  @unique
-  name           String
-  avatar         String?
-  passwordHash   String  @map("password_hash")
-  role           Role    @default(USER)
-  freeQuestsUsed Int     @default(0) @map("free_quests_used")
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String
+  avatar           String?
+  passwordHash     String   @map("password_hash")
+  role             Role     @default(USER)
+  freeQuestsUsed   Int      @default(0) @map("free_quests_used")
   /// Stored on the account rather than in localStorage so the server can render
   /// the right palette on the first paint — a theme that arrives after
   /// hydration is a flash of the wrong one.
-  theme          Theme   @default(SYSTEM)
+  theme            Theme    @default(SYSTEM)
+  /// Achievement ids this account has already been shown as earned. Stickers
+  /// are derived, so there is no row whose creation could mark the moment —
+  /// this is what makes "new since you last looked" answerable, and it is why
+  /// the sheet can celebrate an unlock exactly once.
+  seenAchievements String[] @default([]) @map("seen_achievements")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   preferences  UserPreferences?
-  submissions  Submission[]      @relation("SubmissionAuthor")
-  reviewed     Submission[]      @relation("SubmissionReviewer")
+  logDefaults  UserLogDefaults?
+  profile      Profile?
+  submissions  Submission[]            @relation("SubmissionAuthor")
+  reviewed     Submission[]            @relation("SubmissionReviewer")
   subscription Subscription?
   sessions     Session[]
   generations  QuestGeneration[]
   history      QuestHistory[]
   savedQuests  SavedQuest[]
-  scheduled    QuestSchedule[]   @relation("ScheduleAuthor")
+  scheduled    QuestSchedule[]         @relation("ScheduleAuthor")
   revocations  AchievementRevocation[] @relation("RevocationSubject")
   revoked      AchievementRevocation[] @relation("RevocationAuthor")
   awards       LeaderboardAward[]      @relation("AwardHolder")
@@ -237,7 +244,22 @@ model Quest {
   published     Boolean    @default(true)
   /// Free-text grouping shown in the panel — Hiking, Nature, Coastal, …
   category      String?
-  createdAt     DateTime   @default(now()) @map("created_at")
+
+  /// Where to leave the car. Optional throughout: plenty of starts are a bus
+  /// stop or a village square, and an empty parking panel is better than an
+  /// invented one. The coordinates are of a public car park, never of a
+  /// person — the "no exact coordinates" promise is about home addresses.
+  parkingName  String? @map("parking_name")
+  parkingLat   Float?  @map("parking_lat")
+  parkingLng   Float?  @map("parking_lng")
+  /// "Free, fills by 08:00 at weekends. Barrier closes at dusk."
+  parkingNote  String? @map("parking_note")
+  /// Minutes from the car park to the actual start of the route.
+  approachTime Int?    @map("approach_time")
+  /// How to get there without a car, when there is a way.
+  transitNote  String? @map("transit_note")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   generations QuestGeneration[]
   history     QuestHistory[]
@@ -280,7 +302,7 @@ model QuestSchedule {
   audience Plan @default(FREE)
 
   /// When the slot opens. Monday 06:00 weekly, the 1st 06:00 monthly.
-  openAt DateTime @map("open_at")
+  openAt  DateTime @map("open_at")
   /// When the log closes — the instant the next slot opens.
   closeAt DateTime @map("close_at")
 
@@ -394,6 +416,112 @@ model Submission {
   @@index([status, createdAt])
   @@index([period, slotKey])
   @@map("submissions")
+}
+
+/// What somebody would otherwise retype into every submission.
+///
+/// Saved from the proof form, and only when the checkbox is ticked — filing a
+/// log should never quietly change your account. Prefilled into the next form,
+/// where it is ordinary editable text: this is a starting point, not a claim.
+///
+/// Deliberately *not* the figures. Distance, ascent and moving time are
+/// measurements of one particular day, and prefilling them would put last
+/// week's numbers in front of somebody a click away from filing them as this
+/// week's. They are remembered — the form shows them as a note beside the
+/// empty field, so you have something to sanity-check against — but they are
+/// never filled in for you.
+model UserLogDefaults {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  /// Their Strava profile, so an activity link is a paste rather than a hunt.
+  stravaProfile String? @map("strava_profile")
+  /// "07:00" — the hour they usually set out.
+  usualStart    String? @map("usual_start")
+  /// Who is normally with them. 1 is alone.
+  partySize     Int?    @map("party_size")
+  /// "Trail shoes, poles, 2 l water." Short, theirs to word.
+  gear          String?
+  /// Roughly how fast, in minutes per kilometre on the flat.
+  pace          Float?
+
+  /// The last figures they filed. Shown beside the fields, never in them.
+  lastDistance   Float? @map("last_distance")
+  lastElevation  Int?   @map("last_elevation")
+  lastMovingTime Int?   @map("last_moving_time")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_log_defaults")
+}
+
+/// The ink a profile is printed in. A short list on purpose: somebody should
+/// be recognisable by their colour, which stops working at twenty of them.
+enum ProfileAccent {
+  PINE
+  MOSS
+  STONE
+  WATER
+  CLAY
+  DUSK
+  SIGNAL
+}
+
+/// A page about a person, for the people they might walk with.
+///
+/// Off by default and off until they say otherwise. `published` is the whole
+/// privacy model: an unpublished profile is visible to its owner and to nobody
+/// else, and un-publishing takes it away again immediately rather than
+/// scheduling a deletion. Even published, it is only visible to signed-in
+/// accounts — this is a members' product and a page meant for the person you
+/// are about to meet at a trailhead has no business being indexed.
+///
+/// Every field on it is optional and every section can be switched off. What
+/// somebody chooses not to fill in is simply absent from the page, never shown
+/// as a blank or a prompt to the reader: an empty profile should read as
+/// private rather than as unfinished.
+///
+/// Deliberately not on `User`. The account is the thing that signs in and gets
+/// billed; this is a thing they publish, and the two have different lifetimes,
+/// different privacy rules and different people looking at them.
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  /// The bit after `/people/`. Theirs to choose, unique across the product.
+  handle    String  @unique
+  published Boolean @default(false)
+
+  /// What to call them here, if not the name on the account.
+  displayName String? @map("display_name")
+  /// One line, under the name. "Weekend ridges and cold water."
+  headline    String?
+  bio         String?
+
+  /// Handles, not URLs — the URL is built when it is rendered, so nothing
+  /// somebody pastes can turn into a link to somewhere else entirely.
+  instagram String?
+  facebook  String?
+  strava    String?
+
+  accent ProfileAccent @default(PINE)
+
+  /// What the page shows. Each one is a real switch, not a hint.
+  showStats      Boolean @default(true) @map("show_stats")
+  showCountry    Boolean @default(true) @map("show_country")
+  showActivities Boolean @default(true) @map("show_activities")
+  showStickers   Boolean @default(true) @map("show_stickers")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([published])
+  @@map("profiles")
 }
 
 /// A sticker taken back from an account.
