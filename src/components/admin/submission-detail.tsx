@@ -21,6 +21,8 @@ export type SubmissionRow = {
   reviewedAt: string | null;
   reviewedBy: string | null;
   createdAt: string;
+  /** The slot it was filed against, when it was filed against one. */
+  cadence: { period: "WEEKLY" | "MONTHLY"; label: string } | null;
   author: { name: string; email: string; id: string };
   quest: {
     id: string;
@@ -158,6 +160,12 @@ export function SubmissionDetail({
             <b>{submission.author.name}</b>
             <span>{submission.author.email}</span>
           </div>
+          {submission.cadence && (
+            <Tag tone="warm">
+              {submission.cadence.period === "MONTHLY" ? "Monthly" : "Weekly"} ·{" "}
+              {submission.cadence.label}
+            </Tag>
+          )}
           <Tag tone={STATUS_TONE[submission.status]}>{STATUS_LABEL[submission.status]}</Tag>
         </div>
 

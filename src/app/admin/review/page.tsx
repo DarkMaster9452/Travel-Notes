@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ReviewDeck, type ReviewCard } from "@/components/admin/review-deck";
 import { Reveal } from "@/components/app/motion";
 import { Eyebrow, Tag } from "@/components/field";
+import { slotKeyLabel } from "@/lib/admin/schedule";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { initialsFrom } from "@/components/field";
@@ -14,12 +15,27 @@ export const dynamic = "force-dynamic";
 const PLAN_RANK: Record<string, number> = { ULTRA: 0, EXPLORER: 1, FREE: 2 };
 
 /**
+ * The cadence sort, ahead of everything else.
+ *
+ * A weekly or a monthly is filed against a window that closes, and the whole
+ * promise of those two pages is that everybody is doing the same quest at the
+ * same time. Proof of one sitting behind a fortnight of ordinary submissions
+ * is a verdict that arrives after the thing it was about has ended — and the
+ * leaderboard for that slot cannot settle until it has been read. The monthly
+ * leads the weekly for the same reason it leads the dashboard: it is the
+ * headline.
+ */
+const CADENCE_RANK: Record<string, number> = { MONTHLY: 0, WEEKLY: 1 };
+const UNCADENCED = 2;
+
+/**
  * The review queue.
  *
- * Ultra subscribers first, then Explorer, then free accounts — the paying
- * customers who are waiting on a verdict wait least. Inside each tier, oldest
- * first: somebody who filed proof on Monday should not sit behind Friday's
- * within the same tier.
+ * Weekly and monthly proof first, because it is proof of a quest with a
+ * closing window. Then Ultra subscribers, then Explorer, then free accounts —
+ * the paying customers who are waiting on a verdict wait least. Inside each
+ * tier, oldest first: somebody who filed proof on Monday should not sit
+ * behind Friday's within the same tier.
  */
 export default async function ReviewPage() {
   await requireAdmin();
@@ -56,11 +72,18 @@ export default async function ReviewPage() {
     return "FREE";
   };
 
+  const cadenceOf = (s: (typeof pending)[number]) =>
+    s.period ? (CADENCE_RANK[s.period] ?? UNCADENCED) : UNCADENCED;
+
   const ordered = [...pending].sort((a, b) => {
+    const cadenceDiff = cadenceOf(a) - cadenceOf(b);
+    if (cadenceDiff !== 0) return cadenceDiff;
     const rankDiff = PLAN_RANK[planOf(a)] - PLAN_RANK[planOf(b)];
     if (rankDiff !== 0) return rankDiff;
     return a.createdAt.getTime() - b.createdAt.getTime();
   });
+
+  const waitingCadenced = pending.filter((s) => s.period !== null).length;
 
   const cards: ReviewCard[] = ordered.map((s) => ({
     id: s.id,
@@ -84,6 +107,9 @@ export default async function ReviewPage() {
     },
     person: { name: s.user.name, initials: initialsFrom(s.user.name) },
     plan: planOf(s),
+    cadence: s.period
+      ? { period: s.period, slotKey: s.slotKey ?? "", label: slotKeyLabel(s.period, s.slotKey ?? "") }
+      : null,
   }));
 
   return (
@@ -94,10 +120,15 @@ export default async function ReviewPage() {
           <h1>Review.</h1>
           <p>
             One at a time. Throw it right to approve, left to decline — or use the arrow keys.
-            Approving is what marks the quest done.
+            Approving is what marks the quest done. Weekly and monthly proof is dealt first.
           </p>
         </div>
-        <Tag tone={cards.length > 0 ? "warm" : "ghost"}>{cards.length} pending</Tag>
+        <div className="flex flex-wrap items-center gap-3">
+          {waitingCadenced > 0 && (
+            <Tag tone="warm">{`${waitingCadenced} weekly / monthly`}</Tag>
+          )}
+          <Tag tone={cards.length > 0 ? "warm" : "ghost"}>{cards.length} pending</Tag>
+        </div>
       </Reveal>
 
       <Reveal>

@@ -10,6 +10,7 @@ import { requireClient } from "@/lib/auth/guards";
 import { countEarned, countReachable, getAchievements } from "@/lib/achievements";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { getHeldAwards, medalLabel } from "@/lib/leaderboard";
 import { getUserStats } from "@/lib/quest/service";
 
 export const metadata: Metadata = { title: "Stickers" };
@@ -25,6 +26,10 @@ export const metadata: Metadata = { title: "Stickers" };
  */
 export default async function StickersPage() {
   const user = await requireClient();
+  const [stats, entitlement, awards] = await Promise.all([
+    getUserStats(user.id),
+    getEntitlement(user.id),
+    getHeldAwards(user.id),
   const [stats, entitlement, account, revocations] = await Promise.all([
     getUserStats(user.id),
     getEntitlement(user.id),
@@ -66,6 +71,63 @@ export default async function StickersPage() {
         </div>
         <PlanChip plan={entitlement.plan} />
       </Reveal>
+
+      {/* The podium shelf, above the sheet and separate from it.
+          These are not progress — no amount of walking earns one, only
+          finishing in the top three of a week or a month somebody else was
+          also walking. Putting them on the same sheet as "twenty-five
+          kilometres" would quietly reclassify them as another threshold. */}
+      {awards.length > 0 && (
+        <Reveal className="mb-5">
+          <Panel flush>
+            <PanelHead
+              title="Podium finishes"
+              aside={<Tag tone="warm">{`${awards.length} held`}</Tag>}
+            />
+            <div className="award-grid">
+              {awards.map((award) => (
+                <div key={award.id} className="award">
+                  <Sticker
+                    achievementKey={award.sticker}
+                    className={`medal medal-${award.medal.toLowerCase()}`}
+                    title={`${medalLabel(award.medal)} — ${award.label}`}
+                  />
+                  <b>{award.label}</b>
+                  <span className="meta">
+                    {medalLabel(award.medal)} ·{" "}
+                    {award.period === "WEEKLY" ? "weekly" : "monthly"}
+                  </span>
+                  <span className="meta">
+                    {award.score} points · {award.quests}{" "}
+                    {award.quests === 1 ? "quest" : "quests"}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="note">
+              Won on a closed board and kept for good. A weekly medal and a monthly one are
+              different stickers, because they are different achievements.
+            </p>
+          </Panel>
+        </Reveal>
+      )}
+
+      {awards.length === 0 && (
+        <Reveal className="mb-5">
+          <Panel>
+            <PanelHead title="Podium finishes" aside={<Tag tone="ghost">None yet</Tag>} />
+            <p className="note">
+              Finish in the top three of a weekly or monthly leaderboard and its sticker lands
+              here when the board closes. Six designs — a gold, a silver and a bronze for each
+              cadence.{" "}
+              <Link href="/leaderboard" className="underline">
+                See where you are
+              </Link>
+              .
+            </p>
+          </Panel>
+        </Reveal>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[1fr_1.05fr] lg:items-start">
         <Reveal delay={stagger(0)}>

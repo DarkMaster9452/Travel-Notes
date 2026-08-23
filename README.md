@@ -86,6 +86,47 @@ full-day ridge traverse — but never as the same combination.
 
 ---
 
+## Cadence, the database and the leaderboards
+
+The product runs on two clocks — the weekly drops Monday at 06:00, the monthly
+on the 1st — and `src/lib/admin/schedule.ts` owns the arithmetic for both. Slot
+keys (`2026-W34`, `2026-09`) are derived there and nowhere else, so the
+schedule, the featured quests, the review queue and the leaderboards can never
+disagree about which week they are in.
+
+**Has this quest ever been the weekly?** `src/lib/quest/cadence.ts` answers it
+for a set of quests in one query, and returns the sentence the UI prints
+("Ran as the monthly quest in September 2026"). A booking that has not opened
+yet is deliberately *not* a run — a quest pencilled into next March has not
+been the monthly. Both the admin table at `/admin/quests/all` and the
+customer-facing catalogue at `/quests` filter and tag from that one function,
+so the badge and the filter can't drift apart.
+
+**Filing proof** works against any published quest in the catalogue, not only
+one the generator issued — the history row is written when somebody files, and
+costs no quota, because nothing was issued. Proof filed against a live weekly
+or monthly slot is stamped with `submissions.period` / `slot_key` at filing
+time, because the answer expires: the same question asked next Tuesday would
+say no. That stamp does two things — it puts the submission at the front of the
+review deck, ahead of the plan ranking, and it carries the featured bonus onto
+the board.
+
+**Leaderboards** (`src/lib/leaderboard.ts`) score every *approved* submission
+done inside a slot's window: grade points, a point a kilometre, a point per
+hundred metres of ascent, plus the featured bonus; an honest retreat scores
+half. A board is derived while its slot is open and **sealed** into
+`leaderboard_awards` once it closes — the top three, score and all. Sealing is
+what makes a podium survive a verdict reversed three weeks later, and it is
+idempotent, so the first person to open a closed board is what hands out its
+medals. There is no cron.
+
+The six podium stickers are distinct designs: a weekly gold is not a monthly
+gold. Cadence sets the motif (a medal on a ribbon, a summit under a pennant),
+the place is counted in dots, and the metal is the only colour in the product
+that is neither green nor stamp ink.
+
+---
+
 ## Design system
 
 `index.html` (the finished landing page) is the source of truth. Nothing in the
@@ -134,7 +175,8 @@ src/
   app/
     (auth)/           login, signup, auth actions
     (app)/            everything behind authentication
-      dashboard/ history/ saved/ profile/ upgrade/ quests/[id]/
+      dashboard/ history/ profile/ upgrade/ submissions/
+      weekly/ monthly/ leaderboard/ achievements/ quests/ quests/[id]/
     onboarding/       seven-step preference flow
     api/
       quests/generate stripe/{checkout,portal,webhook}

@@ -406,6 +406,94 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
       </>
     ),
   },
+  /* ---- The podium. -------------------------------------------------------
+     Not earned by walking far enough — earned by finishing in the top three
+     of a closed leaderboard, which is the one thing on the sheet somebody
+     else can take from you by having a better week.
+
+     Two motifs, one per cadence, so a weekly finish and a monthly one are
+     never the same sticker: the weekly is a medal on a ribbon, the monthly a
+     summit under a pennant. Within a cadence the place is counted in dots —
+     one for gold, two for silver, three for bronze — because a numeral at
+     this size is a smudge, and the metal itself is carried by colour. */
+
+  "weekly-gold": {
+    label: ["WEEK", "GOLD"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M8.4 2.4l3.6 5.2 3.6-5.2" />
+        <circle cx="12" cy="14.4" r="6.9" />
+        <circle cx="12" cy="14.4" r="1.15" />
+      </>
+    ),
+  },
+  "weekly-silver": {
+    label: ["WEEK", "SILVER"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M8.4 2.4l3.6 5.2 3.6-5.2" />
+        <circle cx="12" cy="14.4" r="6.9" />
+        <circle cx="10.1" cy="14.4" r="1.15" />
+        <circle cx="13.9" cy="14.4" r="1.15" />
+      </>
+    ),
+  },
+  "weekly-bronze": {
+    label: ["WEEK", "BRONZE"],
+    shape: "round",
+    path: (
+      <>
+        <path d="M8.4 2.4l3.6 5.2 3.6-5.2" />
+        <circle cx="12" cy="14.4" r="6.9" />
+        <circle cx="8.6" cy="14.4" r="1.15" />
+        <circle cx="12" cy="14.4" r="1.15" />
+        <circle cx="15.4" cy="14.4" r="1.15" />
+      </>
+    ),
+  },
+
+  "monthly-gold": {
+    label: ["MONTH", "GOLD"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M1.8 17.2L8.3 6.4l3.6 5.6 3-4.4 6.3 9.6z" />
+        <path d="M12 1.4v4.6" />
+        <path d="M12 1.4l4.5 1.5L12 4.4" />
+        <circle cx="12" cy="20.6" r="1.15" />
+      </>
+    ),
+  },
+  "monthly-silver": {
+    label: ["MONTH", "SILVER"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M1.8 17.2L8.3 6.4l3.6 5.6 3-4.4 6.3 9.6z" />
+        <path d="M12 1.4v4.6" />
+        <path d="M12 1.4l4.5 1.5L12 4.4" />
+        <circle cx="10.1" cy="20.6" r="1.15" />
+        <circle cx="13.9" cy="20.6" r="1.15" />
+      </>
+    ),
+  },
+  "monthly-bronze": {
+    label: ["MONTH", "BRONZE"],
+    shape: "square",
+    path: (
+      <>
+        <path d="M1.8 17.2L8.3 6.4l3.6 5.6 3-4.4 6.3 9.6z" />
+        <path d="M12 1.4v4.6" />
+        <path d="M12 1.4l4.5 1.5L12 4.4" />
+        <circle cx="8.6" cy="20.6" r="1.15" />
+        <circle cx="12" cy="20.6" r="1.15" />
+        <circle cx="15.4" cy="20.6" r="1.15" />
+      </>
+    ),
+  },
+
   "ruin-hunter": {
     label: ["RUIN", "HUNTER"],
     shape: "square",

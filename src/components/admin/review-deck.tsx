@@ -53,6 +53,8 @@ export type ReviewCard = {
   quest: { title: string; location: string; region: string; difficulty: string; number: number | null };
   person: { name: string; initials: string };
   plan: "ULTRA" | "EXPLORER" | "FREE";
+  /** Filed against a weekly or monthly slot. These are dealt first. */
+  cadence: { period: "WEEKLY" | "MONTHLY"; slotKey: string; label: string } | null;
 };
 
 const PLAN_LABEL: Record<ReviewCard["plan"], string> = {
@@ -328,6 +330,11 @@ function SubmissionBody({ card }: { card: ReviewCard }) {
           {card.person.name}
         </span>
         <span className="flex items-center gap-2">
+          {card.cadence && (
+            <Tag tone="warm">
+              {card.cadence.period === "MONTHLY" ? "Monthly" : "Weekly"} · {card.cadence.label}
+            </Tag>
+          )}
           {card.retreated && <Tag tone="ghost">Retreat</Tag>}
           <Tag tone={card.quest.difficulty === "HARD" || card.quest.difficulty === "EXPERT" ? "warm" : "pine"}>
             {card.quest.difficulty}
@@ -480,7 +487,7 @@ function BrowseQueue({
       open={open}
       onClose={onClose}
       title="Review queue"
-      description={`${cards.length} pending, sorted by plan then by how long they've waited.`}
+      description={`${cards.length} pending — weekly and monthly first, then by plan, then by how long they've waited.`}
       className="max-w-[540px]"
     >
       <ul className="review-queue-list">
@@ -497,6 +504,11 @@ function BrowseQueue({
                 <span>{card.quest.title}</span>
               </span>
               <span className="review-queue-meta">
+                {card.cadence && (
+                  <Tag tone="warm">
+                    {card.cadence.period === "MONTHLY" ? "Monthly" : "Weekly"}
+                  </Tag>
+                )}
                 <Tag tone={card.plan === "ULTRA" ? "warm" : card.plan === "EXPLORER" ? "pine" : "ghost"}>
                   {PLAN_LABEL[card.plan]}
                 </Tag>
