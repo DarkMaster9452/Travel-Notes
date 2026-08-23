@@ -6903,31 +6903,196 @@ select.input {
   transform: none !important;
 }
 
-/* --- the podium ----------------------------------------------------------- */
+/* --- your standing, above the board ---------------------------------------
+   The header of the leaderboard page: who you are, where you are, and the one
+   number that would change it. Laid out as a band rather than a card so it
+   reads as the page's own header rather than as the first of several panels. */
+.standing {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.1fr) minmax(180px, 1fr) minmax(240px, 1.4fr);
+  gap: 20px;
+  align-items: center;
+  padding: 20px 22px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-modal);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.standing::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--moss-2);
+}
+@media (max-width: 900px) {
+  .standing {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+.standing-who {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+.standing-av {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+.standing-who b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.standing-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  transition: color 0.16s;
+}
+.standing-handle:hover {
+  color: var(--moss-2);
+}
+.standing-handle svg {
+  width: 11px;
+  height: 11px;
+}
+.standing-rank {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+.standing-place {
+  font-family: var(--mono);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+.standing-place em {
+  font-style: normal;
+  font-size: 20px;
+  color: var(--ink-3);
+  margin-right: 1px;
+}
+.standing-place.is-empty {
+  color: var(--ink-3);
+}
+.standing-figures {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line-2);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0;
+}
+.standing-figures > div {
+  background: var(--card);
+  padding: 9px 12px;
+}
+.standing-figures dt {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.standing-figures dd {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 2px 0 0;
+}
+.standing-medals {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+.standing-medal {
+  width: 42px;
+}
+.standing-more {
+  align-self: center;
+}
+
+/* --- the podium ------------------------------------------------------------
+   Second, first, third, at three heights. The order in the DOM is the order
+   on the rostrum, so the winner is in the middle and taller — which is what
+   makes it read as a podium rather than as three cards that happen to be
+   next to each other. */
 .podium {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  padding: 22px 18px;
+  align-items: end;
+  gap: 12px;
+  padding: 26px 18px 22px;
   border-bottom: 1px solid var(--line);
 }
-@media (max-width: 640px) {
+.podium.is-short {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
+  justify-content: center;
+}
+@media (max-width: 700px) {
   .podium {
     grid-template-columns: 1fr;
+    align-items: stretch;
   }
 }
 .podium-place {
   display: grid;
   justify-items: center;
   text-align: center;
-  gap: 6px;
-  padding: 18px 12px;
+  gap: 5px;
+  padding: 18px 12px 14px;
   border: 1px solid var(--line-2);
   border-radius: var(--r);
   background: var(--glass);
   transition:
     transform 0.22s var(--ease-field),
     border-color 0.2s;
+}
+/* The three heights. Applied as padding rather than a fixed height so a long
+   name still fits — a podium that clips the winner's name is worse than one
+   whose steps are a few pixels off. */
+.podium-place.is-1 {
+  padding-top: 26px;
+  padding-bottom: 22px;
+  border-color: var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.podium-place.is-3 {
+  padding-top: 12px;
+}
+@media (max-width: 700px) {
+  .podium-place.is-1,
+  .podium-place.is-3 {
+    padding-top: 18px;
+    padding-bottom: 14px;
+  }
 }
 .podium-place:hover {
   transform: translateY(-2px);
@@ -6936,21 +7101,50 @@ select.input {
   border-color: var(--moss-2);
 }
 .podium-place .sticker {
-  width: 64px;
+  width: 58px;
 }
-.podium-place > b {
+.podium-place.is-1 .sticker {
+  width: 70px;
+}
+.podium-name {
   font-family: var(--serif);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.02em;
   margin-top: 4px;
 }
+.podium-place.is-1 .podium-name {
+  font-size: 19px;
+}
 .podium-score {
   font-family: var(--mono);
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
+}
+.podium-place.is-1 .podium-score {
+  font-size: 30px;
+}
+.podium-gap {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--signal);
+}
+.podium-step {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-2);
+}
+.podium-step.is-provisional {
+  color: var(--signal);
 }
 
 /* --- the rest of the board ------------------------------------------------ */
@@ -6963,7 +7157,7 @@ select.input {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 20px;
+  padding: 11px 20px;
   border-bottom: 1px solid var(--line-2);
   transition: background 0.16s;
 }
@@ -6979,35 +7173,59 @@ select.input {
 }
 .board-rank {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--ink-3);
-  width: 30px;
-  flex: 0 0 30px;
+  width: 26px;
+  flex: 0 0 26px;
+  text-align: right;
 }
-.board-name {
+.board-av {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.board-who {
   flex: 1;
+  min-width: 0;
+}
+.board-who b {
+  display: block;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.board-quests {
+.board-who > span {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
   color: var(--ink-3);
+}
+.board-link:hover {
+  color: var(--moss-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.board-gap {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--signal);
   white-space: nowrap;
 }
 .board-score {
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  width: 60px;
+  width: 56px;
   text-align: right;
-  flex: 0 0 60px;
+  flex: 0 0 56px;
 }
 
 /* --- the podium shelf on the stickers page -------------------------------- */
@@ -7032,6 +7250,249 @@ select.input {
   margin-top: 4px;
 }
 
+/* --- today: the figures ---------------------------------------------------- */
+.today-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  background: var(--line-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin: 0;
+  box-shadow: var(--shadow);
+}
+.today-figure {
+  position: relative;
+  background: var(--card);
+  padding: 14px 16px 13px;
+  transition: background 0.18s;
+}
+/* The whole cell is the target, but the anchor is a child rather than a
+   wrapper: a `dl` may only contain `dt`, `dd` and `div`. */
+.today-figure-hit {
+  position: absolute;
+  inset: 0;
+}
+.today-figure dt {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.today-figure dd {
+  font-family: var(--mono);
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  margin: 3px 0 0;
+  line-height: 1;
+}
+.today-figure > span {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.today-figure.is-link:hover {
+  background: var(--paper-2);
+}
+.today-figure.is-link:hover > span {
+  color: var(--moss-2);
+}
+
+/* --- today: what is ahead --------------------------------------------------
+   The two shared quests, side by side and both on a clock. The monthly is the
+   lead — dark ground, bigger type — because it is the headline the product is
+   built around; the weekly sits beside it rather than under it, because both
+   are compulsory and a card in a side column does not read as compulsory. */
+.ahead-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .ahead-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.ahead {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 22px 24px 20px;
+  border-radius: var(--radius-modal);
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  transition:
+    transform 0.25s var(--ease-field),
+    box-shadow 0.25s var(--ease-field);
+}
+.ahead:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+.ahead.is-lead {
+  background: var(--forest);
+  border-color: var(--forest-deep);
+  color: var(--forest-ink);
+}
+.ahead.is-lead .ahead-where,
+.ahead.is-lead .ahead-facts,
+.ahead.is-lead .ahead-blurb {
+  color: rgba(238, 242, 231, 0.72);
+}
+.ahead.is-done::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--moss-2);
+}
+.ahead-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ahead-kicker {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ahead.is-lead .ahead-kicker {
+  color: rgba(238, 242, 231, 0.62);
+}
+.ahead h2 {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+  margin: 2px 0 0;
+}
+.ahead.is-lead h2 {
+  font-size: 29px;
+}
+.ahead-where,
+.ahead-blurb {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.ahead-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.ahead-clock {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  font-size: 13.5px;
+}
+.ahead.is-lead .ahead-clock {
+  border-top-color: rgba(238, 242, 231, 0.18);
+}
+.ahead-clock b {
+  font-weight: 600;
+}
+.ahead-clock-icon svg {
+  width: 17px;
+  height: 17px;
+}
+.ahead-countdown {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.ahead-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.ahead-cta svg {
+  width: 13px;
+  height: 13px;
+  transition: transform 0.2s var(--ease-field);
+}
+.ahead:hover .ahead-cta svg {
+  transform: translateX(3px);
+}
+.ahead.is-empty {
+  opacity: 0.85;
+}
+
+/* --- today: lately --------------------------------------------------------- */
+.today-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.today-recent li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--line-2);
+}
+.today-recent li:last-child {
+  border-bottom: 0;
+}
+.today-recent svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: var(--moss-2);
+}
+.today-recent li > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+}
+.today-recent li a {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.today-recent li a:hover {
+  color: var(--moss-2);
+}
+.today-recent em {
+  display: block;
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
 /* --- the admin quest table ------------------------------------------------ */
 .quest-row {
   display: grid;
@@ -7082,77 +7543,93 @@ select.input {
   color: var(--ink-3);
 }
 
-/* --- the customer-facing database ----------------------------------------- */
-.qdb-filters .qdb-search {
+
+/* --- the customer-facing database -----------------------------------------
+   Three controls in one band, then the shelf. The page used to carry five
+   rows of filter chips above the first quest; what is left is a search, a
+   grade and "have I done it", which is what somebody browsing actually asks. */
+.qdb-count {
+  text-align: right;
+  font-family: var(--mono);
+}
+.qdb-count b {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.qdb-count span {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.qdb-bar {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
   align-items: center;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--line-2);
+  gap: 10px 18px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow);
+}
+@media (max-width: 760px) {
+  .qdb-bar {
+    border-radius: var(--radius-modal);
+  }
+}
+.qdb-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+}
+.qdb-search > svg {
+  flex: 0 0 12px;
+  color: var(--ink-3);
 }
 .qdb-search .input {
   flex: 1;
-  padding: 10px 16px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
 }
-.qdb-filter-row {
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  padding: 9px 18px;
-  border-bottom: 1px solid var(--line-2);
-}
-.qdb-filter-row:last-child {
-  border-bottom: 0;
-}
-.qdb-filter-row > b {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  width: 62px;
-  flex: 0 0 62px;
-  padding-top: 6px;
-}
-.qdb-filter-row nav {
+.qdb-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
 }
-.qdb-filter-row nav a {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.qdb-chips a {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
-  padding: 7px 12px;
+  padding: 7px 13px;
   border-radius: var(--radius-pill);
   color: var(--ink-3);
+  white-space: nowrap;
   transition:
     background 0.2s var(--ease-field),
     color 0.16s,
     transform 0.16s var(--ease-field);
 }
-.qdb-filter-row nav a:hover {
+.qdb-chips a:hover {
   color: var(--ink);
   background: var(--glass);
   transform: translateY(-1px);
 }
-.qdb-filter-row nav a[aria-current="page"] {
+.qdb-chips a[aria-current="page"] {
   background: var(--pine);
   color: #eef2e7;
-}
-.qdb-filter-row nav a em {
-  font-style: normal;
-  opacity: 0.6;
 }
 
 .qdb-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
   align-items: stretch;
 }
 .qdb-grid > * {
@@ -7164,7 +7641,7 @@ select.input {
   width: 100%;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: var(--radius-modal);
   overflow: hidden;
   box-shadow: var(--shadow);
   transition:
@@ -7172,26 +7649,42 @@ select.input {
     box-shadow 0.25s var(--ease-field);
 }
 .qdb-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
+}
+/* Logged is a state the shelf should show without shouting: a green edge and
+   nothing else. Fading the card would hide the thing somebody is proud of. */
+.qdb-card.is-logged {
+  border-color: var(--moss-2);
+}
+.qdb-cover-link {
+  display: block;
+  position: relative;
+  overflow: hidden;
 }
 .qdb-cover {
   width: 100%;
-  height: 132px;
+  height: 150px;
   object-fit: cover;
   border-bottom: 1px solid var(--line-2);
+  transition: transform 0.4s var(--ease-field);
+}
+.qdb-card:hover .qdb-cover {
+  transform: scale(1.04);
+}
+.qdb-cover-tags {
+  position: absolute;
+  inset: auto 10px 10px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 .qdb-body {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 16px 17px 17px;
+  gap: 8px;
+  padding: 15px 17px 16px;
   flex: 1;
-}
-.qdb-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
 }
 .qdb-where {
   display: inline-flex;
@@ -7205,10 +7698,10 @@ select.input {
 }
 .qdb-title {
   font-family: var(--serif);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
 }
 .qdb-title a:hover {
   color: var(--moss-2);
@@ -7218,42 +7711,150 @@ select.input {
   line-height: 1.5;
   color: var(--ink-2);
 }
-.qdb-desc b {
-  color: var(--ink);
-  font-weight: 600;
-}
-.qdb-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--line-2);
-  border: 1px solid var(--line-2);
-  border-radius: 10px;
-  overflow: hidden;
+.qdb-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   margin-top: auto;
-}
-.qdb-stats > div {
-  background: var(--card);
-  padding: 9px 10px;
-}
-.qdb-stats dt {
+  padding-top: 10px;
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.qdb-stats dd {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
 }
 .qdb-foot {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  padding-top: 3px;
+  padding-top: 11px;
+  border-top: 1px dashed var(--line);
+}
+
+/* --- the admin cheat drawer -----------------------------------------------
+   F7. A command list, so it is styled as one: dense rows, a cursor that
+   follows both keyboard and mouse, and the consequence of each action printed
+   under its name rather than left to be discovered by pressing it. */
+.cheat-modal {
+  max-width: 640px;
+}
+.cheat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.cheat-search {
+  padding: 11px 16px;
+}
+.cheat-result {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--paper-2);
+  border: 1px solid var(--line-2);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.cheat-result.is-warm {
+  border-color: rgba(196, 72, 27, 0.4);
+  color: var(--signal);
+}
+.cheat-list {
+  max-height: min(52vh, 460px);
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+.cheat-list h4 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 12px 0 5px;
+  padding: 5px 4px;
+  background: var(--card);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.cheat-list section:first-child h4 {
+  margin-top: 0;
+}
+.cheat-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.14s,
+    border-color 0.14s;
+}
+.cheat-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cheat-item.is-cursor {
+  background: var(--glass);
+  border-color: var(--line-2);
+}
+.cheat-item.is-asking {
+  background: rgba(196, 72, 27, 0.08);
+  border-color: rgba(196, 72, 27, 0.45);
+}
+.cheat-item-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cheat-item-label b {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.cheat-item-label em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-2);
+  flex: none;
+}
+.cheat-item-label em.is-heavy {
+  color: var(--signal);
+  background: rgba(196, 72, 27, 0.12);
+}
+.cheat-item-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.cheat-item.is-asking .cheat-item-hint {
+  color: var(--signal);
+}
+.cheat-item-ask {
+  display: inline-block;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--signal);
 }

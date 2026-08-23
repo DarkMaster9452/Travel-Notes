@@ -4,10 +4,13 @@ import Link from "next/link";
 
 import { LeaderboardBoard } from "@/components/app/leaderboard-board";
 import { Reveal } from "@/components/app/motion";
-import { Eyebrow, Tag } from "@/components/field";
+import { StandingCard, type Standing } from "@/components/app/standing-card";
+import { Eyebrow } from "@/components/field";
 import { slotLabel, slotState } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
-import { getLeaderboard, pastSlots, sealRecentLeaderboards } from "@/lib/leaderboard";
+import { db } from "@/lib/db";
+import { getHeldAwards, getLeaderboard, pastSlots, sealRecentLeaderboards } from "@/lib/leaderboard";
+import { getUserStats } from "@/lib/quest/service";
 
 export const metadata: Metadata = { title: "Leaderboard" };
 export const dynamic = "force-dynamic";
@@ -22,6 +25,10 @@ const TABS = [
  *
  * Monthly first, for the same reason it leads the dashboard and the schedule:
  * it is the headline quest and the weekly is the thing alongside it.
+ *
+ * Your own standing is the header rather than a panel somewhere below it —
+ * "where am I" is the question people come here with, and a board that makes
+ * you hunt for yourself is a scoreboard rather than a standing.
  *
  * Closed boards are sealed on the way in. There is no cron in this product and
  * inventing one for three rows would be a lot of machinery to make a sticker
@@ -41,12 +48,42 @@ export default async function LeaderboardPage({
 
   await sealRecentLeaderboards();
 
-  const board = await getLeaderboard(period, params.slot);
+  const [board, awards, stats, profile] = await Promise.all([
+    getLeaderboard(period, params.slot),
+    getHeldAwards(user.id),
+    getUserStats(user.id),
+    db.profile.findUnique({
+      where: { userId: user.id },
+      select: { handle: true, published: true },
+    }),
+  ]);
+
   const slots = pastSlots(period, 8).map((slot) => ({
     key: slot.key,
     label: slotLabel(slot),
     state: slotState(slot),
   }));
+
+  const standing: Standing = {
+    name: user.name,
+    handle: profile?.published ? profile.handle : null,
+    hidden: Boolean(profile && !profile.published),
+    row: board.rows.find((row) => row.userId === user.id) ?? null,
+    period: board.period,
+    label: board.label,
+    live: board.state === "live",
+    medals: awards.map((award) => ({
+      id: award.id,
+      medal: award.medal,
+      sticker: award.sticker,
+      label: award.label,
+    })),
+    lifetime: {
+      logged: stats.completedCount,
+      km: Math.round(stats.kmExplored),
+      up: Math.round(stats.elevation),
+    },
+  };
 
   return (
     <>
@@ -75,6 +112,8 @@ export default async function LeaderboardPage({
         </div>
       </Reveal>
 
+      <StandingCard standing={standing} />
+
       <LeaderboardBoard
         board={board}
         viewerId={user.id}
@@ -88,7 +127,7 @@ export default async function LeaderboardPage({
           <Link href="/submissions" className="underline">
             your submissions
           </Link>{" "}
-          say where yours has got to. <Tag tone="ghost">Names only</Tag>
+          say where yours has got to.
         </p>
       </Reveal>
     </>
