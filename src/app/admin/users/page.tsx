@@ -40,7 +40,7 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const params = await searchParams;
   const filter: FilterKey = isFilter(
@@ -77,7 +77,10 @@ export default async function AdminUsersPage({
   // The headline figures come from the same place the overview reads them, so
   // "subscribers" and "new this week" cannot mean one thing on one page and
   // something slightly different on another.
-  const [users, matched, overview] = await Promise.all([
+  // Whether a delete would be refused is decided here rather than guessed at
+  // in the row: the last admin cannot go, and neither can the account doing
+  // the deleting. Same two rules the server enforces, said before the press.
+  const [users, matched, overview, adminCount] = await Promise.all([
     db.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -89,12 +92,14 @@ export default async function AdminUsersPage({
         role: true,
         freeQuestsUsed: true,
         createdAt: true,
+        theme: true,
         subscription: { select: { plan: true, status: true, cancelAtPeriodEnd: true } },
         _count: { select: { history: true, sessions: true } },
       },
     }),
     db.user.count({ where }),
     getAdminOverview(),
+    db.user.count({ where: { role: "ADMIN" } }),
   ]);
 
   return (
@@ -103,7 +108,10 @@ export default async function AdminUsersPage({
         <div>
           <Eyebrow>Accounts</Eyebrow>
           <h1>Users.</h1>
-          <p>Every account, and what it is allowed to do. Manage sets role, plan and allowance.</p>
+          <p>
+            Every account, and what it is allowed to do. Manage edits the name, the email, the
+            role, the plan and the allowance — and deletes, if it comes to that.
+          </p>
         </div>
       </Reveal>
 
@@ -213,8 +221,17 @@ export default async function AdminUsersPage({
                           role: user.role,
                           plan: live ? (user.subscription?.plan ?? "FREE") : "FREE",
                           freeQuestsUsed: user.freeQuestsUsed,
+                          theme: user.theme,
                           sessions: user._count.sessions,
                         }}
+                        canDelete={
+                          user.id !== admin.id && !(user.role === "ADMIN" && adminCount <= 1)
+                        }
+                        blockedReason={
+                          user.id === admin.id
+                            ? "You can't delete the account you're signed in as."
+                            : "That's the last admin — the panel would lock everyone out."
+                        }
                       />
                     </span>
                   </Reveal>

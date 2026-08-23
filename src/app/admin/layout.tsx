@@ -1,5 +1,6 @@
 import { logoutAction } from "@/app/(auth)/actions";
 import { CheatMenu } from "@/components/admin/cheat-menu";
+import { countUnreadMessages } from "@/lib/admin/chat";
 import { NotificationCenter } from "@/components/admin/notification-center";
 import { AdminShell, type NavItem } from "@/components/app/app-shell";
 import { getAdminNotices } from "@/lib/admin/notifications";
@@ -18,10 +19,13 @@ import { db } from "@/lib/db";
  * no quests, no allowance, no stickers and no subscription, and a menu offering
  * them would be describing an account that doesn't exist.
  */
-function nav(pending: number): readonly NavItem[] {
+function nav(pending: number, unread: number): readonly NavItem[] {
   return [
     { href: "/admin", label: "Dashboard", icon: "grid" },
     { href: "/admin/review", label: "Review", icon: "compass", badge: pending },
+    // Staff only, and the one place in the panel that is about the people
+    // running it rather than about the product.
+    { href: "/admin/chat", label: "Back office", icon: "chat", badge: unread },
     { href: "/admin/submissions", label: "Submissions", icon: "inbox" },
     { href: "/admin/users", label: "Users", icon: "users" },
     { href: "/admin/quests", label: "Quests", icon: "map" },
@@ -42,14 +46,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // badge is the number an admin needs before they have chosen where to go,
   // and the notices are the panel saying what is wrong on whichever page they
   // happen to be standing on.
-  const [pending, notices] = await Promise.all([
+  const [pending, notices, unread] = await Promise.all([
     db.submission.count({ where: { status: "PENDING" } }),
     getAdminNotices(),
+    countUnreadMessages(user.id),
   ]);
 
   return (
     <AdminShell
-      items={nav(pending)}
+      items={nav(pending, unread)}
       userName={user.name}
       userEmail={user.email}
       theme={user.theme}

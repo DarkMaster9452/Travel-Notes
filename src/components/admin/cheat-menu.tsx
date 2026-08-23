@@ -67,6 +67,14 @@ const COMMANDS: Command[] = [
     href: "/admin/review",
   },
   {
+    id: "go-chat",
+    group: "Go",
+    label: "Back office",
+    hint: "The staff room. One conversation, admins only, and everything said in it stays.",
+    keywords: "chat room staff talk message colleagues",
+    href: "/admin/chat",
+  },
+  {
     id: "go-submissions",
     group: "Go",
     label: "All submissions",

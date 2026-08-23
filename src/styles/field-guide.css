@@ -7858,3 +7858,165 @@ select.input {
   font-weight: 700;
   color: var(--signal);
 }
+
+/* ------------------------- 17 the back office ---------------------------- */
+
+/* A subheading inside a panel body — smaller than a `PanelHead`, because it
+   divides one panel's contents rather than naming the panel. */
+.admin-subhead {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+/* Who is in the room, in the panel head. First names only — the same rule the
+   rest of the product follows about how much of somebody's name it shows. */
+.chat-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.chat-who span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-2);
+  color: var(--ink-3);
+}
+
+.chat-room {
+  display: flex;
+  flex-direction: column;
+}
+.chat-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* Tall enough to hold a conversation, short enough that the composer is
+     always on screen without scrolling the page to find it. */
+  height: min(58vh, 520px);
+  overflow-y: auto;
+  padding: 16px 18px;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-stream {
+    scroll-behavior: auto;
+  }
+}
+
+.chat-message {
+  display: flex;
+  gap: 11px;
+  padding: 5px 0;
+  border-radius: 8px;
+}
+/* A run from the same person inside five minutes is one block: the avatar and
+   the name appear once, and the rest is just what they said next. */
+.chat-message.is-grouped {
+  padding-top: 1px;
+}
+.chat-message.is-pending {
+  opacity: 0.55;
+}
+.chat-av {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-top: 2px;
+}
+.chat-gutter {
+  width: 32px;
+  flex: 0 0 32px;
+}
+.chat-body {
+  flex: 1;
+  min-width: 0;
+}
+.chat-body header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 1px;
+}
+.chat-body header b {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.chat-body header time,
+.chat-body header em {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.chat-body > p {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  /* Somebody's line breaks are part of what they said. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-message.is-mine .chat-body > p {
+  color: var(--ink);
+}
+
+/* Edit and delete stay out of the way until the message is under the cursor —
+   a row of verbs beside every line you wrote is a lot of furniture for
+   something used twice a month. */
+.chat-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.chat-message:hover .chat-actions,
+.chat-message:focus-within .chat-actions {
+  opacity: 1;
+}
+.chat-actions button {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.chat-actions button:hover {
+  color: var(--signal);
+}
+.chat-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.chat-compose {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--glass);
+}
+.chat-compose .input {
+  flex: 1;
+  resize: none;
+}

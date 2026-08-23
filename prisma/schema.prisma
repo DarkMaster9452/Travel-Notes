@@ -49,6 +49,11 @@ model User {
   /// this is what makes "new since you last looked" answerable, and it is why
   /// the sheet can celebrate an unlock exactly once.
   seenAchievements String[] @default([]) @map("seen_achievements")
+  /// When this admin last opened the back-office room. Null means never, and
+  /// everything counts as unread. A column rather than a table because it is
+  /// one timestamp per account and a join table for that would be a table
+  /// with exactly as many rows as there are admins.
+  adminChatReadAt  DateTime? @map("admin_chat_read_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -67,6 +72,7 @@ model User {
   revocations  AchievementRevocation[] @relation("RevocationSubject")
   revoked      AchievementRevocation[] @relation("RevocationAuthor")
   awards       LeaderboardAward[]      @relation("AwardHolder")
+  adminMessages AdminMessage[]         @relation("AdminChatAuthor")
 
   @@map("users")
 }
@@ -621,4 +627,34 @@ model LeaderboardAward {
   @@unique([period, slotKey, userId])
   @@index([userId])
   @@map("leaderboard_awards")
+}
+
+/// A message in the back office.
+///
+/// One room, no channels, no threads. There are a handful of admins and one
+/// subject — what is happening to this product today — so a chat with
+/// somewhere to put things is a chat where things get put somewhere nobody
+/// looks. Everything is in one stream, in order, and the whole of it is
+/// visible to anybody who can open the panel.
+///
+/// Not a customer feature and deliberately not reachable from the customer
+/// side: `requireAdmin` guards the page and every action that touches this
+/// table.
+///
+/// The author is nullable and detaches rather than cascading. Deleting a
+/// colleague's account should not silently rewrite last month's decisions out
+/// of the record — the message stays, attributed to nobody, the same way a
+/// reviewed submission keeps its verdict when the reviewer is gone.
+model AdminMessage {
+  id       String  @id @default(cuid())
+  authorId String? @map("author_id")
+  body     String
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  editedAt  DateTime? @map("edited_at")
+
+  author User? @relation("AdminChatAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("admin_messages")
 }

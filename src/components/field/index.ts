@@ -18,6 +18,7 @@ export {
   IconBonus,
   IconBook,
   IconCalendarDays,
+  IconChat,
   IconCheck,
   IconClock,
   IconClose,

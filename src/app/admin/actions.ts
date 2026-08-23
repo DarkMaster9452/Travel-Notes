@@ -1,5 +1,6 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -102,13 +103,27 @@ export async function reviewSubmissionAction(input: {
 
 const accountSchema = z.object({
   userId: z.string().trim().min(1).max(60),
+  name: z.string().trim().min(1, "An account needs a name.").max(80),
+  email: z.string().trim().toLowerCase().email("That isn't an email address.").max(160),
   role: z.enum(["USER", "ADMIN"]),
   plan: z.enum(["FREE", "EXPLORER", "ULTRA"]),
   freeQuestsUsed: z.coerce.number().int().min(0).max(99),
+  theme: z.enum(["SYSTEM", "LIGHT", "DARK"]),
 });
 
 /**
- * Set one account's role and plan.
+ * Set what an account is and what it may do.
+ *
+ * Name and email are here as well as role, plan and allowance, because the
+ * support request this panel exists to answer is usually "I typed my address
+ * wrong" or "I have changed my name" — and until now the only way to fix
+ * either was to delete the account and take its history with it.
+ *
+ * Changing an email is changing the credential somebody signs in with, so the
+ * uniqueness collision is caught and reported rather than surfacing as a
+ * failed write. It does not sign them out: they are the same account, and an
+ * admin correcting a typo should not knock the person off mid-page. The
+ * password button below is the one that does that, deliberately.
  *
  * The plan is written as a real subscription row rather than a flag, so the
  * gating matrix keeps reading from one place — `getEntitlement` cannot tell the
@@ -120,13 +135,18 @@ export async function updateAccountAction(formData: FormData): Promise<AdminResu
 
   const parsed = accountSchema.safeParse({
     userId: formData.get("userId"),
+    name: formData.get("name"),
+    email: formData.get("email"),
     role: formData.get("role"),
     plan: formData.get("plan"),
     freeQuestsUsed: formData.get("freeQuestsUsed"),
+    theme: formData.get("theme") ?? "SYSTEM",
   });
-  if (!parsed.success) return { ok: false, message: "Those values don't look right." };
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Those values don't look right." };
+  }
 
-  const { userId, role, plan, freeQuestsUsed } = parsed.data;
+  const { userId, name, email, role, plan, freeQuestsUsed, theme } = parsed.data;
 
   // An admin demoting themselves would lock the panel behind an account that
   // can no longer open it. Refuse rather than strand them.
@@ -134,7 +154,18 @@ export async function updateAccountAction(formData: FormData): Promise<AdminResu
     return { ok: false, message: "You can't remove your own admin role." };
   }
 
-  await db.user.update({ where: { id: userId }, data: { role, freeQuestsUsed } });
+  const clash = await db.user.findFirst({
+    where: { email, id: { not: userId } },
+    select: { name: true },
+  });
+  if (clash) {
+    return { ok: false, message: `${clash.name} already uses that email address.` };
+  }
+
+  await db.user.update({
+    where: { id: userId },
+    data: { name, email, role, freeQuestsUsed, theme },
+  });
 
   if (plan === "FREE") {
     await db.subscription.deleteMany({ where: { userId } });
@@ -158,6 +189,100 @@ export async function updateAccountAction(formData: FormData): Promise<AdminResu
   revalidatePath("/admin/users");
   revalidatePath("/admin");
   return { ok: true };
+}
+
+/**
+ * Set a new password on somebody else's account.
+ *
+ * There is no email in this product yet, so "I am locked out" has had no
+ * answer at all. This is that answer, and it is deliberately the blunt one:
+ * an admin sets a password, tells the person what it is by whatever means they
+ * are already talking, and every existing session on the account is dropped so
+ * anybody holding a stolen one is dropped with it.
+ *
+ * Refused on your own account. The account you are signed in as has a settings
+ * page for this, and doing it from here would sign you out of the panel you
+ * did it from.
+ */
+export async function setAccountPasswordAction(
+  userId: string,
+  password: string,
+): Promise<AdminResult> {
+  const admin = await requireAdmin();
+
+  if (userId === admin.id) {
+    return { ok: false, message: "Change your own password in settings — this would sign you out." };
+  }
+
+  const parsed = z
+    .object({
+      userId: z.string().trim().min(1).max(60),
+      password: z.string().min(10, "At least ten characters.").max(200),
+    })
+    .safeParse({ userId, password });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "That won't do as a password." };
+  }
+
+  const target = await db.user.findUnique({ where: { id: userId }, select: { name: true } });
+  if (!target) return { ok: false, message: "That account is gone." };
+
+  // Same cost as signup, so an admin-set password is not quietly weaker to
+  // crack than one somebody chose themselves.
+  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+
+  await db.$transaction([
+    db.user.update({ where: { id: userId }, data: { passwordHash } }),
+    db.session.deleteMany({ where: { userId } }),
+  ]);
+
+  revalidatePath(`/admin/users/${userId}`);
+  return { ok: true, message: `${target.name} has a new password and was signed out everywhere.` };
+}
+
+/**
+ * Moderate a public profile.
+ *
+ * Unpublishing is the whole point: a handle, a headline or a bio is free text
+ * on a page anybody signed in can read, and the only tool this panel had for
+ * one that should not be there was deleting the account underneath it.
+ *
+ * Clearing a field empties it rather than replacing it with a notice. A
+ * profile that says "removed by an administrator" is a worse page than one
+ * with a blank line, and it invites an argument in the next field down.
+ */
+export async function moderateProfileAction(
+  userId: string,
+  change: { published?: boolean; clearHeadline?: boolean; clearBio?: boolean },
+): Promise<AdminResult> {
+  await requireAdmin();
+
+  const profile = await db.profile.findUnique({
+    where: { userId },
+    select: { id: true, published: true },
+  });
+  if (!profile) return { ok: false, message: "That account has no profile." };
+
+  await db.profile.update({
+    where: { userId },
+    data: {
+      ...(change.published === undefined ? {} : { published: change.published }),
+      ...(change.clearHeadline ? { headline: null } : {}),
+      ...(change.clearBio ? { bio: null } : {}),
+    },
+  });
+
+  revalidatePath(`/admin/users/${userId}`);
+  revalidatePath("/people");
+  return {
+    ok: true,
+    message:
+      change.published === false
+        ? "Profile hidden. It is no longer in the directory."
+        : change.published === true
+          ? "Profile published."
+          : "Profile updated.",
+  };
 }
 
 /** Sign an account out everywhere by dropping its sessions. */

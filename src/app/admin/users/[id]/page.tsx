@@ -86,6 +86,7 @@ export default async function AccountDetailPage({
       email: true,
       role: true,
       freeQuestsUsed: true,
+      theme: true,
       createdAt: true,
       subscription: { select: { plan: true, status: true, cancelAtPeriodEnd: true } },
       // So a moderator can see what this account is showing the world without
@@ -357,10 +358,13 @@ export default async function AccountDetailPage({
                   role: user.role,
                   plan,
                   freeQuestsUsed: user.freeQuestsUsed,
+                  theme: user.theme,
                   sessions: user._count.sessions,
+                  profile: user.profile,
                 }}
                 canDelete={canDelete}
                 blockedReason={blockedReason}
+                isSelf={isSelf}
               />
             </div>
           </Panel>
