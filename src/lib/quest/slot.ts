@@ -95,3 +95,57 @@ export async function loadFeaturedSlot(
     defaults,
   };
 }
+
+/**
+ * The same slot, read without making it real.
+ *
+ * `loadFeaturedSlot` materialises on sight, which is right on the weekly and
+ * monthly pages — opening one *is* taking it. It is wrong on the dashboard:
+ * glancing at a summary card is not accepting a quest, and a dashboard that
+ * wrote two quest rows into somebody's history every time they looked at it
+ * would be issuing quests nobody asked for.
+ *
+ * So this reads only. Proof status is looked up by the marker the quest would
+ * have been written under, which costs one indexed read and stays null for an
+ * account that has never logged this slot.
+ */
+export type FeaturedGlance = {
+  featured: FeaturedQuest | null;
+  closesAt: Date;
+  closed: boolean;
+  status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+};
+
+export async function glanceFeaturedSlot(
+  userId: string,
+  period: FeaturedPeriod,
+  now = new Date(),
+): Promise<FeaturedGlance> {
+  const featured = await getFeaturedQuest(userId, period, now);
+  const closesAt = periodEnds(period, now);
+  const closed = closesAt.getTime() <= now.getTime();
+
+  if (!featured) return { featured: null, closesAt, closed, status: "NONE" };
+
+  // A booked slot is already a quest row shared by everybody; a generated one
+  // exists only once this account has logged it, and is found by its marker.
+  const submission = featured.scheduled
+    ? await db.submission.findUnique({
+        where: { userId_questId: { userId, questId: featured.summary.id } },
+        select: { status: true },
+      })
+    : await db.submission.findFirst({
+        where: {
+          userId,
+          quest: {
+            routeData: {
+              path: ["featuredKey"],
+              equals: `${featured.period}:${featured.key}:${userId}`,
+            },
+          },
+        },
+        select: { status: true },
+      });
+
+  return { featured, closesAt, closed, status: submission?.status ?? "NONE" };
+}

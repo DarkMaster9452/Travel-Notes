@@ -117,12 +117,21 @@ export type LeaderboardRow = {
   userId: string;
   /** The display name, and nothing else about the account. */
   username: string;
+  /**
+   * Their public profile, when they have published one. Null is not "no
+   * account" — it is "nothing to link to", and the row renders as plain text.
+   */
+  handle: string | null;
   rank: number;
   score: number;
   quests: number;
   /** True when the featured quest of this slot is among them. */
   tookFeatured: boolean;
   medal: Medal | null;
+  /** Points behind the leader. 0 for the leader. */
+  behindLeader: number;
+  /** Points needed to take the place above. 0 for the leader. */
+  toOvertake: number;
 };
 
 export type Leaderboard = {
@@ -202,7 +211,7 @@ export async function getLeaderboard(
         slotKey: true,
         startedAt: true,
         createdAt: true,
-        user: { select: { name: true } },
+        user: { select: { name: true, profile: { select: { handle: true, published: true } } } },
         quest: { select: { difficulty: true, distance: true, elevationGain: true } },
       },
     }),
@@ -214,14 +223,21 @@ export async function getLeaderboard(
         medal: true,
         score: true,
         quests: true,
-        user: { select: { name: true } },
+        user: { select: { name: true, profile: { select: { handle: true, published: true } } } },
       },
     }),
   ]);
 
   const tally = new Map<
     string,
-    { username: string; score: number; quests: number; tookFeatured: boolean; last: number }
+    {
+      username: string;
+      handle: string | null;
+      score: number;
+      quests: number;
+      tookFeatured: boolean;
+      last: number;
+    }
   >();
 
   for (const submission of submissions) {
@@ -242,6 +258,10 @@ export async function getLeaderboard(
 
     const entry = tally.get(submission.userId) ?? {
       username: submission.user.name,
+      // Only a *published* profile is linked. An unpublished one is not a
+      // page the reader is allowed to open, and a dead link on a public
+      // board would be the directory leaking who has an account.
+      handle: submission.user.profile?.published ? submission.user.profile.handle : null,
       score: 0,
       quests: 0,
       tookFeatured: false,
@@ -277,11 +297,14 @@ export async function getLeaderboard(
     return {
       userId,
       username: entry.username,
+      handle: entry.handle,
       rank: award ? award.rank : sealed ? (below += 1) : index + 1,
       score: entry.score,
       quests: entry.quests,
       tookFeatured: entry.tookFeatured,
       medal: award?.medal ?? (sealed ? null : RANKED_MEDAL(index + 1)),
+      behindLeader: 0,
+      toOvertake: 0,
     };
   });
 
@@ -293,15 +316,27 @@ export async function getLeaderboard(
     rows.push({
       userId: award.userId,
       username: award.user.name,
+      handle: award.user.profile?.published ? award.user.profile.handle : null,
       rank: award.rank,
       score: award.score,
       quests: award.quests,
       tookFeatured: false,
       medal: award.medal,
+      behindLeader: 0,
+      toOvertake: 0,
     });
   }
 
   rows.sort((a, b) => a.rank - b.rank || b.score - a.score);
+
+  // The two numbers that make a board a race rather than a list: how far off
+  // the lead you are, and how few points would take the place in front of you.
+  // Computed once here so every surface quotes the same figure.
+  const leader = rows[0]?.score ?? 0;
+  for (const [index, row] of rows.entries()) {
+    row.behindLeader = Math.max(0, leader - row.score);
+    row.toOvertake = index === 0 ? 0 : Math.max(0, (rows[index - 1]!.score ?? 0) - row.score + 1);
+  }
 
   return {
     period,
