@@ -48,6 +48,14 @@
   --color-line: rgba(20, 26, 22, 0.15);
   --color-line-2: rgba(20, 26, 22, 0.08);
 
+  /* --- the three metals ---
+     The one place in the product that isn't green or stamp ink, because a
+     podium that was drawn in the house palette wouldn't read as a podium.
+     Used only on leaderboard medals — nothing else may reach for these. */
+  --color-medal-gold: #a8801f;
+  --color-medal-silver: #6f7a7f;
+  --color-medal-bronze: #8a5a33;
+
   /* --- dark surfaces (mail section, feature plan card, footer) --- */
   --color-forest: #1b3325;
   --color-forest-deep: #14251b;
@@ -128,6 +136,9 @@
   --sage: var(--color-sage);
   --signal: var(--color-signal);
   --signal-2: var(--color-signal-2);
+  --medal-gold: var(--color-medal-gold);
+  --medal-silver: var(--color-medal-silver);
+  --medal-bronze: var(--color-medal-bronze);
   --line: var(--color-line);
   --line-2: var(--color-line-2);
   --forest: var(--color-forest);
@@ -204,6 +215,10 @@
   --color-signal: #ff7d4a;
   --color-signal-2: #ff9468;
 
+  --color-medal-gold: #c9a03a;
+  --color-medal-silver: #9aa5a9;
+  --color-medal-bronze: #b0764a;
+
   --color-line: rgba(233, 235, 232, 0.14);
   --color-line-2: rgba(233, 235, 232, 0.07);
 
@@ -235,6 +250,9 @@
   --sage: var(--color-sage);
   --signal: var(--color-signal);
   --signal-2: var(--color-signal-2);
+  --medal-gold: var(--color-medal-gold);
+  --medal-silver: var(--color-medal-silver);
+  --medal-bronze: var(--color-medal-bronze);
   --line: var(--color-line);
   --line-2: var(--color-line-2);
 
@@ -267,6 +285,10 @@
     --color-signal: #ff7d4a;
     --color-signal-2: #ff9468;
 
+    --color-medal-gold: #c9a03a;
+    --color-medal-silver: #9aa5a9;
+    --color-medal-bronze: #b0764a;
+
     --color-line: rgba(233, 235, 232, 0.14);
     --color-line-2: rgba(233, 235, 232, 0.07);
 
@@ -296,6 +318,9 @@
   --sage: var(--color-sage);
   --signal: var(--color-signal);
   --signal-2: var(--color-signal-2);
+  --medal-gold: var(--color-medal-gold);
+  --medal-silver: var(--color-medal-silver);
+  --medal-bronze: var(--color-medal-bronze);
   --line: var(--color-line);
   --line-2: var(--color-line-2);
 

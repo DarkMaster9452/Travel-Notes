@@ -22,10 +22,12 @@ function nav(pending: number): readonly NavItem[] {
     { href: "/admin/submissions", label: "Submissions", icon: "inbox" },
     { href: "/admin/users", label: "Users", icon: "users" },
     { href: "/admin/quests", label: "Quests", icon: "map" },
+    { href: "/admin/quests/all", label: "All quests", icon: "book" },
     { href: "/admin/schedule", label: "Schedule", icon: "calendar" },
     { href: "/admin/locations", label: "Locations", icon: "marker" },
 
-    { section: "Analytics", href: "/admin/revenue", label: "Revenue", icon: "coin" },
+    { section: "Analytics", href: "/admin/leaderboard", label: "Leaderboards", icon: "badge" },
+    { href: "/admin/revenue", label: "Revenue", icon: "coin" },
     { href: "/admin/database", label: "Database", icon: "database" },
   ];
 }

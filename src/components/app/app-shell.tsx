@@ -160,9 +160,17 @@ function Sidebar({
   }
 
   // Exact match for the index route, prefix match for the rest — otherwise
-  // "/admin" would light up on every page in the panel.
-  const isActive = (href: string) =>
-    pathname === href || (href !== home && pathname.startsWith(`${href}/`));
+  // "/admin" would light up on every page in the panel. Where two entries both
+  // match, the longer one wins: with "/admin/quests" and "/admin/quests/all"
+  // both in the list, lighting up both says the sidebar doesn't know where you
+  // are.
+  const current = items.reduce<string | null>((best, item) => {
+    const matches =
+      pathname === item.href || (item.href !== home && pathname.startsWith(`${item.href}/`));
+    if (!matches) return best;
+    return best === null || item.href.length > best.length ? item.href : best;
+  }, null);
+  const isActive = (href: string) => href === current;
 
   return (
     <>

@@ -59,6 +59,7 @@ model User {
   scheduled    QuestSchedule[]   @relation("ScheduleAuthor")
   revocations  AchievementRevocation[] @relation("RevocationSubject")
   revoked      AchievementRevocation[] @relation("RevocationAuthor")
+  awards       LeaderboardAward[]      @relation("AwardHolder")
 
   @@map("users")
 }
@@ -367,6 +368,18 @@ model Submission {
   /// Turned back on purpose. An honest retreat is approved, not failed.
   retreated Boolean @default(false)
 
+  /// Which cadence this was filed against, when it was filed against one.
+  ///
+  /// Stamped at filing time rather than looked up at review time, because the
+  /// slot moves on: a weekly filed on Sunday evening is a weekly, and asking
+  /// on Tuesday "is this quest the current weekly?" would answer no. It is
+  /// what puts a submission at the front of the review queue, and what the
+  /// leaderboard counts as a featured finish, so it has to describe the
+  /// moment it was filed and then stop changing.
+  period  SchedulePeriod?
+  /// The slot it was filed against — `2026-W34` or `2026-09`.
+  slotKey String?         @map("slot_key")
+
   status       SubmissionStatus @default(PENDING)
   reviewedById String?          @map("reviewed_by_id")
   reviewNote   String?          @map("review_note")
@@ -379,6 +392,7 @@ model Submission {
 
   @@unique([userId, questId])
   @@index([status, createdAt])
+  @@index([period, slotKey])
   @@map("submissions")
 }
 
@@ -435,4 +449,48 @@ model RateLimit {
 
   @@index([windowStart])
   @@map("rate_limits")
+}
+
+/// Where a top-three finish landed.
+enum Medal {
+  GOLD
+  SILVER
+  BRONZE
+}
+
+/// A podium finish on a closed weekly or monthly leaderboard.
+///
+/// Written once, when the period closes, and never recomputed. The board
+/// itself is derived — sum the approved submissions filed inside the window —
+/// but a *finish* cannot be, because the inputs keep moving: a submission
+/// approved three weeks late, or a verdict reversed, would silently reshuffle
+/// a podium somebody has already been given a sticker for. So the moment a
+/// slot closes the top three are sealed here, score and all, and the sticker
+/// on the account reads from this row rather than from the arithmetic.
+///
+/// Sealing is idempotent: `@@unique([period, slotKey, rank])` means a second
+/// attempt at the same board writes nothing rather than handing out a fourth
+/// bronze.
+model LeaderboardAward {
+  id      String         @id @default(cuid())
+  userId  String         @map("user_id")
+  period  SchedulePeriod
+  /// `2026-W34` for a weekly, `2026-09` for a monthly.
+  slotKey String         @map("slot_key")
+  /// 1, 2 or 3. Nothing below the podium is stored.
+  rank    Int
+  medal   Medal
+  /// The score as it stood when the slot closed.
+  score   Int
+  /// How many approved submissions made up that score.
+  quests  Int            @default(0)
+
+  awardedAt DateTime @default(now()) @map("awarded_at")
+
+  user User @relation("AwardHolder", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([period, slotKey, rank])
+  @@unique([period, slotKey, userId])
+  @@index([userId])
+  @@map("leaderboard_awards")
 }

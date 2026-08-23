@@ -9,6 +9,7 @@ import { QuestSheet } from "@/components/app/quest-sheet";
 import { Eyebrow, IconShield, Panel, PanelHead, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { getQuestCadence } from "@/lib/quest/cadence";
 import { getQuestForUser } from "@/lib/quest/service";
 import { formatDate, titleCase } from "@/lib/utils";
 import { toQuestSummary } from "@/types/quest";
@@ -48,15 +49,37 @@ export default async function QuestPage({ params }: Params) {
     completed: record.isCompleted,
   });
 
+  // Anything in the published catalogue can be logged, issued or not: the
+  // database page exists so somebody who walked a route can come and file it,
+  // and a "read only" quest page would be where that ended.
+  const loggable = record.owned || (record.quest.published && record.quest.isShowcase);
+  const cadence = await getQuestCadence(quest.id);
+
   return (
     <>
       <Reveal as="header" className="page-head">
         <div>
-          <Eyebrow>{record.isCompleted ? "Logged" : "Issued to you"}</Eyebrow>
+          <Eyebrow>
+            {record.isCompleted
+              ? "Logged"
+              : record.owned
+                ? "Issued to you"
+                : "From the database"}
+          </Eyebrow>
           <h1>{quest.title}</h1>
           <p>{quest.subtitle}</p>
         </div>
-        {record.owned && <SubmitProofButton questId={quest.id} status={proofStatus} />}
+        <div className="flex flex-wrap items-center gap-3">
+          {cadence.hasBeenMonthly && (
+            <Tag tone="warm">
+              Monthly{cadence.monthlyRuns > 1 ? ` ×${cadence.monthlyRuns}` : ""}
+            </Tag>
+          )}
+          {cadence.hasBeenWeekly && (
+            <Tag tone="pine">Weekly{cadence.weeklyRuns > 1 ? ` ×${cadence.weeklyRuns}` : ""}</Tag>
+          )}
+          {loggable && <SubmitProofButton questId={quest.id} status={proofStatus} />}
+        </div>
       </Reveal>
 
       {/* The one photograph an admin attached to this quest. Optional by
@@ -79,8 +102,10 @@ export default async function QuestPage({ params }: Params) {
         <Reveal delay={stagger(0)}>
           <QuestSheet
             quest={quest}
-            issuedAt={`Issued ${formatDate(record.generatedAt)}`}
-            seal={record.isCompleted ? "LOGGED" : "ISSUED"}
+            issuedAt={
+              record.owned ? `Issued ${formatDate(record.generatedAt)}` : "In the database"
+            }
+            seal={record.isCompleted ? "LOGGED" : record.owned ? "ISSUED" : null}
           />
         </Reveal>
 
@@ -89,6 +114,14 @@ export default async function QuestPage({ params }: Params) {
             <Panel flush>
               <PanelHead title="The day" />
               <div className="px-5 py-5">
+                {/* When a quest has run as a weekly or a monthly, that is part
+                    of what it is — so it is said here, at the top of the
+                    description, rather than filed away as a badge. */}
+                {cadence.line && (
+                  <p className="mb-3 text-[15.5px] font-semibold leading-[1.6] text-ink">
+                    {cadence.line}
+                  </p>
+                )}
                 <p className="text-[15.5px] leading-[1.6] text-ink-2">{record.quest.description}</p>
                 {record.quest.bonus && (
                   <div className="qc-bonus mt-4">

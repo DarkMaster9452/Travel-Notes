@@ -4,6 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
+import { monthlySlot, weeklySlot, type Slot } from "../src/lib/admin/schedule";
+
 import { buildShowcaseQuests, DEMO_PREFERENCES } from "./seed-data";
 
 const connectionString = process.env.DATABASE_URL;
@@ -180,11 +182,87 @@ async function main() {
     where: { email: "admin@demo.com" },
     select: { id: true },
   });
-  const crowd = await seedCrowd(passwordHash, quests, adminAccount!.id);
+
+  const schedules = await seedSchedules(quests, adminAccount!.id);
+  console.log(`✓ ${schedules.length} weekly / monthly slots booked`);
+
+  const crowd = await seedCrowd(passwordHash, quests, adminAccount!.id, schedules);
   console.log(`✓ ${crowd.people} demo accounts with ${crowd.submissions} submissions`);
 
   console.log(`\nAll accounts share the password: ${PASSWORD}`);
   console.log("Log in with admin@demo.com / demo");
+}
+
+/* -------------------------------------------------------------------------- */
+/* The cadence                                                                 */
+/* -------------------------------------------------------------------------- */
+
+type BookedSlot = {
+  questId: string;
+  period: "WEEKLY" | "MONTHLY";
+  slotKey: string;
+  openAt: Date;
+  closeAt: Date;
+};
+
+/**
+ * Fill the recent calendar.
+ *
+ * Without this, nothing in a fresh database has ever been the weekly or the
+ * monthly — so the cadence filters, the tags on the quest tables and the
+ * featured bonus on the leaderboards all have nothing to show, and look
+ * broken rather than empty. The past two months are booked, plus the slots
+ * that are open right now.
+ *
+ * Weekly slots take quests from the front of the list and monthly ones from
+ * just past where the weeklies reach, so the two cadences never land on the
+ * same quest in the same window — which is exactly the state the product has
+ * no answer for — and both stay inside the range the demo crowd is issued, so
+ * there is real cadenced proof to review and to score.
+ */
+async function seedSchedules(quests: { id: string }[], adminId: string): Promise<BookedSlot[]> {
+  const now = new Date();
+  const booked: BookedSlot[] = [];
+
+  const add = (slot: Slot, questId: string) => {
+    booked.push({
+      questId,
+      period: slot.period as "WEEKLY" | "MONTHLY",
+      slotKey: slot.key,
+      openAt: slot.openAt,
+      closeAt: slot.closeAt,
+    });
+  };
+
+  for (let back = 0; back < 9; back += 1) {
+    const cursor = new Date(now);
+    cursor.setDate(cursor.getDate() - back * 7);
+    add(weeklySlot(cursor), quests[back % quests.length]!.id);
+  }
+
+  for (let back = 0; back < 3; back += 1) {
+    const cursor = new Date(now);
+    cursor.setMonth(cursor.getMonth() - back, 1);
+    add(monthlySlot(cursor), quests[(9 + back) % quests.length]!.id);
+  }
+
+  await db.questSchedule.deleteMany({});
+  await db.questSchedule.createMany({
+    data: booked.map((slot) => ({ ...slot, audience: "FREE" as const, createdById: adminId })),
+    skipDuplicates: true,
+  });
+
+  return booked;
+}
+
+/** The slot a quest was in on a given day, if it was in one. */
+function slotFor(booked: BookedSlot[], questId: string, when: Date): BookedSlot | null {
+  return (
+    booked.find(
+      (slot) =>
+        slot.questId === questId && when >= slot.openAt && when < slot.closeAt,
+    ) ?? null
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -232,6 +310,8 @@ async function seedCrowd(
   quests: { id: string }[],
   /** Who the seeded decisions are attributed to. */
   reviewerId: string,
+  /** The booked calendar, so some proof lands against a real slot. */
+  booked: BookedSlot[],
 ) {
   // Deterministic, so a reseed produces the same demo rather than a new one.
   let n = 1337;
@@ -273,13 +353,17 @@ async function seedCrowd(
       await db.subscription.deleteMany({ where: { userId: user.id } });
     }
 
-    const owned = quests.slice(0, 2 + Math.floor(rand() * 6));
+    // A window into the catalogue rather than always the first few, so the
+    // quests booked as weeklies and monthlies are actually in somebody's
+    // history — otherwise the cadence half of the demo has no proof behind it.
+    const from = Math.floor(rand() * 5);
+    const owned = quests.slice(from, from + 3 + Math.floor(rand() * 6));
     await seedHistory(user.id, owned);
 
     // Proof for some of what they were issued, weighted towards pending so
     // the review deck has a queue to work through.
     await db.submission.deleteMany({ where: { userId: user.id } });
-    for (const quest of owned.slice(0, 1 + Math.floor(rand() * 3))) {
+    for (const quest of owned.slice(0, 2 + Math.floor(rand() * 3))) {
       const status = rand() > 0.55 ? "PENDING" : rand() > 0.4 ? "APPROVED" : "REJECTED";
       const retreated = rand() > 0.88;
       const filedAt = new Date(Date.now() - Math.floor(rand() * 20 + 1) * 24 * 3600 * 1000);
@@ -292,10 +376,18 @@ async function seedCrowd(
         (_, i) => `https://picsum.photos/seed/${user.id}-${quest.id}-${i}/640/480`,
       );
 
+      // Proof filed inside a slot this quest was booked into is proof of that
+      // week or month, and the product stamps it so at filing time. Seeding
+      // the stamp is what gives the review deck its priority queue and the
+      // leaderboards their featured bonuses.
+      const slot = slotFor(booked, quest.id, filedAt);
+
       await db.submission.create({
         data: {
           userId: user.id,
           questId: quest.id,
+          period: slot?.period ?? null,
+          slotKey: slot?.slotKey ?? null,
           note: pick(NOTES),
           photos,
           stravaUrl:

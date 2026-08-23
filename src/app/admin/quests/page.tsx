@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { BarSeries, RankBars, TrendArea } from "@/components/admin/charts";
 import { StatGrid } from "@/components/admin/stat-grid";
@@ -71,7 +72,12 @@ export default async function AdminQuestsPage() {
           <h1>Quests.</h1>
           <p>What has come out of the generator, and how widely it has spread.</p>
         </div>
-        <Tag tone="ghost">{`${overview.quests} generated`}</Tag>
+        <div className="flex flex-wrap items-center gap-3">
+          <Tag tone="ghost">{`${overview.quests} generated`}</Tag>
+          <Link href="/admin/quests/all" className="btn btn-ghost btn-sm">
+            Browse all quests
+          </Link>
+        </div>
       </Reveal>
 
       <Reveal>
@@ -135,7 +141,14 @@ export default async function AdminQuestsPage() {
 
       <Reveal delay={stagger(4)} className="mt-5">
         <Panel flush>
-          <PanelHead title="Latest generated" aside={<Tag tone="ghost">{`${recent.length} shown`}</Tag>} />
+          <PanelHead
+            title="Latest generated"
+            aside={
+              <Link href="/admin/quests/all?sort=newest" className="btn btn-ghost btn-sm">
+                All quests, filtered
+              </Link>
+            }
+          />
           {recent.length === 0 ? (
             <p className="chart-empty">The generator hasn&apos;t run yet.</p>
           ) : (

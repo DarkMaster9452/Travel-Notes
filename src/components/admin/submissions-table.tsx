@@ -50,6 +50,11 @@ export function SubmissionsTable({ rows }: { rows: SubmissionRow[] }) {
               <span className="meta hidden w-32 shrink-0 lg:inline">
                 {row.reviewedBy ? `by ${row.reviewedBy}` : "—"}
               </span>
+              {row.cadence && (
+                <Tag tone="warm">
+                  {row.cadence.period === "MONTHLY" ? "Monthly" : "Weekly"}
+                </Tag>
+              )}
               <Tag tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Tag>
             </button>
           </li>

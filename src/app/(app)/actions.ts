@@ -1,5 +1,6 @@
 "use server";
 
+import type { SchedulePeriod } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -10,6 +11,7 @@ import { isWithinRefundWindow } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
 import { getStripe } from "@/lib/stripe";
 import { LOCATIONS } from "@/lib/quest/locations";
+import { ensureFeaturedQuestId } from "@/lib/quest/featured";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
 import { questIdSchema } from "@/lib/validation";
 
@@ -63,16 +65,94 @@ export async function issueQuestAction(): Promise<IssueState> {
 }
 
 const proofSchema = z.object({
-  questId: z.string().trim().min(1).max(60),
   note: z.string().trim().min(10, "Tell us what happened.").max(2000),
   stravaUrl: z.string().trim().url().max(300).optional().or(z.literal("")),
   distance: z.coerce.number().min(0).max(500).optional(),
   elevation: z.coerce.number().int().min(0).max(20000).optional(),
   movingTime: z.coerce.number().int().min(0).max(20000).optional(),
   retreated: z.coerce.boolean().optional(),
+  /** The day it happened, which is not the day it was filed. The leaderboard
+   *  counts a quest into the week it was walked, so somebody who went on
+   *  Sunday and wrote it up on Tuesday lands on the right board. */
+  startedAt: z.coerce.date().optional(),
 });
 
 export type ProofResult = { ok: boolean; message?: string };
+
+/** Photo links, one per line, as the form collects them. */
+function readPhotos(formData: FormData): string[] {
+  return String(formData.get("photos") ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^https?:\/\//.test(line))
+    .slice(0, 6);
+}
+
+/**
+ * Which slot, if any, a quest is being logged against right now.
+ *
+ * Read at filing time and then stored on the submission, because the answer
+ * expires: proof filed on Sunday evening is proof of that week's quest, and
+ * the same question asked on Tuesday would say no. It is what puts the
+ * submission at the front of the review queue and what the leaderboard scores
+ * as a featured finish, so it has to describe the moment it was filed.
+ */
+async function cadenceForFiling(
+  questId: string,
+  now = new Date(),
+): Promise<{ period: SchedulePeriod; slotKey: string } | null> {
+  const slot = await db.questSchedule.findFirst({
+    where: { questId, openAt: { lte: now }, closeAt: { gt: now } },
+    // The monthly outranks the weekly where a quest somehow fills both.
+    orderBy: { period: "asc" },
+    select: { period: true, slotKey: true },
+  });
+  return slot ? { period: slot.period, slotKey: slot.slotKey } : null;
+}
+
+type Proof = z.infer<typeof proofSchema> & { photos: string[] };
+
+/**
+ * Read and check the form, before anything is written.
+ *
+ * Separate from filing because the two callers need it at different moments:
+ * logging a featured quest has to resolve (and, for a generated one, create)
+ * the quest row it will point at, and doing that for a form that turns out to
+ * be missing its photograph would leave a quest in somebody's history that
+ * they never filed anything against.
+ */
+function readProof(formData: FormData): { ok: true; proof: Proof } | { ok: false; message: string } {
+  const parsed = proofSchema.safeParse({
+    note: formData.get("note"),
+    stravaUrl: formData.get("stravaUrl") || undefined,
+    distance: formData.get("distance") || undefined,
+    elevation: formData.get("elevation") || undefined,
+    movingTime: formData.get("movingTime") || undefined,
+    retreated: formData.get("retreated") === "true",
+    startedAt: formData.get("startedAt") || undefined,
+  });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the form." };
+  }
+
+  // A day in the future is a typo, not a walk. Rejected rather than clamped:
+  // the date decides which leaderboard the quest lands on, so quietly moving
+  // it would put somebody on a board they never asked for.
+  if (parsed.data.startedAt && parsed.data.startedAt.getTime() > Date.now()) {
+    return { ok: false, message: "That date hasn't happened yet." };
+  }
+
+  const photos = readPhotos(formData);
+
+  // At least one photo is required — a written account alone isn't proof
+  // somebody can approve, and this is checked here rather than left to the
+  // form, since the form is not the authority on what a submission needs.
+  if (photos.length === 0) {
+    return { ok: false, message: "Add at least one photo link before filing." };
+  }
+
+  return { ok: true, proof: { ...parsed.data, photos } };
+}
 
 /**
  * File proof that a quest was done.
@@ -82,53 +162,52 @@ export type ProofResult = { ok: boolean; message?: string };
  * `reviewSubmissionAction` on the other side of the desk is what writes the
  * quest into history.
  *
- * Ownership runs through `quest_history`: proof can only be filed for a quest
- * this account was actually issued.
+ * Proof can be filed against any quest in the catalogue, not only one this
+ * account was issued. Somebody who walked a route on Saturday should be able
+ * to log it on Sunday, and refusing because the generator had not handed them
+ * that particular quest was a rule about our bookkeeping rather than about
+ * their day. Filing is not an unlock: it writes the history row it needs and
+ * spends no quota, because nothing was issued.
+ *
+ * What is still refused is a quest nobody can see — an unpublished one that
+ * is not already this account's, which is what another account's generated
+ * quest looks like from here.
  */
-export async function submitProofAction(formData: FormData): Promise<ProofResult> {
-  const user = await requireClient();
-
-  const parsed = proofSchema.safeParse({
-    questId: formData.get("questId"),
-    note: formData.get("note"),
-    stravaUrl: formData.get("stravaUrl") || undefined,
-    distance: formData.get("distance") || undefined,
-    elevation: formData.get("elevation") || undefined,
-    movingTime: formData.get("movingTime") || undefined,
-    retreated: formData.get("retreated") === "true",
+async function fileProof(
+  userId: string,
+  questId: string,
+  proof: Proof,
+  cadence?: { period: SchedulePeriod; slotKey: string } | null,
+): Promise<ProofResult> {
+  const quest = await db.quest.findUnique({
+    where: { id: questId },
+    select: {
+      id: true,
+      published: true,
+      isShowcase: true,
+      history: { where: { userId }, select: { id: true }, take: 1 },
+    },
   });
-  if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the form." };
-  }
-  const proof = parsed.data;
+  if (!quest) return { ok: false, message: "That quest is gone." };
 
-  const photos = String(formData.get("photos") ?? "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => /^https?:\/\//.test(line))
-    .slice(0, 6);
-
-  // At least one photo is required — a written account alone isn't proof
-  // somebody can approve, and this is checked here rather than left to the
-  // form, since the form is not the authority on what a submission needs.
-  if (photos.length === 0) {
-    return { ok: false, message: "Add at least one photo link before filing." };
+  const owned = quest.history.length > 0;
+  if (!owned && !(quest.published && quest.isShowcase)) {
+    return { ok: false, message: "That quest isn't open to file against." };
   }
 
-  const history = await db.questHistory.findUnique({
-    where: { userId_questId: { userId: user.id, questId: proof.questId } },
-    select: { id: true },
-  });
-  if (!history) return { ok: false, message: "That quest isn't yours." };
+  const stamp = cadence === undefined ? await cadenceForFiling(questId) : cadence;
 
   const values = {
     note: proof.note,
-    photos,
+    photos: proof.photos,
     stravaUrl: proof.stravaUrl || null,
     distance: proof.distance ?? null,
     elevation: proof.elevation ?? null,
     movingTime: proof.movingTime ?? null,
     retreated: proof.retreated ?? false,
+    startedAt: proof.startedAt ?? null,
+    period: stamp?.period ?? null,
+    slotKey: stamp?.slotKey ?? null,
     // Re-filing after a decline puts it back in the queue rather than opening
     // a second row: one submission per person per quest, edited in place.
     status: "PENDING" as const,
@@ -137,14 +216,71 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
     reviewNote: null,
   };
 
-  await db.submission.upsert({
-    where: { userId_questId: { userId: user.id, questId: proof.questId } },
-    update: values,
-    create: { userId: user.id, questId: proof.questId, ...values },
+  await db.$transaction(async (tx) => {
+    // Filing against a quest that was never issued still needs the history
+    // row: it is what an approval marks complete, and what the stats and the
+    // sticker sheet are computed from.
+    if (!owned) {
+      await tx.questHistory.upsert({
+        where: { userId_questId: { userId, questId } },
+        update: {},
+        create: { userId, questId },
+      });
+    }
+
+    await tx.submission.upsert({
+      where: { userId_questId: { userId, questId } },
+      update: values,
+      create: { userId, questId, ...values },
+    });
   });
 
-  revalidateQuestPaths(proof.questId);
+  revalidateQuestPaths(questId);
+  revalidatePath("/submissions");
+  revalidatePath("/quests");
+  revalidatePath("/leaderboard");
   return { ok: true };
+}
+
+export async function submitProofAction(formData: FormData): Promise<ProofResult> {
+  const user = await requireClient();
+
+  const read = readProof(formData);
+  if (!read.ok) return { ok: false, message: read.message };
+
+  const questId = String(formData.get("questId") ?? "").trim();
+  if (!questId || questId.length > 60) return { ok: false, message: "Unknown quest." };
+
+  return fileProof(user.id, questId, read.proof);
+}
+
+/**
+ * File proof against this week's or this month's featured quest.
+ *
+ * The page cannot post a quest id for these, because a generated featured
+ * quest does not have one until somebody logs it — so the client posts the
+ * cadence and the server resolves the rest. That also closes the obvious
+ * hole in letting a form name its own slot: the period a submission is
+ * stamped with is the one the server found open, never one that was typed.
+ */
+export async function submitFeaturedProofAction(formData: FormData): Promise<ProofResult> {
+  const user = await requireClient();
+
+  const read = readProof(formData);
+  if (!read.ok) return { ok: false, message: read.message };
+
+  const period = formData.get("period") === "month" ? "month" : "week";
+  const resolved = await ensureFeaturedQuestId(user.id, period);
+  if (!resolved.ok) return { ok: false, message: resolved.message };
+
+  const result = await fileProof(user.id, resolved.questId, read.proof, {
+    period: period === "week" ? "WEEKLY" : "MONTHLY",
+    slotKey: resolved.slotKey,
+  });
+
+  revalidatePath("/weekly");
+  revalidatePath("/monthly");
+  return result;
 }
 
 export type LogResult = {

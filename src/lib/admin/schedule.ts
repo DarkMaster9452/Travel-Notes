@@ -182,3 +182,38 @@ export function slotRange(
   }
   return slots;
 }
+
+/** The last day a slot is open — Sunday for a weekly, the 31st for a monthly. */
+export function slotLastDay(slot: Slot): Date {
+  const last = new Date(slot.closeAt);
+  last.setDate(last.getDate() - 1);
+  return last;
+}
+
+/** "17–23 Aug 2026" for a weekly, "1–30 Sep 2026" for a monthly. */
+export function slotDatesLabel(slot: Slot): string {
+  const last = slotLastDay(slot);
+  const sameMonth = last.getMonth() === slot.openAt.getMonth();
+  const from = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    ...(sameMonth ? {} : { month: "short" }),
+  }).format(slot.openAt);
+  const to = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(last);
+  return `${from}–${to}`;
+}
+
+/**
+ * Label a slot from its key alone — "Week 34", "September 2026".
+ *
+ * Falls back to the key itself rather than throwing: a key that no longer
+ * parses is a row somebody wrote by hand, and a table cell reading `2026-W99`
+ * is more useful than a page that won't render.
+ */
+export function slotKeyLabel(period: SchedulePeriod, key: string): string {
+  const slot = slotFromKey(period, key);
+  return slot ? slotLabel(slot) : key;
+}

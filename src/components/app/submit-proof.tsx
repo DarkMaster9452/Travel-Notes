@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { submitProofAction } from "@/app/(app)/actions";
+import { submitFeaturedProofAction, submitProofAction } from "@/app/(app)/actions";
 import { IconApproved, Modal, Tag, useToast } from "@/components/field";
+import { cn } from "@/lib/utils";
 
 /**
  * Filing proof.
@@ -21,9 +22,22 @@ import { IconApproved, Modal, Tag, useToast } from "@/components/field";
 export function SubmitProofButton({
   questId,
   status,
+  featuredPeriod,
+  label,
+  className,
 }: {
-  questId: string;
+  /** The quest being logged. Omitted for a featured quest the server resolves. */
+  questId?: string;
   status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+  /**
+   * Set on the weekly and monthly pages. A generated featured quest has no id
+   * until somebody logs it, so the cadence is posted instead and the server
+   * works out which quest that means — and stamps the slot itself, rather
+   * than believing a period the form claimed.
+   */
+  featuredPeriod?: "week" | "month";
+  label?: string;
+  className?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -47,7 +61,10 @@ export function SubmitProofButton({
   async function send(formData: FormData) {
     setPending(true);
     setError(null);
-    const result = await submitProofAction(formData).catch(() => null);
+    const result = await (featuredPeriod
+      ? submitFeaturedProofAction(formData)
+      : submitProofAction(formData)
+    ).catch(() => null);
     setPending(false);
 
     if (!result?.ok) {
@@ -64,8 +81,12 @@ export function SubmitProofButton({
 
   return (
     <>
-      <button type="button" className="btn btn-signal" onClick={() => setOpen(true)}>
-        {status === "REJECTED" ? "File proof again" : "Log it — file proof"}
+      <button
+        type="button"
+        className={cn("btn btn-signal", className)}
+        onClick={() => setOpen(true)}
+      >
+        {status === "REJECTED" ? "File proof again" : (label ?? "Log it — file proof")}
       </button>
 
       <Modal
@@ -76,7 +97,11 @@ export function SubmitProofButton({
         className="max-w-[520px]"
       >
         <form action={send} className="mt-5 flex flex-col gap-5">
-          <input type="hidden" name="questId" value={questId} />
+          {featuredPeriod ? (
+            <input type="hidden" name="period" value={featuredPeriod} />
+          ) : (
+            <input type="hidden" name="questId" value={questId} />
+          )}
 
           <div className="admin-field">
             <label htmlFor="proof-note">Your account of the day</label>
@@ -104,6 +129,21 @@ export function SubmitProofButton({
             />
             <p className="note mt-0">
               One per line. Direct uploads arrive with the storage step — until then, a link.
+            </p>
+          </div>
+
+          <div className="admin-field">
+            <label htmlFor="proof-started">The day you went</label>
+            <input
+              id="proof-started"
+              name="startedAt"
+              type="date"
+              className="input"
+              max={new Date().toISOString().slice(0, 10)}
+            />
+            <p className="note mt-0">
+              Optional — but it decides which week or month the quest counts towards on the
+              leaderboard. Left blank, today is assumed.
             </p>
           </div>
 
