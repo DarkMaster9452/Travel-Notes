@@ -14,6 +14,9 @@ export type QuestSummary = {
   subtitle: string;
   location: string;
   region: string;
+  /** Where the route starts. A public trailhead, never anybody's address. */
+  latitude: number;
+  longitude: number;
   distance: number;
   duration: number;
   difficulty: "EASY" | "MODERATE" | "HARD" | "EXPERT";
@@ -28,6 +31,14 @@ export type QuestSummary = {
   generatedAt: string | null;
   completed?: boolean;
   saved?: boolean;
+
+  /** Getting there. All optional — plenty of starts have no car park. */
+  parkingName: string | null;
+  parkingLat: number | null;
+  parkingLng: number | null;
+  parkingNote: string | null;
+  approachTime: number | null;
+  transitNote: string | null;
 };
 
 export function toQuestSummary(
@@ -41,6 +52,8 @@ export function toQuestSummary(
     subtitle: quest.subtitle,
     location: quest.location,
     region: quest.region,
+    latitude: quest.latitude,
+    longitude: quest.longitude,
     distance: quest.distance,
     duration: quest.duration,
     difficulty: quest.difficulty,
@@ -55,5 +68,11 @@ export function toQuestSummary(
     generatedAt: (extra?.generatedAt ?? quest.createdAt)?.toISOString() ?? null,
     completed: extra?.completed,
     saved: extra?.saved,
+    parkingName: quest.parkingName,
+    parkingLat: quest.parkingLat,
+    parkingLng: quest.parkingLng,
+    parkingNote: quest.parkingNote,
+    approachTime: quest.approachTime,
+    transitNote: quest.transitNote,
   };
 }

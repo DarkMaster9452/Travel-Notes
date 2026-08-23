@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { Prisma } from "@prisma/client";
+
 import { db } from "@/lib/db";
 import {
   generateQuest,
@@ -128,6 +130,8 @@ function toSummary(quest: GeneratedQuest, id: string): QuestSummary {
     subtitle: quest.subtitle,
     location: quest.location,
     region: quest.region,
+    latitude: quest.latitude,
+    longitude: quest.longitude,
     distance: quest.distance,
     duration: quest.duration,
     difficulty: quest.difficulty,
@@ -140,6 +144,15 @@ function toSummary(quest: GeneratedQuest, id: string): QuestSummary {
     mood: quest.mood,
     objective: quest.objective,
     generatedAt: null,
+    // A generated quest has no car park. Nobody has walked it to find one,
+    // and inventing coordinates for one would be the worst kind of made-up
+    // detail: the sort somebody would drive to.
+    parkingName: null,
+    parkingLat: null,
+    parkingLng: null,
+    parkingNote: null,
+    approachTime: null,
+    transitNote: null,
   };
 }
 
@@ -261,4 +274,115 @@ export async function getFeaturedQuest(
 ): Promise<FeaturedQuest | null> {
   const [featured] = await getFeaturedQuests(userId, [period], now);
   return featured ?? null;
+}
+
+
+// ---------------------------------------------------------------------------
+// Making a featured quest real
+// ---------------------------------------------------------------------------
+
+/**
+ * The marker written into `routeData` so a generated featured quest can be
+ * found again. It has to be unique per account as well as per slot, because a
+ * generated weekly is a different quest for every reader.
+ */
+function featuredMarker(period: FeaturedPeriod, key: string, userId: string): string {
+  return `${period}:${key}:${userId}`;
+}
+
+/**
+ * Turn the weekly or monthly into something proof can be filed against.
+ *
+ * Featured quests are ordinarily never written down: the seed is the period
+ * plus the account, so the same quest reappears on every page load for free.
+ * That was fine while they were a showcase. Now they must be logged, and a
+ * submission needs a quest row to point at and a history row proving this
+ * account was actually given it.
+ *
+ * So the slot is materialised the first time somebody opens it — lazily, not
+ * on a schedule, so a period nobody looks at costs nothing. It is idempotent
+ * on the marker, and it deliberately does **not** touch the free-quest counter:
+ * the weekly and the monthly have never cost quota and making them compulsory
+ * is not the moment to start charging for them.
+ *
+ * An admin-booked slot is already a real quest; all it needs is the history
+ * row. That row is also what stops the same quest being generated for this
+ * account again later — the anti-repetition engine reads history, so a
+ * materialised weekly is remembered like any other.
+ */
+export async function materialiseFeatured(
+  userId: string,
+  featured: FeaturedQuest,
+): Promise<string> {
+  if (featured.scheduled) {
+    // The booked case: one quest row, shared by everybody who can see it.
+    const questId = featured.summary.id;
+    await db.questHistory.upsert({
+      where: { userId_questId: { userId, questId } },
+      create: { userId, questId },
+      update: {},
+    });
+    return questId;
+  }
+
+  const marker = featuredMarker(featured.period, featured.key, userId);
+
+  const existing = await db.questHistory.findFirst({
+    where: { userId, quest: { routeData: { path: ["featuredKey"], equals: marker } } },
+    select: { questId: true },
+  });
+  if (existing) return existing.questId;
+
+  const blueprint = featured.quest;
+  if (!blueprint) {
+    throw new Error("A featured quest that is neither booked nor generated cannot be logged.");
+  }
+
+  // Two readers opening the same page at once would both find nothing and both
+  // insert. The transaction re-checks inside, and the loser reuses the winner's
+  // row rather than leaving the account holding two copies of one week.
+  return db.$transaction(async (tx) => {
+    const raced = await tx.questHistory.findFirst({
+      where: { userId, quest: { routeData: { path: ["featuredKey"], equals: marker } } },
+      select: { questId: true },
+    });
+    if (raced) return raced.questId;
+
+    const quest = await tx.quest.create({
+      data: {
+        number: null,
+        title: blueprint.title,
+        subtitle: blueprint.subtitle,
+        description: blueprint.description,
+        objective: blueprint.objective,
+        bonus: blueprint.bonus,
+        safetyNotes: blueprint.safetyNotes,
+        location: blueprint.location,
+        region: blueprint.region,
+        country: blueprint.country,
+        latitude: blueprint.latitude,
+        longitude: blueprint.longitude,
+        distance: blueprint.distance,
+        duration: blueprint.duration,
+        travelTime: blueprint.travelTime,
+        difficulty: blueprint.difficulty,
+        elevationGain: blueprint.elevationGain,
+        terrain: blueprint.terrain,
+        features: blueprint.features,
+        mood: blueprint.mood,
+        coverImage: blueprint.coverImage,
+        signature: blueprint.signature,
+        routeData: {
+          ...(blueprint.routeData as unknown as Record<string, unknown>),
+          featuredKey: marker,
+          featuredPeriod: featured.period,
+          featuredSlot: featured.key,
+        } as unknown as Prisma.InputJsonValue,
+      },
+      select: { id: true },
+    });
+
+    await tx.questHistory.create({ data: { userId, questId: quest.id } });
+    return quest.id;
+  });
 }

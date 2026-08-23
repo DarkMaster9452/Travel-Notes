@@ -8,7 +8,6 @@ import {
   FinalCta,
   HowItWorks,
   LandingFooter,
-  MailSection,
   PricingSection,
   ProofSection,
   StickersSection,
@@ -45,7 +44,6 @@ export default async function LandingPage() {
         <Hero />
         <DemoGenerator />
         <HowItWorks />
-        <MailSection />
         <WeeklySection />
         <TogetherSection />
         <TerrainSection />

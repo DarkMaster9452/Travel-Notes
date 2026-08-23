@@ -43,7 +43,9 @@ export {
   Seal,
   type IconProps,
 } from "./icons";
+export { ApproachMap } from "./approach-map";
 export { Modal } from "./modal";
+export { QuestArt } from "./quest-art";
 export { Eyebrow, Panel, PanelHead } from "./panel";
 export { Pill, PillGroup } from "./pill";
 export {

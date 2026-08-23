@@ -5,8 +5,9 @@ import { notFound } from "next/navigation";
 import { SubmitProofButton } from "@/components/app/submit-proof";
 import { Reveal } from "@/components/app/motion";
 import { stagger } from "@/lib/motion";
+import { GettingThere } from "@/components/app/getting-there";
 import { QuestSheet } from "@/components/app/quest-sheet";
-import { Eyebrow, IconShield, Panel, PanelHead, Tag } from "@/components/field";
+import { Eyebrow, IconShield, Panel, PanelHead, QuestArt, Tag } from "@/components/field";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getQuestForUser } from "@/lib/quest/service";
@@ -61,19 +62,31 @@ export default async function QuestPage({ params }: Params) {
 
       {/* The one photograph an admin attached to this quest. Optional by
           design — a quest without one is still a quest, and a broken image
-          box would be worse than no image at all. */}
-      {record.quest.coverImage && (
-        <Reveal className="mb-5">
-          {/* eslint-disable-next-line @next/next/no-img-element -- an arbitrary
-              remote host an admin pasted; not a build-time known domain. */}
+          box would be worse than no image at all.
+
+          Where there is no photograph the quest's own mark takes the space.
+          Not as a substitute: it is generated from the id and says nothing
+          about the place, which is exactly why it is safe to show where a
+          picture of somewhere real would be a claim we cannot make. */}
+      <Reveal className="mb-5">
+        {record.quest.coverImage ? (
+          // An arbitrary remote host an admin pasted, not a build-time known
+          // domain, so `next/image` has nothing to optimise it against.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={record.quest.coverImage}
             alt=""
             className="quest-cover"
             loading="lazy"
           />
-        </Reveal>
-      )}
+        ) : (
+          <QuestArt
+            seed={quest.id}
+            tags={[...quest.terrain, ...quest.features]}
+            variant="band"
+          />
+        )}
+      </Reveal>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr] lg:items-start">
         <Reveal delay={stagger(0)}>
@@ -108,6 +121,10 @@ export default async function QuestPage({ params }: Params) {
                 )}
               </div>
             </Panel>
+          </Reveal>
+
+          <Reveal delay={stagger(2)}>
+            <GettingThere quest={quest} />
           </Reveal>
 
           {quest.terrain.length > 0 && (

@@ -17,13 +17,40 @@ import { IconApproved, Modal, Tag, useToast } from "@/components/field";
  * The written account and at least one photo are both required. A note alone
  * reads as an honest account but is not something an admin can actually look
  * at; a photo is the minimum a reviewer has to judge by, on top of the words.
+ *
+ * Half the form is the same every time — who you go with, what you carry,
+ * where your Strava lives — so that half is filled in from the account and
+ * saved back to it when the box is ticked. The figures are not: they are
+ * measurements of one particular day, and a form that arrived with last
+ * week's distance already in the box would be inviting somebody to file it.
+ * What the account remembers about those is shown *beside* the field, as
+ * something to check yourself against.
  */
+export type LogDefaults = {
+  stravaProfile: string | null;
+  usualStart: string | null;
+  partySize: number | null;
+  gear: string | null;
+  pace: number | null;
+  lastDistance: number | null;
+  lastElevation: number | null;
+  lastMovingTime: number | null;
+};
+
 export function SubmitProofButton({
   questId,
   status,
+  defaults,
+  label,
+  className,
 }: {
   questId: string;
   status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+  /** What this account has saved. Absent for an account that has saved none. */
+  defaults?: LogDefaults | null;
+  /** Overrides the button text where the surrounding page has said it already. */
+  label?: string;
+  className?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -31,6 +58,14 @@ export function SubmitProofButton({
   const [pending, setPending] = React.useState(false);
   const [retreated, setRetreated] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  // Somebody who has saved once meant it; the box stays ticked so an edit to
+  // the details below is not silently discarded on the next log.
+  const hasSaved = Boolean(
+    defaults &&
+      (defaults.stravaProfile || defaults.usualStart || defaults.partySize || defaults.gear || defaults.pace),
+  );
+  const [saveDetails, setSaveDetails] = React.useState(hasSaved);
 
   if (status === "PENDING") {
     return <Tag tone="ghost">Proof filed · waiting on review</Tag>;
@@ -64,8 +99,12 @@ export function SubmitProofButton({
 
   return (
     <>
-      <button type="button" className="btn btn-signal" onClick={() => setOpen(true)}>
-        {status === "REJECTED" ? "File proof again" : "Log it — file proof"}
+      <button
+        type="button"
+        className={className ?? "btn btn-signal"}
+        onClick={() => setOpen(true)}
+      >
+        {label ?? (status === "REJECTED" ? "File proof again" : "Log it — file proof")}
       </button>
 
       <Modal
@@ -122,18 +161,118 @@ export function SubmitProofButton({
             <div className="admin-field">
               <label htmlFor="proof-distance">Distance (km)</label>
               <input id="proof-distance" name="distance" type="number" step="0.1" min="0" className="input" />
+              {defaults?.lastDistance != null && (
+                <p className="note mt-0">Last time: {defaults.lastDistance.toFixed(1)} km</p>
+              )}
             </div>
             <div className="admin-field">
               <label htmlFor="proof-elevation">Ascent (m)</label>
               <input id="proof-elevation" name="elevation" type="number" min="0" className="input" />
+              {defaults?.lastElevation != null && (
+                <p className="note mt-0">Last time: {defaults.lastElevation} m</p>
+              )}
             </div>
             <div className="admin-field">
               <label htmlFor="proof-moving">Moving time (min)</label>
               <input id="proof-moving" name="movingTime" type="number" min="0" className="input" />
+              {defaults?.lastMovingTime != null && (
+                <p className="note mt-0">Last time: {defaults.lastMovingTime} min</p>
+              )}
             </div>
           </div>
 
-          <label className="flex items-start gap-3 rounded-[10px] border border-dashed border-line bg-white/45 px-4 py-3 text-[14px] text-ink-2">
+          {/* The half that is the same every time. Open by default when the
+              account has nothing saved yet, folded away once it has — after
+              the first log this is a section you scroll past, not one you
+              fill in. */}
+          <details className="log-details" open={!hasSaved}>
+            <summary>
+              About you
+              <span>{hasSaved ? "Saved to your account" : "Saved once, reused every time"}</span>
+            </summary>
+
+            <div className="log-details-body">
+              <div className="admin-grid">
+                <div className="admin-field">
+                  <label htmlFor="proof-start">Usual start</label>
+                  <input
+                    id="proof-start"
+                    name="usualStart"
+                    type="time"
+                    className="input"
+                    defaultValue={defaults?.usualStart ?? ""}
+                  />
+                </div>
+                <div className="admin-field">
+                  <label htmlFor="proof-party">People, including you</label>
+                  <input
+                    id="proof-party"
+                    name="partySize"
+                    type="number"
+                    min="1"
+                    max="40"
+                    className="input"
+                    defaultValue={defaults?.partySize ?? ""}
+                  />
+                </div>
+                <div className="admin-field">
+                  <label htmlFor="proof-pace">Pace (min/km)</label>
+                  <input
+                    id="proof-pace"
+                    name="pace"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    className="input"
+                    defaultValue={defaults?.pace ?? ""}
+                  />
+                </div>
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="proof-gear">What you carry</label>
+                <input
+                  id="proof-gear"
+                  name="gear"
+                  type="text"
+                  maxLength={300}
+                  className="input"
+                  placeholder="Trail shoes, poles, two litres."
+                  defaultValue={defaults?.gear ?? ""}
+                />
+              </div>
+
+              <div className="admin-field">
+                <label htmlFor="proof-profile">Your Strava profile</label>
+                <input
+                  id="proof-profile"
+                  name="stravaProfile"
+                  type="url"
+                  className="input"
+                  placeholder="https://www.strava.com/athletes/…"
+                  defaultValue={defaults?.stravaProfile ?? ""}
+                />
+              </div>
+            </div>
+          </details>
+
+          <label className="proof-check">
+            <input
+              type="checkbox"
+              name="saveDetails"
+              value="true"
+              checked={saveDetails}
+              onChange={(event) => setSaveDetails(event.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              <b className="block text-ink">Save these details to my account.</b>
+              The part about you is filled in next time, and your figures are remembered so the
+              next form can show you what you did last.
+            </span>
+          </label>
+
+          <label className="proof-check">
             <input
               type="checkbox"
               name="retreated"
