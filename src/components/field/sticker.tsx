@@ -415,11 +415,17 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
      never the same sticker: the weekly is a medal on a ribbon, the monthly a
      summit under a pennant. Within a cadence the place is counted in dots —
      one for gold, two for silver, three for bronze — because a numeral at
-     this size is a smudge, and the metal itself is carried by colour. */
+     this size is a smudge.
+
+     The metals are the sheet's own inks rather than three new colours:
+     `gold`, `stone` and `copper` were already on the list and already read as
+     the three places. A podium palette of its own would have been a second
+     definition of gold sitting next to the first. */
 
   "weekly-gold": {
     label: ["WEEK", "GOLD"],
     shape: "round",
+    tone: "gold",
     path: (
       <>
         <path d="M8.4 2.4l3.6 5.2 3.6-5.2" />
@@ -431,6 +437,7 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
   "weekly-silver": {
     label: ["WEEK", "SILVER"],
     shape: "round",
+    tone: "stone",
     path: (
       <>
         <path d="M8.4 2.4l3.6 5.2 3.6-5.2" />
@@ -443,6 +450,7 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
   "weekly-bronze": {
     label: ["WEEK", "BRONZE"],
     shape: "round",
+    tone: "copper",
     path: (
       <>
         <path d="M8.4 2.4l3.6 5.2 3.6-5.2" />
@@ -457,6 +465,7 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
   "monthly-gold": {
     label: ["MONTH", "GOLD"],
     shape: "square",
+    tone: "gold",
     path: (
       <>
         <path d="M1.8 17.2L8.3 6.4l3.6 5.6 3-4.4 6.3 9.6z" />
@@ -469,6 +478,7 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
   "monthly-silver": {
     label: ["MONTH", "SILVER"],
     shape: "square",
+    tone: "stone",
     path: (
       <>
         <path d="M1.8 17.2L8.3 6.4l3.6 5.6 3-4.4 6.3 9.6z" />
@@ -482,6 +492,7 @@ export const STICKER_ARTWORK: Record<string, Artwork> = {
   "monthly-bronze": {
     label: ["MONTH", "BRONZE"],
     shape: "square",
+    tone: "copper",
     path: (
       <>
         <path d="M1.8 17.2L8.3 6.4l3.6 5.6 3-4.4 6.3 9.6z" />

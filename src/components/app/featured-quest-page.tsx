@@ -4,11 +4,6 @@ import { Countdown } from "@/components/app/countdown";
 import { ProgressBar, Reveal } from "@/components/app/motion";
 import { GettingThere } from "@/components/app/getting-there";
 import { QuestSheet } from "@/components/app/quest-sheet";
-import { SubmitProofButton } from "@/components/app/submit-proof";
-import { EmptyState, Eyebrow, IconLock, IconShield, Panel, PanelHead, Tag } from "@/components/field";
-import type { FeaturedQuest } from "@/lib/quest/featured";
-import { FEATURED_BONUS } from "@/lib/leaderboard";
-import { formatDate } from "@/lib/utils";
 import { SubmitProofButton, type LogDefaults } from "@/components/app/submit-proof";
 import {
   EmptyState,
@@ -21,6 +16,7 @@ import {
   Tag,
 } from "@/components/field";
 import { stagger } from "@/lib/motion";
+import { FEATURED_BONUS } from "@/lib/leaderboard";
 import type { FeaturedQuest } from "@/lib/quest/featured";
 import { formatDate, formatDuration } from "@/lib/utils";
 
@@ -29,13 +25,6 @@ import { formatDate, formatDuration } from "@/lib/utils";
  *
  * Both periods render identically because they are the same idea at two
  * cadences: one quest, the same one for everybody, with a window that closes.
- * The counters are what make it shared — you are looking at the same document
- * as everyone else, and at how many of them have logged it.
- *
- * Proof is filed from here rather than only from a quest page, because these
- * two are the quests the product actually asks people to do. A submission
- * filed here is stamped with the slot, which is what puts it at the front of
- * the review queue and what carries the bonus onto the leaderboard.
  *
  * What changed is that the window now means something. These two are not
  * optional — the whole point of a shared quest on a clock is that everybody
@@ -43,6 +32,11 @@ import { formatDate, formatDuration } from "@/lib/utils";
  * the page and the form to answer it is one click away rather than behind the
  * quest's own page. When the clock runs out the slot closes with whatever was
  * in it; there is no filing late, so there is no point pretending otherwise.
+ *
+ * Proof filed here is stamped with the slot, which is what puts it at the
+ * front of the review queue and what carries the cadence bonus onto the
+ * leaderboard — so the form posts the period rather than the quest id, and
+ * the server resolves which quest that means.
  */
 export type FeaturedProof = {
   status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
@@ -62,7 +56,6 @@ export function FeaturedQuestPage({
   proof,
   defaults,
   counters,
-  proof,
 }: {
   featured: FeaturedQuest | null;
   period: "week" | "month";
@@ -74,12 +67,13 @@ export function FeaturedQuestPage({
   /** Decided on the server against one `now` — see `lib/quest/slot`. */
   closed: boolean;
   blurb: string;
-  counters?: { filed: number; approved: number } | null;
-  proof: { status: "NONE" | "PENDING" | "APPROVED" | "REJECTED"; reviewNote: string | null };
   proof: FeaturedProof;
   defaults: LogDefaults | null;
-  /** Accepted and logged across the whole community. */
-  counters?: { accepted: number; logged: number };
+  /**
+   * Filed and approved across the whole community. Null for a generated slot:
+   * a quest only this account can see has no "everyone else" to count.
+   */
+  counters?: { filed: number; approved: number } | null;
 }) {
   if (!featured) {
     return (
@@ -108,11 +102,10 @@ export function FeaturedQuestPage({
     );
   }
 
-  const share = counters && counters.filed > 0 ? counters.approved / counters.filed : 0;
-  const bonus = FEATURED_BONUS[period === "week" ? "WEEKLY" : "MONTHLY"];
   const quest = featured.summary;
-  const share = counters && counters.accepted > 0 ? counters.logged / counters.accepted : 0;
+  const share = counters && counters.filed > 0 ? counters.approved / counters.filed : 0;
   const done = proof.status === "APPROVED" || proof.status === "PENDING";
+  const bonus = FEATURED_BONUS[period === "week" ? "WEEKLY" : "MONTHLY"];
 
   return (
     <>
@@ -122,13 +115,6 @@ export function FeaturedQuestPage({
           <h1>{quest.title}</h1>
           <p>{blurb}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Tag tone="ghost">Closes {formatDate(closesAt)}</Tag>
-          <SubmitProofButton
-            featuredPeriod={period}
-            status={proof.status}
-            label={`Log the ${period === "week" ? "weekly" : "monthly"}`}
-          />
         <Tag tone={done ? "pine" : "warm"}>{done ? "Filed" : "Required"}</Tag>
       </Reveal>
 
@@ -172,25 +158,6 @@ export function FeaturedQuestPage({
         </div>
 
         <div className="flex flex-col gap-5">
-          <Reveal delay={stagger(1)}>
-            <Panel flush>
-              <PanelHead
-                title="On the board"
-                aside={<Tag tone="warm">{`+${bonus} points`}</Tag>}
-              />
-              <div className="px-5 py-5">
-                <p className="text-[14.5px] leading-[1.6] text-ink-2">
-                  Proof filed against this slot is read before everything else in the queue, and
-                  carries <b className="text-ink">+{bonus}</b> on{" "}
-                  {period === "week" ? "this week's" : "this month's"} leaderboard on top of what
-                  the route itself is worth.
-                </p>
-                <Link
-                  href={`/leaderboard?period=${period === "week" ? "WEEKLY" : "MONTHLY"}`}
-                  className="btn btn-ghost btn-sm mt-4"
-                >
-                  See the board
-                </Link>
           {/* The answer to the deadline, immediately under it in reading
               order on a narrow screen and beside it on a wide one. */}
           <Reveal delay={stagger(1)}>
@@ -220,7 +187,7 @@ export function FeaturedQuestPage({
 
                 {questId && !closed && (
                   <SubmitProofButton
-                    questId={questId}
+                    featuredPeriod={period}
                     status={proof.status === "PENDING" ? "NONE" : proof.status}
                     defaults={defaults}
                     label={proof.status === "NONE" ? "File your proof" : "File it again"}
@@ -244,8 +211,6 @@ export function FeaturedQuestPage({
             </Panel>
           </Reveal>
 
-          {counters && (
-            <Reveal delay={stagger(2)}>
           {/* The numbers the quest is asking for, so somebody can decide on
               the doorstep whether today is the day. */}
           <Reveal delay={stagger(2)}>
@@ -264,8 +229,32 @@ export function FeaturedQuestPage({
             </Panel>
           </Reveal>
 
+          {/* What the slot is worth. The bonus is the reason the two shared
+              quests are the ones to do rather than merely the ones on the
+              clock, so the page says so rather than leaving it to whoever
+              reads the scoring notes. */}
+          <Reveal delay={stagger(3)}>
+            <Panel flush>
+              <PanelHead title="On the board" aside={<Tag tone="warm">{`+${bonus} points`}</Tag>} />
+              <div className="px-5 py-5">
+                <p className="text-[14.5px] leading-[1.6] text-ink-2">
+                  Proof filed against this slot is read before everything else in the queue, and
+                  carries <b className="text-ink">+{bonus}</b> on{" "}
+                  {period === "week" ? "this week's" : "this month's"} leaderboard on top of what
+                  the route itself is worth.
+                </p>
+                <Link
+                  href={`/leaderboard?period=${period === "week" ? "WEEKLY" : "MONTHLY"}`}
+                  className="btn btn-ghost btn-sm mt-4"
+                >
+                  See the board
+                </Link>
+              </div>
+            </Panel>
+          </Reveal>
+
           {counters && (
-            <Reveal delay={stagger(3)}>
+            <Reveal delay={stagger(4)}>
               <Panel flush>
                 <PanelHead title="Everyone else" aside={<Tag>Shared</Tag>} />
                 <div className="px-5 py-5">
@@ -286,20 +275,7 @@ export function FeaturedQuestPage({
             </Reveal>
           )}
 
-          {proof.status === "REJECTED" && (
-            <Reveal delay={stagger(3)}>
-              <div className="safety mt-0" style={{ borderColor: "rgba(196,72,27,.4)" }}>
-                <IconShield />
-                <p>
-                  <b>Proof declined.</b>{" "}
-                  {proof.reviewNote ??
-                    "Usually a missing photo rather than a suspicion — file it again with more to go on."}
-                </p>
-              </div>
-            </Reveal>
-          )}
-
-          <Reveal delay={stagger(4)}>
+          <Reveal delay={stagger(5)}>
             <Panel flush>
               <PanelHead title="How it works" />
               <ul className="flex flex-col gap-3 px-5 py-5">

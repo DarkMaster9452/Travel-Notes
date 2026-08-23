@@ -11,7 +11,7 @@ import { isWithinRefundWindow } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
 import { getStripe } from "@/lib/stripe";
 import { LOCATIONS } from "@/lib/quest/locations";
-import { ensureFeaturedQuestId } from "@/lib/quest/featured";
+import { getFeaturedQuest, materialiseFeatured } from "@/lib/quest/featured";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
 import { questIdSchema } from "@/lib/validation";
 
@@ -278,10 +278,6 @@ async function fileProof(
     });
   });
 
-  revalidateQuestPaths(questId);
-  revalidatePath("/submissions");
-  revalidatePath("/quests");
-  revalidatePath("/leaderboard");
   // Only if asked. Filing a log is not consent to rewrite your account, and a
   // form that quietly remembered things would be the kind of surprise that
   // makes people stop filling forms in honestly.
@@ -299,16 +295,18 @@ async function fileProof(
       lastMovingTime: proof.movingTime ?? null,
     };
     await db.userLogDefaults.upsert({
-      where: { userId: user.id },
+      where: { userId },
       update: defaults,
-      create: { userId: user.id, ...defaults },
+      create: { userId, ...defaults },
     });
   }
 
-  revalidateQuestPaths(proof.questId);
+  revalidateQuestPaths(questId);
   revalidatePath("/weekly");
   revalidatePath("/monthly");
   revalidatePath("/submissions");
+  revalidatePath("/quests");
+  revalidatePath("/leaderboard");
   return { ok: true };
 }
 
@@ -327,11 +325,16 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
 /**
  * File proof against this week's or this month's featured quest.
  *
- * The page cannot post a quest id for these, because a generated featured
- * quest does not have one until somebody logs it — so the client posts the
- * cadence and the server resolves the rest. That also closes the obvious
- * hole in letting a form name its own slot: the period a submission is
- * stamped with is the one the server found open, never one that was typed.
+ * Distinct from `submitProofAction` for one reason: the cadence stamp.
+ * `cadenceForFiling` finds the slot by looking for an admin's booking, and a
+ * *generated* featured quest has no booking to find — it is one account's
+ * copy of one week. Without this, the two quests the product asks everybody
+ * to do would be the only ones that never reached the front of the review
+ * queue or carried their bonus onto the board.
+ *
+ * The period is resolved server-side from the account's own featured slot,
+ * never taken from the form. A form that could name its own slot could award
+ * itself a monthly bonus for an afternoon walk.
  */
 export async function submitFeaturedProofAction(formData: FormData): Promise<ProofResult> {
   const user = await requireClient();
@@ -340,17 +343,20 @@ export async function submitFeaturedProofAction(formData: FormData): Promise<Pro
   if (!read.ok) return { ok: false, message: read.message };
 
   const period = formData.get("period") === "month" ? "month" : "week";
-  const resolved = await ensureFeaturedQuestId(user.id, period);
-  if (!resolved.ok) return { ok: false, message: resolved.message };
+  const featured = await getFeaturedQuest(user.id, period);
+  if (!featured) {
+    return {
+      ok: false,
+      message: "There's no quest placed for this period — widen your range in settings.",
+    };
+  }
 
-  const result = await fileProof(user.id, resolved.questId, read.proof, {
+  const questId = await materialiseFeatured(user.id, featured);
+
+  return fileProof(user.id, questId, read.proof, {
     period: period === "week" ? "WEEKLY" : "MONTHLY",
-    slotKey: resolved.slotKey,
+    slotKey: featured.key,
   });
-
-  revalidatePath("/weekly");
-  revalidatePath("/monthly");
-  return result;
 }
 
 export type LogResult = {

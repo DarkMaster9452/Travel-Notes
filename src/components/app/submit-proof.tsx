@@ -5,7 +5,6 @@ import * as React from "react";
 
 import { submitFeaturedProofAction, submitProofAction } from "@/app/(app)/actions";
 import { IconApproved, Modal, Tag, useToast } from "@/components/field";
-import { cn } from "@/lib/utils";
 
 /**
  * Filing proof.
@@ -41,23 +40,23 @@ export type LogDefaults = {
 export function SubmitProofButton({
   questId,
   status,
-  featuredPeriod,
   defaults,
+  featuredPeriod,
   label,
   className,
 }: {
-  /** The quest being logged. Omitted for a featured quest the server resolves. */
+  /** The quest being logged. Omitted only for a featured slot, below. */
   questId?: string;
   status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
-  /**
-   * Set on the weekly and monthly pages. A generated featured quest has no id
-   * until somebody logs it, so the cadence is posted instead and the server
-   * works out which quest that means — and stamps the slot itself, rather
-   * than believing a period the form claimed.
-   */
-  featuredPeriod?: "week" | "month";
   /** What this account has saved. Absent for an account that has saved none. */
   defaults?: LogDefaults | null;
+  /**
+   * Set on the weekly and monthly pages. Those post the cadence instead of a
+   * quest id so the server resolves the slot itself — that is what stamps the
+   * submission with the period, which is what puts it at the front of the
+   * review queue and carries its bonus onto the leaderboard.
+   */
+  featuredPeriod?: "week" | "month";
   /** Overrides the button text where the surrounding page has said it already. */
   label?: string;
   className?: string;
@@ -114,10 +113,6 @@ export function SubmitProofButton({
     <>
       <button
         type="button"
-        className={cn("btn btn-signal", className)}
-        onClick={() => setOpen(true)}
-      >
-        {status === "REJECTED" ? "File proof again" : (label ?? "Log it — file proof")}
         className={className ?? "btn btn-signal"}
         onClick={() => setOpen(true)}
       >
