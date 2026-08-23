@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Summit Quest">
+  <!--
+    The product's mark, redrawn for a 16px square.
+
+    The logo in the chrome is a thin outline with an orange summit cap. At
+    favicon size those 1.7px strokes fall below one device pixel and grey out
+    into a smudge, so this is the same mountain as a *silhouette*: ridge filled
+    in pine, cap in stamp ink, on the paper the whole product is printed on —
+    which also means the icon reads as itself against a dark tab strip or a
+    light one, rather than borrowing whichever it lands on.
+
+    The logo's ground rule is dropped and the ridge grown to fill the tile
+    instead: at 16 pixels a 1px rule under a mountain is noise, and every pixel
+    the ridge does not occupy is one the shape cannot be recognised by.
+  -->
+  <rect width="64" height="64" rx="14" fill="#eff0e5"/>
+  <path d="M3 51 L22 15 L33 34 L40 22 L61 51 Z" fill="#1e3b2c"/>
+  <path d="M22 15 L30.5 30 L13.5 30 Z" fill="#c4481b"/>
+</svg>
