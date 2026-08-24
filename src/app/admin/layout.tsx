@@ -1,5 +1,4 @@
 import { logoutAction } from "@/app/(auth)/actions";
-import { CheatMenu } from "@/components/admin/cheat-menu";
 import { NotificationCenter } from "@/components/admin/notification-center";
 import { AdminShell, type NavItem } from "@/components/app/app-shell";
 import { getAdminNotices } from "@/lib/admin/notifications";
@@ -57,10 +56,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       logout={logoutAction}
     >
       {children}
-      {/* F7, anywhere in the panel. Mounted from the layout rather than a
-          page so the shortcut works wherever an admin happens to be — and
-          only inside this layout, which is guarded by role. */}
-      <CheatMenu />
     </AdminShell>
   );
 }
