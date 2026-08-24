@@ -7031,8 +7031,16 @@ select.input {
   padding-top: 14px;
   border-top: 1px dashed var(--line);
 }
+/* Same fix as the podium: straight, not tilted, and the icon carries it
+   without the two-line label — at 42px "WEEK GOLD" in two lines of 6px type
+   read as noise, not as a word. */
 .standing-medal {
-  width: 42px;
+  width: 44px;
+  padding: 8px;
+  transform: none;
+}
+.standing-medal b {
+  display: none;
 }
 .standing-more {
   align-self: center;
@@ -7100,11 +7108,32 @@ select.input {
 .podium-place.is-you {
   border-color: var(--moss-2);
 }
+/* The medal, not a sticker torn off the sheet.
+   `.sticker` carries a positional tilt everywhere it appears (`:nth-child`,
+   below) so a sheet of them looks stuck on rather than printed — right on
+   the achievements page, where dozens sit side by side, and wrong here,
+   where each medal is the *only* sticker-shaped element in its own column:
+   every podium place landed on the same `:nth-child(1)`, so gold, silver and
+   bronze all tilted the identical stray -7°, which reads as broken rather
+   than playful. A ranking is the one place on the sheet that has to sit
+   straight. The printed two-line label comes off too — rank, name and score
+   already say what the badge means, so the label was small type fighting
+   the artwork for the same 58px. */
 .podium-place .sticker {
-  width: 58px;
+  width: 76px;
+  padding: 11px;
+  transform: none;
+  outline-width: 2px;
+  outline-color: var(--line);
+  box-shadow: 0 10px 22px -10px rgba(20, 32, 24, 0.4);
+}
+.podium-place .sticker b {
+  display: none;
 }
 .podium-place.is-1 .sticker {
-  width: 70px;
+  width: 94px;
+  outline-color: var(--signal-2);
+  box-shadow: 0 14px 30px -10px rgba(196, 72, 27, 0.45);
 }
 .podium-name {
   font-family: var(--serif);
@@ -7226,6 +7255,123 @@ select.input {
   width: 56px;
   text-align: right;
   flex: 0 0 56px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- the board's own toolbar -----------------------------------------------
+   Contender count on the left, and history tucked behind a disclosure on the
+   right rather than spread across a row of eight tabs. The live board is the
+   one this page opens on; older ones are a click away, not the first thing
+   read. */
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.board-past summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: color 0.16s;
+}
+.board-past summary::-webkit-details-marker {
+  display: none;
+}
+.board-past summary::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.16s;
+}
+.board-past[open] summary::before {
+  transform: rotate(45deg);
+}
+.board-past summary:hover {
+  color: var(--ink);
+}
+.board-past-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.board-past-nav a {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  transition:
+    border-color 0.14s,
+    color 0.14s,
+    background 0.14s;
+}
+.board-past-nav a:hover {
+  border-color: var(--moss-2);
+  color: var(--ink);
+}
+.board-past-nav a[aria-current="page"] {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: var(--card);
+}
+
+/* --- the scoring rules, collapsed ------------------------------------------
+   A full-height panel of four rules sitting permanently under the board was
+   the loudest thing on the page that mattered least: read once, then never
+   again. A disclosure keeps the explanation one click away without spending
+   a whole screen's height on it every visit. */
+.score-notes summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 4px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: color 0.16s;
+}
+.score-notes summary::-webkit-details-marker {
+  display: none;
+}
+.score-notes summary::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.16s;
+}
+.score-notes[open] summary::before {
+  transform: rotate(45deg);
+}
+.score-notes summary:hover {
+  color: var(--ink);
+}
+.score-notes .cadence-list {
+  padding: 2px 4px 4px;
 }
 
 /* --- the podium shelf on the stickers page -------------------------------- */

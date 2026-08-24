@@ -37,6 +37,7 @@ export function LeaderboardBoard({
   viewerId?: string;
   /** Builds the link to another slot of the same cadence. */
   hrefFor: (period: SchedulePeriod, slotKey: string) => string;
+  /** The live slot first, then progressively older ones. */
   slots: { key: string; label: string; state: "past" | "live" | "future" }[];
 }) {
   const podium = board.rows.filter((row) => row.medal !== null).slice(0, 3);
@@ -46,6 +47,16 @@ export function LeaderboardBoard({
   // Second, first, third. The middle column is the tallest, which is what
   // makes it read as a podium at a glance rather than as three equal cards.
   const order = [podium[1], podium[0], podium[2]].filter(Boolean) as LeaderboardRow[];
+
+  // The live slot is always `slots[0]` — `pastSlots` deals the current one
+  // first and gets progressively older. Everything after it is history, and
+  // history is not what this page opens on: a row of eight past months was
+  // the first thing anybody saw, ahead of the board it was for. It is one
+  // click away instead, in a disclosure that opens itself when a past slot is
+  // the one actually being viewed, so a shared link to July still lands
+  // showing where July came from.
+  const [current, ...past] = slots;
+  const onPastSlot = board.slotKey !== current?.key;
 
   return (
     <>
@@ -60,22 +71,27 @@ export function LeaderboardBoard({
             }
           />
 
-          <div className="admin-filters">
-            <nav aria-label="Slot">
-              {slots.map((slot) => (
-                <Link
-                  key={slot.key}
-                  href={hrefFor(board.period, slot.key)}
-                  aria-current={slot.key === board.slotKey ? "page" : undefined}
-                  scroll={false}
-                >
-                  {slot.label}
-                </Link>
-              ))}
-            </nav>
+          <div className="board-toolbar">
             <p className="meta">
               {board.rows.length} {board.rows.length === 1 ? "contender" : "contenders"}
             </p>
+            {past.length > 0 && (
+              <details className="board-past" open={onPastSlot}>
+                <summary>Past boards</summary>
+                <nav aria-label="Past slots" className="board-past-nav">
+                  {past.map((slot) => (
+                    <Link
+                      key={slot.key}
+                      href={hrefFor(board.period, slot.key)}
+                      aria-current={slot.key === board.slotKey ? "page" : undefined}
+                      scroll={false}
+                    >
+                      {slot.label}
+                    </Link>
+                  ))}
+                </nav>
+              </details>
+            )}
           </div>
 
           {board.rows.length === 0 ? (
@@ -135,8 +151,8 @@ export function LeaderboardBoard({
       </Reveal>
 
       <Reveal>
-        <Panel flush>
-          <PanelHead title="How the score works" />
+        <details className="score-notes">
+          <summary>How the score works</summary>
           <ul className="cadence-list">
             {SCORING_NOTES.map((note, index) => (
               <li key={note}>
@@ -144,12 +160,13 @@ export function LeaderboardBoard({
                 {note}
               </li>
             ))}
+            <li>
+              <b>05</b>
+              The top three of a closed board keep their places for good — a verdict changed
+              afterwards moves the points, never the medal.
+            </li>
           </ul>
-          <p className="note">
-            The top three of a closed board keep their places for good — a verdict changed
-            afterwards moves the points, never the medal.
-          </p>
-        </Panel>
+        </details>
       </Reveal>
     </>
   );
