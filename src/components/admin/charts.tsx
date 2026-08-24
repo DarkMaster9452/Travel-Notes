@@ -61,6 +61,7 @@ export function ChartFrame({
   legend,
   note,
   table,
+  bare,
   children,
   className,
 }: {
@@ -69,15 +70,25 @@ export function ChartFrame({
   legend?: { color: string; label: string }[];
   note?: string;
   table?: { columns: string[]; rows: (string | number)[][] };
+  /**
+   * Drop the frame's own caption bar, because the surrounding panel already
+   * carries one. The overview needs a head this frame cannot draw — a serif
+   * title beside a headline figure, with the range control on the right — and
+   * two stacked heads is what the first cut of that page looked like. `title`
+   * is still required: it keeps naming the figures table below the chart.
+   */
+  bare?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <figure className={cn("chart", className)}>
-      <figcaption className="chart-head">
-        <span className="qc-id">{title}</span>
-        {aside}
-      </figcaption>
+    <figure className={cn("chart", bare && "is-bare", className)}>
+      {!bare && (
+        <figcaption className="chart-head">
+          <span className="qc-id">{title}</span>
+          {aside}
+        </figcaption>
+      )}
 
       {legend && legend.length > 0 && (
         <ul className="chart-legend">
@@ -239,6 +250,7 @@ export function TrendArea({
   title,
   aside,
   note,
+  bare,
 }: {
   points: TrendPoint[];
   wholeLabel: string;
@@ -246,6 +258,8 @@ export function TrendArea({
   title: string;
   aside?: React.ReactNode;
   note?: string;
+  /** Let the surrounding panel draw the head. See `ChartFrame`. */
+  bare?: boolean;
 }) {
   const clipId = React.useId();
   const [hover, setHover] = React.useState<number | null>(null);
@@ -272,7 +286,7 @@ export function TrendArea({
 
   if (points.length === 0) {
     return (
-      <ChartFrame title={title} aside={aside}>
+      <ChartFrame title={title} aside={aside} bare={bare}>
         <EmptyPlot>Nothing recorded in this window yet.</EmptyPlot>
       </ChartFrame>
     );
@@ -282,6 +296,7 @@ export function TrendArea({
     <ChartFrame
       title={title}
       aside={aside}
+      bare={bare}
       legend={
         hasPart
           ? [
@@ -538,6 +553,7 @@ export function RankBars({
   note,
   unitLabel = "quests",
   color = SOLO,
+  bare,
 }: {
   rows: NamedValue[];
   title: string;
@@ -545,10 +561,12 @@ export function RankBars({
   note?: string;
   unitLabel?: string;
   color?: string;
+  /** Let the surrounding panel draw the head. See `ChartFrame`. */
+  bare?: boolean;
 }) {
   if (rows.length === 0) {
     return (
-      <ChartFrame title={title} aside={aside}>
+      <ChartFrame title={title} aside={aside} bare={bare}>
         <EmptyPlot>No quests issued yet.</EmptyPlot>
       </ChartFrame>
     );
@@ -560,6 +578,7 @@ export function RankBars({
     <ChartFrame
       title={title}
       aside={aside}
+      bare={bare}
       note={note}
       table={{ columns: ["Name", unitLabel], rows: rows.map((row) => [row.label, row.value]) }}
     >

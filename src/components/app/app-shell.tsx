@@ -140,6 +140,7 @@ function Sidebar({
   items,
   admin,
   tools,
+  status,
   children,
 }: {
   home: string;
@@ -152,6 +153,12 @@ function Sidebar({
    * hidden from `lg` up, where the sidebar becomes the chrome.
    */
   tools?: React.ReactNode;
+  /**
+   * A card above the account button. The panel puts the state of the review
+   * desk here so the one number an admin is actually on the hook for is in
+   * view on every page, not only on the overview.
+   */
+  status?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -244,7 +251,10 @@ function Sidebar({
           })}
         </nav>
 
-        <div className="app-side-foot">{children}</div>
+        <div className="app-side-foot">
+          {status}
+          {children}
+        </div>
       </aside>
     </>
   );
@@ -309,6 +319,7 @@ export function AdminShell({
   userEmail,
   theme,
   notices,
+  status,
   logout,
 }: {
   children: React.ReactNode;
@@ -318,6 +329,8 @@ export function AdminShell({
   theme: ThemeChoice;
   /** The notification bell, built by the layout from live conditions. */
   notices?: React.ReactNode;
+  /** The review-desk card, pinned above the account button on every page. */
+  status?: React.ReactNode;
   logout: () => Promise<void>;
 }) {
   return (
@@ -326,7 +339,7 @@ export function AdminShell({
       data-surface="admin"
       data-theme={theme.toLowerCase()}
     >
-      <Sidebar home="/admin" items={items} admin tools={notices}>
+      <Sidebar home="/admin" items={items} admin tools={notices} status={status}>
         {/* No plan mark, no settings, no billing: an admin account holds none
             of those, and a menu that offers them would be lying. */}
         <AccountMenu

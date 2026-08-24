@@ -7731,3 +7731,801 @@ select.input {
   padding-top: 11px;
   border-top: 1px dashed var(--line);
 }
+
+/* ==========================================================================
+   20  the admin desk
+   ==========================================================================
+   The panel's overview, its sidebar, and the grid both are laid out on.
+
+   TYPE. The product's voice is Fraunces for anything handed to you, Inter for
+   text and JetBrains Mono — uppercase, letterspaced — for every piece of
+   metadata. That is right for the marketing site and the customer app, which
+   are read in passes. The panel is not read that way: it is a queue somebody
+   scans for an hour, and all-caps mono costs the word-shape cue that makes a
+   label legible at a glance while the tracking breaks each word into pieces.
+
+   So the panel runs on Geist, a face drawn for interfaces rather than for
+   text, with Geist Mono kept for the few genuine labels — a scope toggle, a
+   column header, a unit. Content is never set in mono here. Fraunces still
+   sets the page title, which is the thread back to the rest of the product,
+   and the landing page is untouched.
+
+   GRID. Every box on the overview is placed on one 12-column grid by name,
+   rather than each block bringing its own row of columns. That is what makes
+   the four vitals line up with the edges of the chart panels below them and
+   with the queue between — before this they were three separate grids that
+   only agreed by accident, and at most widths they didn't agree at all.
+   ------------------------------------------------------------------------- */
+
+[data-surface="admin"] {
+  --sans: var(--font-geist), var(--font-inter), system-ui, sans-serif;
+  --mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--sans);
+  /* Figures never shift sideways as digits change. */
+  font-feature-settings: "tnum" 1, "cv01" 1;
+  letter-spacing: -0.006em;
+}
+[data-surface="admin"] .app-main {
+  padding: 34px 0 76px;
+}
+
+/* --- the sidebar ---------------------------------------------------------
+   Read rather than decoded: sentence-case labels in the UI face, an active
+   row that is a filled pill with a lit marker, and groups separated by rules
+   instead of by shouted headers. The dark forest surface stays — it is what
+   tells an admin which side of the desk they are on. */
+
+.admin-side {
+  width: 252px;
+}
+@media (min-width: 1024px) {
+  [data-surface="admin"].app-frame {
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
+}
+
+.admin-side .app-side-head {
+  padding: 18px 16px 14px;
+  gap: 8px;
+}
+.admin-side .app-side-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.admin-side .app-side-head .logo {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* The panel flag stops being a stamp here. In the sidebar it is a permanent
+   label rather than an alert, and stamp ink on something that never changes
+   is ink spent saying nothing. */
+.admin-side .app-side-head .admin-flag {
+  background: transparent;
+  color: rgba(238, 242, 231, 0.5);
+  border: 1px solid rgba(238, 242, 231, 0.18);
+  padding: 3px 9px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+.admin-side .app-side-nav {
+  padding: 12px 10px 16px;
+  gap: 1px;
+}
+.admin-side .app-side-nav a {
+  position: relative;
+  gap: 11px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: rgba(238, 242, 231, 0.66);
+  transition:
+    background 0.16s var(--ease-field),
+    color 0.16s var(--ease-field);
+}
+.admin-side .app-side-nav a:hover {
+  background: rgba(238, 242, 231, 0.07);
+  color: #eef2e7;
+}
+.admin-side .app-side-nav a[aria-current="page"] {
+  background: rgba(238, 242, 231, 0.12);
+  color: #fff;
+  font-weight: 600;
+}
+/* The marker: a lit bar on the left edge of the current row. */
+.admin-side .app-side-nav a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sage);
+}
+.admin-side .app-side-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  opacity: 0.7;
+}
+.admin-side .app-side-nav a[aria-current="page"] .app-side-icon {
+  opacity: 1;
+}
+.admin-side .app-side-section {
+  margin: 14px 11px 6px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(238, 242, 231, 0.1);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(238, 242, 231, 0.38);
+}
+.admin-side .app-side-badge {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(238, 242, 231, 0.14);
+  color: rgba(238, 242, 231, 0.9);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-align: center;
+}
+/* A queue with something in it is the one badge that earns stamp ink. */
+.admin-side .app-side-nav a[href="/admin/review"] .app-side-badge {
+  background: var(--signal);
+  color: #fff;
+}
+.admin-side .app-side-foot {
+  padding: 12px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid rgba(238, 242, 231, 0.1);
+}
+/* The account block, in both places it appears. Under `lg` the sidebar is a
+   drawer and this same button is rendered into the phone bar instead — which
+   is the *same* forest surface, so it needs the same light ink. Scoped to
+   `.admin-side` alone, the topbar copy inherited the page's dark ink and sat
+   invisible on the dark bar. */
+.admin-side .app-side-account-who b,
+.admin-topbar .app-side-account-who b {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: #eef2e7;
+}
+.admin-side .app-side-account-who span,
+.admin-topbar .app-side-account-who span {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: rgba(238, 242, 231, 0.6);
+}
+
+/* --- the desk card in the sidebar foot ----------------------------------- */
+
+.desk-status {
+  display: block;
+  padding: 11px 12px;
+  border-radius: 11px;
+  border: 1px solid rgba(238, 242, 231, 0.14);
+  background: rgba(238, 242, 231, 0.05);
+  transition:
+    background 0.16s var(--ease-field),
+    border-color 0.16s var(--ease-field);
+}
+a.desk-status:hover {
+  background: rgba(238, 242, 231, 0.09);
+  border-color: rgba(238, 242, 231, 0.26);
+}
+.desk-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #eef2e7;
+}
+.desk-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--sage);
+}
+.desk-status.is-aging .desk-status-dot {
+  background: var(--signal-2);
+}
+.desk-status.is-late .desk-status-dot {
+  background: var(--signal);
+  box-shadow: 0 0 0 3px rgba(196, 72, 27, 0.25);
+}
+.desk-status-note {
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgba(238, 242, 231, 0.55);
+}
+.desk-status-go {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+
+/* --- the page head ------------------------------------------------------- */
+
+.desk-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+/* Fraunces, still. The page title is the one place the panel speaks in the
+   product's display voice, and dropping it here would cut the panel loose
+   from the rest of the product entirely. */
+.desk-head h1 {
+  font-family: var(--serif);
+  font-size: clamp(30px, 3.4vw, 40px);
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  margin-top: 10px;
+}
+.desk-head .eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+.desk-head .btn-primary {
+  padding: 12px 20px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* --- THE GRID -----------------------------------------------------------
+   One 12-column grid for the whole overview. Every box is assigned to a named
+   area below, so the vitals, the queue and the two charts share the same
+   column edges at every width instead of each block computing its own.
+
+   Three shapes, by width:
+     phone   one column, everything stacked in reading order
+     tablet  vitals two-up, charts still stacked
+     desktop vitals four-up, charts 7/5 under the full-width queue
+   ------------------------------------------------------------------------- */
+
+.desk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  grid-template-areas:
+    "notice notice"
+    "vitalA vitalB"
+    "vitalC vitalD"
+    "queue  queue"
+    "trend  trend"
+    "rank   rank";
+}
+@media (min-width: 1180px) {
+  .desk-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+    grid-template-areas:
+      "notice notice notice notice notice notice notice notice notice notice notice notice"
+      "vitalA vitalA vitalA vitalB vitalB vitalB vitalC vitalC vitalC vitalD vitalD vitalD"
+      "queue  queue  queue  queue  queue  queue  queue  queue  queue  queue  queue  queue"
+      "trend  trend  trend  trend  trend  trend  trend  rank   rank   rank   rank   rank";
+  }
+}
+
+.desk-area-notice {
+  grid-area: notice;
+}
+.desk-area-vitalA {
+  grid-area: vitalA;
+}
+.desk-area-vitalB {
+  grid-area: vitalB;
+}
+.desk-area-vitalC {
+  grid-area: vitalC;
+}
+.desk-area-vitalD {
+  grid-area: vitalD;
+}
+.desk-area-queue {
+  grid-area: queue;
+}
+.desk-area-trend {
+  grid-area: trend;
+}
+.desk-area-rank {
+  grid-area: rank;
+}
+
+/* Every assigned child fills its cell, so two boxes sharing a row are the
+   same height whatever is inside them — the alignment the old page never had
+   because each block sized itself. */
+.desk-grid > * {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.desk-grid > * > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- the box ------------------------------------------------------------
+   One surface for everything on the grid: same border, same radius, same
+   paper. A dashboard where each panel invents its own container is the thing
+   that reads as slapped together. */
+
+.desk-box {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  overflow: hidden;
+}
+
+/* --- the top notice ------------------------------------------------------ */
+
+.desk-notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  transition:
+    border-color 0.16s var(--ease-field),
+    box-shadow 0.16s var(--ease-field);
+}
+.desk-notice:hover {
+  border-color: var(--moss-2);
+  box-shadow: var(--shadow-field);
+}
+.desk-notice-tone {
+  width: 3px;
+  align-self: stretch;
+  min-height: 30px;
+  border-radius: 3px;
+  background: var(--moss-2);
+  flex: 0 0 3px;
+}
+.desk-notice.is-critical .desk-notice-tone {
+  background: var(--signal);
+}
+.desk-notice.is-warning .desk-notice-tone {
+  background: var(--signal-2);
+}
+.desk-notice-body {
+  flex: 1;
+  min-width: 0;
+}
+.desk-notice-body b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.desk-notice-body span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.desk-notice-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--moss-2);
+}
+.desk-notice.is-critical .desk-notice-go {
+  color: var(--signal);
+}
+.desk-notice-more {
+  flex: 0 0 auto;
+  padding-left: 14px;
+  border-left: 1px solid var(--line-2);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.desk-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.desk-clear-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--moss-2);
+}
+
+/* --- a vital ------------------------------------------------------------
+   Four of these, one per grid cell. Boxes rather than one ruled strip, so
+   they sit on the same column edges as the panels beneath them. */
+
+.vital {
+  justify-content: space-between;
+  gap: 10px;
+  padding: 15px 17px;
+}
+.vital-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.vital-value {
+  margin-top: 9px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--ink);
+}
+.vital-foot {
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+/* The queue's own count is the one vital that changes colour, and only once
+   it is genuinely late — the same threshold the notices judge by. */
+.vital.is-late .vital-value {
+  color: var(--signal);
+}
+
+/* --- a panel head -------------------------------------------------------
+   Shared by the queue and both charts, so the three boxes on the grid open
+   the same way. */
+
+.desk-box-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 17px;
+  border-bottom: 1px solid var(--line-2);
+}
+.desk-box-head h2 {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.desk-box-aside {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+/* The headline figure, inside the head where the demo puts it — read before
+   the shape of the chart under it, never floating above the box. */
+.desk-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+}
+.desk-figure b {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--ink);
+}
+.desk-figure span {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* --- the queue ----------------------------------------------------------- */
+
+.queue {
+  display: flex;
+  flex-direction: column;
+}
+.queue > li + li {
+  border-top: 1px solid var(--line-2);
+}
+.queue-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 17px;
+  transition: background 0.14s var(--ease-field);
+}
+@media (min-width: 900px) {
+  .queue-row {
+    grid-template-columns: auto minmax(0, 1.1fr) minmax(0, 1.15fr) auto;
+  }
+}
+/* `color-mix` against the ink token rather than a literal wash: the panel has
+   a dark palette too, where a fixed dark tint is invisible. */
+.queue-row:hover {
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+}
+.queue-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 10px;
+  font-size: 11.5px;
+}
+.queue-who {
+  min-width: 0;
+}
+.queue-who b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.queue-quest {
+  display: block;
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Detail is the first thing to go when the row runs out of width; the name
+   and the wait never wrap. */
+.queue-detail {
+  display: none;
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .queue-detail {
+    display: block;
+  }
+}
+.queue-cadence {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-2);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--moss);
+}
+.queue-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 11px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.queue-facts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.queue-retreat {
+  color: var(--signal);
+  font-weight: 500;
+}
+.queue-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.queue-wait.is-aging {
+  border-color: rgba(232, 98, 47, 0.4);
+  color: var(--signal-2);
+}
+/* Filled, not outlined — the same filled-vs-outlined split the notice tones
+   use, so "late" reads the same way everywhere in the panel. */
+.queue-wait.is-late {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+}
+.queue-rest {
+  margin-top: auto;
+  border-top: 1px solid var(--line-2);
+}
+.queue-rest a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--moss-2);
+  transition: background 0.14s var(--ease-field);
+}
+.queue-rest a:hover {
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+  color: var(--pine);
+}
+.queue-empty {
+  padding: 44px 24px 48px;
+  text-align: center;
+}
+.queue-empty-mark {
+  font-size: 26px;
+  color: var(--sage);
+  line-height: 1;
+}
+.queue-empty-title {
+  margin-top: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.queue-empty-note {
+  margin: 6px auto 0;
+  max-width: 42ch;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* --- the scope toggle ---------------------------------------------------- */
+
+.scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-2);
+}
+.scope-option {
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+  transition:
+    background 0.14s var(--ease-field),
+    color 0.14s var(--ease-field);
+}
+.scope-option:hover {
+  color: var(--ink);
+}
+/* The lifted pill has to read on both palettes. `--card` against `--paper-2`
+   is a strong step in the light theme and a very weak one in the dark, so the
+   active option also takes a hairline mixed from the ink token — which
+   inverts with the theme — and the ink colour itself rather than `--pine`,
+   which is a dark green and nearly vanishes on a dark card. */
+.scope-option.is-on {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow:
+    0 1px 2px rgba(20, 32, 24, 0.08),
+    inset 0 0 0 1px color-mix(in oklab, var(--ink) 12%, transparent);
+}
+
+/* --- the charts inside their boxes --------------------------------------
+   The frame keeps drawing the plot, the legend and the figures table; the box
+   around it supplies the head. So the chart loses its own container here —
+   two nested cards was what made the first cut look boxed-in. */
+
+.desk-box .chart.is-bare {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding-bottom: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+/* `flex: 1` only — never `display: flex` here. `.rank-rows` is itself a flex
+   column, and making its parent a row-flex container turned the list into a
+   shrink-to-fit item: the `1fr` bar track collapsed to nothing and every
+   region name ellipsised. The plot fills the leftover height; it does not
+   become a layout of its own. */
+.desk-box .chart.is-bare .chart-plot {
+  flex: 1;
+}
+.desk-box .chart.is-bare .chart-legend {
+  padding-top: 12px;
+}
+.desk-box .chart.is-bare .chart-note,
+.desk-box .chart.is-bare .chart-table summary,
+.desk-box .chart.is-bare .chart-readout,
+.desk-box .chart.is-bare .chart-readout-hint,
+.desk-box .chart.is-bare .chart-tick {
+  font-family: var(--sans);
+}
+.desk-box .chart.is-bare .chart-readout-hint {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* The ranking reads as a list of places, so the names get the room and the
+   voice of content rather than of a label: sans, larger, and a wider first
+   column, because "Nízke Tatry" ellipsised at the old 74px was information
+   thrown away to keep a bar track that carries the same number printed
+   beside it. */
+.desk-box .chart.is-bare .rank-rows {
+  gap: 13px;
+  padding-top: 8px;
+}
+.desk-box .chart.is-bare .rank-rows li {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
+}
+.desk-box .chart.is-bare .rank-label {
+  font-family: var(--sans);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.desk-box .chart.is-bare .rank-value {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+}
+.desk-box .chart.is-bare .chart-note {
+  font-size: 12.5px;
+  line-height: 1.5;
+}

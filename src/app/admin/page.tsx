@@ -1,24 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { BarSeries, RankBars, SplitBar, TrendArea } from "@/components/admin/charts";
-import { NoticeList } from "@/components/admin/notices";
-import { QuickActions } from "@/components/admin/quick-actions";
-import { StatGrid } from "@/components/admin/stat-grid";
+import { RankBars, TrendArea } from "@/components/admin/charts";
+import { QueueList, ScopeToggle, TopNotice, Vital } from "@/components/admin/desk";
 import { Reveal } from "@/components/app/motion";
-import { Eyebrow, Panel, PanelHead } from "@/components/field";
+import { Eyebrow, IconArrowRight } from "@/components/field";
 import { getAdminNotices } from "@/lib/admin/notifications";
 import { requireAdmin } from "@/lib/auth/guards";
-import { db } from "@/lib/db";
-import { RAMP_3, STATUS_COLOR } from "@/lib/admin/palette";
 import {
+  RANGES,
   getAdminOverview,
   getDifficultySplit,
-  getPlanSplit,
-  getQuestSeries,
-  getSignupSeries,
-  getStatusSplit,
+  getFiledSeries,
+  getQueueVitals,
+  getReviewQueue,
+  getTopLocations,
   getTopRegions,
+  isRangeKey,
+  type RangeKey,
 } from "@/lib/admin/stats";
 import { stagger } from "@/lib/motion";
 
@@ -28,165 +27,222 @@ export const dynamic = "force-dynamic";
 /**
  * The admin overview.
  *
- * Everything here is a live query — there is no seeded figure and no
- * placeholder chart. Where a number is an estimate it says so on the chart
- * rather than in a footnote nobody reads.
+ * One subject: the review queue. Everything above the charts is about who is
+ * waiting for a verdict, because that is the only thing in this panel with a
+ * person on the other end of it — a submission sitting for four days is
+ * somebody who went out, did the thing, filed their proof and has heard
+ * nothing back. Accounts, revenue and the catalogue all have their own pages
+ * and none of them is urgent in that way.
+ *
+ * The two panels at the bottom are the only charts left of the six this page
+ * used to carry, and they are the two that answer a question the queue raises
+ * rather than changing the subject: *is the desk keeping up* (filed against
+ * decided, over a window you choose) and *where is the work coming from*.
+ *
+ * Both controls write a search param instead of holding client state, so the
+ * page stays one server render and a chosen view can be linked to.
  */
-export default async function AdminOverviewPage() {
+
+/** Said in words under the headline figure — "1m" is a control, not a label. */
+const RANGE_CAPTION: Record<RangeKey, string> = {
+  "1w": "in the last week",
+  "1m": "in the last month",
+  "6m": "in the last six months",
+  "1y": "in the last year",
+};
+
+const RANK_VIEWS = {
+  regions: { label: "Regions", title: "Busiest regions", unit: "quests" },
+  grades: { label: "Grades", title: "Quests by grade", unit: "quests" },
+  places: { label: "Trailheads", title: "Most-used trailheads", unit: "quests" },
+} as const;
+
+type RankKey = keyof typeof RANK_VIEWS;
+
+function isRankKey(value: string | undefined): value is RankKey {
+  return value !== undefined && value in RANK_VIEWS;
+}
+
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string; rank?: string }>;
+}) {
   await requireAdmin();
 
-  const [notices, overview, signups, questSeries, planSplit, statusSplit, difficulty, regions, pending, decided] =
-    await Promise.all([
-      getAdminNotices(),
-      getAdminOverview(),
-      getSignupSeries(30),
-      getQuestSeries(30),
-      getPlanSplit(),
-      getStatusSplit(),
-      getDifficultySplit(),
-      getTopRegions(6),
-      db.submission.count({ where: { status: "PENDING" } }),
-      db.submission.count({ where: { status: { not: "PENDING" } } }),
-    ]);
+  const params = await searchParams;
+  const range: RangeKey = isRangeKey(params.range) ? params.range : "1m";
+  const rank: RankKey = isRankKey(params.rank) ? params.rank : "regions";
+
+  const [notices, overview, vitals, queue, filed, regions, grades, places] = await Promise.all([
+    getAdminNotices(),
+    getAdminOverview(),
+    getQueueVitals(),
+    getReviewQueue(6),
+    getFiledSeries(range),
+    getTopRegions(6),
+    getDifficultySplit(),
+    getTopLocations(6),
+  ]);
+
+  const rankRows = rank === "regions" ? regions : rank === "grades" ? grades : places;
+  const filedTotal = filed.reduce((sum, point) => sum + point.value, 0);
+  const rankTotal = rankRows.reduce((sum, row) => sum + row.value, 0);
+  const scope = { range, rank };
 
   return (
     <>
-      <Reveal as="header" className="page-head">
+      <Reveal as="header" className="desk-head">
         <div>
           <Eyebrow>Behind the desk</Eyebrow>
-          <h1>Overview.</h1>
-          <p>Every figure on this page is a live count, taken when you loaded it.</p>
+          <h1>The queue.</h1>
         </div>
-        <Link href="/admin/database" className="btn btn-ghost btn-sm">
-          Inspect the database
+
+        <Link href="/admin/review" className="btn btn-primary">
+          {vitals.pending > 0 ? `Review ${vitals.pending} waiting` : "Open the review desk"}
+          <IconArrowRight width={14} height={14} />
         </Link>
       </Reveal>
 
-      {/* Above the figures, deliberately. The counts describe how the product
-          is doing; these describe what is currently wrong with it, and a
-          reader who only looks at the top of this page should see the second
-          thing first. */}
-      <Reveal className="mb-5">
-        <Panel flush>
-          <PanelHead
-            title="Needs attention"
-            aside={
-              <span className="meta">
-                {notices.length === 0 ? "All clear" : `${notices.length} open`}
-              </span>
-            }
-          />
-          <NoticeList notices={notices} className="notice-list-panel" />
-        </Panel>
-      </Reveal>
+      {/* One grid for the whole page. Each block below names the area it
+          occupies rather than bringing its own columns, so the four vitals,
+          the queue and the two charts all sit on the same column edges. */}
+      <div className="desk-grid">
+        <Reveal className="desk-area-notice">
+          <TopNotice notice={notices[0] ?? null} total={notices.length} />
+        </Reveal>
 
-      <Reveal>
-        <StatGrid
-          items={[
-            {
-              label: "Customers",
-              value: overview.customers,
-              delta: overview.newThisWeek - overview.newLastWeek,
-              deltaLabel: "vs last week",
-            },
-            {
-              label: "Subscribers",
-              value: overview.subscribers,
-              foot: `${Math.round(overview.conversionRate * 100)}% of accounts`,
-            },
-            {
-              label: "Quests issued",
-              value: overview.issued,
-              delta: overview.issuedThisWeek - overview.issuedLastWeek,
-              deltaLabel: "vs last week",
-            },
-            {
-              label: "Quests logged",
+        {/* The queue's vital signs: what is waiting, how long the worst of it
+            has waited, how fast verdicts are actually turning around, and
+            whether the desk is keeping pace with what comes in. */}
+        <Reveal className="desk-area-vitalA">
+          <Vital
+            figure={{
+              label: "Waiting",
+              value: vitals.pending,
+              late: (vitals.oldestWaitDays ?? 0) >= 4,
+              foot:
+                vitals.oldestWaitDays === null
+                  ? "Queue is clear"
+                  : vitals.oldestWaitDays === 0
+                    ? "Oldest filed today"
+                    : `Oldest waited ${vitals.oldestWaitDays}d`,
+            }}
+          />
+        </Reveal>
+
+        <Reveal className="desk-area-vitalB" delay={stagger(1)}>
+          <Vital
+            figure={{
+              label: "Typical wait",
+              value: vitals.medianWaitHours === null ? "—" : `${vitals.medianWaitHours}h`,
+              foot:
+                vitals.medianWaitHours === null ? "Nothing decided yet" : "Median, last 7 days",
+            }}
+          />
+        </Reveal>
+
+        <Reveal className="desk-area-vitalC" delay={stagger(2)}>
+          <Vital
+            figure={{
+              label: "Decided",
+              value: vitals.decidedThisWeek,
+              foot: `${vitals.filedThisWeek} filed in the same week`,
+            }}
+          />
+        </Reveal>
+
+        <Reveal className="desk-area-vitalD" delay={stagger(3)}>
+          <Vital
+            figure={{
+              label: "Logged",
               value: overview.logged,
               foot: `${Math.round(overview.completionRate * 100)}% of issued`,
-            },
-            {
-              label: "Awaiting review",
-              value: pending,
-              foot: decided > 0 ? `${decided} already decided` : "Nothing decided yet",
-            },
-          ]}
-        />
-      </Reveal>
-
-      {/* Quick actions sit beside the two trend charts rather than beside one.
-          Paired with a single tall chart it was a short card next to a long
-          one, and the column under it was dead space for most of the page. */}
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:items-start">
-        <Reveal>
-          <QuickActions pending={pending} />
-        </Reveal>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Reveal delay={stagger(1)}>
-            <TrendArea
-              title="Accounts opened · 30 days"
-              points={signups.map((point) => ({
-                label: point.label,
-                value: point.value,
-                part: point.part,
-              }))}
-              wholeLabel="Signed up"
-              partLabel="Now subscribed"
-              note="The dark band is the share of that day's cohort paying today, not the day they paid."
-            />
-          </Reveal>
-
-          <Reveal delay={stagger(2)}>
-            <TrendArea
-              title="Quests issued · 30 days"
-              points={questSeries.map((point) => ({
-                label: point.label,
-                value: point.value,
-                part: point.part,
-              }))}
-              wholeLabel="Issued"
-              partLabel="Logged since"
-              note="Logged quests are counted on the day they were issued, so the bands nest."
-            />
-          </Reveal>
-        </div>
-      </div>
-
-      <div className="chart-grid mt-5">
-        <Reveal delay={stagger(2)}>
-          <SplitBar
-            title="Accounts by plan"
-            unitLabel="accounts"
-            segments={planSplit.map((segment, index) => ({
-              ...segment,
-              color: RAMP_3[Math.min(index, RAMP_3.length - 1)],
-            }))}
+            }}
           />
         </Reveal>
 
-        <Reveal delay={stagger(3)}>
-          <SplitBar
-            title="Subscriptions by status"
-            unitLabel="subscriptions"
-            segments={[
-              { ...statusSplit[0], color: STATUS_COLOR.good },
-              { ...statusSplit[1], color: STATUS_COLOR.trialing },
-              { ...statusSplit[2], color: STATUS_COLOR.alert },
-              { ...statusSplit[3], color: STATUS_COLOR.dormant },
-            ]}
-            note="Past due keeps access while Stripe retries the payment."
-          />
+        {/* The hero: the widest box on the grid, and the only one that is a
+            list of people rather than a figure. */}
+        <Reveal className="desk-area-queue">
+          <section className="desk-box" aria-labelledby="queue-heading">
+            <header className="desk-box-head">
+              <h2 id="queue-heading">Waiting on a verdict</h2>
+              <span className="desk-box-aside">
+                {vitals.pending === 0
+                  ? "Nothing pending"
+                  : `${vitals.pending} pending · weekly and monthly first`}
+              </span>
+            </header>
+            <QueueList entries={queue} pending={vitals.pending} />
+          </section>
         </Reveal>
 
-        <Reveal delay={stagger(4)}>
-          <BarSeries title="Quests by grade" points={difficulty} unitLabel="quests" />
+        {/* Two charts, sharing the bottom row. One asks whether the desk is
+            keeping up; the other asks where the work is coming from. */}
+        <Reveal className="desk-area-trend" delay={stagger(1)}>
+          <section className="desk-box">
+            <header className="desk-box-head">
+              <div>
+                <h2>Proof filed</h2>
+                <p className="desk-figure">
+                  <b>{filedTotal}</b>
+                  <span>{RANGE_CAPTION[range]}</span>
+                </p>
+              </div>
+              <ScopeToggle
+                options={Object.entries(RANGES).map(([key, value]) => ({
+                  key,
+                  label: value.label,
+                }))}
+                active={range}
+                param="range"
+                params={scope}
+                label="Range"
+              />
+            </header>
+            <TrendArea
+              bare
+              title="Proof filed"
+              points={filed}
+              wholeLabel="Filed"
+              partLabel="Decided since"
+              note="Decided is nested inside filed, so the gap between the bands is the backlog."
+            />
+          </section>
         </Reveal>
 
-        <Reveal delay={stagger(5)}>
-          <RankBars title="Busiest regions" rows={regions} unitLabel="quests" />
+        <Reveal className="desk-area-rank" delay={stagger(2)}>
+          <section className="desk-box">
+            <header className="desk-box-head">
+              <div>
+                <h2>{RANK_VIEWS[rank].title}</h2>
+                <p className="desk-figure">
+                  <b>{rankTotal}</b>
+                  <span>quests across {rankRows.length}</span>
+                </p>
+              </div>
+              <ScopeToggle
+                options={Object.entries(RANK_VIEWS).map(([key, value]) => ({
+                  key,
+                  label: value.label,
+                }))}
+                active={rank}
+                param="rank"
+                params={scope}
+                label="Breakdown"
+              />
+            </header>
+            <RankBars
+              bare
+              title={RANK_VIEWS[rank].title}
+              rows={rankRows}
+              unitLabel={RANK_VIEWS[rank].unit}
+            />
+          </section>
         </Reveal>
       </div>
+
     </>
   );
 }

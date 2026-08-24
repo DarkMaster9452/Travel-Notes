@@ -1,9 +1,10 @@
 import { logoutAction } from "@/app/(auth)/actions";
+import { DeskStatus } from "@/components/admin/desk-status";
 import { NotificationCenter } from "@/components/admin/notification-center";
 import { AdminShell, type NavItem } from "@/components/app/app-shell";
 import { getAdminNotices } from "@/lib/admin/notifications";
+import { getDeskStatus } from "@/lib/admin/stats";
 import { requireAdmin } from "@/lib/auth/guards";
-import { db } from "@/lib/db";
 
 /**
  * The admin panel.
@@ -41,18 +42,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // badge is the number an admin needs before they have chosen where to go,
   // and the notices are the panel saying what is wrong on whichever page they
   // happen to be standing on.
-  const [pending, notices] = await Promise.all([
-    db.submission.count({ where: { status: "PENDING" } }),
-    getAdminNotices(),
-  ]);
+  const [desk, notices] = await Promise.all([getDeskStatus(), getAdminNotices()]);
 
   return (
     <AdminShell
-      items={nav(pending)}
+      items={nav(desk.pending)}
       userName={user.name}
       userEmail={user.email}
       theme={user.theme}
       notices={<NotificationCenter notices={notices} />}
+      status={<DeskStatus pending={desk.pending} oldestWaitDays={desk.oldestWaitDays} />}
       logout={logoutAction}
     >
       {children}
