@@ -2725,6 +2725,40 @@ textarea.input {
   box-shadow: none;
 }
 
+/* The customer side's account row and the gear beside it. The row itself is
+   a link straight to the public profile now, not a button that opens a menu
+   — see the note in `app-shell.tsx`. The gear sits in the same row, close to
+   the name the way it was asked for, rather than as one more line in a
+   dropdown that no longer exists. */
+.app-side-account-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-side-account-row .app-side-account {
+  flex: 1;
+  min-width: 0;
+}
+.app-side-settings {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  color: var(--ink-2);
+  transition:
+    background 0.16s,
+    color 0.16s;
+}
+.app-side-settings:hover {
+  background: rgba(21, 24, 26, 0.06);
+  color: var(--ink);
+}
+.app-side-settings svg {
+  display: block;
+}
+
 .app-side-account {
   display: flex;
   align-items: center;
@@ -3293,14 +3327,26 @@ a.plan-mark:hover {
   color: var(--ink-3);
   background: transparent;
 }
+/* Tinted, not filled. A solid near-black slab read as heavier than anything
+   else in the sidebar — heavier than the nav's own active row — for a mark
+   that only has to say "member," not "stop." Colour still ranks the two
+   plans (green, then the warmer accent), it's just carried by a wash and a
+   border rather than by covering the whole pill. */
 .plan-mark-explorer {
-  background: var(--pine);
-  color: #eef2e7;
+  background: color-mix(in oklab, var(--pine) 12%, var(--card));
+  color: var(--pine);
+  border-color: color-mix(in oklab, var(--pine) 28%, var(--line));
 }
+/* Deeper green, not orange: a solid signal wash read as a candy-pink pill,
+   which is a worse mistake than the black one it replaced — orange is stamp
+   ink everywhere else in this product and a badge is not a stamp. Ultra earns
+   its extra weight from a richer tint of the same green, and keeps signal to
+   the one place a mark like this can carry it: a thin edge and the dot,
+   exactly the size a stamp is used at everywhere else. */
 .plan-mark-ultra {
-  background: var(--forest-deep, #14251b);
-  color: #eef2e7;
-  border-color: var(--signal);
+  background: color-mix(in oklab, var(--pine) 22%, var(--card));
+  color: var(--pine);
+  border-color: color-mix(in oklab, var(--signal) 38%, var(--line));
 }
 .plan-mark-dot {
   width: 6px;

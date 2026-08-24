@@ -1,7 +1,5 @@
-import { logoutAction } from "@/app/(auth)/actions";
 import { AppShell, type NavItem } from "@/components/app/app-shell";
 import { requireClient } from "@/lib/auth/guards";
-import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 
 /**
@@ -11,49 +9,44 @@ import { getEntitlement } from "@/lib/entitlements";
  * panel rather than shown a dashboard that would be empty for them.
  *
  * The quest in your hand is still assigned rather than chosen — that has not
- * changed and is still the premise. What is browsable is the *record*: the
- * database of everything we have written, and the boards showing who has done
- * what this week and this month. Both exist because the alternative was that
- * a quest you actually walked could not be logged unless the generator had
- * happened to hand it to you.
+ * changed and is still the premise.
+ *
+ * Six destinations, not twelve. The catalogue browse page, the submissions
+ * inbox and the account-wide people directory are still there — nothing that
+ * links to them broke — they are just no longer a permanent row in the rail.
+ * A sidebar an admin scans in a second and a customer opens six times a day
+ * should not carry the same weight of "everything that exists": the second
+ * one is read constantly, and the tenth item down is what nobody was reading
+ * anyway.
+ *
+ * Settings, billing and the rules moved out of this list entirely — they live
+ * in the settings shell now, reached from the gear beside the account name
+ * rather than mixed in with where you actually go to do something.
  *
  * Monthly sits above Weekly because the monthly quest is the headline — the
  * big one, opened on the 1st — and the weekly is the smaller thing alongside
  * it. The order of this list is the only place that hierarchy is stated, so
  * it states it.
  */
-function nav(awaiting: number): readonly NavItem[] {
+function nav(): readonly NavItem[] {
   return [
     { href: "/dashboard", label: "Today", icon: "sun" },
     { href: "/monthly", label: "Monthly", icon: "mountain" },
     { href: "/weekly", label: "Weekly", icon: "calendar" },
-    { href: "/quests", label: "Database", icon: "map" },
     { href: "/leaderboard", label: "Leaderboard", icon: "compass" },
-    { href: "/submissions", label: "Submissions", icon: "inbox", badge: awaiting },
     { href: "/history", label: "History", icon: "book" },
     { href: "/achievements", label: "Stickers", icon: "badge" },
-    { href: "/people", label: "People", icon: "users" },
-
-    { section: "Account", href: "/profile", label: "Settings", icon: "gear" },
-    { href: "/upgrade", label: "Plan", icon: "sparkle" },
-    { href: "/rules", label: "Rules", icon: "shield" },
   ];
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireClient();
-  const [entitlement, awaiting] = await Promise.all([
-    getEntitlement(user.id),
-    // The one number worth carrying in the chrome: proof you filed that
-    // nobody has read yet is the only thing on this side you are waiting on.
-    db.submission.count({ where: { userId: user.id, status: "PENDING" } }),
-  ]);
+  const entitlement = await getEntitlement(user.id);
 
   return (
     <AppShell
-      items={nav(awaiting)}
+      items={nav()}
       userName={user.name}
-      userEmail={user.email}
       theme={user.theme}
       plan={entitlement.plan}
       planName={
@@ -61,7 +54,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ? entitlement.definition.name
           : `${entitlement.definition.name} plan`
       }
-      logout={logoutAction}
     >
       {children}
     </AppShell>
