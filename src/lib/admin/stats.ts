@@ -623,3 +623,256 @@ export async function getTableRows(table: TableName, take = 25): Promise<TableRo
     }
   }
 }
+
+/* ------------------------------------------------------------------------- */
+/* The desk                                                                   */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * The windows the overview's trend can be read over.
+ *
+ * Four, not five: an hourly view of a product that issues quests weekly would
+ * be a flat line with one spike, and a chart nobody can read is worse than a
+ * chart that isn't offered.
+ */
+export const RANGES = {
+  "1w": { days: 7, label: "1w", bucket: "day" },
+  "1m": { days: 30, label: "1m", bucket: "day" },
+  "6m": { days: 182, label: "6m", bucket: "week" },
+  "1y": { days: 365, label: "1y", bucket: "month" },
+} as const;
+
+export type RangeKey = keyof typeof RANGES;
+
+export function isRangeKey(value: string | undefined): value is RangeKey {
+  return value !== undefined && value in RANGES;
+}
+
+/**
+ * Buckets sized to the window rather than always daily.
+ *
+ * A year of daily buckets is 365 marks in a panel 400px wide — under a pixel
+ * each, which is not a chart of anything. Past a month the series steps up to
+ * weeks and then to months, so a mark stays wide enough to read at every
+ * range the toggle offers.
+ */
+function bucketStart(date: Date, bucket: "day" | "week" | "month"): Date {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  if (bucket === "month") {
+    start.setDate(1);
+    return start;
+  }
+  if (bucket === "week") {
+    // ISO-ish: weeks start Monday, so a week bucket matches the weekly slot
+    // the product itself runs on.
+    const weekday = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - weekday);
+  }
+  return start;
+}
+
+function bucketLabel(date: Date, bucket: "day" | "week" | "month"): string {
+  if (bucket === "month") return date.toLocaleDateString("en-GB", { month: "short" });
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+/** Empty buckets across the whole window, oldest first, so quiet spells stay. */
+function emptyBuckets(range: RangeKey) {
+  const { days, bucket } = RANGES[range];
+  const series: { key: string; label: string; value: number; part: number }[] = [];
+  const index = new Map<string, (typeof series)[number]>();
+
+  const from = bucketStart(new Date(Date.now() - (days - 1) * DAY_MS), bucket);
+  const cursor = new Date(from);
+  const end = new Date();
+
+  while (cursor <= end) {
+    const key = dayKey(cursor);
+    const point = { key, label: bucketLabel(cursor, bucket), value: 0, part: 0 };
+    series.push(point);
+    index.set(key, point);
+
+    if (bucket === "month") cursor.setMonth(cursor.getMonth() + 1);
+    else cursor.setDate(cursor.getDate() + (bucket === "week" ? 7 : 1));
+  }
+
+  return { series, index, from, bucket };
+}
+
+/**
+ * Proof filed per bucket, and how much of it has been decided.
+ *
+ * The overview's one trend. Filed is the whole and decided is the nested part,
+ * so the gap between the two bands *is* the backlog, drawn rather than stated:
+ * a widening mouth on the right of this chart is the queue getting away from
+ * whoever is reviewing it.
+ */
+export async function getFiledSeries(range: RangeKey) {
+  const { series, index, from, bucket } = emptyBuckets(range);
+
+  const rows = await db.submission.findMany({
+    where: { createdAt: { gte: from } },
+    select: { createdAt: true, status: true },
+  });
+
+  for (const row of rows) {
+    const point = index.get(dayKey(bucketStart(row.createdAt, bucket)));
+    if (!point) continue;
+    point.value += 1;
+    if (row.status !== "PENDING") point.part += 1;
+  }
+
+  return series;
+}
+
+/**
+ * The state of the review desk.
+ *
+ * Everything here is about *waiting*, because that is the only thing on this
+ * page somebody outside the building can feel: a submission sitting in the
+ * queue is a person who went out, filed their proof and has heard nothing.
+ */
+export async function getQueueVitals() {
+  const weekAgo = new Date(Date.now() - 7 * DAY_MS);
+
+  const [pending, oldest, decidedThisWeek, filedThisWeek, recentlyDecided] = await Promise.all([
+    db.submission.count({ where: { status: "PENDING" } }),
+    db.submission.findFirst({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    }),
+    db.submission.count({ where: { status: { not: "PENDING" }, reviewedAt: { gte: weekAgo } } }),
+    db.submission.count({ where: { createdAt: { gte: weekAgo } } }),
+    db.submission.findMany({
+      where: { status: { not: "PENDING" }, reviewedAt: { gte: weekAgo } },
+      select: { createdAt: true, reviewedAt: true },
+      take: 200,
+    }),
+  ]);
+
+  // Median rather than mean: one submission left over a holiday would drag an
+  // average into saying the desk is slow when every other verdict was same-day.
+  const waits = recentlyDecided
+    .map((row) => (row.reviewedAt ? row.reviewedAt.getTime() - row.createdAt.getTime() : null))
+    .filter((value): value is number => value !== null)
+    .sort((a, b) => a - b);
+  const medianWaitMs = waits.length > 0 ? waits[Math.floor(waits.length / 2)] : null;
+
+  return {
+    pending,
+    filedThisWeek,
+    decidedThisWeek,
+    oldestWaitDays: oldest ? Math.floor((Date.now() - oldest.createdAt.getTime()) / DAY_MS) : null,
+    medianWaitHours: medianWaitMs === null ? null : Math.round(medianWaitMs / (60 * 60 * 1000)),
+  };
+}
+
+/** Higher-tier subscribers are read first; no subscription sorts last. */
+const QUEUE_PLAN_RANK: Record<string, number> = { ULTRA: 0, EXPLORER: 1, FREE: 2 };
+const QUEUE_CADENCE_RANK: Record<string, number> = { MONTHLY: 0, WEEKLY: 1 };
+
+export type QueueEntry = {
+  id: string;
+  name: string;
+  questTitle: string;
+  region: string;
+  difficulty: string;
+  period: string | null;
+  slotKey: string | null;
+  retreated: boolean;
+  photos: number;
+  waitedDays: number;
+  filedAt: Date;
+};
+
+/**
+ * The front of the review queue.
+ *
+ * Ordered exactly as `/admin/review` deals it — cadence first, then plan tier,
+ * then oldest — because this list is a preview of that page, and a preview
+ * that shows a different top row than the thing it previews is a lie about
+ * what you are about to open.
+ */
+export async function getReviewQueue(limit = 6): Promise<QueueEntry[]> {
+  const rows = await db.submission.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+    select: {
+      id: true,
+      createdAt: true,
+      period: true,
+      slotKey: true,
+      retreated: true,
+      photos: true,
+      user: {
+        select: { name: true, subscription: { select: { plan: true, status: true } } },
+      },
+      quest: { select: { title: true, region: true, difficulty: true } },
+    },
+  });
+
+  const ranked = rows
+    .map((row) => {
+      const live =
+        row.user.subscription &&
+        LIVE_STATUSES.includes(row.user.subscription.status as "ACTIVE")
+          ? row.user.subscription.plan
+          : "FREE";
+      return {
+        row,
+        cadence: row.period ? (QUEUE_CADENCE_RANK[row.period] ?? 2) : 2,
+        plan: QUEUE_PLAN_RANK[live] ?? 2,
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.cadence - b.cadence ||
+        a.plan - b.plan ||
+        a.row.createdAt.getTime() - b.row.createdAt.getTime(),
+    )
+    .slice(0, limit);
+
+  return ranked.map(({ row }) => ({
+    id: row.id,
+    name: row.user.name,
+    questTitle: row.quest.title,
+    region: row.quest.region,
+    difficulty: row.quest.difficulty,
+    period: row.period,
+    slotKey: row.slotKey,
+    retreated: row.retreated,
+    photos: row.photos.length,
+    waitedDays: Math.floor((Date.now() - row.createdAt.getTime()) / DAY_MS),
+    filedAt: row.createdAt,
+  }));
+}
+
+/**
+ * What the sidebar's desk card needs, and nothing else.
+ *
+ * Split out from `getQueueVitals` because this one runs in the admin *layout*
+ * — on every page of the panel — and the vitals do four extra queries that
+ * only the overview reads. It also keeps the clock out of the layout's render:
+ * `Date.now()` during render is impure, and the wait has to be computed
+ * somewhere that is allowed to ask what time it is.
+ */
+export async function getDeskStatus() {
+  const [pending, oldest] = await Promise.all([
+    db.submission.count({ where: { status: "PENDING" } }),
+    db.submission.findFirst({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    }),
+  ]);
+
+  return {
+    pending,
+    oldestWaitDays: oldest
+      ? Math.floor((Date.now() - oldest.createdAt.getTime()) / DAY_MS)
+      : null,
+  };
+}

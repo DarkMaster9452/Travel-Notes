@@ -91,10 +91,7 @@ export default async function LeaderboardPage({
         <div>
           <Eyebrow>Everybody, ranked</Eyebrow>
           <h1>Leaderboard.</h1>
-          <p>
-            Points for approved quests, on the same weekly and monthly clock as everything else.
-            The top three of a closed board take a sticker — a different one for each cadence.
-          </p>
+          <p>Points for approved quests. The top three of a closed board take a sticker.</p>
         </div>
         <div className="admin-filters !border-0 !p-0">
           <nav aria-label="Cadence">

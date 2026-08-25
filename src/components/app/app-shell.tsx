@@ -142,6 +142,7 @@ function Sidebar({
   items,
   admin,
   tools,
+  status,
   children,
 }: {
   home: string;
@@ -154,6 +155,12 @@ function Sidebar({
    * hidden from `lg` up, where the sidebar becomes the chrome.
    */
   tools?: React.ReactNode;
+  /**
+   * A card above the account button. The panel puts the state of the review
+   * desk here so the one number an admin is actually on the hook for is in
+   * view on every page, not only on the overview.
+   */
+  status?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -246,40 +253,32 @@ function Sidebar({
           })}
         </nav>
 
-        <div className="app-side-foot">{children}</div>
+        <div className="app-side-foot">
+          {status}
+          {children}
+        </div>
       </aside>
     </>
   );
 }
 
-/** The menu links a customer has. An admin gets none of these. */
-const CLIENT_LINKS: readonly NavItem[] = [
-  { href: "/profile", label: "Settings" },
-  { href: "/achievements", label: "Stickers" },
-  { href: "/upgrade", label: "Plan & billing" },
-];
-
 export function AppShell({
   children,
   items,
   userName,
-  userEmail,
   plan,
   planName,
   theme,
-  logout,
 }: {
   children: React.ReactNode;
   items: readonly NavItem[];
   userName: string;
-  userEmail: string;
   /** Drives the membership accents. `free` leaves the interior plain. */
   plan: PlanId;
-  /** "Free plan", "Explorer" — shown in the account menu. */
+  /** "Free plan", "Explorer" — shown beside the name. */
   planName: string;
   /** The account's palette. Rendered on the server so there is no flash. */
   theme: ThemeChoice;
-  logout: () => Promise<void>;
 }) {
   return (
     <div
@@ -289,13 +288,38 @@ export function AppShell({
     >
       <Sidebar home="/dashboard" items={items}>
         {plan !== "free" && <PlanMark plan={plan} />}
-        <AccountMenu
-          userName={userName}
-          userEmail={userEmail}
-          planName={planName}
-          links={CLIENT_LINKS}
-          logout={logout}
-        />
+        {/* The account row opens the public page, not a menu — the least
+            reversible change in this file, so it deserves the note. This used
+            to toggle a dropdown of five links, one of which was "Settings"
+            and none of which was the profile itself: clicking your own name
+            got you a list of places to go rather than anywhere at all. Now it
+            *is* somewhere — `/profile/public` both creates the row on first
+            visit and is the page you edit it from, so this single link covers
+            "see it" and "change it" at once. Settings, billing and the rules
+            moved into their own shell behind the gear beside it; logout moved
+            with them, onto that shell's own account section, because a
+            sidebar with nowhere else to put "log out" is not a reason to keep
+            a menu the rest of this change removed. */}
+        <div className="app-side-account-row">
+          <Link href="/profile/public" className="app-side-account press">
+            <Avatar
+              name={userName}
+              className="size-9 flex-[0_0_2.25rem] rounded-[11px] text-[12px]"
+            />
+            <span className="app-side-account-who">
+              <b>{userName}</b>
+              <span>{planName}</span>
+            </span>
+          </Link>
+          <Link
+            href="/profile"
+            className="app-side-settings press"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <IconGear width={16} height={16} />
+          </Link>
+        </div>
       </Sidebar>
       <main className="app-main">
         <PageTransition>{children}</PageTransition>
@@ -311,6 +335,7 @@ export function AdminShell({
   userEmail,
   theme,
   notices,
+  status,
   logout,
 }: {
   children: React.ReactNode;
@@ -320,6 +345,8 @@ export function AdminShell({
   theme: ThemeChoice;
   /** The notification bell, built by the layout from live conditions. */
   notices?: React.ReactNode;
+  /** The review-desk card, pinned above the account button on every page. */
+  status?: React.ReactNode;
   logout: () => Promise<void>;
 }) {
   return (
@@ -328,7 +355,7 @@ export function AdminShell({
       data-surface="admin"
       data-theme={theme.toLowerCase()}
     >
-      <Sidebar home="/admin" items={items} admin tools={notices}>
+      <Sidebar home="/admin" items={items} admin tools={notices} status={status}>
         {/* No plan mark, no settings, no billing: an admin account holds none
             of those, and a menu that offers them would be lying. */}
         <AccountMenu
