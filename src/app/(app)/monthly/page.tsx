@@ -4,9 +4,10 @@ import Link from "next/link";
 import { SqCountdown } from "@/components/sq/countdown";
 import { SqMap, type MapPoint } from "@/components/sq/map";
 import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
-import { slotDatesLabel, slotFor, slotLabel } from "@/lib/admin/schedule";
+import { slotFor, slotLabel } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { getEntitlement } from "@/lib/entitlements";
 import { scoreBreakdown } from "@/lib/leaderboard";
 import { loadFeaturedSlot } from "@/lib/quest/slot";
 
@@ -54,7 +55,7 @@ export default async function MonthlyPage() {
 
   const quest = featured.summary;
 
-  const [filed, approved, conditions] = await Promise.all([
+  const [filed, approved, conditions, display, entitlement] = await Promise.all([
     db.submission.count({ where: { period: "MONTHLY", slotKey: featured.key } }),
     db.submission.count({
       where: { period: "MONTHLY", slotKey: featured.key, status: "APPROVED" },
@@ -65,7 +66,13 @@ export default async function MonthlyPage() {
       take: 4,
       select: { note: true, startedAt: true, createdAt: true, user: { select: { name: true } } },
     }),
+    db.displaySettings.findUnique({ where: { userId: user.id }, select: { expertStats: true } }),
+    getEntitlement(user.id),
   ]);
+
+  // A setting, not a design variant: the switch on Settings → General decides
+  // whether the slab appears, and the plan decides whether the switch moves.
+  const expertStats = (display?.expertStats ?? false) && entitlement.isSubscribed;
 
   const { lines, total } = scoreBreakdown({
     difficulty: quest.difficulty,
@@ -250,6 +257,82 @@ export default async function MonthlyPage() {
           </article>
         </div>
       </section>
+
+      {expertStats ? (
+        <section className="sq-slab" style={{ marginTop: 16, padding: "22px 26px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              gap: 14,
+              marginBottom: 18,
+              flexWrap: "wrap",
+            }}
+          >
+            <h2 className="sq-h2" style={{ fontSize: 19 }}>
+              Expert figures
+            </h2>
+            <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
+              On because you turned them on in Settings
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
+            {[
+              {
+                k: "Metres per kilometre",
+                v: String(Math.round(quest.elevationGain / Math.max(1, quest.distance))),
+                note: "How steep the day is on average, before any single climb.",
+              },
+              {
+                k: "Asked pace",
+                v: `${(quest.distance / Math.max(1, quest.duration / 60)).toFixed(1)} km/h`,
+                note: "What the moving-time estimate assumes you keep up.",
+              },
+              {
+                k: "Travel from home",
+                v: quest.travelTime ? `${quest.travelTime} min` : "—",
+                note: "From the country you measure from, not from an address.",
+              },
+              {
+                k: "Filed so far",
+                v: String(filed),
+                note: `${approved} of them have been approved.`,
+              },
+              {
+                k: "Approval rate",
+                v: filed === 0 ? "—" : `${Math.round((approved / filed) * 100)}%`,
+                note: "Of the proof a reader has already reached.",
+              },
+              {
+                k: "Worth, approved",
+                v: `${total} pts`,
+                note: "Grade, distance, ascent and the monthly bonus.",
+              },
+            ].map((figure) => (
+              <div key={figure.k} style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "14px 16px" }}>
+                <p className="sq-kicker-sm" style={{ fontSize: 9.5, marginBottom: 7 }}>
+                  {figure.k}
+                </p>
+                <b
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontWeight: 600,
+                    fontSize: 22,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {figure.v}
+                </b>
+                <p style={{ marginTop: 8, fontSize: 11.5, lineHeight: 1.4, color: "var(--forest-ink-3)" }}>
+                  {figure.note}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="sq-grid sq-grid-fit-md" style={{ marginTop: 16, alignItems: "start" }}>
         <article className="sq-card-flat">

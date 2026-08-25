@@ -261,6 +261,12 @@ Everything that matters is decided on the server, from database state:
 | `STRIPE_SECRET_KEY` | no | Without it, checkout is disabled and the paywall degrades gracefully instead of erroring |
 | `STRIPE_WEBHOOK_SECRET` | no | Required for the webhook to accept anything |
 | `STRIPE_PRICE_ID_EXPLORER_MONTHLY` / `_YEARLY` | no | Explorer plan prices |
+| `STRIPE_PRICE_ID_ULTRA_MONTHLY` / `_YEARLY` | no | Ultra plan prices. Without them Ultra is not offered |
+| `BLOB_READ_WRITE_TOKEN` | no | Vercel Blob, for proof photographs. Without it the upload route says so instead of failing silently |
+| `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET` | no | Connected apps. Without them the Strava row reads "not configured" |
+| `RESEND_API_KEY` | no | Transactional email. Without it messages are logged rather than sent |
+| `EMAIL_FROM` | no | The From line. Defaults to `Summit Quest <quests@summitquest.app>` |
+| `CRON_SECRET` | no | Bearer token the scheduled routes require. **Empty refuses every call** — a job anybody can trigger is worse than one that never runs |
 
 Pricing, plan features, the free allowance and rate limits all live in
 `src/lib/config.ts` — nothing is hardcoded in a component.
@@ -273,6 +279,45 @@ The client connects through the **node-postgres driver adapter**, which is the
 portable choice: the same code talks to Neon's pooled endpoint and to a plain
 local Postgres. Swap `@prisma/adapter-pg` for `@prisma/adapter-neon` if you move
 to an edge runtime.
+
+### Connected apps and email
+
+Strava is read-only and only ever reads an activity somebody has pasted a link
+to: the OAuth scope is `read,activity:read`, the token is refreshed a minute
+before it dies, and disconnecting deletes the row rather than nulling five
+columns. Point the app's callback at `/api/strava/callback`.
+
+Photographs are re-encoded server-side on upload (`src/lib/uploads.ts`) rather
+than merely checked. Re-encoding is what actually strips EXIF — a header check
+does not — and a photograph filed as proof of where somebody was should not
+carry the coordinates of where they live.
+
+Four emails go out, and every one of them is about the recipient's own quest:
+the drop, the verdict, the reviewer's note on a decline, and a board sealing
+with their name on it. Each is gated on that account's notification settings
+inside `send`, not at the call site. Two of them are scheduled:
+
+| Route | Schedule | What it does |
+| --- | --- | --- |
+| `/api/cron/quest-drop` | `0 6 * * *` | Announces a booked slot, on the mornings a slot opens |
+| `/api/cron/seal-boards` | `30 6 * * *` | Reads closed boards, which seals them, and writes to the podium |
+
+Both refuse anything without a matching `CRON_SECRET` bearer token, compared in
+constant time.
+
+### Roles
+
+Three: member, staff (`ADMIN`), owner (`OWNER`). Staff read proof, write quests
+and book slots. The owner is the one account that can take another's keys away
+— and the panel deliberately **cannot grant** the staff role. Revoking is a
+thing you want to do fast from a phone at two in the morning; granting should
+require somebody at a database prompt, because a panel that can promote
+accounts is one compromised session away from making an attacker permanent.
+
+Which tabs each role may open lives in `src/lib/admin/access.ts`, read by both
+the matrix drawn on Panel access and the guard that enforces it, so the page
+cannot drift from what is actually allowed. Every write from the panel is
+stamped into `AdminAudit`; reads are not logged.
 
 ### Stripe setup
 

@@ -33,6 +33,8 @@ const serverSchema = z.object({
   /** Transactional email. Empty means notifications are logged, never sent. */
   RESEND_API_KEY: z.string().optional().default(""),
   EMAIL_FROM: z.string().optional().default("Summit Quest <quests@summitquest.app>"),
+  /** Bearer secret the scheduled routes require. Empty refuses every call. */
+  CRON_SECRET: z.string().optional().default(""),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -58,6 +60,7 @@ function load(): ServerEnv {
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
+    CRON_SECRET: process.env.CRON_SECRET,
   });
 
   if (!parsed.success) {

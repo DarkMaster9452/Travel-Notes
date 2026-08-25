@@ -47,6 +47,14 @@ export default async function DashboardPage() {
       }),
     ]);
 
+  // The extra figures are a setting, not a variant: the switch on Settings →
+  // General is what decides whether the forest slab appears at all.
+  const display = await db.displaySettings.findUnique({
+    where: { userId: user.id },
+    select: { expertStats: true },
+  });
+  const expertStats = (display?.expertStats ?? false) && entitlement.isSubscribed;
+
   const achievements = getAchievements(
     stats,
     entitlement.plan,
@@ -80,6 +88,19 @@ export default async function DashboardPage() {
       openAt: (open ? new Date(glance.closesAt.getTime() - windowLength(slot)) : now).toISOString(),
       closeAt: glance.closesAt.toISOString(),
       status: glance.status,
+      expert: expertStats
+        ? [
+            {
+              k: "m per km",
+              v: String(Math.round(summary.elevationGain / Math.max(1, summary.distance))),
+            },
+            {
+              k: "km per hour asked",
+              v: (summary.distance / Math.max(1, summary.duration / 60)).toFixed(1),
+            },
+            { k: "Travel", v: summary.travelTime ? `${summary.travelTime}m` : "—" },
+          ]
+        : null,
       cta:
         glance.status === "NONE" || glance.status === "REJECTED"
           ? { label: "File proof", href: `/quests/${summary.id}/proof` }

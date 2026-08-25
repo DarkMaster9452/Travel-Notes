@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { SqParamSelect, SqSegmentedLinks } from "@/components/sq/controls";
 import { LogoSilhouette } from "@/components/sq/icons";
-import { Avatar, Bar, EmptyState, PageHeader, Tag } from "@/components/sq/ui";
+import { Avatar, Bar, EmptyState, Tag } from "@/components/sq/ui";
 import { slotLabel } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { getLeaderboard, pastSlots, SCORING_NOTES } from "@/lib/leaderboard";

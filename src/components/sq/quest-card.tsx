@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { SqCountdown } from "@/components/sq/countdown";
 import { SqMap, type MapPoint } from "@/components/sq/map";
-import { Bar, FactList, Tag } from "@/components/sq/ui";
+import { Bar, FactList, Slab, SlabFigures, Tag } from "@/components/sq/ui";
 
 export type QuestCardData = {
   id: string;
@@ -25,6 +25,8 @@ export type QuestCardData = {
   /** What the member's proof is doing, if they have filed any. */
   status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
   cta: { label: string; href: string };
+  /** Shown only when the member has asked for the extra figures in Settings. */
+  expert?: { k: string; v: string }[] | null;
 };
 
 const HOURS = (minutes: number) => {
@@ -92,6 +94,12 @@ export function SqQuestCard({ quest, index = 0 }: { quest: QuestCardData; index?
           { k: "Moving", v: HOURS(quest.duration) },
         ]}
       />
+
+      {quest.expert && quest.expert.length > 0 ? (
+        <Slab kicker="Expert figures" style={{ padding: "12px 14px", borderRadius: 10 }}>
+          <SlabFigures figures={quest.expert} />
+        </Slab>
+      ) : null}
 
       <div>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 7 }}>

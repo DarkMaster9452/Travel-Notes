@@ -6,6 +6,8 @@ import { z } from "zod";
 
 import { requireAdmin, requireOwner } from "@/lib/auth/guards";
 import { recordAudit } from "@/lib/admin/audit";
+import { sendVerdict } from "@/lib/email";
+import { scoreEntry } from "@/lib/leaderboard";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { slotFromKey } from "@/lib/admin/schedule";
@@ -90,6 +92,35 @@ export async function reviewSubmissionAction(input: {
     subject: submissionId,
     detail: note || null,
   });
+
+  // The verdict is the thing the filer has been waiting for, so it is the one
+  // moment worth an email. Sent after the write, never inside the transaction:
+  // a mail server having a bad afternoon must not roll back an approval.
+  const decided = await db.submission.findUnique({
+    where: { id: submissionId },
+    select: {
+      userId: true,
+      retreated: true,
+      period: true,
+      quest: { select: { title: true, difficulty: true, distance: true, elevationGain: true } },
+    },
+  });
+  if (decided) {
+    await sendVerdict(decided.userId, {
+      approved: approve,
+      questTitle: decided.quest.title,
+      note,
+      points: approve
+        ? scoreEntry({
+            difficulty: decided.quest.difficulty,
+            distance: decided.quest.distance,
+            elevationGain: decided.quest.elevationGain,
+            retreated: decided.retreated,
+            featuredPeriod: decided.period,
+          })
+        : undefined,
+    });
+  }
 
   revalidatePath("/admin/review");
   revalidatePath("/admin/submissions");
@@ -495,6 +526,8 @@ export async function createQuestAction(
     },
     select: { id: true },
   });
+
+  await recordAudit({ actorId: admin.id, action: "quest.written", subject: q.title, detail: quest.id });
 
   revalidatePath("/admin/quests");
   revalidatePath("/admin");

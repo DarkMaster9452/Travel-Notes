@@ -37,11 +37,16 @@ export type SqShellProps = {
 
 export function SqShell({ flag, nav, footNav, account, children }: SqShellProps) {
   const pathname = usePathname();
-  const [drawer, setDrawer] = useState(false);
 
-  useEffect(() => {
-    setDrawer(false);
-  }, [pathname]);
+  // The drawer remembers *which* route it was opened on rather than whether it
+  // is open, so a navigation closes it during render instead of through an
+  // effect that fires after the new page has already painted behind it.
+  const [openedAt, setOpenedAt] = useState<string | null>(null);
+  const drawer = openedAt === pathname;
+  const setDrawer = (open: boolean | ((current: boolean) => boolean)) => {
+    const next = typeof open === "function" ? open(drawer) : open;
+    setOpenedAt(next ? pathname : null);
+  };
 
   return (
     <div className="sq sq-shell" data-drawer={drawer ? "open" : "closed"}>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { reviewSubmissionAction, undoReviewAction } from "@/app/admin/actions";
 import { SqReviewDeck } from "@/components/sq/review-deck";
-import { PageHeader, Tag } from "@/components/sq/ui";
+import { Tag } from "@/components/sq/ui";
 import { getReviewQueue } from "@/lib/admin/review-queue";
 import { requireAdmin } from "@/lib/auth/guards";
 

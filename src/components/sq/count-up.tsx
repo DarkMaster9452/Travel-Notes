@@ -40,10 +40,10 @@ export function CountUp({
       alreadyCounted = false;
     }
 
-    if (reduced || alreadyCounted || value === 0) {
-      setShown(value);
-      return;
-    }
+    // Nothing to animate: `shown` already holds the value, so there is no
+    // state to set — an effect that assigned it here would only schedule a
+    // second render to arrive at the number already on screen.
+    if (reduced || alreadyCounted || value === 0) return;
 
     try {
       window.sessionStorage.setItem(key, "1");
@@ -51,8 +51,12 @@ export function CountUp({
       /* a browser refusing site data is not a reason to skip the animation */
     }
 
-    const started = performance.now();
+    let started = 0;
     const step = (now: number) => {
+      // The first frame is what sets the figure to zero, rather than a
+      // synchronous assignment in the effect body: the count-up is an
+      // animation, and animations belong on frames.
+      started ||= now;
       const t = Math.min(1, (now - started) / duration);
       // ease-out: fast off the mark, settling into the real figure.
       const eased = 1 - Math.pow(1 - t, 3);
@@ -60,7 +64,6 @@ export function CountUp({
       if (t < 1) frame.current = requestAnimationFrame(step);
     };
 
-    setShown(0);
     frame.current = requestAnimationFrame(step);
     return () => {
       if (frame.current !== null) cancelAnimationFrame(frame.current);
