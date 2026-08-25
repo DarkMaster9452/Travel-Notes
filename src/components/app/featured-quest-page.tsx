@@ -293,7 +293,7 @@ export function FeaturedQuestPage({
                   <span className="meta w-9 shrink-0 text-moss-2">ALL</span>
                   <span className="text-[14.5px] text-ink-2">
                     Both are compulsory —{" "}
-                    <Link href="/rules#cadence" className="underline">
+                    <Link href="/profile/rules#cadence" className="underline">
                       the rules
                     </Link>
                     .

@@ -72,7 +72,7 @@ export default async function PublicProfileSettingsPage() {
             <p>
               Published pages are visible to signed-in accounts only, and are kept out of search
               engines. The full version of this is in{" "}
-              <Link href="/rules#people" className="underline">
+              <Link href="/profile/rules#people" className="underline">
                 the rules
               </Link>
               .
