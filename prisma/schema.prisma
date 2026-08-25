@@ -19,9 +19,17 @@ datasource db {
 /// Guests are not represented here — a guest has no account, sees only the
 /// landing page, and never reaches a real quest. Admins are flagged in the
 /// database and never self-serve: nothing in the product writes this column.
+/// Three roles, and the gap between the second and the third is the point.
+///
+/// `ADMIN` is staff: they read proof, write quests and book slots. `OWNER` is
+/// the one account that can change who else is staff, and it is deliberately
+/// not something the panel can grant — see `Panel access` for why a panel that
+/// could promote accounts is one compromised session away from making an
+/// attacker permanent.
 enum Role {
   USER
   ADMIN
+  OWNER
 }
 
 /// Which palette the signed-in app renders in. `SYSTEM` follows the device;
@@ -79,6 +87,7 @@ model User {
   display       DisplaySettings?
   shipping      ShippingAddress?
   notifications NotificationSettings?
+  auditEntries  AdminAudit[]           @relation("AuditActor")
 
   @@map("users")
 }
@@ -838,4 +847,35 @@ model NotificationSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_settings")
+}
+
+
+/// Every write made from the panel.
+///
+/// Reads are not logged, deliberately: a log of who looked at what would be a
+/// second surveillance product nobody asked for, and it would bury the writes
+/// that actually matter. What is here is what somebody *changed*, who they
+/// were, and what it was about.
+///
+/// The actor detaches rather than cascades. Deleting a colleague's account
+/// should not rewrite last month's decisions out of the record — the entry
+/// stays, attributed to nobody, exactly as a reviewed submission keeps its
+/// verdict when the reviewer is gone.
+model AdminAudit {
+  id      String  @id @default(cuid())
+  actorId String? @map("actor_id")
+  /// A short verb-phrase key: `submission.approved`, `quest.published`, …
+  action  String
+  /// What it was about, in one line a human can read without a join.
+  subject String
+  /// Anything worth keeping beyond the subject. Never a secret.
+  detail  String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action])
+  @@map("admin_audit")
 }

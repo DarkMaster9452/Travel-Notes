@@ -1,90 +1,74 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 
-import { StatGrid } from "@/components/admin/stat-grid";
-import { Reveal } from "@/components/app/motion";
-import { Avatar, Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
-import { getAdminOverview, LIVE_STATUSES } from "@/lib/admin/stats";
+import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
+import { Avatar, EmptyState, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { stagger } from "@/lib/motion";
-import { AccountEditor } from "@/components/admin/account-editor";
-import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Users · Admin" };
 export const dynamic = "force-dynamic";
 
-const FILTERS = [
-  { key: "all", label: "Everyone" },
-  { key: "subscribers", label: "Subscribers" },
-  { key: "free", label: "Free" },
-  { key: "admins", label: "Staff" },
-] as const;
+const PAGE_SIZE = 60;
+const LIVE = ["ACTIVE", "TRIALING", "PAST_DUE"] as const;
+const JOINED = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "2-digit" });
 
-type FilterKey = (typeof FILTERS)[number]["key"];
-
-function isFilter(value: string | undefined): value is FilterKey {
-  return FILTERS.some((filter) => filter.key === value);
-}
+const PLAN_TONE: Record<string, { bg: string; fg: string }> = {
+  ULTRA: { bg: "var(--pine)", fg: "#f9faf3" },
+  EXPLORER: { bg: "var(--color-accent-100)", fg: "var(--color-accent-700)" },
+  FREE: { bg: "var(--paper-2)", fg: "var(--ink-2)" },
+};
 
 /**
- * Accounts.
+ * The directory.
  *
- * Lookup and filtering, and nothing that writes. Roles in particular are set in
- * the database by a human with a psql prompt: an admin panel that can promote
- * accounts is one compromised session away from making the attacker permanent,
- * and this product has few enough admins that the inconvenience is the point.
+ * Read-only about roles, on purpose: what an account *is* is set on Panel
+ * access, where the consequences of setting it are written down beside the
+ * switch. This screen answers "who is this and what do they hold", which is
+ * the question a support message actually asks.
  */
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<{ q?: string; plan?: string; state?: string; page?: string }>;
 }) {
-  const admin = await requireAdmin();
-
+  await requireAdmin();
   const params = await searchParams;
-  const filter: FilterKey = isFilter(
-    typeof params.filter === "string" ? params.filter : undefined,
-  )
-    ? (params.filter as FilterKey)
-    : "all";
-  const query = typeof params.q === "string" ? params.q.trim() : "";
 
-  const where = {
-    ...(filter === "admins" ? { role: "ADMIN" as const } : {}),
-    ...(filter === "subscribers"
-      ? { subscription: { is: { status: { in: [...LIVE_STATUSES] } } } }
-      : {}),
-    ...(filter === "free"
-      ? {
-          role: "USER" as const,
-          OR: [
-            { subscription: { is: null } },
-            { subscription: { is: { status: { notIn: [...LIVE_STATUSES] } } } },
-          ],
-        }
-      : {}),
-    ...(query
-      ? {
-          OR: [
-            { email: { contains: query, mode: "insensitive" as const } },
-            { name: { contains: query, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
-  };
+  const page = Math.max(1, Number(params.page ?? "1") || 1);
+  const search = (params.q ?? "").trim();
+  const plan = params.plan ?? "all";
+  const state = params.state ?? "all";
 
-  // The headline figures come from the same place the overview reads them, so
-  // "subscribers" and "new this week" cannot mean one thing on one page and
-  // something slightly different on another.
-  // Whether a delete would be refused is decided here rather than guessed at
-  // in the row: the last admin cannot go, and neither can the account doing
-  // the deleting. Same two rules the server enforces, said before the press.
-  const [users, matched, overview, adminCount] = await Promise.all([
+  const where: Prisma.UserWhereInput = {};
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+    ];
+  }
+  // Plan and state can both constrain the subscription, so they are ANDed
+  // rather than assigned: "Explorer" and "payment retrying" together is a real
+  // question, and the second filter overwriting the first would answer a
+  // different one without saying so.
+  const and: Prisma.UserWhereInput[] = [];
+  if (plan === "FREE") and.push({ subscription: { is: null } });
+  else if (plan !== "all") {
+    and.push({ subscription: { is: { plan: plan as "EXPLORER" | "ULTRA", status: { in: [...LIVE] } } } });
+  }
+  if (state === "staff") and.push({ role: "ADMIN" });
+  if (state === "members") and.push({ role: "USER" });
+  if (state === "pastdue") and.push({ subscription: { is: { status: "PAST_DUE" } } });
+  if (and.length > 0) where.AND = and;
+
+  const [total, users, counts] = await Promise.all([
+    db.user.count({ where }),
     db.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 100,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       select: {
         id: true,
         name: true,
@@ -92,155 +76,219 @@ export default async function AdminUsersPage({
         role: true,
         freeQuestsUsed: true,
         createdAt: true,
-        theme: true,
         subscription: { select: { plan: true, status: true, cancelAtPeriodEnd: true } },
-        _count: { select: { history: true, sessions: true } },
+        _count: { select: { history: true, submissions: true } },
       },
     }),
-    db.user.count({ where }),
-    getAdminOverview(),
-    db.user.count({ where: { role: "ADMIN" } }),
+    Promise.all([
+      db.user.count({ where: { role: "USER" } }),
+      db.user.count({ where: { role: "ADMIN" } }),
+      db.subscription.count({ where: { status: { in: [...LIVE] } } }),
+      db.subscription.count({ where: { status: "PAST_DUE" } }),
+    ]),
   ]);
+
+  const [members, staff, subscribers, pastDue] = counts;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>Accounts</Eyebrow>
-          <h1>Users.</h1>
-          <p>
-            Every account, and what it is allowed to do. Manage edits the name, the email, the
-            role, the plan and the allowance — and deletes, if it comes to that.
-          </p>
-        </div>
-      </Reveal>
+      <PageHeader
+        kicker="Accounts"
+        title="Users"
+        lede="Every account, and what it holds. Roles are set on Panel access, where the consequences are written down beside the switch."
+        right={
+          <Link href="/admin/access" className="sq-btn sq-btn-ghost">
+            Staff &amp; panel access
+          </Link>
+        }
+      />
 
-      <Reveal>
-        <StatGrid
-          items={[
-            { label: "Customers", value: overview.customers },
-            { label: "Subscribers", value: overview.subscribers },
-            { label: "Staff", value: overview.admins },
-            { label: "New this week", value: overview.newThisWeek },
-          ]}
+      <StatGrid>
+        <StatTile label="Members" count={members} countId="users-members" index={0} />
+        <StatTile label="Staff" count={staff} countId="users-staff" index={1} />
+        <StatTile label="Subscribers" count={subscribers} countId="users-subs" index={2} />
+        <StatTile
+          label="Payment retrying"
+          count={pastDue}
+          countId="users-pastdue"
+          note={pastDue > 0 ? "Access holds while Stripe retries" : undefined}
+          index={3}
         />
-      </Reveal>
+      </StatGrid>
 
-      <Reveal delay={stagger(1)} className="mt-5">
-        <Panel flush>
-          <PanelHead
-            title="Directory"
-            aside={
-              <Tag tone="ghost">
-                {matched > users.length ? `${users.length} of ${matched}` : `${matched} matching`}
-              </Tag>
-            }
+      <div style={{ marginTop: 16 }}>
+        <SqFilterBar>
+          <SqParamSearch name="q" value={search} label="Find" placeholder="Name or email" />
+          <SqParamSelect
+            name="plan"
+            value={plan}
+            label="Plan"
+            options={[
+              { value: "all", label: "Any plan" },
+              { value: "ULTRA", label: "Ultra" },
+              { value: "EXPLORER", label: "Explorer" },
+              { value: "FREE", label: "Free" },
+            ]}
           />
+          <SqParamSelect
+            name="state"
+            value={state}
+            label="Kind"
+            options={[
+              { value: "all", label: "Everyone" },
+              { value: "members", label: "Members" },
+              { value: "staff", label: "Staff" },
+              { value: "pastdue", label: "Payment retrying" },
+            ]}
+          />
+        </SqFilterBar>
+      </div>
 
-          <div className="admin-filters">
-            <nav aria-label="Filter">
-              {FILTERS.map((item) => (
-                <Link
-                  key={item.key}
-                  href={`/admin/users?filter=${item.key}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
-                  aria-current={item.key === filter ? "page" : undefined}
-                  scroll={false}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            Directory
+          </h2>
+          <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+            {users.length} of {total.toLocaleString("en-GB")}
+          </span>
+        </div>
 
-            <form action="/admin/users" className="admin-search" role="search">
-              <input type="hidden" name="filter" value={filter} />
-              <input
-                type="search"
-                name="q"
-                defaultValue={query}
-                placeholder="Name or email"
-                aria-label="Search accounts"
-                className="input input-pill"
-              />
-              <button type="submit" className="btn btn-ghost btn-sm">
-                Search
-              </button>
-            </form>
+        {users.length === 0 ? (
+          <div style={{ padding: 26 }}>
+            <EmptyState glyph="users" title="No account matches that" body="Clear a filter and try again." />
           </div>
-
-          {users.length === 0 ? (
-            <p className="chart-empty">No account matches that.</p>
-          ) : (
-            <ul>
+        ) : (
+          <div className="sq-scroll-x">
+            <ul className="sq-stagger" style={{ minWidth: 864 }}>
               {users.map((user, index) => {
                 const live =
-                  user.subscription &&
-                  LIVE_STATUSES.includes(user.subscription.status as "ACTIVE");
+                  user.subscription && LIVE.includes(user.subscription.status as "ACTIVE")
+                    ? user.subscription.plan
+                    : "FREE";
+                const tone = PLAN_TONE[live] ?? PLAN_TONE.FREE;
 
                 return (
-                  <Reveal
-                    as="li"
-                    key={user.id}
-                    delay={stagger(index, 8)}
-                    className="admin-row border-b border-line px-5 py-4 last:border-b-0"
-                  >
+                  <li key={user.id} style={{ ["--i" as string]: index }}>
                     <Link
                       href={`/admin/users/${user.id}`}
-                      className="flex min-w-[min(100%,14rem)] flex-1 items-center gap-3"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(224px,1fr) 96px 104px 104px 236px",
+                        gap: 14,
+                        alignItems: "center",
+                        padding: "13px 22px",
+                        borderTop: "1px solid var(--line-2)",
+                        color: "var(--color-text)",
+                      }}
                     >
-                      <Avatar
-                        name={user.name}
-                        className="size-9 flex-[0_0_2.25rem] rounded-[11px] text-[12px]"
-                      />
-                      <span className="min-w-0">
-                        <b className="block text-[15px] font-semibold hover:underline">
-                          {user.name}
-                        </b>
-                        <span className="meta normal-case tracking-[0.06em]">{user.email}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
+                        <Avatar name={user.name} size={36} square />
+                        <span style={{ minWidth: 0 }}>
+                          <b
+                            style={{
+                              display: "block",
+                              fontSize: 15,
+                              fontWeight: 600,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {user.name}
+                          </b>
+                          <span
+                            className="sq-mono"
+                            style={{
+                              display: "block",
+                              fontSize: 10.5,
+                              letterSpacing: "0.05em",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              color: "var(--ink-3)",
+                            }}
+                          >
+                            {user.email}
+                          </span>
+                        </span>
+                      </span>
+
+                      <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                        {user._count.history} issued
+                      </span>
+                      <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                        {user.freeQuestsUsed} free used
+                      </span>
+                      <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                        {JOINED.format(user.createdAt)}
+                      </span>
+
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          gap: 7,
+                          minWidth: 0,
+                        }}
+                      >
+                        {user.role === "ADMIN" ? <Tag small>STAFF</Tag> : null}
+                        <span
+                          className="sq-tag sq-tag-xs"
+                          style={{ background: tone.bg, color: tone.fg }}
+                        >
+                          {live}
+                        </span>
+                        {user.subscription?.status === "PAST_DUE" ? (
+                          <Tag tone="stamp" small>
+                            RETRYING
+                          </Tag>
+                        ) : user.subscription?.cancelAtPeriodEnd ? (
+                          <Tag tone="stamp" small>
+                            LEAVING
+                          </Tag>
+                        ) : null}
+                        <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
+                          Open
+                        </span>
                       </span>
                     </Link>
-                    <span className="meta w-24 shrink-0">{user._count.history} issued</span>
-                    <span className="meta hidden w-24 shrink-0 lg:inline">
-                      {user.role === "ADMIN"
-                        ? "—"
-                        : `${user.freeQuestsUsed} free used`}
-                    </span>
-                    <span className="meta hidden w-28 shrink-0 md:inline">
-                      {formatDate(user.createdAt)}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <Tag tone={live ? "pine" : "ghost"}>
-                        {live ? (user.subscription?.plan ?? "FREE") : "FREE"}
-                      </Tag>
-                      {user.subscription?.cancelAtPeriodEnd && <Tag tone="warm">Cancelling</Tag>}
-                      {user.role === "ADMIN" && <Tag tone="warm">Admin</Tag>}
-                      <AccountEditor
-                        user={{
-                          id: user.id,
-                          name: user.name,
-                          email: user.email,
-                          role: user.role,
-                          plan: live ? (user.subscription?.plan ?? "FREE") : "FREE",
-                          freeQuestsUsed: user.freeQuestsUsed,
-                          theme: user.theme,
-                          sessions: user._count.sessions,
-                        }}
-                        canDelete={
-                          user.id !== admin.id && !(user.role === "ADMIN" && adminCount <= 1)
-                        }
-                        blockedReason={
-                          user.id === admin.id
-                            ? "You can't delete the account you're signed in as."
-                            : "That's the last admin — the panel would lock everyone out."
-                        }
-                      />
-                    </span>
-                  </Reveal>
+                  </li>
                 );
               })}
             </ul>
-          )}
-        </Panel>
-      </Reveal>
+          </div>
+        )}
+      </section>
+
+      {pages > 1 ? (
+        <nav style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }} aria-label="Pages">
+          {page > 1 ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={href(params, page - 1)}>
+              ← Newer
+            </Link>
+          ) : null}
+          <span className="sq-mono" style={{ alignSelf: "center", fontSize: 11, color: "var(--ink-3)" }}>
+            {page} of {pages}
+          </span>
+          {page < pages ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={href(params, page + 1)}>
+              Older →
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </>
   );
+}
+
+function href(params: Record<string, string | undefined>, page: number): string {
+  const next = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value && key !== "page") next.set(key, value);
+  }
+  next.set("page", String(page));
+  return `/admin/users?${next.toString()}`;
 }

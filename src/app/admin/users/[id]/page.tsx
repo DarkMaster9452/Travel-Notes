@@ -1,418 +1,249 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
-import { AccountControls } from "@/components/admin/account-controls";
-import { Reveal } from "@/components/app/motion";
-import { StatGrid } from "@/components/admin/stat-grid";
-import {
-  Avatar,
-  Eyebrow,
-  IconApproved,
-  IconArrowRight,
-  IconCheck,
-  IconCompass,
-  IconCross,
-  IconLock,
-  IconMap,
-  Panel,
-  PanelHead,
-  Tag,
-} from "@/components/field";
+import { SqAccountEditor } from "@/components/sq/account-editor";
+import { Avatar, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { LIVE_STATUSES } from "@/lib/admin/stats";
-import { getAchievements } from "@/lib/achievements";
-import { planIdFromRecord } from "@/lib/config";
-import { getUserStats } from "@/lib/quest/service";
-import { AccountStickers } from "@/components/admin/account-stickers";
-import { stagger } from "@/lib/motion";
-import { formatDate } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Account · Admin" };
 export const dynamic = "force-dynamic";
 
-type TimelineKind = "issued" | "completed" | "filed" | "approved" | "rejected" | "session";
+const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const LIVE = ["ACTIVE", "TRIALING", "PAST_DUE"];
 
-type TimelineEntry = {
-  id: string;
-  at: Date;
-  kind: TimelineKind;
-  title: string;
-  detail?: string;
-};
-
-const TIMELINE_ICON: Record<TimelineKind, React.ComponentType<{ className?: string }>> = {
-  issued: IconMap,
-  completed: IconApproved,
-  filed: IconCompass,
-  approved: IconCheck,
-  rejected: IconCross,
-  session: IconLock,
-};
-
-/**
- * One account, in full: the same controls the list's quick-edit modal has,
- * plus the thing a modal can't hold — everything this account has actually
- * done. Built from the tables that already exist rather than a separate
- * audit log, because a log that only starts recording the day it's added
- * would be empty for every account that matters right now.
- */
-const LOG_FILTERS = [
-  { key: "all", label: "Everything", kinds: null },
-  { key: "quests", label: "Quests", kinds: ["issued", "completed"] },
-  { key: "proof", label: "Proof", kinds: ["filed", "approved", "rejected"] },
-  { key: "access", label: "Sign-ins", kinds: ["session"] },
-] as const;
-
-export default async function AccountDetailPage({
+export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ log?: string }>;
-}) {
-  const admin = await requireAdmin();
+}): Promise<Metadata> {
   const { id } = await params;
-  const { log: rawLog } = await searchParams;
-  const logFilter =
-    LOG_FILTERS.find((filter) => filter.key === rawLog) ?? LOG_FILTERS[0];
+  const user = await db.user.findUnique({ where: { id }, select: { name: true } });
+  return { title: `${user?.name ?? "Account"} · Admin` };
+}
+
+/**
+ * One account.
+ *
+ * The record a support message is actually about: who they are, what they
+ * hold, what they have filed and how the plan got to be what it is. The
+ * editable half is deliberately one panel rather than scattered controls —
+ * everything an admin can change about an account changes together, in one
+ * write, with one confirmation.
+ */
+export default async function AdminUserPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
+  const { id } = await params;
 
   const user = await db.user.findUnique({
     where: { id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      freeQuestsUsed: true,
-      theme: true,
-      createdAt: true,
-      subscription: { select: { plan: true, status: true, cancelAtPeriodEnd: true } },
-      // So a moderator can see what this account is showing the world without
-      // having to guess the handle.
+    include: {
+      subscription: true,
       profile: { select: { handle: true, published: true } },
-      // What they have chosen to have remembered between logs. Read-only from
-      // here: it is theirs, an admin needs to see it to make sense of a
-      // submission, and nothing is served by letting one edit it.
-      logDefaults: {
-        select: {
-          stravaProfile: true,
-          usualStart: true,
-          partySize: true,
-          gear: true,
-          pace: true,
-          lastDistance: true,
-          lastElevation: true,
-          lastMovingTime: true,
-          updatedAt: true,
-        },
-      },
-      _count: { select: { sessions: true, history: true, submissions: true } },
+      preferences: { select: { homeLocation: true } },
+      strava: { select: { athleteName: true, athleteId: true, createdAt: true } },
+      _count: { select: { history: true, submissions: true, sessions: true } },
     },
   });
   if (!user) notFound();
 
-  const [history, submissions, sessions, adminCount, stats, revocations] = await Promise.all([
-    db.questHistory.findMany({
-      where: { userId: id },
-      orderBy: { generatedAt: "desc" },
-      take: 100,
-      select: {
-        id: true,
-        generatedAt: true,
-        completed: true,
-        completedAt: true,
-        quest: { select: { title: true, location: true } },
-      },
-    }),
+  const [submissions, approved, history] = await Promise.all([
     db.submission.findMany({
       where: { userId: id },
       orderBy: { createdAt: "desc" },
-      take: 100,
+      take: 12,
       select: {
         id: true,
-        createdAt: true,
         status: true,
+        createdAt: true,
         reviewedAt: true,
-        reviewNote: true,
-        reviewedBy: { select: { name: true } },
-        quest: { select: { title: true } },
+        retreated: true,
+        period: true,
+        slotKey: true,
+        quest: { select: { id: true, title: true, region: true } },
       },
     }),
-    db.session.findMany({
-      where: { userId: id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: { id: true, createdAt: true, expiresAt: true },
-    }),
-    db.user.count({ where: { role: "ADMIN" } }),
-    getUserStats(id),
-    db.achievementRevocation.findMany({
-      where: { userId: id },
-      select: { achievementId: true },
-    }),
+    db.submission.count({ where: { userId: id, status: "APPROVED" } }),
+    db.questHistory.count({ where: { userId: id, completed: true } }),
   ]);
 
-
-  const timeline: TimelineEntry[] = [];
-  for (const row of history) {
-    timeline.push({
-      id: `${row.id}-issued`,
-      at: row.generatedAt,
-      kind: "issued",
-      title: `Issued "${row.quest.title}"`,
-      detail: row.quest.location,
-    });
-    if (row.completed && row.completedAt) {
-      timeline.push({
-        id: `${row.id}-completed`,
-        at: row.completedAt,
-        kind: "completed",
-        title: `Completed "${row.quest.title}"`,
-      });
-    }
-  }
-  for (const row of submissions) {
-    timeline.push({
-      id: `${row.id}-filed`,
-      at: row.createdAt,
-      kind: "filed",
-      title: `Filed proof for "${row.quest.title}"`,
-    });
-    if (row.reviewedAt && row.status !== "PENDING") {
-      timeline.push({
-        id: `${row.id}-reviewed`,
-        at: row.reviewedAt,
-        kind: row.status === "APPROVED" ? "approved" : "rejected",
-        title: `Submission ${row.status === "APPROVED" ? "approved" : "declined"}${
-          row.reviewedBy ? ` by ${row.reviewedBy.name}` : ""
-        }`,
-        detail: row.reviewNote ?? undefined,
-      });
-    }
-  }
-  for (const row of sessions) {
-    timeline.push({
-      id: `${row.id}-session`,
-      at: row.createdAt,
-      kind: "session",
-      title: "Signed in",
-      detail: `Active until ${formatDate(row.expiresAt)}`,
-    });
-  }
-  timeline.sort((a, b) => b.at.getTime() - a.at.getTime());
-
-  // Filtered after assembly rather than in the queries: the log is built from
-  // four tables, and filtering each one separately would mean four more round
-  // trips to answer a question the page already has the data for.
-  const shown = logFilter.kinds
-    ? timeline.filter((entry) => (logFilter.kinds as readonly string[]).includes(entry.kind))
-    : timeline;
-
-  const live = user.subscription && LIVE_STATUSES.includes(user.subscription.status as "ACTIVE");
-  const plan = live ? (user.subscription?.plan ?? "FREE") : "FREE";
-
-  // The sheet as this account actually sees it: gated by their plan, minus
-  // anything an admin has taken back.
-  const stickers = getAchievements(
-    stats,
-    planIdFromRecord(plan),
-    revocations.map((row) => row.achievementId),
-  );
-
-  // Their saved logging details, as a plain list. Anything they have not
-  // filled in is simply absent rather than shown as a blank row.
-  const defaults = user.logDefaults;
-  const saved: { label: string; value: string }[] = [];
-  if (defaults) {
-    if (defaults.usualStart) saved.push({ label: "Usual start", value: defaults.usualStart });
-    if (defaults.partySize != null)
-      saved.push({ label: "Party", value: `${defaults.partySize} ${defaults.partySize === 1 ? "person" : "people"}` });
-    if (defaults.pace != null) saved.push({ label: "Pace", value: `${defaults.pace} min/km` });
-    if (defaults.gear) saved.push({ label: "Carries", value: defaults.gear });
-    if (defaults.stravaProfile) saved.push({ label: "Strava", value: defaults.stravaProfile });
-    if (defaults.lastDistance != null)
-      saved.push({ label: "Last distance", value: `${defaults.lastDistance.toFixed(1)} km` });
-    if (defaults.lastElevation != null)
-      saved.push({ label: "Last ascent", value: `${defaults.lastElevation} m` });
-    if (defaults.lastMovingTime != null)
-      saved.push({ label: "Last moving time", value: `${defaults.lastMovingTime} min` });
-  }
-
-  const isSelf = user.id === admin.id;
-  const isLastAdmin = user.role === "ADMIN" && adminCount <= 1;
-  const canDelete = !isSelf && !isLastAdmin;
-  const blockedReason = isSelf
-    ? "You can't delete the account you're signed in as."
-    : isLastAdmin
-      ? "That's the last admin — the panel would lock everyone out."
-      : undefined;
+  const live = user.subscription && LIVE.includes(user.subscription.status);
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Link href="/admin/users" className="meta inline-flex items-center gap-1.5 mb-2">
-            <IconArrowRight className="rotate-180 size-3" /> All accounts
-          </Link>
-          <Eyebrow>Account</Eyebrow>
-          <h1>{user.name}.</h1>
-          <p>{user.email}</p>
-        </div>
-      </Reveal>
-
-      <Reveal className="mb-5">
-        <Panel className="flex flex-wrap items-center gap-4">
-          <Avatar name={user.name} className="size-12 rounded-[13px] text-[15px]" />
-          <div className="flex flex-wrap items-center gap-2">
-            <Tag tone={live ? "pine" : "ghost"}>{plan}</Tag>
-            {user.subscription?.cancelAtPeriodEnd && <Tag tone="warm">Cancelling</Tag>}
-            {user.role === "ADMIN" && <Tag tone="warm">Admin</Tag>}
+      <PageHeader
+        kicker={`Account · joined ${DATE.format(user.createdAt)}`}
+        title={user.name}
+        lede={user.email}
+        right={
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <Avatar name={user.name} size={48} />
+            {user.role === "ADMIN" ? <Tag small>STAFF</Tag> : null}
+            {user.profile?.published ? (
+              <Link href={`/people/${user.profile.handle}`} className="sq-btn sq-btn-ghost sq-btn-sm">
+                Public page
+              </Link>
+            ) : null}
           </div>
-          {user.profile?.published && (
-            <Link href={`/people/${user.profile.handle}`} className="meta underline">
-              /people/{user.profile.handle}
-            </Link>
-          )}
-          <span className="meta ml-auto">Joined {formatDate(user.createdAt)}</span>
-          <span className="meta">{user._count.history} issued</span>
-          <span className="meta">{user._count.submissions} filed</span>
-          <span className="meta">{user._count.sessions} active session{user._count.sessions === 1 ? "" : "s"}</span>
-        </Panel>
-      </Reveal>
+        }
+      />
 
-      <Reveal delay={stagger(0)} className="mb-5">
-        <StatGrid
-          items={[
-            { label: "Issued", value: user._count.history },
-            { label: "Logged", value: stats.completedCount },
-            { label: "Kilometres", value: Math.round(stats.kmExplored) },
-            { label: "Metres up", value: Math.round(stats.elevation) },
-            {
-              label: "Regions",
-              value: stats.regions,
-              foot: `${stats.countries} ${stats.countries === 1 ? "country" : "countries"}`,
-            },
-            {
-              label: "Stickers",
-              value: stickers.filter((sticker) => sticker.earned).length,
-              foot: `${user._count.submissions} filed`,
-            },
-          ]}
+      <StatGrid>
+        <StatTile label="Quests issued" count={user._count.history} index={0} />
+        <StatTile label="Walked" count={history} index={1} />
+        <StatTile label="Filed" count={user._count.submissions} index={2} />
+        <StatTile label="Approved" count={approved} index={3} />
+        <StatTile label="Live sessions" count={user._count.sessions} index={4} />
+      </StatGrid>
+
+      <section className="sq-grid sq-grid-fit-md" style={{ marginTop: 16, alignItems: "start" }}>
+        <SqAccountEditor
+          account={{
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            plan: live ? user.subscription!.plan : "FREE",
+            freeQuestsUsed: user.freeQuestsUsed,
+            theme: user.theme,
+          }}
         />
-      </Reveal>
 
-      {saved.length > 0 && (
-        <Reveal delay={stagger(1)} className="mb-5">
-          <Panel flush>
-            <PanelHead
-              title="What they log with"
-              aside={
-                user.logDefaults?.updatedAt ? (
-                  <Tag tone="ghost">Saved {formatDate(user.logDefaults.updatedAt)}</Tag>
-                ) : undefined
-              }
-            />
-            <ul className="quest-facts">
-              {saved.map((entry) => (
-                <li key={entry.label}>
-                  <span>{entry.label}</span>
-                  <b>{entry.value}</b>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <article className="sq-card-flat">
+            <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
+              <h2 className="sq-h2">Plan history</h2>
+            </div>
+            <ul>
+              {user.subscription ? (
+                [
+                  { k: "Plan", v: user.subscription.plan },
+                  { k: "Status", v: user.subscription.status },
+                  {
+                    k: "Period",
+                    v:
+                      user.subscription.currentPeriodStart && user.subscription.currentPeriodEnd
+                        ? `${DATE.format(user.subscription.currentPeriodStart)} – ${DATE.format(user.subscription.currentPeriodEnd)}`
+                        : "—",
+                  },
+                  { k: "Cancelling", v: user.subscription.cancelAtPeriodEnd ? "At period end" : "No" },
+                  { k: "Stripe customer", v: user.subscription.stripeCustomerId ?? "—" },
+                  { k: "Opened", v: DATE.format(user.subscription.createdAt) },
+                ].map((row) => (
+                  <li key={row.k} style={rowStyle}>
+                    <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+                      {row.k}
+                    </span>
+                    <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12, textAlign: "right" }}>
+                      {row.v}
+                    </b>
+                  </li>
+                ))
+              ) : (
+                <li style={{ padding: "14px 22px", fontSize: 13, color: "var(--ink-3)" }}>
+                  No subscription row — this account is on free.
                 </li>
-              ))}
+              )}
             </ul>
-          </Panel>
-        </Reveal>
-      )}
+          </article>
 
-      <Reveal delay={stagger(1)} className="mb-5">
-        <Panel flush>
-          <PanelHead
-            title="Stickers"
-            aside={<Tag tone="ghost">{stickers.filter((s) => s.earned).length} earned</Tag>}
-          />
-          <AccountStickers userId={user.id} stickers={stickers.map((sticker) => ({
-            id: sticker.id,
-            label: sticker.label,
-            description: sticker.description,
-            sticker: sticker.sticker,
-            earned: sticker.earned,
-            planLocked: sticker.planLocked,
-            revoked: sticker.revoked,
-            progressLabel: sticker.progressLabel,
-          }))} />
-        </Panel>
-      </Reveal>
+          <article className="sq-card-flat">
+            <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
+              <h2 className="sq-h2">Connections</h2>
+            </div>
+            <ul>
+              <li style={rowStyle}>
+                <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+                  Country
+                </span>
+                <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12 }}>
+                  {user.preferences?.homeLocation ?? "—"}
+                </b>
+              </li>
+              <li style={rowStyle}>
+                <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+                  Strava
+                </span>
+                <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12 }}>
+                  {user.strava ? (user.strava.athleteName ?? user.strava.athleteId) : "Not connected"}
+                </b>
+              </li>
+              <li style={rowStyle}>
+                <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+                  Public page
+                </span>
+                <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12 }}>
+                  {user.profile ? (user.profile.published ? `@${user.profile.handle}` : "Unpublished") : "None"}
+                </b>
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,360px)_1fr]">
-        <Reveal delay={stagger(1)}>
-          <Panel>
-            <PanelHead title="Controls" />
-            <div className="mt-4">
-              <AccountControls
-                user={{
-                  id: user.id,
-                  name: user.name,
-                  email: user.email,
-                  role: user.role,
-                  plan,
-                  freeQuestsUsed: user.freeQuestsUsed,
-                  theme: user.theme,
-                  sessions: user._count.sessions,
-                  profile: user.profile,
+      <section className="sq-card" style={{ marginTop: 16, overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            What they have filed
+          </h2>
+          <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+            Latest {submissions.length}
+          </span>
+        </div>
+        {submissions.length === 0 ? (
+          <p style={{ padding: "16px 22px", fontSize: 13, color: "var(--ink-3)" }}>
+            Nothing filed yet.
+          </p>
+        ) : (
+          <ul className="sq-stagger">
+            {submissions.map((entry, index) => (
+              <li
+                key={entry.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,1fr) auto auto auto",
+                  gap: 14,
+                  alignItems: "center",
+                  padding: "13px 22px",
+                  borderTop: "1px solid var(--line-2)",
+                  ["--i" as string]: index,
                 }}
-                canDelete={canDelete}
-                blockedReason={blockedReason}
-                isSelf={isSelf}
-              />
-            </div>
-          </Panel>
-        </Reveal>
-
-        <Reveal delay={stagger(2)}>
-          <Panel flush>
-            <PanelHead title="Activity" aside={<Tag tone="ghost">{shown.length}</Tag>} />
-
-            <div className="admin-filters">
-              <nav aria-label="Filter the log">
-                {LOG_FILTERS.map((filter) => (
-                  <Link
-                    key={filter.key}
-                    href={`/admin/users/${user.id}?log=${filter.key}`}
-                    aria-current={filter.key === logFilter.key ? "page" : undefined}
-                    scroll={false}
-                  >
-                    {filter.label}
+              >
+                <span style={{ minWidth: 0 }}>
+                  <Link href={`/quests/${entry.quest.id}`} style={{ color: "var(--color-text)" }}>
+                    <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{entry.quest.title}</b>
                   </Link>
-                ))}
-              </nav>
-              <p className="meta">{timeline.length} in total</p>
-            </div>
-            {shown.length === 0 ? (
-              <p className="chart-empty">Nothing yet.</p>
-            ) : (
-              <ul className="account-timeline">
-                {shown.map((entry) => {
-                  const Icon = TIMELINE_ICON[entry.kind];
-                  return (
-                    <li key={entry.id} className={`account-timeline-item is-${entry.kind}`}>
-                      <span className="account-timeline-icon">
-                        <Icon />
-                      </span>
-                      <span className="account-timeline-body">
-                        <b>{entry.title}</b>
-                        {entry.detail && <span>{entry.detail}</span>}
-                      </span>
-                      <span className="account-timeline-when">{formatDate(entry.at)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Panel>
-        </Reveal>
-      </div>
+                  <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+                    {entry.quest.region}
+                    {entry.period ? ` · ${entry.period.toLowerCase()} ${entry.slotKey ?? ""}` : ""}
+                    {entry.retreated ? " · retreat" : ""}
+                  </span>
+                </span>
+                <Tag
+                  tone={entry.status === "APPROVED" ? "green" : entry.status === "REJECTED" ? "stamp" : "plain"}
+                  small
+                >
+                  {entry.status}
+                </Tag>
+                <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)", whiteSpace: "nowrap" }}>
+                  filed {DATE.format(entry.createdAt)}
+                </span>
+                <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)", whiteSpace: "nowrap" }}>
+                  {entry.reviewedAt ? `read ${DATE.format(entry.reviewedAt)}` : "unread"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </>
   );
 }
+
+const rowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "12px 22px",
+  borderTop: "1px solid var(--line-2)",
+};

@@ -8,8 +8,31 @@ import {
   type FeaturedPeriod,
   type FeaturedQuest,
 } from "@/lib/quest/featured";
-import type { FeaturedProof } from "@/components/app/featured-quest-page";
-import type { LogDefaults } from "@/components/app/submit-proof";
+
+/**
+ * Where a member's proof for this slot stands.
+ *
+ * Declared here rather than beside a component, because it is a fact about the
+ * data and not about any one screen: the dashboard card, the monthly page and
+ * the proof form all read the same four states.
+ */
+export type FeaturedProof = {
+  status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+  reviewNote: string | null;
+  filedAt: Date | null;
+};
+
+/** What somebody would otherwise retype into every proof form. */
+export type LogDefaults = {
+  stravaProfile: string | null;
+  usualStart: string | null;
+  partySize: number | null;
+  gear: string | null;
+  pace: number | null;
+  lastDistance: number | null;
+  lastElevation: number | null;
+  lastMovingTime: number | null;
+};
 
 /**
  * Everything the weekly or monthly page needs, in one call.

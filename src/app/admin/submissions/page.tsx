@@ -1,194 +1,246 @@
-import type { Prisma } from "@prisma/client";
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 
-import { StatGrid } from "@/components/admin/stat-grid";
-import { Reveal } from "@/components/app/motion";
-import { SubmissionsTable } from "@/components/admin/submissions-table";
-import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
+import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
+import { Avatar, EmptyState, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
 import { slotKeyLabel } from "@/lib/admin/schedule";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { stagger } from "@/lib/motion";
 
 export const metadata: Metadata = { title: "Submissions · Admin" };
 export const dynamic = "force-dynamic";
 
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "pending", label: "Pending" },
-  { key: "approved", label: "Approved" },
-  { key: "rejected", label: "Declined" },
-] as const;
-
-/** The second axis: what cadence it was filed against, if any. */
-const CADENCES = [
-  { key: "any", label: "Any cadence" },
-  { key: "monthly", label: "Monthly" },
-  { key: "weekly", label: "Weekly" },
-  { key: "none", label: "Off-cadence" },
-] as const;
-
-const CADENCE_WHERE = {
-  any: {},
-  monthly: { period: "MONTHLY" as const },
-  weekly: { period: "WEEKLY" as const },
-  none: { period: null },
-} satisfies Record<(typeof CADENCES)[number]["key"], Prisma.SubmissionWhereInput>;
-
-function isCadence(value: string | undefined): value is (typeof CADENCES)[number]["key"] {
-  return CADENCES.some((item) => item.key === value);
-}
+const PAGE_SIZE = 50;
+const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "2-digit" });
 
 /**
- * Every submission, decided or not.
+ * The record, and only the record.
  *
- * The deck at `/admin/review` is where the work happens; this is the record —
- * what was filed, who judged it and when. Deciding from here is deliberately
- * not possible, because a table invites approving without reading.
+ * There are no verdict controls on this screen, deliberately: deciding happens
+ * in the deck, in the order the queue deals, and a table where a reader could
+ * pick out one row to approve would quietly undo the whole point of that
+ * order. This is where you come to look something up afterwards.
  */
-export default async function SubmissionsPage({
+export default async function AdminSubmissionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; cadence?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; cadence?: string; page?: string }>;
 }) {
   await requireAdmin();
-  const { filter = "all", cadence: rawCadence } = await searchParams;
-  const cadence = isCadence(rawCadence) ? rawCadence : "any";
+  const params = await searchParams;
 
-  const status =
-    filter === "pending"
-      ? { status: "PENDING" as const }
-      : filter === "approved"
-        ? { status: "APPROVED" as const }
-        : filter === "rejected"
-          ? { status: "REJECTED" as const }
-          : {};
+  const page = Math.max(1, Number(params.page ?? "1") || 1);
+  const search = (params.q ?? "").trim();
+  const status = params.status ?? "all";
+  const cadence = params.cadence ?? "all";
 
-  const where: Prisma.SubmissionWhereInput = { ...status, ...CADENCE_WHERE[cadence] };
+  const where: Prisma.SubmissionWhereInput = {};
+  if (status !== "all") where.status = status as "PENDING" | "APPROVED" | "REJECTED";
+  if (cadence === "none") where.period = null;
+  else if (cadence !== "all") where.period = cadence as "WEEKLY" | "MONTHLY";
+  if (search) {
+    where.OR = [
+      { user: { name: { contains: search, mode: "insensitive" } } },
+      { user: { email: { contains: search, mode: "insensitive" } } },
+      { quest: { title: { contains: search, mode: "insensitive" } } },
+    ];
+  }
 
-  const [rows, pending, approved, rejected, cadenced] = await Promise.all([
+  const [total, rows, counts] = await Promise.all([
+    db.submission.count({ where }),
     db.submission.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 100,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        quest: {
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            region: true,
-            difficulty: true,
-            distance: true,
-            elevationGain: true,
-            duration: true,
-          },
-        },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        reviewedAt: true,
+        retreated: true,
+        period: true,
+        slotKey: true,
+        photos: true,
+        stravaUrl: true,
+        distance: true,
+        elevation: true,
+        user: { select: { id: true, name: true } },
+        quest: { select: { id: true, title: true, region: true, difficulty: true } },
         reviewedBy: { select: { name: true } },
       },
     }),
-    db.submission.count({ where: { status: "PENDING" } }),
-    db.submission.count({ where: { status: "APPROVED" } }),
-    db.submission.count({ where: { status: "REJECTED" } }),
-    db.submission.count({ where: { period: { not: null } } }),
+    Promise.all([
+      db.submission.count({ where: { status: "PENDING" } }),
+      db.submission.count({ where: { status: "APPROVED" } }),
+      db.submission.count({ where: { status: "REJECTED" } }),
+      db.submission.count({ where: { retreated: true } }),
+    ]),
   ]);
 
-  const decided = approved + rejected;
+  const [pending, approved, rejected, retreats] = counts;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>The record</Eyebrow>
-          <h1>Submissions.</h1>
-          <p>What people filed, and what was decided. Open any one to read it and change the verdict.</p>
-        </div>
-        <Link href="/admin/review" className="btn btn-signal btn-sm">
-          Open review deck
-        </Link>
-      </Reveal>
+      <PageHeader
+        kicker="The record"
+        title="Submissions"
+        lede="Everything ever filed. No verdicts are given here — deciding happens in the deck, in the order the queue deals."
+        right={
+          <Link href="/admin/review" className="sq-btn sq-btn-primary" style={{ background: "var(--pine)" }}>
+            Open the review deck
+          </Link>
+        }
+      />
 
-      <Reveal delay={stagger(0)} className="mb-5">
-        <StatGrid
-          items={[
-            { label: "Pending", value: pending },
-            { label: "Approved", value: approved },
-            { label: "Declined", value: rejected },
-            {
-              label: "Approval rate",
-              value: 0,
-              display: decided > 0 ? `${Math.round((approved / decided) * 100)}%` : "—",
-              foot: `${decided} decided`,
-            },
-            {
-              label: "Weekly / monthly",
-              value: cadenced,
-              foot: "Filed against a slot",
-            },
-          ]}
-        />
-      </Reveal>
+      <StatGrid>
+        <StatTile label="Waiting" count={pending} countId="subs-pending" index={0} />
+        <StatTile label="Approved" count={approved} countId="subs-approved" index={1} />
+        <StatTile label="Sent back" count={rejected} countId="subs-rejected" index={2} />
+        <StatTile label="Retreats" count={retreats} countId="subs-retreats" index={3} />
+      </StatGrid>
 
-      <Reveal delay={stagger(1)}>
-        <Panel flush>
-          <PanelHead title="Filed" aside={<Tag tone="ghost">{rows.length} shown</Tag>} />
-
-          <div className="admin-filters">
-            <nav aria-label="Verdict">
-              {FILTERS.map((item) => (
-                <Link
-                  key={item.key}
-                  href={`/admin/submissions?filter=${item.key}&cadence=${cadence}`}
-                  aria-current={item.key === filter ? "page" : undefined}
-                  scroll={false}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-            <nav aria-label="Cadence">
-              {CADENCES.map((item) => (
-                <Link
-                  key={item.key}
-                  href={`/admin/submissions?filter=${filter}&cadence=${item.key}`}
-                  aria-current={item.key === cadence ? "page" : undefined}
-                  scroll={false}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-
-          <SubmissionsTable
-            rows={rows.map((row) => ({
-              id: row.id,
-              status: row.status,
-              note: row.note,
-              photos: row.photos,
-              stravaUrl: row.stravaUrl,
-              distance: row.distance,
-              elevation: row.elevation,
-              movingTime: row.movingTime,
-              retreated: row.retreated,
-              reviewNote: row.reviewNote,
-              reviewedAt: row.reviewedAt?.toISOString() ?? null,
-              reviewedBy: row.reviewedBy?.name ?? null,
-              createdAt: row.createdAt.toISOString(),
-              cadence: row.period
-                ? {
-                    period: row.period,
-                    label: slotKeyLabel(row.period, row.slotKey ?? ""),
-                  }
-                : null,
-              author: { id: row.user.id, name: row.user.name, email: row.user.email },
-              quest: row.quest,
-            }))}
+      <div style={{ marginTop: 16 }}>
+        <SqFilterBar>
+          <SqParamSearch name="q" value={search} label="Find" placeholder="Person or quest" />
+          <SqParamSelect
+            name="status"
+            value={status}
+            label="Verdict"
+            options={[
+              { value: "all", label: "Any" },
+              { value: "PENDING", label: "Waiting" },
+              { value: "APPROVED", label: "Approved" },
+              { value: "REJECTED", label: "Sent back" },
+            ]}
           />
-        </Panel>
-      </Reveal>
+          <SqParamSelect
+            name="cadence"
+            value={cadence}
+            label="Cadence"
+            options={[
+              { value: "all", label: "Any" },
+              { value: "MONTHLY", label: "Monthly" },
+              { value: "WEEKLY", label: "Weekly" },
+              { value: "none", label: "Off-cadence" },
+            ]}
+          />
+        </SqFilterBar>
+      </div>
+
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            Filed
+          </h2>
+          <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+            {rows.length} of {total.toLocaleString("en-GB")}
+          </span>
+        </div>
+
+        {rows.length === 0 ? (
+          <div style={{ padding: 26 }}>
+            <EmptyState glyph="inbox" title="Nothing matches that" body="Clear a filter and try again." />
+          </div>
+        ) : (
+          <div className="sq-scroll-x">
+            <table className="sq-table" style={{ minWidth: 900 }}>
+              <thead>
+                <tr>
+                  <th style={{ paddingLeft: 22 }}>Who</th>
+                  <th>Quest</th>
+                  <th>Cadence</th>
+                  <th>Figures</th>
+                  <th>Evidence</th>
+                  <th>Verdict</th>
+                  <th style={{ paddingRight: 22 }}>Read</th>
+                </tr>
+              </thead>
+              <tbody className="sq-stagger">
+                {rows.map((row, index) => (
+                  <tr key={row.id} style={{ ["--i" as string]: index }}>
+                    <td style={{ paddingLeft: 22 }}>
+                      <Link
+                        href={`/admin/users/${row.user.id}`}
+                        style={{ display: "flex", alignItems: "center", gap: 9, color: "var(--color-text)" }}
+                      >
+                        <Avatar name={row.user.name} size={26} square />
+                        <span>{row.user.name}</span>
+                      </Link>
+                    </td>
+                    <td>
+                      <Link href={`/quests/${row.quest.id}`} style={{ color: "var(--color-text)" }}>
+                        {row.quest.title}
+                      </Link>
+                      <span className="sq-mono" style={{ display: "block", fontSize: 10, color: "var(--ink-3)" }}>
+                        {row.quest.region} · {row.quest.difficulty}
+                        {row.retreated ? " · retreat" : ""}
+                      </span>
+                    </td>
+                    <td className="sq-table-num">
+                      {row.period ? slotKeyLabel(row.period, row.slotKey ?? "") : "—"}
+                    </td>
+                    <td className="sq-table-num">
+                      {row.distance != null ? `${row.distance.toFixed(1)} km` : "—"}
+                      {row.elevation != null ? ` · ${row.elevation} m` : ""}
+                    </td>
+                    <td className="sq-table-num">
+                      {row.photos.length} {row.photos.length === 1 ? "photo" : "photos"}
+                      {row.stravaUrl ? " · Strava" : ""}
+                    </td>
+                    <td>
+                      <Tag
+                        tone={row.status === "APPROVED" ? "green" : row.status === "REJECTED" ? "stamp" : "plain"}
+                        small
+                      >
+                        {row.status}
+                      </Tag>
+                    </td>
+                    <td className="sq-table-num" style={{ paddingRight: 22, color: "var(--ink-3)" }}>
+                      {row.reviewedAt
+                        ? `${DATE.format(row.reviewedAt)}${row.reviewedBy ? ` · ${firstName(row.reviewedBy.name)}` : ""}`
+                        : `filed ${DATE.format(row.createdAt)}`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {pages > 1 ? (
+        <nav style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }} aria-label="Pages">
+          {page > 1 ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={href(params, page - 1)}>
+              ← Newer
+            </Link>
+          ) : null}
+          <span className="sq-mono" style={{ alignSelf: "center", fontSize: 11, color: "var(--ink-3)" }}>
+            {page} of {pages}
+          </span>
+          {page < pages ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={href(params, page + 1)}>
+              Older →
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </>
   );
+}
+
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? name;
+}
+
+function href(params: Record<string, string | undefined>, page: number): string {
+  const next = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value && key !== "page") next.set(key, value);
+  }
+  next.set("page", String(page));
+  return `/admin/submissions?${next.toString()}`;
 }

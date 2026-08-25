@@ -1,192 +1,303 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 
-import { BarSeries, RankBars, TrendArea } from "@/components/admin/charts";
-import { StatGrid } from "@/components/admin/stat-grid";
-import { Reveal } from "@/components/app/motion";
-import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
-import {
-  getAdminOverview,
-  getDifficultySplit,
-  getQuestSeries,
-  getTopLocations,
-  getTopRegions,
-} from "@/lib/admin/stats";
+import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
+import { Bar, EmptyState, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
+import { getDifficultySplit, getTopLocations } from "@/lib/admin/stats";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { stagger } from "@/lib/motion";
-import { formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Quests · Admin" };
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 40;
+const WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "2-digit" });
+const GRADES = ["EASY", "MODERATE", "HARD", "EXPERT"] as const;
+
 /**
- * What the generator has actually produced.
+ * The catalogue, from behind the desk.
  *
- * The engine's claim is that it never repeats itself, so the figures that
- * matter here are spread rather than volume: how many distinct places and
- * signatures came out of it, and whether the grades it hands out match the
- * grades people ask for.
+ * Spread matters more than volume here — the engine's claim is that it does
+ * not repeat itself, and the two panels under the figures are what let
+ * somebody check that claim rather than take it. The list is the whole
+ * catalogue, filtered, with the editor one click away from every row.
  */
-export default async function AdminQuestsPage() {
+export default async function AdminQuestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; grade?: string; state?: string; page?: string }>;
+}) {
   await requireAdmin();
+  const params = await searchParams;
 
-  const [overview, series, difficulty, regions, locations, aggregate, distinct, recent] =
-    await Promise.all([
-      getAdminOverview(),
-      getQuestSeries(30),
-      getDifficultySplit(),
-      getTopRegions(6),
-      getTopLocations(8),
-      db.quest.aggregate({
-        _avg: { distance: true, elevationGain: true, duration: true },
-      }),
-      db.quest.findMany({
-        select: { signature: true, location: true },
-      }),
-      db.quest.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        select: {
-          id: true,
-          number: true,
-          title: true,
-          location: true,
-          region: true,
-          difficulty: true,
-          distance: true,
-          elevationGain: true,
-          createdAt: true,
-        },
-      }),
-    ]);
+  const page = Math.max(1, Number(params.page ?? "1") || 1);
+  const search = (params.q ?? "").trim();
+  const grade = params.grade ?? "all";
+  const state = params.state ?? "all";
 
-  const distinctSignatures = new Set(distinct.map((quest) => quest.signature)).size;
-  const distinctLocations = new Set(distinct.map((quest) => quest.location)).size;
+  const where: Prisma.QuestWhereInput = {};
+  if (grade !== "all") where.difficulty = grade as (typeof GRADES)[number];
+  if (state === "published") where.published = true;
+  if (state === "draft") where.published = false;
+  if (state === "booked") where.schedules = { some: {} };
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: "insensitive" } },
+      { location: { contains: search, mode: "insensitive" } },
+      { region: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  const [total, quests, counts, grades, locations] = await Promise.all([
+    db.quest.count({ where }),
+    db.quest.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        number: true,
+        title: true,
+        location: true,
+        region: true,
+        difficulty: true,
+        distance: true,
+        elevationGain: true,
+        published: true,
+        createdAt: true,
+        _count: { select: { history: true, schedules: true } },
+      },
+    }),
+    Promise.all([
+      db.quest.count(),
+      db.quest.count({ where: { published: true } }),
+      db.quest.groupBy({ by: ["region"], _count: { _all: true } }),
+      db.questSchedule.count(),
+    ]),
+    getDifficultySplit(),
+    getTopLocations(6),
+  ]);
+
+  const [all, published, regions, booked] = counts;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const gradeMax = Math.max(1, ...grades.map((entry) => entry.value));
+  const locationMax = Math.max(1, ...locations.map((entry) => entry.value));
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>The engine</Eyebrow>
-          <h1>Quests.</h1>
-          <p>What has come out of the generator, and how widely it has spread.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Tag tone="ghost">{`${overview.quests} generated`}</Tag>
-          <Link href="/admin/quests/all" className="btn btn-ghost btn-sm">
-            Browse all quests
+      <PageHeader
+        kicker="The engine"
+        title="Quests"
+        lede="What has come out of the engine, and how widely it has spread. Spread matters more than volume — the claim is that it never repeats itself."
+        right={
+          <Link href="/admin/quests/new" className="sq-btn sq-btn-primary" style={{ background: "var(--pine)" }}>
+            Write a quest
           </Link>
-        </div>
-      </Reveal>
+        }
+      />
 
-      <Reveal>
-        <StatGrid
-          items={[
-            { label: "Generated", value: overview.quests, foot: "Excludes showcase quests" },
-            {
-              label: "Distinct signatures",
-              value: distinctSignatures,
-              foot:
-                overview.quests > 0
-                  ? `${Math.round((distinctSignatures / overview.quests) * 100)}% unique`
-                  : undefined,
-            },
-            { label: "Trailheads used", value: distinctLocations },
-            {
-              label: "Avg. distance",
-              value: 0,
-              display: `${(aggregate._avg.distance ?? 0).toFixed(1)} km`,
-            },
-            {
-              label: "Avg. ascent",
-              value: 0,
-              display: `${Math.round(aggregate._avg.elevationGain ?? 0)} m`,
-            },
-            {
-              label: "Logged",
-              value: overview.logged,
-              foot: `${Math.round(overview.completionRate * 100)}% of issued`,
-            },
-          ]}
-        />
-      </Reveal>
+      <StatGrid>
+        <StatTile label="In the catalogue" count={all} countId="quests-all" index={0} />
+        <StatTile label="Published" count={published} countId="quests-published" index={1} />
+        <StatTile label="Drafts" count={all - published} countId="quests-drafts" index={2} />
+        <StatTile label="Regions covered" count={regions.length} countId="quests-regions" index={3} />
+        <StatTile label="Slots booked" count={booked} countId="quests-booked" index={4} />
+      </StatGrid>
 
-      <div className="chart-grid">
-        <Reveal delay={stagger(0)}>
-          <TrendArea
-            title="Issued and logged · 30 days"
-            points={series.map((point) => ({
-              label: point.label,
-              value: point.value,
-              part: point.part,
-            }))}
-            wholeLabel="Issued"
-            partLabel="Logged since"
-          />
-        </Reveal>
+      <section className="sq-grid" style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
+        <article className="sq-card sq-pad-sm">
+          <h3 className="sq-h2" style={{ fontSize: 17, marginBottom: 12 }}>
+            Grades handed out
+          </h3>
+          <ul style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+            {grades.map((entry, index) => (
+              <li
+                key={entry.key}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "80px minmax(0,1fr) 52px",
+                  gap: 12,
+                  alignItems: "center",
+                  fontSize: 13,
+                }}
+              >
+                <span>{entry.label}</span>
+                <Bar
+                  pct={(entry.value / gradeMax) * 100}
+                  fill={["var(--color-accent-300)", "var(--color-accent-400)", "var(--moss)", "var(--pine)"][index]}
+                />
+                <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12, textAlign: "right" }}>
+                  {entry.value}
+                </b>
+              </li>
+            ))}
+          </ul>
+        </article>
 
-        <Reveal delay={stagger(1)}>
-          <BarSeries title="Grades handed out" points={difficulty} unitLabel="quests" />
-        </Reveal>
-
-        <Reveal delay={stagger(2)}>
-          <RankBars title="Busiest regions" rows={regions} unitLabel="quests" />
-        </Reveal>
-
-        <Reveal delay={stagger(3)}>
-          <RankBars title="Busiest trailheads" rows={locations} unitLabel="quests" />
-        </Reveal>
-      </div>
-
-      <Reveal delay={stagger(4)} className="mt-5">
-        <Panel flush>
-          <PanelHead
-            title="Latest generated"
-            aside={
-              <Link href="/admin/quests/all?sort=newest" className="btn btn-ghost btn-sm">
-                All quests, filtered
-              </Link>
-            }
-          />
-          {recent.length === 0 ? (
-            <p className="chart-empty">The generator hasn&apos;t run yet.</p>
+        <article className="sq-tinted sq-pad-sm">
+          <h3 className="sq-h2" style={{ fontSize: 17, marginBottom: 12 }}>
+            Busiest trailheads
+          </h3>
+          {locations.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--ink-3)" }}>Nothing has been issued yet.</p>
           ) : (
-            <ul>
-              {recent.map((quest, index) => (
-                <Reveal
-                  as="li"
-                  key={quest.id}
-                  delay={stagger(index, 8)}
-                  className="admin-row border-b border-line px-5 py-4 last:border-b-0"
+            <ul style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              {locations.map((entry) => (
+                <li
+                  key={entry.label}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(80px,110px) minmax(0,1fr) 44px",
+                    gap: 12,
+                    alignItems: "center",
+                    fontSize: 13,
+                  }}
                 >
-                  <span className="qc-id w-[92px] shrink-0">
-                    {quest.number ? `№ ${String(quest.number).padStart(4, "0")}` : "—"}
+                  <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {entry.label}
                   </span>
-                  <span className="min-w-[min(100%,18rem)] flex-1">
-                    <b className="block font-serif text-[16px] font-semibold tracking-[-0.02em]">
-                      {quest.title}
-                    </b>
-                    <span className="meta mt-1 block normal-case tracking-[0.06em]">
-                      {quest.location} · {quest.region}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-4 font-mono text-[11px] text-ink-2">
-                    <span>{quest.distance.toFixed(1)} km</span>
-                    <span>{Math.round(quest.elevationGain)} m ↑</span>
-                  </span>
-                  <Tag tone={quest.difficulty === "EXPERT" || quest.difficulty === "HARD" ? "warm" : "ghost"}>
-                    {quest.difficulty}
-                  </Tag>
-                  <span className="meta hidden w-24 shrink-0 md:inline">
-                    {formatDate(quest.createdAt)}
-                  </span>
-                </Reveal>
+                  <Bar pct={(entry.value / locationMax) * 100} />
+                  <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12, textAlign: "right" }}>
+                    {entry.value}
+                  </b>
+                </li>
               ))}
             </ul>
           )}
-        </Panel>
-      </Reveal>
+        </article>
+      </section>
+
+      <div style={{ marginTop: 16 }}>
+        <SqFilterBar>
+          <SqParamSearch name="q" value={search} label="Find" placeholder="Title, trailhead or region" />
+          <SqParamSelect
+            name="grade"
+            value={grade}
+            label="Grade"
+            options={[
+              { value: "all", label: "Any grade" },
+              ...GRADES.map((value) => ({ value, label: value.charAt(0) + value.slice(1).toLowerCase() })),
+            ]}
+          />
+          <SqParamSelect
+            name="state"
+            value={state}
+            label="State"
+            options={[
+              { value: "all", label: "Everything" },
+              { value: "published", label: "Published" },
+              { value: "draft", label: "Drafts" },
+              { value: "booked", label: "Booked into a slot" },
+            ]}
+          />
+        </SqFilterBar>
+      </div>
+
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            Latest written
+          </h2>
+          <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+            {quests.length} of {total.toLocaleString("en-GB")}
+          </span>
+        </div>
+
+        {quests.length === 0 ? (
+          <div style={{ padding: 26 }}>
+            <EmptyState
+              glyph="map"
+              title="No quest matches that"
+              body="Clear a filter, or write one."
+              action={
+                <Link href="/admin/quests/new" className="sq-btn sq-btn-primary sq-btn-sm">
+                  Write a quest
+                </Link>
+              }
+            />
+          </div>
+        ) : (
+          <ul className="sq-stagger">
+            {quests.map((quest, index) => (
+              <li key={quest.id} style={{ ["--i" as string]: index }}>
+                <Link
+                  href={`/admin/quests/${quest.id}`}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0,1fr) auto auto auto auto",
+                    gap: 16,
+                    alignItems: "center",
+                    padding: "13px 22px",
+                    borderTop: "1px solid var(--line-2)",
+                    color: "var(--color-text)",
+                  }}
+                >
+                  <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                    {quest.number ? `№ ${String(quest.number).padStart(4, "0")}` : "—"}
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <b style={{ display: "block", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16 }}>
+                      {quest.title}
+                    </b>
+                    <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+                      {quest.location} · {quest.region} · issued to {quest._count.history}
+                    </span>
+                  </span>
+                  <span className="sq-mono" style={{ fontSize: 11, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
+                    {quest.distance.toFixed(1)} km · {quest.elevationGain} m
+                  </span>
+                  <Tag tone={quest.difficulty === "HARD" || quest.difficulty === "EXPERT" ? "stamp" : "green"} small>
+                    {quest.difficulty}
+                  </Tag>
+                  {quest.published ? (
+                    quest._count.schedules > 0 ? (
+                      <Tag small>BOOKED</Tag>
+                    ) : (
+                      <span />
+                    )
+                  ) : (
+                    <Tag tone="stamp" small>
+                      DRAFT
+                    </Tag>
+                  )}
+                  <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                    {WHEN.format(quest.createdAt)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {pages > 1 ? (
+        <nav style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }} aria-label="Pages">
+          {page > 1 ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={href(params, page - 1)}>
+              ← Newer
+            </Link>
+          ) : null}
+          <span className="sq-mono" style={{ alignSelf: "center", fontSize: 11, color: "var(--ink-3)" }}>
+            {page} of {pages}
+          </span>
+          {page < pages ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={href(params, page + 1)}>
+              Older →
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </>
   );
+}
+
+function href(params: Record<string, string | undefined>, page: number): string {
+  const next = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value && key !== "page") next.set(key, value);
+  }
+  next.set("page", String(page));
+  return `/admin/quests?${next.toString()}`;
 }

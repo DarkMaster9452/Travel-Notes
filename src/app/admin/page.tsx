@@ -1,248 +1,342 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { RankBars, TrendArea } from "@/components/admin/charts";
-import { QueueList, ScopeToggle, TopNotice, Vital } from "@/components/admin/desk";
-import { Reveal } from "@/components/app/motion";
-import { Eyebrow, IconArrowRight } from "@/components/field";
+import { SqColumnChart, SqSplitBar, SqStackedBars } from "@/components/sq/charts";
+import { PageHeader, StatGrid, StatTile } from "@/components/sq/ui";
 import { getAdminNotices } from "@/lib/admin/notifications";
-import { requireAdmin } from "@/lib/auth/guards";
 import {
-  RANGES,
   getAdminOverview,
   getDifficultySplit,
-  getFiledSeries,
-  getQueueVitals,
-  getReviewQueue,
-  getTopLocations,
-  getTopRegions,
-  isRangeKey,
-  type RangeKey,
+  getPlanSplit,
+  getQuestSeries,
+  getRevenueSummary,
+  getSignupSeries,
 } from "@/lib/admin/stats";
-import { stagger } from "@/lib/motion";
+import { getReviewQueue } from "@/lib/admin/review-queue";
+import { requireAdmin } from "@/lib/auth/guards";
+import { formatPrice } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Overview · Admin" };
 export const dynamic = "force-dynamic";
 
-/**
- * The admin overview.
- *
- * One subject: the review queue. Everything above the charts is about who is
- * waiting for a verdict, because that is the only thing in this panel with a
- * person on the other end of it — a submission sitting for four days is
- * somebody who went out, did the thing, filed their proof and has heard
- * nothing back. Accounts, revenue and the catalogue all have their own pages
- * and none of them is urgent in that way.
- *
- * The two panels at the bottom are the only charts left of the six this page
- * used to carry, and they are the two that answer a question the queue raises
- * rather than changing the subject: *is the desk keeping up* (filed against
- * decided, over a window you choose) and *where is the work coming from*.
- *
- * Both controls write a search param instead of holding client state, so the
- * page stays one server render and a chosen view can be linked to.
- */
-
-/** Said in words under the headline figure — "1m" is a control, not a label. */
-const RANGE_CAPTION: Record<RangeKey, string> = {
-  "1w": "in the last week",
-  "1m": "in the last month",
-  "6m": "in the last six months",
-  "1y": "in the last year",
+const TONE_COLOUR: Record<string, string> = {
+  critical: "var(--signal)",
+  warning: "var(--signal-2)",
+  info: "var(--sage)",
+  clear: "var(--moss)",
 };
 
-const RANK_VIEWS = {
-  regions: { label: "Regions", title: "Busiest regions", unit: "quests" },
-  grades: { label: "Grades", title: "Quests by grade", unit: "quests" },
-  places: { label: "Trailheads", title: "Most-used trailheads", unit: "quests" },
-} as const;
-
-type RankKey = keyof typeof RANK_VIEWS;
-
-function isRankKey(value: string | undefined): value is RankKey {
-  return value !== undefined && value in RANK_VIEWS;
-}
-
-export default async function AdminOverviewPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ range?: string; rank?: string }>;
-}) {
+/**
+ * The panel's front page.
+ *
+ * Built around the queue rather than around the numbers: what needs attention
+ * first, then the figures, then the shape of the month. Every figure is a live
+ * count taken when the page loaded — nothing here is cached or rolled up, and
+ * the page says so.
+ */
+export default async function AdminOverviewPage() {
   await requireAdmin();
 
-  const params = await searchParams;
-  const range: RangeKey = isRangeKey(params.range) ? params.range : "1m";
-  const rank: RankKey = isRankKey(params.rank) ? params.rank : "regions";
-
-  const [notices, overview, vitals, queue, filed, regions, grades, places] = await Promise.all([
-    getAdminNotices(),
+  const [overview, notices, queue, signups, quests, plans, grades, revenue] = await Promise.all([
     getAdminOverview(),
-    getQueueVitals(),
-    getReviewQueue(6),
-    getFiledSeries(range),
-    getTopRegions(6),
+    getAdminNotices(),
+    getReviewQueue(100),
+    getSignupSeries(30),
+    getQuestSeries(30),
+    getPlanSplit(),
     getDifficultySplit(),
-    getTopLocations(6),
+    getRevenueSummary(),
   ]);
 
-  const rankRows = rank === "regions" ? regions : rank === "grades" ? grades : places;
-  const filedTotal = filed.reduce((sum, point) => sum + point.value, 0);
-  const rankTotal = rankRows.reduce((sum, row) => sum + row.value, 0);
-  const scope = { range, rank };
+  const open = notices.filter((notice) => notice.tone !== "clear");
+  const oldest = queue.cards[0]?.filedAt ? daysSince(queue.cards[0].filedAt) : null;
 
   return (
     <>
-      <Reveal as="header" className="desk-head">
-        <div>
-          <Eyebrow>Behind the desk</Eyebrow>
-          <h1>The queue.</h1>
+      <PageHeader
+        kicker="Behind the desk"
+        title="Overview"
+        lede="Every figure on this page is a live count, taken when you loaded it."
+        right={
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/admin/database" className="sq-btn sq-btn-ghost">
+              Inspect the database
+            </Link>
+            <Link href="/admin/review" className="sq-btn sq-btn-primary" style={{ background: "var(--pine)" }}>
+              Open the review deck
+            </Link>
+          </div>
+        }
+      />
+
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            Needs attention
+          </h2>
+          <span className="sq-kicker-sm" style={{ fontSize: 10.5, letterSpacing: "0.08em" }}>
+            {open.length} open
+          </span>
         </div>
-
-        <Link href="/admin/review" className="btn btn-primary">
-          {vitals.pending > 0 ? `Review ${vitals.pending} waiting` : "Open the review desk"}
-          <IconArrowRight width={14} height={14} />
-        </Link>
-      </Reveal>
-
-      {/* One grid for the whole page. Each block below names the area it
-          occupies rather than bringing its own columns, so the four vitals,
-          the queue and the two charts all sit on the same column edges. */}
-      <div className="desk-grid">
-        <Reveal className="desk-area-notice">
-          <TopNotice notice={notices[0] ?? null} total={notices.length} />
-        </Reveal>
-
-        {/* The queue's vital signs: what is waiting, how long the worst of it
-            has waited, how fast verdicts are actually turning around, and
-            whether the desk is keeping pace with what comes in. */}
-        <Reveal className="desk-area-vitalA">
-          <Vital
-            figure={{
-              label: "Waiting",
-              value: vitals.pending,
-              late: (vitals.oldestWaitDays ?? 0) >= 4,
-              foot:
-                vitals.oldestWaitDays === null
-                  ? "Queue is clear"
-                  : vitals.oldestWaitDays === 0
-                    ? "Oldest filed today"
-                    : `Oldest waited ${vitals.oldestWaitDays}d`,
-            }}
-          />
-        </Reveal>
-
-        <Reveal className="desk-area-vitalB" delay={stagger(1)}>
-          <Vital
-            figure={{
-              label: "Typical wait",
-              value: vitals.medianWaitHours === null ? "—" : `${vitals.medianWaitHours}h`,
-              foot:
-                vitals.medianWaitHours === null ? "Nothing decided yet" : "Median, last 7 days",
-            }}
-          />
-        </Reveal>
-
-        <Reveal className="desk-area-vitalC" delay={stagger(2)}>
-          <Vital
-            figure={{
-              label: "Decided",
-              value: vitals.decidedThisWeek,
-              foot: `${vitals.filedThisWeek} filed in the same week`,
-            }}
-          />
-        </Reveal>
-
-        <Reveal className="desk-area-vitalD" delay={stagger(3)}>
-          <Vital
-            figure={{
-              label: "Logged",
-              value: overview.logged,
-              foot: `${Math.round(overview.completionRate * 100)}% of issued`,
-            }}
-          />
-        </Reveal>
-
-        {/* The hero: the widest box on the grid, and the only one that is a
-            list of people rather than a figure. */}
-        <Reveal className="desk-area-queue">
-          <section className="desk-box" aria-labelledby="queue-heading">
-            <header className="desk-box-head">
-              <h2 id="queue-heading">Waiting on a verdict</h2>
-              <span className="desk-box-aside">
-                {vitals.pending === 0
-                  ? "Nothing pending"
-                  : `${vitals.pending} pending · weekly and monthly first`}
+        <ul className="sq-stagger">
+          {notices.map((notice, index) => (
+            <li
+              key={notice.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "14px 22px",
+                borderTop: "1px solid var(--line-2)",
+                ["--i" as string]: index,
+              }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 999,
+                  flex: "0 0 7px",
+                  background: TONE_COLOUR[notice.tone] ?? "var(--sage)",
+                }}
+              />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <b style={{ display: "block", fontSize: 14.5 }}>{notice.title}</b>
+                <span style={{ fontSize: 12.5, color: "var(--ink-2)" }}>{notice.detail}</span>
               </span>
-            </header>
-            <QueueList entries={queue} pending={vitals.pending} />
-          </section>
-        </Reveal>
+              <span
+                className="sq-kicker-sm"
+                style={{ fontSize: 10, color: TONE_COLOUR[notice.tone] ?? "var(--ink-3)" }}
+              >
+                {notice.tone}
+              </span>
+              <Link href={notice.href} style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
+                {notice.action} →
+              </Link>
+            </li>
+          ))}
+          {notices.length === 0 ? (
+            <li style={{ padding: "14px 22px", fontSize: 13, color: "var(--ink-3)" }}>
+              Nothing is asking for a decision.
+            </li>
+          ) : null}
+        </ul>
+      </section>
 
-        {/* Two charts, sharing the bottom row. One asks whether the desk is
-            keeping up; the other asks where the work is coming from. */}
-        <Reveal className="desk-area-trend" delay={stagger(1)}>
-          <section className="desk-box">
-            <header className="desk-box-head">
-              <div>
-                <h2>Proof filed</h2>
-                <p className="desk-figure">
-                  <b>{filedTotal}</b>
-                  <span>{RANGE_CAPTION[range]}</span>
-                </p>
-              </div>
-              <ScopeToggle
-                options={Object.entries(RANGES).map(([key, value]) => ({
-                  key,
-                  label: value.label,
-                }))}
-                active={range}
-                param="range"
-                params={scope}
-                label="Range"
-              />
-            </header>
-            <TrendArea
-              bare
-              title="Proof filed"
-              points={filed}
-              wholeLabel="Filed"
-              partLabel="Decided since"
-              note="Decided is nested inside filed, so the gap between the bands is the backlog."
-            />
-          </section>
-        </Reveal>
-
-        <Reveal className="desk-area-rank" delay={stagger(2)}>
-          <section className="desk-box">
-            <header className="desk-box-head">
-              <div>
-                <h2>{RANK_VIEWS[rank].title}</h2>
-                <p className="desk-figure">
-                  <b>{rankTotal}</b>
-                  <span>quests across {rankRows.length}</span>
-                </p>
-              </div>
-              <ScopeToggle
-                options={Object.entries(RANK_VIEWS).map(([key, value]) => ({
-                  key,
-                  label: value.label,
-                }))}
-                active={rank}
-                param="rank"
-                params={scope}
-                label="Breakdown"
-              />
-            </header>
-            <RankBars
-              bare
-              title={RANK_VIEWS[rank].title}
-              rows={rankRows}
-              unitLabel={RANK_VIEWS[rank].unit}
-            />
-          </section>
-        </Reveal>
+      <div style={{ marginTop: 16 }}>
+        <StatGrid>
+          <StatTile
+            label="Accounts"
+            count={overview.customers}
+            countId="admin-customers"
+            note={`${overview.newThisWeek} opened this week`}
+            index={0}
+          />
+          <StatTile
+            label="Subscribers"
+            count={overview.subscribers}
+            countId="admin-subs"
+            note={`${Math.round(overview.conversionRate * 100)}% of accounts`}
+            index={1}
+          />
+          <StatTile
+            label="Quests issued"
+            count={overview.issued}
+            countId="admin-issued"
+            note={`${Math.round(overview.completionRate * 100)}% logged`}
+            index={2}
+          />
+          <StatTile label="In the catalogue" count={overview.quests} countId="admin-quests" index={3} />
+          <StatTile
+            label="Live sessions"
+            count={overview.liveSessions}
+            countId="admin-sessions"
+            index={4}
+          />
+        </StatGrid>
       </div>
 
+      <section
+        className="sq-grid"
+        style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", alignItems: "start" }}
+      >
+        <article className="sq-slab" style={{ padding: "22px 24px" }}>
+          <span className="sq-kicker">Review queue</span>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 12, margin: "14px 0 6px" }}>
+            <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 42, lineHeight: 0.9 }}>
+              {queue.total}
+            </b>
+            <span style={{ fontSize: 13, paddingBottom: 6, color: "var(--forest-ink-3)" }}>
+              waiting on a reader
+            </span>
+          </div>
+          <p style={{ fontSize: 12.5, color: "var(--forest-ink-3)", marginBottom: 18 }}>
+            {oldest === null
+              ? "Nothing is waiting."
+              : `Oldest filed ${oldest === 0 ? "today" : `${oldest} ${oldest === 1 ? "day" : "days"} ago`} · ${queue.cadenced} carry a featured stamp`}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Link
+              href="/admin/review"
+              className="sq-btn sq-btn-block"
+              style={{ background: "var(--signal)", color: "#fff" }}
+            >
+              Start reading
+            </Link>
+            <Link
+              href="/admin/schedule"
+              className="sq-btn sq-btn-block"
+              style={{ border: "1px solid rgba(255,255,255,0.24)", color: "var(--forest-ink)" }}
+            >
+              Book next week&rsquo;s quest
+            </Link>
+            <Link
+              href="/admin/quests"
+              className="sq-btn sq-btn-block"
+              style={{ border: "1px solid rgba(255,255,255,0.24)", color: "var(--forest-ink)" }}
+            >
+              Publish a draft
+            </Link>
+          </div>
+        </article>
+
+        <div className="sq-grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))" }}>
+          <Trend
+            title="Accounts opened"
+            wholeLabel="Opened"
+            partLabel="Now paying"
+            series={signups}
+            note="The dark band is the share of that day's signups that now hold a live subscription."
+          />
+          <Trend
+            title="Quests issued"
+            wholeLabel="Issued"
+            partLabel="Logged"
+            series={quests}
+            note="Logged means proof was filed against it, not that the proof was approved."
+          />
+        </div>
+      </section>
+
+      <section
+        className="sq-grid"
+        style={{ marginTop: 16, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", alignItems: "start" }}
+      >
+        <article className="sq-tinted sq-pad-sm">
+          <h3 className="sq-h2" style={{ fontSize: 18, marginBottom: 16 }}>
+            Accounts by plan
+          </h3>
+          <SqSplitBar
+            parts={plans.map((plan, index) => ({
+              label: plan.label,
+              value: plan.value,
+              colour: ["var(--color-accent-300)", "var(--moss)", "var(--pine)"][index] ?? "var(--sage)",
+            }))}
+          />
+        </article>
+
+        <article className="sq-card sq-pad-sm">
+          <h3 className="sq-h2" style={{ fontSize: 18, marginBottom: 18 }}>
+            Quests by grade
+          </h3>
+          <SqColumnChart
+            columns={grades.map((grade, index) => ({
+              label: grade.label,
+              value: grade.value,
+              colour: ["var(--color-accent-300)", "var(--color-accent-400)", "var(--moss)", "var(--pine)"][index],
+            }))}
+          />
+        </article>
+
+        <article className="sq-card sq-pad-sm" style={{ borderColor: "var(--line)", boxShadow: "none" }}>
+          <div className="sq-section-head" style={{ marginBottom: 14 }}>
+            <h3 className="sq-h2" style={{ fontSize: 18 }}>
+              Recurring revenue
+            </h3>
+            <Link href="/admin/revenue" style={{ fontSize: 12.5 }}>
+              Revenue in full →
+            </Link>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 14, marginBottom: 16 }}>
+            <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 34, lineHeight: 0.9 }}>
+              {formatPrice(revenue.monthlyCents)}
+            </b>
+            <span className="sq-mono" style={{ fontSize: 12, paddingBottom: 5, color: "var(--ink-3)" }}>
+              list price · {revenue.live} live
+            </span>
+          </div>
+          <ul style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>
+            <li style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid var(--line-2)" }}>
+              <span>Renewing this week</span>
+              <b className="sq-mono" style={{ fontWeight: 500 }}>
+                {revenue.renewingSoon}
+              </b>
+            </li>
+            <li style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid var(--line-2)" }}>
+              <span>Cancelling at period end</span>
+              <b className="sq-mono" style={{ fontWeight: 500 }}>
+                {revenue.leaving}
+              </b>
+            </li>
+            <li style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid var(--line-2)" }}>
+              <span>Payment failed, retrying</span>
+              <b className="sq-mono" style={{ fontWeight: 500, color: "var(--signal)" }}>
+                {revenue.pastDue}
+              </b>
+            </li>
+          </ul>
+        </article>
+      </section>
     </>
   );
+}
+
+function Trend({
+  title,
+  wholeLabel,
+  partLabel,
+  series,
+  note,
+}: {
+  title: string;
+  wholeLabel: string;
+  partLabel: string;
+  series: { value: number; part: number }[];
+  note: string;
+}) {
+  const max = Math.max(1, ...series.map((point) => point.value));
+  const bars = series.map((point) => ({
+    whole: Math.max(0, ((point.value - point.part) / max) * 100),
+    part: (point.part / max) * 100,
+  }));
+
+  return (
+    <article className="sq-card sq-pad-sm">
+      <h3 className="sq-h2" style={{ fontSize: 16, marginBottom: 10 }}>
+        {title}
+      </h3>
+      <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
+        <Legend colour="var(--sage)" label={wholeLabel} />
+        <Legend colour="var(--pine)" label={partLabel} />
+      </div>
+      <SqStackedBars bars={bars} />
+      <p style={{ marginTop: 11, fontSize: 11.5, lineHeight: 1.5, color: "var(--ink-3)" }}>{note}</p>
+    </article>
+  );
+}
+
+function Legend({ colour, label }: { colour: string; label: string }) {
+  return (
+    <span
+      className="sq-mono"
+      style={{ fontSize: 10.5, display: "flex", alignItems: "center", gap: 5, color: "var(--ink-2)" }}
+    >
+      <i style={{ width: 8, height: 8, borderRadius: 2, background: colour, display: "block" }} />
+      {label}
+    </span>
+  );
+}
+
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 }

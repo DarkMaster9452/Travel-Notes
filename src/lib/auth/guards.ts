@@ -45,7 +45,29 @@ export async function requireUser(returnTo?: string): Promise<SessionUser> {
  */
 export async function requireAdmin(returnTo?: string): Promise<SessionUser> {
   const user = await requireUser(returnTo);
-  if (user.role !== "ADMIN") redirect("/dashboard");
+  if (!isStaff(user)) redirect("/dashboard");
+  return user;
+}
+
+/** Staff is either role that can open the panel. */
+export function isStaff(user: Pick<SessionUser, "role"> | null): boolean {
+  return user?.role === "ADMIN" || user?.role === "OWNER";
+}
+
+/**
+ * Require the owner.
+ *
+ * The one account that can change who else is staff. Guarded server-side on
+ * every request that could write a role, because the difference between staff
+ * and owner is the difference between "can decide things" and "can decide who
+ * decides things" — and a boundary the client could step over is not one.
+ *
+ * A signed-in admin who is not the owner is sent back to the panel rather than
+ * to login: they are authenticated and entitled to be here, just not to this.
+ */
+export async function requireOwner(returnTo?: string): Promise<SessionUser> {
+  const user = await requireUser(returnTo);
+  if (user.role !== "OWNER") redirect("/admin");
   return user;
 }
 
@@ -65,12 +87,12 @@ export async function requireAdmin(returnTo?: string): Promise<SessionUser> {
  */
 export async function requireClient(returnTo?: string): Promise<SessionUser> {
   const user = await requireUser(returnTo);
-  if (user.role === "ADMIN") redirect("/admin");
+  if (isStaff(user)) redirect("/admin");
   return user;
 }
 
 /** Where this account belongs when it lands on the site root. */
 export function homeFor(user: Pick<SessionUser, "role"> | null): string {
   if (!user) return "/";
-  return user.role === "ADMIN" ? "/admin" : "/dashboard";
+  return isStaff(user) ? "/admin" : "/dashboard";
 }
