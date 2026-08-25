@@ -380,6 +380,26 @@ export function IconBadge(props: IconProps) {
   );
 }
 
+/** Speech bubble. The back-office room, and nothing else. */
+export function IconChat(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M20.5 12.4c0 3.9-3.8 7-8.5 7a10 10 0 01-2.6-.34L4.2 20.8l1.1-3.5A6.6 6.6 0 013.5 12.4c0-3.9 3.8-7 8.5-7s8.5 3.1 8.5 7z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.6 11.4h6.8M8.6 14.4h4.2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function IconGear(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>

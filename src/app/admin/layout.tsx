@@ -2,6 +2,7 @@ import { logoutAction } from "@/app/(auth)/actions";
 import { DeskStatus } from "@/components/admin/desk-status";
 import { NotificationCenter } from "@/components/admin/notification-center";
 import { AdminShell, type NavItem } from "@/components/app/app-shell";
+import { countUnreadMessages } from "@/lib/admin/chat";
 import { getAdminNotices } from "@/lib/admin/notifications";
 import { getDeskStatus } from "@/lib/admin/stats";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -18,10 +19,13 @@ import { requireAdmin } from "@/lib/auth/guards";
  * no quests, no allowance, no stickers and no subscription, and a menu offering
  * them would be describing an account that doesn't exist.
  */
-function nav(pending: number): readonly NavItem[] {
+function nav(pending: number, unread: number): readonly NavItem[] {
   return [
     { href: "/admin", label: "Dashboard", icon: "grid" },
     { href: "/admin/review", label: "Review", icon: "compass", badge: pending },
+    // Staff only, and the one place in the panel that is about the people
+    // running it rather than about the product.
+    { href: "/admin/chat", label: "Back office", icon: "chat", badge: unread },
     { href: "/admin/submissions", label: "Submissions", icon: "inbox" },
     { href: "/admin/users", label: "Users", icon: "users" },
     { href: "/admin/quests", label: "Quests", icon: "map" },
@@ -38,15 +42,20 @@ function nav(pending: number): readonly NavItem[] {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin();
 
-  // Both of these belong to the shell rather than to any one page: the review
-  // badge is the number an admin needs before they have chosen where to go,
-  // and the notices are the panel saying what is wrong on whichever page they
+  // These belong to the shell rather than to any one page: the review badge
+  // and the chat badge are numbers an admin needs before they have chosen
+  // where to go, the desk card is the state of the queue on every page, and
+  // the notices are the panel saying what is wrong on whichever page they
   // happen to be standing on.
-  const [desk, notices] = await Promise.all([getDeskStatus(), getAdminNotices()]);
+  const [desk, notices, unread] = await Promise.all([
+    getDeskStatus(),
+    getAdminNotices(),
+    countUnreadMessages(user.id),
+  ]);
 
   return (
     <AdminShell
-      items={nav(desk.pending)}
+      items={nav(desk.pending, unread)}
       userName={user.name}
       userEmail={user.email}
       theme={user.theme}
