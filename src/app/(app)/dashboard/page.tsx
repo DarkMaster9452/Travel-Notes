@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LockGlyph } from "@/components/sq/icons";
 import { SqQuestCard, type QuestCardData } from "@/components/sq/quest-card";
 import { PageHeader, QuietLink, Stat, Tag } from "@/components/sq/ui";
+import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getLeaderboard } from "@/lib/leaderboard";
@@ -85,7 +86,7 @@ export default async function DashboardPage() {
       parkingLat: summary.parkingLat,
       parkingLng: summary.parkingLng,
       parkingName: summary.parkingName,
-      openAt: (open ? new Date(glance.closesAt.getTime() - windowLength(slot)) : now).toISOString(),
+      openAt: slotFor(slot, now).openAt.toISOString(),
       closeAt: glance.closesAt.toISOString(),
       status: glance.status,
       expert: expertStats
@@ -345,9 +346,4 @@ function neighbours<T extends { userId: string }>(rows: T[], userId: string): T[
   const index = rows.findIndex((row) => row.userId === userId);
   if (index === -1) return rows.slice(0, 5);
   return rows.slice(Math.max(0, index - 2), Math.max(0, index - 2) + 5);
-}
-
-/** How long a window runs, for the progress bar on an open card. */
-function windowLength(period: "WEEKLY" | "MONTHLY"): number {
-  return period === "WEEKLY" ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 }

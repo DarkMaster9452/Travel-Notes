@@ -47,6 +47,11 @@ export function SqMap({
   const [ready, setReady] = useState(false);
   const reduced = useReducedMotion();
 
+  // The effect depends on the *values* in `points`, not on the array's
+  // identity. Without this the map is torn down and rebuilt on every render of
+  // the parent — which, inside the quest editor, means on every keystroke.
+  const signature = JSON.stringify(points);
+
   useEffect(() => {
     const element = holder.current;
     if (!element || points.length === 0) return;
@@ -124,7 +129,8 @@ export function SqMap({
       cancelled = true;
       map?.remove();
     };
-  }, [points, zoom, interactive, drawRoute, reduced]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `signature` stands in for `points` by value; see above
+  }, [signature, zoom, interactive, drawRoute, reduced]);
 
   if (points.length === 0) {
     return (
