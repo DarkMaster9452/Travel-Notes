@@ -26,6 +26,13 @@ const serverSchema = z.object({
   STRIPE_PRICE_ID_EXPLORER_YEARLY: z.string().optional().default(""),
   STRIPE_PRICE_ID_ULTRA_MONTHLY: z.string().optional().default(""),
   STRIPE_PRICE_ID_ULTRA_YEARLY: z.string().optional().default(""),
+  STRAVA_CLIENT_ID: z.string().optional().default(""),
+  STRAVA_CLIENT_SECRET: z.string().optional().default(""),
+  /** Vercel Blob, for proof photographs. Empty disables uploads with a message. */
+  BLOB_READ_WRITE_TOKEN: z.string().optional().default(""),
+  /** Transactional email. Empty means notifications are logged, never sent. */
+  RESEND_API_KEY: z.string().optional().default(""),
+  EMAIL_FROM: z.string().optional().default("Summit Quest <quests@summitquest.app>"),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -46,6 +53,11 @@ function load(): ServerEnv {
     STRIPE_PRICE_ID_EXPLORER_YEARLY: process.env.STRIPE_PRICE_ID_EXPLORER_YEARLY,
     STRIPE_PRICE_ID_ULTRA_MONTHLY: process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY,
     STRIPE_PRICE_ID_ULTRA_YEARLY: process.env.STRIPE_PRICE_ID_ULTRA_YEARLY,
+    STRAVA_CLIENT_ID: process.env.STRAVA_CLIENT_ID,
+    STRAVA_CLIENT_SECRET: process.env.STRAVA_CLIENT_SECRET,
+    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    EMAIL_FROM: process.env.EMAIL_FROM,
   });
 
   if (!parsed.success) {

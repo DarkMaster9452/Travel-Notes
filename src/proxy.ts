@@ -13,15 +13,14 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/jwt";
 
 const PROTECTED = [
   "/dashboard",
-  "/history",
-  "/saved",
-  "/profile",
-  "/quests",
-  "/upgrade",
-  "/onboarding",
-  "/weekly",
   "/monthly",
-  "/achievements",
+  "/quests",
+  "/leaderboard",
+  "/stickers",
+  "/submissions",
+  "/people",
+  "/settings",
+  "/onboarding",
   // The panel too. Which *role* may be here is decided in `requireAdmin`,
   // against the database — the proxy can only tell that someone is signed in.
   "/admin",

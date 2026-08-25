@@ -6,6 +6,11 @@
    utility applied alongside them. */
 @import "../styles/field-guide.css" layer(components);
 
+/* The signed-in product (app + admin) is a separate, self-contained system,
+   scoped to `.sq` so it cannot reach the marketing page and the marketing
+   page cannot reach it. See the file header for why that scoping matters. */
+@import "../styles/summit.css" layer(components);
+
 /* ---------------------------------------------------------------------------
    SUMMIT QUEST — field guide design tokens
 

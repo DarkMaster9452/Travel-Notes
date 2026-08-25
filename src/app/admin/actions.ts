@@ -97,6 +97,44 @@ export async function reviewSubmissionAction(input: {
   };
 }
 
+/**
+ * Put the last verdict back in the queue.
+ *
+ * The deck is fast on purpose, and a fast deck needs a way back: this returns
+ * a decided submission to `PENDING` and clears the reviewer, the note and the
+ * timestamp, so the row reads as never-judged rather than as judged and then
+ * quietly amended. The completion it may have written is undone with it —
+ * a quest that counts as done because of a verdict that has been withdrawn is
+ * the one inconsistency this whole flow exists to prevent.
+ */
+export async function undoReviewAction(submissionId: string): Promise<AdminResult> {
+  await requireAdmin();
+
+  const submission = await db.submission.findUnique({
+    where: { id: submissionId },
+    select: { id: true, userId: true, questId: true, status: true },
+  });
+  if (!submission) return { ok: false, message: "That submission is gone." };
+  if (submission.status === "PENDING") return { ok: true };
+
+  await db.$transaction([
+    db.submission.update({
+      where: { id: submissionId },
+      data: { status: "PENDING", reviewedById: null, reviewedAt: null, reviewNote: null },
+    }),
+    db.questHistory.updateMany({
+      where: { userId: submission.userId, questId: submission.questId },
+      data: { completed: false, completedAt: null },
+    }),
+  ]);
+
+  revalidatePath("/admin/review");
+  revalidatePath("/admin/submissions");
+  revalidatePath("/admin");
+  revalidatePath("/submissions");
+  return { ok: true };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Accounts                                                                    */
 /* -------------------------------------------------------------------------- */

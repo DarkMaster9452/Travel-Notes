@@ -96,6 +96,47 @@ export function scoreEntry(entry: ScoredEntry): number {
   return Math.max(1, Math.round(entry.retreated ? base * RETREAT_MULTIPLIER : base));
 }
 
+/**
+ * The same arithmetic, itemised.
+ *
+ * The quest pages print "how it scores" as a list rather than a total, and a
+ * second copy of the sums written out in JSX would drift from `scoreEntry` the
+ * first time a constant moved. So the breakdown comes from here, and the total
+ * it reports is the total the board will actually use.
+ */
+export type ScoreLine = { what: string; points: number; muted?: boolean };
+
+export function scoreBreakdown(entry: ScoredEntry): { lines: ScoreLine[]; total: number } {
+  const grade = GRADE_POINTS[entry.difficulty];
+  const distance = Math.round(entry.distance * POINTS_PER_KM);
+  const ascent = Math.round(entry.elevationGain / METRES_PER_POINT);
+  const bonus = entry.featuredPeriod ? FEATURED_BONUS[entry.featuredPeriod] : 0;
+
+  const lines: ScoreLine[] = [
+    { what: `${title(entry.difficulty)} grade`, points: grade },
+    { what: `${entry.distance.toFixed(1)} km`, points: distance },
+    { what: `${Math.round(entry.elevationGain)} m of ascent`, points: ascent },
+  ];
+
+  if (bonus > 0) {
+    lines.push({
+      what: entry.featuredPeriod === "MONTHLY" ? "The monthly bonus" : "The weekly bonus",
+      points: bonus,
+    });
+  }
+
+  const total = scoreEntry(entry);
+  if (entry.retreated) {
+    lines.push({ what: "Honest retreat · half", points: total - (grade + distance + ascent + bonus), muted: true });
+  }
+
+  return { lines, total };
+}
+
+function title(value: string): string {
+  return value.charAt(0) + value.slice(1).toLowerCase();
+}
+
 /** The scoring rules, in the words the leaderboard page prints. */
 export const SCORING_NOTES: readonly string[] = [
   "Easy 10 · Moderate 20 · Hard 35 · Expert 55, for the grade.",

@@ -1,341 +1,279 @@
-import type { Prisma } from "@prisma/client";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Reveal } from "@/components/app/motion";
-import { SubmitProofButton } from "@/components/app/submit-proof";
-import {
-  EmptyState,
-  Eyebrow,
-  IconArrowRight,
-  IconMap,
-  IconPin,
-  QuestArt,
-  Tag,
-} from "@/components/field";
+import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
+import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { stagger } from "@/lib/motion";
-import { EMPTY_CADENCE, getQuestCadences } from "@/lib/quest/cadence";
+import type { Prisma } from "@prisma/client";
 
-export const metadata: Metadata = { title: "The database" };
+export const metadata: Metadata = { title: "Quest database" };
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 60;
-
-/* -------------------------------------------------------------------------- */
-/* Filters                                                                     */
-/* -------------------------------------------------------------------------- */
+const GRADES = ["EASY", "MODERATE", "HARD", "EXPERT"] as const;
+const PAGE_SIZE = 40;
 
 /**
- * Three controls, and no more.
+ * Everything the engine has ever written.
  *
- * This page had seven: cadence, grade, length band, "yours", sort, region and
- * a search box, stacked five rows deep above the quests. Every one of them was
- * defensible on its own and together they were a database admin's console
- * sitting on top of what is meant to be a shelf of things you might go and do.
+ * A member can file proof against anything published here, not only against
+ * what was issued to them — somebody who walked a route on Saturday should be
+ * able to log it on Sunday. So the table's job is to be findable: region,
+ * grade, cadence and month, all in the URL so a filtered view can be sent to
+ * somebody else and survive the back button.
  *
- * What survived is what somebody browsing actually asks: *is it hard*, *have I
- * done it*, and *where was that one called…*. Everything else — how long, which
- * region, whether it was once a monthly — is on the card, which is where you
- * were going to look anyway.
- */
-const GRADES = [
-  { key: "any", label: "Any grade" },
-  { key: "EASY", label: "Easy" },
-  { key: "MODERATE", label: "Moderate" },
-  { key: "HARD", label: "Hard" },
-  { key: "EXPERT", label: "Expert" },
-] as const;
-
-const SHOW = [
-  { key: "todo", label: "Still to do" },
-  { key: "all", label: "Everything" },
-  { key: "done", label: "Logged" },
-] as const;
-
-type Grade = (typeof GRADES)[number]["key"];
-type Show = (typeof SHOW)[number]["key"];
-
-type Filters = { q: string; grade: Grade; show: Show };
-
-function pick<T extends string>(
-  options: readonly { key: T }[],
-  value: string | undefined,
-  fallback: T,
-): T {
-  return options.some((option) => option.key === value) ? (value as T) : fallback;
-}
-
-function href(filters: Filters, change: Partial<Filters>): string {
-  const next = { ...filters, ...change };
-  const params = new URLSearchParams();
-  if (next.q) params.set("q", next.q);
-  if (next.grade !== "any") params.set("grade", next.grade);
-  if (next.show !== "todo") params.set("show", next.show);
-  const query = params.toString();
-  return query ? `/quests?${query}` : "/quests";
-}
-
-const GRADE_TONE = (grade: string) =>
-  grade === "EXPERT" || grade === "HARD" ? ("warm" as const) : ("pine" as const);
-
-/* -------------------------------------------------------------------------- */
-/* Page                                                                        */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Everything you could go and do.
- *
- * The quest in your hand is still assigned rather than chosen — that has not
- * changed. What this is, is the shelf: every quest we have written, open to
- * read and open to log, because somebody who walked a route on Saturday needs
- * to be able to find it and file it on Sunday.
- *
- * Nothing private is here. A quest generated for one account is that account's
- * and appears in nobody else's list.
+ * Rows this account holds are marked rather than filtered to the top. Where a
+ * quest sits in the list is a fact about the catalogue; whether it is yours is
+ * a fact about you, and the two should not be confused with each other.
  */
 export default async function QuestDatabasePage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<{ region?: string; grade?: string; cadence?: string; month?: string; q?: string; page?: string }>;
 }) {
   const user = await requireClient();
-
   const params = await searchParams;
-  const single = (key: string) => (typeof params[key] === "string" ? params[key] : undefined);
 
-  const filters: Filters = {
-    q: (single("q") ?? "").trim().slice(0, 80),
-    grade: pick(GRADES, single("grade"), "any"),
-    show: pick(SHOW, single("show"), "todo"),
-  };
+  const page = Math.max(1, Number(params.page ?? "1") || 1);
+  const grade = GRADES.includes((params.grade ?? "") as (typeof GRADES)[number]) ? params.grade : "all";
+  const region = params.region ?? "all";
+  const cadence = params.cadence ?? "all";
+  const month = params.month ?? "all";
+  const search = (params.q ?? "").trim();
 
-  /** The catalogue: published, authored quests. Never anybody's own copy. */
-  const visible: Prisma.QuestWhereInput = { published: true, isShowcase: true };
+  const where: Prisma.QuestWhereInput = { published: true };
+  if (grade !== "all") where.difficulty = grade as (typeof GRADES)[number];
+  if (region !== "all") where.region = region;
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: "insensitive" } },
+      { location: { contains: search, mode: "insensitive" } },
+      { region: { contains: search, mode: "insensitive" } },
+    ];
+  }
+  if (cadence !== "all") {
+    where.schedules = cadence === "none" ? { none: {} } : { some: { period: cadence as "WEEKLY" | "MONTHLY" } };
+  }
+  if (month !== "all") {
+    const from = new Date(`${month}-01T00:00:00.000Z`);
+    const to = new Date(from);
+    to.setUTCMonth(to.getUTCMonth() + 1);
+    where.createdAt = { gte: from, lt: to };
+  }
 
-  const done: Prisma.QuestWhereInput = {
-    submissions: { some: { userId: user.id, status: "APPROVED" } },
-  };
-
-  const where: Prisma.QuestWhereInput = {
-    ...visible,
-    ...(filters.show === "done" ? done : filters.show === "todo" ? { NOT: done } : {}),
-    ...(filters.grade === "any" ? {} : { difficulty: filters.grade }),
-    ...(filters.q
-      ? {
-          OR: [
-            { title: { contains: filters.q, mode: "insensitive" } },
-            { location: { contains: filters.q, mode: "insensitive" } },
-            { region: { contains: filters.q, mode: "insensitive" } },
-            { subtitle: { contains: filters.q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
-
-  const [quests, matching, total, loggedCount] = await Promise.all([
+  const [total, quests, regions, mine, months] = await Promise.all([
+    db.quest.count({ where }),
     db.quest.findMany({
       where,
-      // Hardest last: a shelf that opens on the expert routes is a shelf that
-      // reads as a wall. No sort control — there is one sensible order.
-      orderBy: [{ difficulty: "asc" }, { distance: "asc" }],
+      orderBy: [{ number: "desc" }, { createdAt: "desc" }],
+      skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: {
         id: true,
+        number: true,
         title: true,
-        subtitle: true,
         location: true,
         region: true,
         difficulty: true,
         distance: true,
         elevationGain: true,
-        duration: true,
-        coverImage: true,
-        terrain: true,
-        features: true,
-        submissions: { where: { userId: user.id }, select: { status: true }, take: 1 },
+        schedules: { select: { period: true }, take: 1 },
       },
     }),
-    db.quest.count({ where }),
-    db.quest.count({ where: visible }),
-    db.quest.count({ where: { ...visible, ...done } }),
+    db.quest.findMany({
+      where: { published: true },
+      distinct: ["region"],
+      orderBy: { region: "asc" },
+      select: { region: true },
+      take: 60,
+    }),
+    db.questHistory.findMany({
+      where: { userId: user.id },
+      select: { questId: true, completed: true },
+    }),
+    db.quest.findMany({
+      where: { published: true },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+      take: 400,
+    }),
   ]);
 
-  const cadences = await getQuestCadences(quests.map((quest) => quest.id));
-  const filtering = filters.q !== "" || filters.grade !== "any" || filters.show !== "todo";
+  const held = new Map(mine.map((row) => [row.questId, row.completed]));
+  const monthOptions = uniqueMonths(months.map((row) => row.createdAt));
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>Everything we have written</Eyebrow>
-          <h1>The database.</h1>
-          <p>
-            {total} quests, open to read and open to log — you don&apos;t have to be issued one to
-            file proof you did it.
-          </p>
-        </div>
-        <div className="qdb-count">
-          <b>{loggedCount}</b>
-          <span>of {total} logged</span>
-        </div>
-      </Reveal>
+      <PageHeader
+        kicker="Everything ever issued"
+        title="Quest database"
+        lede="Every quest the engine has written, including the ones that were never yours. Yours are marked, and anything here can be filed against."
+        right={<Tag small>{new Intl.NumberFormat("en-GB").format(total)} quests</Tag>}
+      />
 
-      <Reveal className="qdb-bar">
-        <form method="get" action="/quests" className="qdb-search">
-          <label className="sr-only" htmlFor="quest-search">
-            Search the database
-          </label>
-          <IconPin />
-          <input
-            id="quest-search"
-            name="q"
-            defaultValue={filters.q}
-            className="input"
-            placeholder="A place, a region, a title…"
-          />
-          {filters.grade !== "any" && <input type="hidden" name="grade" value={filters.grade} />}
-          {filters.show !== "todo" && <input type="hidden" name="show" value={filters.show} />}
-          <button type="submit" className="btn btn-primary btn-sm">
-            Search
-          </button>
-        </form>
+      <SqFilterBar>
+        <SqParamSearch name="q" value={search} label="Find" placeholder="Region or trailhead" />
+        <SqParamSelect
+          name="region"
+          value={region}
+          label="Region"
+          options={[
+            { value: "all", label: "Every region" },
+            ...regions.map((row) => ({ value: row.region, label: row.region })),
+          ]}
+        />
+        <SqParamSelect
+          name="grade"
+          value={grade ?? "all"}
+          label="Grade"
+          options={[
+            { value: "all", label: "Any grade" },
+            ...GRADES.map((value) => ({ value, label: title(value) })),
+          ]}
+        />
+        <SqParamSelect
+          name="cadence"
+          value={cadence}
+          label="Cadence"
+          options={[
+            { value: "all", label: "Any" },
+            { value: "MONTHLY", label: "Was a monthly" },
+            { value: "WEEKLY", label: "Was a weekly" },
+            { value: "none", label: "Never booked" },
+          ]}
+        />
+        <SqParamSelect
+          name="month"
+          value={month}
+          label="Written"
+          options={[{ value: "all", label: "Any month" }, ...monthOptions]}
+        />
+      </SqFilterBar>
 
-        <nav className="qdb-chips" aria-label="Grade">
-          {GRADES.map((grade) => (
-            <Link
-              key={grade.key}
-              href={href(filters, { grade: grade.key })}
-              aria-current={grade.key === filters.grade ? "page" : undefined}
-              scroll={false}
-            >
-              {grade.label}
-            </Link>
-          ))}
-        </nav>
-
-        <nav className="qdb-chips" aria-label="Show">
-          {SHOW.map((option) => (
-            <Link
-              key={option.key}
-              href={href(filters, { show: option.key })}
-              aria-current={option.key === filters.show ? "page" : undefined}
-              scroll={false}
-            >
-              {option.label}
-            </Link>
-          ))}
-        </nav>
-      </Reveal>
-
-      {quests.length === 0 ? (
-        <Reveal>
-          <EmptyState
-            icon={<IconMap />}
-            title={
-              filters.show === "todo" && !filtering
-                ? "You have logged every one of them."
-                : "Nothing matches that."
-            }
-            action={
-              filtering ? (
-                <Link href="/quests" className="btn btn-ghost">
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        {quests.length === 0 ? (
+          <div style={{ padding: 26 }}>
+            <EmptyState
+              glyph="search"
+              title="Nothing matches that"
+              body="Widen the filters — region and grade together will cut a catalogue of thousands down to nothing quite quickly."
+              action={
+                <Link href="/quests" className="sq-btn sq-btn-ghost sq-btn-sm">
                   Clear the filters
                 </Link>
-              ) : undefined
-            }
-          >
-            {filters.show === "todo" && !filtering
-              ? "There is nothing left on the shelf. More get written — the weekly and the monthly keep coming either way."
-              : "Loosen a filter, or clear them and start from the whole shelf."}
-          </EmptyState>
-        </Reveal>
-      ) : (
-        <div className="qdb-grid">
-          {quests.map((quest, index) => {
-            const cadence = cadences.get(quest.id) ?? EMPTY_CADENCE;
-            const status = quest.submissions[0]?.status ?? "NONE";
-
-            return (
-              <Reveal key={quest.id} delay={stagger(index, 4)}>
-                <article className={`qdb-card${status === "APPROVED" ? " is-logged" : ""}`}>
-                  <Link href={`/quests/${quest.id}`} className="qdb-cover-link" tabIndex={-1}>
-                    {quest.coverImage ? (
-                      /* An arbitrary remote host an admin pasted, not a domain
-                         known at build time — so not `next/image`. */
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className="qdb-cover" src={quest.coverImage} alt="" loading="lazy" />
-                    ) : (
-                      /* No photograph: the quest's own mark takes the space,
-                         the same as on its page. It says nothing about the
-                         place, which is why it is safe where a picture of
-                         somewhere real would be a claim we cannot make. */
-                      <QuestArt
-                        seed={quest.id}
-                        tags={[...quest.terrain, ...quest.features]}
-                        variant="band"
-                        className="qdb-cover"
-                      />
-                    )}
-
-                    <span className="qdb-cover-tags">
-                      {cadence.isLive && <Tag tone="warm">Live now</Tag>}
-                      {!cadence.isLive && cadence.hasBeenMonthly && (
-                        <Tag tone="warm">Was the monthly</Tag>
-                      )}
-                      {!cadence.isLive && !cadence.hasBeenMonthly && cadence.hasBeenWeekly && (
-                        <Tag tone="pine">Was the weekly</Tag>
-                      )}
-                      {status === "APPROVED" && <Tag tone="pine">Logged</Tag>}
-                      {status === "PENDING" && <Tag tone="ghost">In review</Tag>}
+              }
+            />
+          </div>
+        ) : (
+          <ul className="sq-stagger">
+            {quests.map((quest, index) => {
+              const status = held.get(quest.id);
+              const hard = quest.difficulty === "HARD" || quest.difficulty === "EXPERT";
+              return (
+                <li key={quest.id} style={{ ["--i" as string]: index }}>
+                  <Link
+                    href={`/quests/${quest.id}`}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto minmax(0,1fr) auto auto auto",
+                      gap: 14,
+                      alignItems: "center",
+                      padding: "13px 22px",
+                      borderTop: index === 0 ? "0" : "1px solid var(--line-2)",
+                      color: "var(--color-text)",
+                      background: status !== undefined ? "var(--paper-2)" : "transparent",
+                    }}
+                  >
+                    <span
+                      className="sq-mono"
+                      style={{ fontSize: 10.5, letterSpacing: "0.06em", whiteSpace: "nowrap", color: "var(--ink-3)" }}
+                    >
+                      {quest.number ? `№ ${String(quest.number).padStart(4, "0")}` : "—"}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <b style={{ display: "block", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16 }}>
+                        {quest.title}
+                      </b>
+                      <span
+                        className="sq-mono"
+                        style={{ fontSize: 10.5, letterSpacing: "0.05em", color: "var(--ink-3)" }}
+                      >
+                        {quest.location} · {quest.region}
+                      </span>
+                    </span>
+                    <span className="sq-mono" style={{ fontSize: 11, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
+                      {quest.distance.toFixed(1)} km · {quest.elevationGain} m
+                    </span>
+                    <Tag tone={hard ? "stamp" : "green"} small>
+                      {quest.difficulty}
+                    </Tag>
+                    <span
+                      className="sq-mono"
+                      style={{
+                        fontSize: 10,
+                        letterSpacing: "0.06em",
+                        whiteSpace: "nowrap",
+                        color: status ? "var(--moss)" : status === false ? "var(--signal)" : "transparent",
+                      }}
+                    >
+                      {status ? "DONE" : status === false ? "YOURS" : "—"}
                     </span>
                   </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
-                  <div className="qdb-body">
-                    <span className="qdb-where">
-                      <IconPin />
-                      {quest.location} · {quest.region}
-                    </span>
-
-                    <h2 className="qdb-title">
-                      <Link href={`/quests/${quest.id}`}>{quest.title}</Link>
-                    </h2>
-
-                    <p className="qdb-desc">{quest.subtitle}</p>
-
-                    <div className="qdb-facts">
-                      <Tag tone={GRADE_TONE(quest.difficulty)}>{quest.difficulty}</Tag>
-                      <span>{quest.distance.toFixed(1)} km</span>
-                      <span>{Math.round(quest.elevationGain)} m ↑</span>
-                      <span>{(quest.duration / 60).toFixed(1)} h</span>
-                    </div>
-
-                    <div className="qdb-foot">
-                      <Link href={`/quests/${quest.id}`} className="btn btn-ghost btn-sm">
-                        Read it
-                        <IconArrowRight />
-                      </Link>
-                      <SubmitProofButton
-                        questId={quest.id}
-                        status={status}
-                        label="Log it"
-                        className="btn btn-signal btn-sm"
-                      />
-                    </div>
-                  </div>
-                </article>
-              </Reveal>
-            );
-          })}
-        </div>
-      )}
-
-      {matching > quests.length && (
-        <p className="note mt-5 text-center">
-          Showing {quests.length} of {matching}. Search for a place to narrow it down.
-        </p>
-      )}
+      {pages > 1 ? (
+        <nav
+          style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }}
+          aria-label="Pages"
+        >
+          {page > 1 ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={pageHref(params, page - 1)}>
+              ← Newer
+            </Link>
+          ) : null}
+          <span className="sq-mono" style={{ alignSelf: "center", fontSize: 11, color: "var(--ink-3)" }}>
+            {page} of {pages}
+          </span>
+          {page < pages ? (
+            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={pageHref(params, page + 1)}>
+              Older →
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </>
   );
+}
+
+function pageHref(params: Record<string, string | undefined>, page: number): string {
+  const next = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value && key !== "page") next.set(key, value);
+  }
+  next.set("page", String(page));
+  return `/quests?${next.toString()}`;
+}
+
+function uniqueMonths(dates: Date[]): { value: string; label: string }[] {
+  const seen = new Map<string, string>();
+  for (const date of dates) {
+    const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+    if (!seen.has(key)) {
+      seen.set(
+        key,
+        new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(date),
+      );
+    }
+  }
+  return [...seen].map(([value, label]) => ({ value, label }));
+}
+
+function title(value: string): string {
+  return value.charAt(0) + value.slice(1).toLowerCase();
 }

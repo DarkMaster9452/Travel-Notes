@@ -1,19 +1,30 @@
-/** Skeleton in the shape of a page head plus two panels, so the layout doesn't jump. */
+import { Skeleton, SkeletonRows } from "@/components/sq/ui";
+
+/**
+ * What a member sees while a page is still coming.
+ *
+ * Shaped like the page rather than a spinner: a header block, a stat cluster
+ * and rows. A skeleton that matches the layout means nothing jumps when the
+ * data lands.
+ */
 export default function AppLoading() {
   return (
-    <div className="animate-pulse" aria-hidden="true">
-      <div className="page-head">
-        <div className="w-full">
-          <div className="h-3 w-32 rounded bg-line" />
-          <div className="mt-4 h-9 w-72 max-w-full rounded bg-line" />
+    <div aria-busy="true" aria-label="Loading">
+      <header className="sq-head">
+        <div className="sq-head-row">
+          <div style={{ display: "grid", gap: 12, minWidth: 320, flex: 1 }}>
+            <Skeleton width={140} height={11} />
+            <Skeleton width="70%" height={38} radius={10} />
+          </div>
+          <div className="sq-stats">
+            <Skeleton width={90} height={44} radius={8} />
+            <Skeleton width={90} height={44} radius={8} />
+          </div>
         </div>
-      </div>
-      <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-        <div className="h-[420px] rounded-[var(--radius-card)] border border-line bg-card" />
-        <div className="flex flex-col gap-5">
-          <div className="h-48 rounded-[var(--radius-card)] border border-line bg-card" />
-          <div className="h-40 rounded-[var(--radius-card)] border border-line bg-card" />
-        </div>
+      </header>
+
+      <div className="sq-card" style={{ padding: 22 }}>
+        <SkeletonRows rows={6} columns={4} />
       </div>
     </div>
   );

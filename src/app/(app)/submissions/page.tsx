@@ -1,176 +1,215 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Reveal } from "@/components/app/motion";
-import { PlanChip } from "@/components/app/plan-mark";
-import {
-  EmptyState,
-  Eyebrow,
-  IconArrowRight,
-  IconClock,
-  IconStrava,
-  Panel,
-  PanelHead,
-  Tag,
-} from "@/components/field";
+import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import { stagger } from "@/lib/motion";
-import { formatDate, formatRelativeDate } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Submissions" };
+export const metadata: Metadata = { title: "Your submissions" };
 export const dynamic = "force-dynamic";
 
+const WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
 /**
- * What you filed, and what came back.
+ * Everything this account has filed, newest first.
  *
- * Filing proof used to be the end of the road on this side of the product:
- * the form closed and the only way to learn the verdict was to notice a
- * quest had quietly moved into history. This is the other half — every
- * submission, its state, and, when it was declined, the reason in the
- * reviewer's own words so re-filing is something you can act on rather than
- * guess at.
+ * The verdict is the point of the card, so it gets a tinted block of its own
+ * rather than a chip in a corner. A decline carries the reader's note in their
+ * own words, quoted — a reason somebody can act on is the difference between a
+ * decline and a rejection.
  */
-
-const STATUS: Record<
-  "PENDING" | "APPROVED" | "REJECTED",
-  { label: string; tone: "pine" | "warm" | "ghost"; line: string }
-> = {
-  PENDING: {
-    label: "In review",
-    tone: "ghost",
-    line: "Filed and waiting. Somebody reads every one of these by hand.",
-  },
-  APPROVED: {
-    label: "Approved",
-    tone: "pine",
-    line: "Checked and counted. It's in your history.",
-  },
-  REJECTED: {
-    label: "Declined",
-    tone: "warm",
-    line: "Not accepted as filed. You can file again on the quest page.",
-  },
-};
-
 export default async function SubmissionsPage() {
   const user = await requireClient();
 
-  const entitlement = await getEntitlement(user.id);
+  const [submissions, entitlement] = await Promise.all([
+    db.submission.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        quest: {
+          select: {
+            id: true,
+            title: true,
+            location: true,
+            region: true,
+            distance: true,
+            elevationGain: true,
+            duration: true,
+          },
+        },
+      },
+    }),
+    getEntitlement(user.id),
+  ]);
 
-  const submissions = await db.submission.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    select: {
-      id: true,
-      note: true,
-      photos: true,
-      stravaUrl: true,
-      distance: true,
-      elevation: true,
-      movingTime: true,
-      retreated: true,
-      status: true,
-      reviewNote: true,
-      reviewedAt: true,
-      createdAt: true,
-      quest: { select: { id: true, title: true, location: true, region: true } },
-    },
-  });
-
-  const counts = {
-    pending: submissions.filter((s) => s.status === "PENDING").length,
-    approved: submissions.filter((s) => s.status === "APPROVED").length,
-    rejected: submissions.filter((s) => s.status === "REJECTED").length,
-  };
+  const approved = submissions.filter((entry) => entry.status === "APPROVED").length;
+  const waiting = submissions.filter((entry) => entry.status === "PENDING").length;
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>Filed</Eyebrow>
-          <h1>Your submissions.</h1>
-          <p>
-            {submissions.length === 0
-              ? "Nothing filed yet. Proof goes in from the quest page."
-              : `${submissions.length} filed · ${counts.approved} approved · ${counts.pending} waiting`}
-          </p>
-        </div>
-        <PlanChip plan={entitlement.plan} />
-      </Reveal>
+      <PageHeader
+        kicker="Filed"
+        title="Your submissions"
+        lede={`${submissions.length} filed · ${approved} approved · ${waiting} waiting`}
+        right={<Tag tone="green" small>{entitlement.definition.name.toUpperCase()}</Tag>}
+      />
 
       {submissions.length === 0 ? (
-        <Reveal>
-          <EmptyState icon={<IconClock />} title="Nothing filed yet.">
-            When you finish a quest you file what happened — a written account, at least one
-            photo, and your figures if a watch recorded them. It shows up here until somebody
-            has read it.
-          </EmptyState>
-        </Reveal>
+        <EmptyState
+          glyph="book"
+          title="Nothing filed yet"
+          body="Proof is what makes a quest count. File against the monthly, the weekly, or anything in the database."
+          action={
+            <Link href="/monthly" className="sq-btn sq-btn-primary sq-btn-sm">
+              Open the monthly
+            </Link>
+          }
+        />
       ) : (
-        <div className="flex flex-col gap-4">
-          {submissions.map((submission, index) => {
-            const status = STATUS[submission.status];
+        <div className="sq-stagger" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {submissions.map((entry, index) => {
+            const declined = entry.status === "REJECTED";
+            const settled = entry.status !== "PENDING";
             return (
-              <Reveal key={submission.id} delay={stagger(index, 8)}>
-                <Panel flush>
-                  <PanelHead
-                    title={submission.quest.title}
-                    aside={<Tag tone={status.tone}>{status.label}</Tag>}
-                  />
+              <article
+                key={entry.id}
+                className="sq-card"
+                style={{
+                  overflow: "hidden",
+                  borderColor: declined ? "var(--signal)" : "var(--line-2)",
+                  ["--i" as string]: index,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 14,
+                    padding: "15px 22px",
+                    borderBottom: "1px solid var(--line-2)",
+                  }}
+                >
+                  <h2 className="sq-h2" style={{ fontSize: 19 }}>
+                    {entry.quest.title}
+                  </h2>
+                  <Tag
+                    tone={entry.status === "APPROVED" ? "green" : declined ? "stamp" : "plain"}
+                    small
+                  >
+                    {entry.status === "APPROVED"
+                      ? "Approved"
+                      : declined
+                        ? "Sent back"
+                        : "In review"}
+                  </Tag>
+                </div>
 
-                  <div className="submission-card">
-                    <p className="submission-where">
-                      {submission.quest.location} · {submission.quest.region}
-                    </p>
+                <div style={{ padding: "18px 22px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                  <p className="sq-mono" style={{ fontSize: 10.5, letterSpacing: "0.05em", color: "var(--ink-3)" }}>
+                    {entry.quest.location} · {entry.quest.region}
+                    {entry.period ? ` · ${entry.period === "MONTHLY" ? "monthly" : "weekly"} ${entry.slotKey ?? ""}` : ""}
+                    {entry.retreated ? " · retreat" : ""}
+                  </p>
 
-                    <p className="submission-note">{submission.note}</p>
+                  <p
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      fontStyle: "italic",
+                      color: "var(--ink-2)",
+                      textWrap: "pretty",
+                    }}
+                  >
+                    {entry.note}
+                  </p>
 
-                    <div className="submission-facts">
-                      {submission.distance != null && <span>{submission.distance.toFixed(1)} km</span>}
-                      {submission.elevation != null && <span>{submission.elevation} m ↑</span>}
-                      {submission.movingTime != null && <span>{submission.movingTime} min</span>}
-                      {submission.photos.length > 0 && (
-                        <span>
-                          {submission.photos.length} photo
-                          {submission.photos.length === 1 ? "" : "s"}
-                        </span>
-                      )}
-                      {submission.stravaUrl && (
-                        <a href={submission.stravaUrl} target="_blank" rel="noreferrer noopener">
-                          <IconStrava />
-                          Strava
-                        </a>
-                      )}
-                      {submission.retreated && <span className="text-signal">Turned back</span>}
-                    </div>
-
-                    {/* The verdict, in the reviewer's words. A decline without
-                        its reason is just a closed door. */}
-                    <div className="submission-verdict">
-                      <p>
-                        <b>{status.line}</b>
-                        {submission.reviewedAt && (
-                          <span> Reviewed {formatDate(submission.reviewedAt)}.</span>
-                        )}
-                      </p>
-                      {submission.status === "REJECTED" && submission.reviewNote && (
-                        <blockquote>{submission.reviewNote}</blockquote>
-                      )}
-                    </div>
-
-                    <div className="submission-foot">
-                      <span className="meta">Filed {formatRelativeDate(submission.createdAt)}</span>
-                      <Link href={`/quests/${submission.quest.id}`} className="btn btn-ghost btn-sm">
-                        {submission.status === "REJECTED" ? "File again" : "Open the quest"}
-                        <IconArrowRight />
-                      </Link>
-                    </div>
+                  <div
+                    className="sq-mono"
+                    style={{
+                      display: "flex",
+                      gap: 16,
+                      flexWrap: "wrap",
+                      fontSize: 11,
+                      letterSpacing: "0.05em",
+                      color: "var(--ink-2)",
+                    }}
+                  >
+                    <span>{entry.distance != null ? `${entry.distance.toFixed(1)} km` : "— km"}</span>
+                    <span>{entry.elevation != null ? `${entry.elevation} m ↑` : "— m ↑"}</span>
+                    <span>{entry.movingTime != null ? `${entry.movingTime} min` : "— moving"}</span>
+                    <span>{entry.photos.length} {entry.photos.length === 1 ? "photo" : "photos"}</span>
+                    {entry.stravaUrl ? <span style={{ color: "var(--signal)" }}>Strava attached</span> : null}
                   </div>
-                </Panel>
-              </Reveal>
+
+                  <div
+                    style={{
+                      padding: "14px 16px",
+                      borderRadius: 10,
+                      background: declined
+                        ? "var(--signal-wash)"
+                        : entry.status === "APPROVED"
+                          ? "var(--color-accent-100)"
+                          : "var(--paper-2)",
+                    }}
+                  >
+                    <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+                      <b>
+                        {entry.status === "APPROVED"
+                          ? "Approved."
+                          : declined
+                            ? "Sent back."
+                            : "Waiting on a reader."}
+                      </b>{" "}
+                      {settled && entry.reviewedAt
+                        ? `Read ${WHEN.format(entry.reviewedAt)}.`
+                        : "Nobody has read it yet — everything is read in the order it was filed."}
+                    </p>
+                    {declined && entry.reviewNote ? (
+                      <p
+                        style={{
+                          marginTop: 10,
+                          paddingLeft: 12,
+                          borderLeft: "2px solid var(--signal)",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                          fontStyle: "italic",
+                          color: "var(--ink-2)",
+                        }}
+                      >
+                        {entry.reviewNote}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                    }}
+                  >
+                    <span className="sq-kicker-sm">Filed {WHEN.format(entry.createdAt)}</span>
+                    <Link
+                      href={
+                        entry.status === "APPROVED"
+                          ? `/quests/${entry.quest.id}`
+                          : `/quests/${entry.quest.id}/proof`
+                      }
+                      style={{ fontSize: 13, whiteSpace: "nowrap" }}
+                    >
+                      {entry.status === "APPROVED"
+                        ? "See the quest"
+                        : declined
+                          ? "Add to it and file again"
+                          : "Edit while it waits"}{" "}
+                      →
+                    </Link>
+                  </div>
+                </div>
+              </article>
             );
           })}
         </div>
