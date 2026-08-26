@@ -281,6 +281,58 @@ export const en = {
   },
 
   /* ---- the profile ------------------------------------------------------ */
+  /* ---- plan & billing ---------------------------------------------------- */
+  billing: {
+    currentPlan: "Current plan",
+    monthly: ", monthly",
+    yearly: ", yearly",
+    aMonth: (price: string) => `${price} a month`,
+    aYear: (price: string) => `${price} a year`,
+    renews: (when: string) => `renews ${when}`,
+    ends: (when: string) => `ends ${when}`,
+    freeLeft: (left: number, total: number) => `${left} of ${total} free quests left`,
+    retrying: "Payment retrying · access holds",
+    switchToYearly: "Switch to yearly",
+    managePayment: "Manage payment",
+    facts: {
+      stickers: "Stickers",
+      quests: "Quests",
+      unlimited: "Unlimited",
+      questsLeft: (left: number) => `${left} left`,
+      reach: "Reach",
+      worldwide: "Worldwide",
+      europe: "Europe",
+      homeCountry: "Home country",
+      post: "Post",
+      envelope: "Monthly envelope",
+      screenOnly: "Screen only",
+    },
+    includesHeading: "What your plan includes",
+    plansHeading: "The plans",
+    cancelAnyTime: "Cancel any time",
+    notConfigured: "Billing not configured here",
+    demoFree: "Free while we are in demo",
+    upgrade: "Upgrade",
+    switch: "Switch",
+    unlockIt: "Unlock it",
+    switchToIt: "Switch to it",
+    envelopeHeading: "Where the envelope goes",
+    editAddress: "Edit address →",
+    addAddress: "Add an address →",
+    noAddress: "No address on file.",
+    partialAddress: "Not enough of an address to post to — a street, a town and a country.",
+  },
+
+  /* ---- locked features --------------------------------------------------- */
+  locked: {
+    /** The chip on a row that a cheaper plan does not reach. */
+    paidFeature: (plan: string) => `${plan} feature`,
+    onPlan: (plan: string) => `On ${plan}`,
+    seePlans: "See the plans",
+    unlock: "Unlock",
+    unlockWith: (plan: string) => `Unlock with ${plan}`,
+  },
+
   /* ---- the notice that waited -------------------------------------------- */
   nudge: {
     address: {

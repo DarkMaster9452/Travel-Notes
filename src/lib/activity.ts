@@ -1,6 +1,8 @@
 import "server-only";
 
 import { db } from "@/lib/db";
+import type { Locale } from "@/lib/i18n";
+import { tagFor } from "@/lib/i18n/format";
 
 /**
  * How much somebody is around.
@@ -84,6 +86,8 @@ const WEEKS = 53;
 export async function getActivityGrid(
   userId: string,
   now: Date = new Date(),
+  /** For the month labels along the top; the data itself has no language. */
+  locale: Locale = "en",
 ): Promise<ActivityGrid> {
   const today = utcDay(now);
 
@@ -103,7 +107,7 @@ export async function getActivityGrid(
 
   const counts = new Map(rows.map((row) => [row.day.toISOString().slice(0, 10), row.count]));
 
-  const month = new Intl.DateTimeFormat("en-GB", { month: "short", timeZone: "UTC" });
+  const month = new Intl.DateTimeFormat(tagFor(locale), { month: "short", timeZone: "UTC" });
 
   const weeks: ActivityCell[][] = [];
   const months: { at: number; label: string }[] = [];

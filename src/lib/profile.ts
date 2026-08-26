@@ -3,6 +3,7 @@ import "server-only";
 import type { ProfileAccent } from "@prisma/client";
 
 import { getActivityGrid, type ActivityGrid } from "@/lib/activity";
+import type { Locale } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { getAchievements } from "@/lib/achievements";
 import { planIdFromRecord } from "@/lib/config";
@@ -147,6 +148,8 @@ export type PublicProfile = {
 export async function getPublicProfile(
   handle: string,
   readerId: string,
+  /** The *reader's* language, not the profile owner's — they may differ. */
+  locale: Locale = "en",
 ): Promise<PublicProfile | null> {
   const profile = await db.profile.findUnique({
     where: { handle },
@@ -211,7 +214,9 @@ export async function getPublicProfile(
 
   // Not fetched when it is off, matching how every other section here behaves:
   // a switch turned off means the data does not leave the database.
-  const activityGrid = profile.showActivityGrid ? await getActivityGrid(profile.userId) : null;
+  const activityGrid = profile.showActivityGrid
+    ? await getActivityGrid(profile.userId, new Date(), locale)
+    : null;
 
   const socials: PublicProfile["socials"] = [];
   for (const key of ["instagram", "facebook", "strava"] as const) {

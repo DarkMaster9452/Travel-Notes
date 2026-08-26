@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
 import { LockGlyph } from "@/components/sq/icons";
-import { CAPABILITY_COPY, planById, type Capability, type PlanId } from "@/lib/config";
+import { useT } from "@/components/sq/i18n";
+import { capabilityCopy, planCopy, type Capability, type PlanId } from "@/lib/config";
 
 /**
  * A feature this plan does not include.
@@ -32,8 +35,9 @@ export function SqLocked({
   compact?: boolean;
   style?: CSSProperties;
 }) {
-  const copy = CAPABILITY_COPY[capability];
-  const definition = planById(plan);
+  const t = useT();
+  const copy = capabilityCopy(t, capability);
+  const name = planCopy(t, plan).name;
 
   return (
     <div className="sq-locked" data-compact={compact ? "1" : "0"} style={style}>
@@ -44,7 +48,7 @@ export function SqLocked({
       <div className="sq-locked-over">
         <span className="sq-locked-badge">
           <LockGlyph size={compact ? 12 : 14} />
-          {definition.name}
+          {name}
         </span>
         {compact ? null : (
           <>
@@ -53,7 +57,7 @@ export function SqLocked({
           </>
         )}
         <Link href="/settings/billing" className="sq-btn sq-btn-primary sq-btn-sm">
-          {compact ? "Unlock" : `Unlock with ${definition.name}`}
+          {compact ? t.locked.unlock : t.locked.unlockWith(name)}
         </Link>
       </div>
     </div>
@@ -67,11 +71,12 @@ export function SqLocked({
  * yet, for places where covering the row would cost more than it explains.
  */
 export function SqPaidChip({ plan }: { plan: PlanId }) {
-  const definition = planById(plan);
+  const t = useT();
+  const name = planCopy(t, plan).name;
   return (
-    <span className="sq-tag sq-tag-gold sq-tag-xs" title={`Part of ${definition.name}`}>
+    <span className="sq-tag sq-tag-gold sq-tag-xs" title={t.locked.paidFeature(name)}>
       <LockGlyph size={10} />
-      {definition.name}
+      {name}
     </span>
   );
 }

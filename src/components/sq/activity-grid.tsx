@@ -2,16 +2,24 @@ import type { CSSProperties } from "react";
 
 import { dayHeat, type ActivityGrid } from "@/lib/activity";
 import type { AccentInk } from "@/lib/accents";
+import type { Locale, Messages } from "@/lib/i18n";
+import { tagFor } from "@/lib/i18n/format";
 
-const WHEN = new Intl.DateTimeFormat("en-GB", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  timeZone: "UTC",
-});
-
-/** Monday first, and only three of them labelled — the rest is inferred. */
-const WEEKDAYS = ["Mon", "", "Wed", "", "Fri", "", ""];
+/**
+ * Monday first, and only three rows labelled — the rest is inferred.
+ *
+ * Taken from `Intl` rather than written out, so Slovak reads Po/St/Pi and
+ * German Mo/Mi/Fr without three more dictionary keys. 2024-01-01 was a Monday,
+ * which is all the anchor date is for.
+ */
+function weekdayLabels(locale: Locale): string[] {
+  const format = new Intl.DateTimeFormat(tagFor(locale), { weekday: "short", timeZone: "UTC" });
+  return [0, 1, 2, 3, 4, 5, 6].map((offset) =>
+    offset % 2 === 0 && offset < 5
+      ? format.format(new Date(Date.UTC(2024, 0, 1 + offset)))
+      : "",
+  );
+}
 
 /**
  * A year of days, in the shape everybody already knows how to read.
@@ -32,12 +40,23 @@ export function SqActivityGrid({
   grid,
   accent,
   name,
+  locale,
+  t,
 }: {
   grid: ActivityGrid;
   accent: AccentInk;
   /** Whose year it is, for the summary line. */
   name: string;
+  locale: Locale;
+  t: Messages;
 }) {
+  const when = new Intl.DateTimeFormat(tagFor(locale), {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+
   return (
     <div
       className="sq-year-wrap"
@@ -56,12 +75,12 @@ export function SqActivityGrid({
 
         <div className="sq-year-body">
           <div className="sq-year-days" aria-hidden>
-            {WEEKDAYS.map((day, index) => (
+            {weekdayLabels(locale).map((day, index) => (
               <span key={index}>{day}</span>
             ))}
           </div>
 
-          <div className="sq-year-grid" role="img" aria-label={summary(grid, name)}>
+          <div className="sq-year-grid" role="img" aria-label={summary(grid, name, t)}>
             {grid.weeks.map((week, index) => (
               <div key={index} className="sq-year-week" style={{ ["--i" as string]: index }}>
                 {week.map((cell) =>
@@ -72,11 +91,7 @@ export function SqActivityGrid({
                       key={cell.key}
                       className="sq-day-cell"
                       data-heat={dayHeat(cell.count)}
-                      title={`${WHEN.format(cell.day)} — ${
-                        cell.count === 0
-                          ? "nothing"
-                          : `${cell.count} ${cell.count === 1 ? "thing" : "things"}`
-                      }`}
+                      title={t.profile.dayTooltip(when.format(cell.day), cell.count)}
                     />
                   ),
                 )}
@@ -87,20 +102,20 @@ export function SqActivityGrid({
       </div>
 
       <div className="sq-year-foot">
-        <span>{summary(grid, name)}</span>
+        <span>{summary(grid, name, t)}</span>
         <span className="sq-year-key" aria-hidden>
-          Less
+          {t.profile.less}
           {[0, 1, 2, 3, 4].map((step) => (
             <i key={step} className="sq-day-cell" data-heat={step} />
           ))}
-          More
+          {t.profile.more}
         </span>
       </div>
     </div>
   );
 }
 
-function summary(grid: ActivityGrid, name: string): string {
-  if (grid.days === 0) return `${name} has not been around in the last year.`;
-  return `${grid.days} ${grid.days === 1 ? "day" : "days"} here in the last year, busiest ${grid.best}.`;
+function summary(grid: ActivityGrid, name: string, t: Messages): string {
+  if (grid.days === 0) return t.profile.yearEmpty(name);
+  return t.profile.yearSummary(name, grid.days, grid.best);
 }

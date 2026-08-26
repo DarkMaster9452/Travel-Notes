@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 
 import { savePublicProfileAction, type PublicProfileState } from "@/app/(app)/profile/public-actions";
 import { Glyph } from "@/components/sq/icons";
+import { useT } from "@/components/sq/i18n";
 import { ACCENT_INK, ACCENT_KEYS } from "@/lib/accents";
 
 export type ProfileDraft = {
@@ -33,6 +34,7 @@ export type ProfileDraft = {
  * section turned off is absent from the page, not blank on it.
  */
 export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
+  const t = useT();
   const [state, action, pending] = useActionState<PublicProfileState, FormData>(
     savePublicProfileAction,
     undefined,
@@ -184,14 +186,18 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
         <ul>
           {(
             [
-              ["showStats", "What you have logged", "The four figures — quests, kilometres, ascent, regions."],
-              ["showCountry", "Your country", "The country you measure from. Never a town, never an address."],
-              ["showActivities", "What you have walked", "Approved proof only, with your own account of each day."],
-              ["showStickers", "Stickers", "The ones you have earned. Locked ones are never shown to a reader."],
+              ["showStats", t.profile.switches.stats.label, t.profile.switches.stats.detail],
+              ["showCountry", t.profile.switches.country.label, t.profile.switches.country.detail],
+              [
+                "showActivities",
+                t.profile.switches.activities.label,
+                t.profile.switches.activities.detail,
+              ],
+              ["showStickers", t.profile.switches.stickers.label, t.profile.switches.stickers.detail],
               [
                 "showActivityGrid",
-                "Your year",
-                "The grid of days you have been here. How often, never what you did.",
+                t.profile.switches.activityGrid.label,
+                t.profile.switches.activityGrid.detail,
               ],
             ] as const
           ).map(([key, label, description]) => (

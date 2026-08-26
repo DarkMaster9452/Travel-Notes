@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useT } from "@/components/sq/i18n";
+import type { Messages } from "@/lib/i18n";
+
 /**
  * The settings rail.
  *
@@ -16,49 +19,59 @@ export type SettingsGroup = {
   items: { href: string; label: string; note?: string }[];
 };
 
-export const SETTINGS_GROUPS: SettingsGroup[] = [
-  {
-    label: "Settings",
-    items: [
-      { href: "/settings/general", label: "General" },
-      { href: "/settings/units", label: "Units & language" },
-    ],
-  },
-  {
-    label: "You",
-    items: [
-      { href: "/settings/profile", label: "Profile" },
-      { href: "/settings/address", label: "Shipping address" },
-      { href: "/settings/notifications", label: "Notifications" },
-    ],
-  },
-  {
-    label: "Membership",
-    items: [
-      { href: "/settings/billing", label: "Plan & billing" },
-      { href: "/settings/invoices", label: "Invoices" },
-      { href: "/settings/cancel", label: "Pause or cancel" },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      { href: "/settings/password", label: "Password" },
-      { href: "/settings/connected", label: "Connected apps", note: "Strava" },
-      { href: "/settings/privacy", label: "Privacy" },
-    ],
-  },
-];
+/**
+ * The settings rail.
+ *
+ * A function of the dictionary rather than a constant, because the labels are
+ * the only part that changes with the reader — the hrefs, the grouping and the
+ * order are the same in every language and are the actual structure.
+ */
+export function settingsGroups(t: Messages): SettingsGroup[] {
+  return [
+    {
+      label: t.settings.groups.settings,
+      items: [
+        { href: "/settings/general", label: t.settings.items.general },
+        { href: "/settings/units", label: t.settings.items.units },
+      ],
+    },
+    {
+      label: t.settings.groups.you,
+      items: [
+        { href: "/settings/profile", label: t.settings.items.profile },
+        { href: "/settings/address", label: t.settings.items.address },
+        { href: "/settings/notifications", label: t.settings.items.notifications },
+      ],
+    },
+    {
+      label: t.settings.groups.membership,
+      items: [
+        { href: "/settings/billing", label: t.settings.items.billing },
+        { href: "/settings/invoices", label: t.settings.items.invoices },
+        { href: "/settings/cancel", label: t.settings.items.cancel },
+      ],
+    },
+    {
+      label: t.settings.groups.account,
+      items: [
+        { href: "/settings/password", label: t.settings.items.password },
+        { href: "/settings/connected", label: t.settings.items.connected, note: "Strava" },
+        { href: "/settings/privacy", label: t.settings.items.privacy },
+      ],
+    },
+  ];
+}
 
 export function SqSettingsNav() {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <nav
       style={{ display: "flex", flexDirection: "column", gap: 18, position: "sticky", top: 24 }}
-      aria-label="Settings sections"
+      aria-label={t.settings.heading}
     >
-      {SETTINGS_GROUPS.map((group) => (
+      {settingsGroups(t).map((group) => (
         <div key={group.label}>
           <p
             className="sq-kicker-sm"
