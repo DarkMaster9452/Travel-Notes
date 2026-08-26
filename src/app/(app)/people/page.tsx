@@ -5,6 +5,7 @@ import { GroupStarter } from "@/components/sq/group-starter";
 import { SqSegmentedLinks } from "@/components/sq/controls";
 import { SqLocked } from "@/components/sq/locked";
 import { Avatar, EmptyState, PageHeader } from "@/components/sq/ui";
+import { accentInk } from "@/lib/accents";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getMyGroups } from "@/lib/groups";
@@ -167,14 +168,33 @@ function PeopleGrid({ people }: { people: DirectoryEntry[] }) {
         gap: 14,
       }}
     >
-      {people.map((person, index) => (
+      {people.map((person, index) => {
+        const accent = accentInk(person.accent);
+        return (
         <Link
           key={person.handle}
           href={`/people/${person.handle}`}
           className="sq-card sq-lift"
-          style={{ padding: 18, color: "var(--color-text)", ["--i" as string]: index }}
+          style={{
+            padding: 18,
+            color: "var(--color-text)",
+            // The accent is how somebody is recognisable in a grid of faces,
+            // so it has to be on the card and not only on the page behind it.
+            borderTop: `4px solid ${accent.ink}`,
+            ["--i" as string]: index,
+          }}
         >
-          <Avatar name={person.name} size={48} />
+          <span
+            style={{
+              display: "inline-flex",
+              padding: 4,
+              borderRadius: 999,
+              background: accent.wash,
+              border: `1px solid ${accent.edge}`,
+            }}
+          >
+            <Avatar name={person.name} size={44} />
+          </span>
           <b
             style={{
               display: "block",
@@ -216,7 +236,8 @@ function PeopleGrid({ people }: { people: DirectoryEntry[] }) {
             <i style={{ fontStyle: "normal" }}>{person.logged} logged</i>
           </span>
         </Link>
-      ))}
+        );
+      })}
     </section>
   );
 }

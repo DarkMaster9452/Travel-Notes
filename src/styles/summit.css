@@ -2000,3 +2000,253 @@
   gap: 6px;
   padding: 12px 15px;
 }
+
+/* --- the public page ------------------------------------------------------ */
+
+/* A printed band in the profile's own ink.
+   Every public page used to open with the same white card and the same grey
+   type, which made a page about a person read like a row in a table. The band
+   is the one place the account's `accent` is allowed to shout; everything
+   below it stays on paper. The contour rings are drawn, not loaded — two
+   repeating radial gradients, so the band costs nothing and scales to any
+   width. */
+.sq-profile-band {
+  position: relative;
+  min-height: 148px;
+  padding: 22px 26px 8px;
+  background-color: var(--band, var(--forest));
+  background-image:
+    repeating-radial-gradient(
+      circle at 82% 128%,
+      rgba(255, 255, 255, 0.11) 0 1.5px,
+      transparent 1.5px 27px
+    ),
+    repeating-radial-gradient(
+      circle at 8% -34%,
+      rgba(255, 255, 255, 0.07) 0 1.5px,
+      transparent 1.5px 35px
+    );
+  color: var(--forest-ink);
+  overflow: hidden;
+}
+
+.sq-profile-band .sq-kicker-sm,
+.sq-profile-band .sq-mono {
+  color: var(--forest-ink-3);
+}
+
+/* The horizon: a paper-coloured curve the avatar sits on, so the band reads as
+   a ridge behind somebody rather than as a coloured rectangle above them. */
+.sq-profile-band::after {
+  content: "";
+  position: absolute;
+  inset: auto -10% -46px;
+  height: 92px;
+  border-radius: 50% 50% 0 0;
+  background: var(--card);
+}
+
+.sq-profile-face {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding-top: 26px;
+}
+
+.sq-profile-face .sq-avatar {
+  box-shadow: 0 0 0 5px var(--card), var(--shadow-lift);
+}
+
+/* Figures, each in its own ink. Four pens, always in the same order. */
+.sq-figure-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 10px;
+  padding: 18px 26px 22px;
+}
+
+.sq-figure-tile {
+  border-radius: var(--radius-md);
+  padding: 13px 15px;
+  background: var(--wash);
+  border: 1px solid var(--edge);
+  animation: sq-rise var(--dur-enter) var(--ease-move) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+.sq-figure-tile b {
+  display: block;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.sq-figure-tile span {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.72;
+}
+
+/* The year, as twelve marks. Read as a shape, not as a table. */
+.sq-year {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 5px;
+  padding: 16px 22px 18px;
+}
+
+.sq-year-month {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.sq-year-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: var(--paper-2);
+  border: 1px solid var(--line-2);
+  animation: sq-pop var(--dur-spring) var(--ease-settle) both;
+  animation-delay: calc(var(--i, 0) * 26ms);
+}
+
+.sq-year-cell[data-heat="1"] { background: var(--wash); border-color: var(--edge); }
+.sq-year-cell[data-heat="2"] { background: var(--edge); border-color: var(--edge); }
+.sq-year-cell[data-heat="3"] { background: var(--ink); border-color: var(--ink); opacity: 0.72; }
+.sq-year-cell[data-heat="4"] { background: var(--ink); border-color: var(--ink); }
+
+.sq-year-month span {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+@keyframes sq-pop {
+  from {
+    opacity: 0;
+    transform: scale(calc(1 - 0.35 * var(--motion)));
+  }
+}
+
+/* Stickers on a profile are stuck on, not filed away: a little off-square, and
+   they straighten when you point at one. */
+.sq-sticker-scatter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 22px;
+}
+
+.sq-sticker-scatter > * {
+  transform: rotate(calc(var(--tilt, 0) * 1deg));
+  transition: transform var(--dur-lift) var(--ease-settle);
+}
+
+.sq-sticker-scatter > *:hover {
+  transform: rotate(0deg) scale(calc(1 + 0.07 * var(--motion)));
+}
+
+/* What the ground was. Colour is the whole point — a list of grey words is
+   the thing this page had too much of already. */
+.sq-terrain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sq-terrain > span {
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: var(--wash);
+  border: 1px solid var(--edge);
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .sq-year {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    row-gap: 10px;
+  }
+}
+
+/* --- accent swatches ------------------------------------------------------ */
+
+.sq-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sq-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-tint) var(--ease-move),
+    box-shadow var(--dur-tint) var(--ease-move),
+    transform var(--dur-lift) var(--ease-settle);
+}
+
+.sq-swatch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sq-swatch > span {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid;
+  flex: 0 0 20px;
+}
+
+.sq-swatch b {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.sq-swatch:hover {
+  transform: translateY(calc(-1px * var(--motion)));
+}
+
+.sq-swatch:has(input:checked) {
+  border-color: var(--color-accent-600);
+  box-shadow: inset 0 0 0 1px var(--color-accent-600);
+}
+
+.sq-swatch:has(input:checked) b {
+  color: var(--color-text);
+}
+
+.sq-swatch:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent-600);
+  outline-offset: 2px;
+}
