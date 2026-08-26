@@ -61,7 +61,11 @@ export default async function AdminRevenuePage() {
         <StatTile
           label="Monthly, at list"
           value={formatPrice(revenue.monthlyCents)}
-          note={`${revenue.live} live subscriptions`}
+          note={
+            revenue.demo > 0
+              ? `${revenue.paying} paying · ${revenue.demo} demo, not counted`
+              : `${revenue.live} live subscriptions`
+          }
           index={0}
         />
         <StatTile label="Yearly, at list" value={formatPrice(revenue.yearlyCents)} index={1} />

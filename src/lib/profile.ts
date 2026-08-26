@@ -99,6 +99,16 @@ export type ProfileActivity = {
   tags: string[];
 };
 
+/** One month of the year strip. */
+export type ProfileMonth = {
+  key: string;
+  /** "Aug" — the strip is read as a shape, not as a table. */
+  short: string;
+  /** "August 2026", for the tooltip. */
+  label: string;
+  count: number;
+};
+
 export type PublicProfile = {
   handle: string;
   published: boolean;
@@ -112,6 +122,8 @@ export type PublicProfile = {
   stats: { logged: number; km: number; up: number; regions: number; countries: number } | null;
   stickers: { id: string; label: string; sticker: string }[];
   activities: ProfileActivity[];
+  /** The last twelve months, oldest first — the strip across the header. */
+  months: ProfileMonth[];
   /** True when the reader is looking at their own page. */
   isSelf: boolean;
 };
@@ -184,7 +196,9 @@ export async function getPublicProfile(
     }
   }
 
-  const activities = profile.showActivities ? await getProfileActivities(profile.userId) : [];
+  const [activities, months] = profile.showActivities
+    ? await Promise.all([getProfileActivities(profile.userId), getProfileMonths(profile.userId)])
+    : [[] as ProfileActivity[], [] as ProfileMonth[]];
 
   const socials: PublicProfile["socials"] = [];
   for (const key of ["instagram", "facebook", "strava"] as const) {
@@ -213,6 +227,7 @@ export async function getPublicProfile(
       : null,
     stickers,
     activities,
+    months,
     isSelf,
   };
 }
@@ -264,6 +279,55 @@ export async function getProfileActivities(
     retreated: row.retreated,
     tags: [...row.quest.terrain, ...row.quest.features],
   }));
+}
+
+/**
+ * When somebody actually walked, by month.
+ *
+ * Twelve months whether or not they are all full, because the shape of a year
+ * is the point: a strip that skipped the empty months would show a keen
+ * walker and a lapsed one as the same picture.
+ *
+ * Approved submissions only, on the same reasoning as the feed — this is a
+ * public claim about somebody's year, so it counts only what a reader passed.
+ */
+export async function getProfileMonths(
+  userId: string,
+  now = new Date(),
+): Promise<ProfileMonth[]> {
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1));
+
+  const rows = await db.submission.findMany({
+    where: {
+      userId,
+      status: "APPROVED",
+      OR: [{ startedAt: { gte: from } }, { startedAt: null, createdAt: { gte: from } }],
+    },
+    select: { startedAt: true, createdAt: true },
+  });
+
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const when = row.startedAt ?? row.createdAt;
+    const key = `${when.getUTCFullYear()}-${String(when.getUTCMonth() + 1).padStart(2, "0")}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const short = new Intl.DateTimeFormat("en-GB", { month: "short", timeZone: "UTC" });
+  const long = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+
+  const months: ProfileMonth[] = [];
+  for (let offset = 0; offset < 12; offset += 1) {
+    const cursor = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth() + offset, 1));
+    const key = `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, "0")}`;
+    months.push({
+      key,
+      short: short.format(cursor),
+      label: long.format(cursor),
+      count: counts.get(key) ?? 0,
+    });
+  }
+  return months;
 }
 
 export type DirectoryEntry = {

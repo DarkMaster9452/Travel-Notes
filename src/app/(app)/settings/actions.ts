@@ -7,6 +7,8 @@ import { requireClient } from "@/lib/auth/guards";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { isPostable } from "@/lib/envelope";
+import { completeNudge } from "@/lib/nudges";
 import { getStripe } from "@/lib/stripe";
 
 export type SettingsResult = { ok: boolean; message?: string };
@@ -87,7 +89,14 @@ export async function saveAddressAction(formData: FormData): Promise<SettingsRes
     create: { userId: user.id, ...values },
   });
 
+  // The ask is answered by an address that could actually be posted to, not by
+  // the act of opening the form. A row with only a country in it leaves the
+  // notice standing, which is correct: there is still nowhere to send anything.
+  if (isPostable(values)) await completeNudge(user.id, "SHIPPING_ADDRESS");
+
   revalidatePath("/settings/address");
+  revalidatePath("/settings/billing");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

@@ -137,6 +137,9 @@ export type FeaturedGlance = {
   closesAt: Date;
   closed: boolean;
   status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+  /** When proof was filed, so a card can say "filed Friday" rather than just
+   *  "filed". Null when nothing has been filed against this slot. */
+  filedAt: Date | null;
 };
 
 export async function glanceFeaturedSlot(
@@ -148,14 +151,14 @@ export async function glanceFeaturedSlot(
   const closesAt = periodEnds(period, now);
   const closed = closesAt.getTime() <= now.getTime();
 
-  if (!featured) return { featured: null, closesAt, closed, status: "NONE" };
+  if (!featured) return { featured: null, closesAt, closed, status: "NONE", filedAt: null };
 
   // A booked slot is already a quest row shared by everybody; a generated one
   // exists only once this account has logged it, and is found by its marker.
   const submission = featured.scheduled
     ? await db.submission.findUnique({
         where: { userId_questId: { userId, questId: featured.summary.id } },
-        select: { status: true },
+        select: { status: true, createdAt: true },
       })
     : await db.submission.findFirst({
         where: {
@@ -167,8 +170,14 @@ export async function glanceFeaturedSlot(
             },
           },
         },
-        select: { status: true },
+        select: { status: true, createdAt: true },
       });
 
-  return { featured, closesAt, closed, status: submission?.status ?? "NONE" };
+  return {
+    featured,
+    closesAt,
+    closed,
+    status: submission?.status ?? "NONE",
+    filedAt: submission?.createdAt ?? null,
+  };
 }

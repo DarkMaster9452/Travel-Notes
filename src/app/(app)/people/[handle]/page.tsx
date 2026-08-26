@@ -1,9 +1,11 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Glyph, type GlyphName } from "@/components/sq/icons";
+import { SqSticker } from "@/components/sq/sticker";
 import { Avatar } from "@/components/sq/ui";
+import { accentInk, FIGURE_INKS, heat, terrainInk } from "@/lib/accents";
 import { requireClient } from "@/lib/auth/guards";
 import { getPublicProfile } from "@/lib/profile";
 
@@ -11,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 const WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const SINCE = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric" });
+const NUMBER = new Intl.NumberFormat("en-GB");
 
 export async function generateMetadata({
   params,
@@ -30,6 +33,13 @@ export async function generateMetadata({
  * shown as a blank, because an empty profile should read as private rather
  * than as unfinished.
  *
+ * It is also the one screen in the product that is allowed to be *theirs*.
+ * The rest of the app is one house style on one paper; here the account's
+ * `accent` prints the band behind their name, the figures come in four
+ * different inks, the year strip shows the months they actually walked, and
+ * the ground each quest crossed is a colour rather than another grey word. A
+ * page about a person that looked like a table row was the thing to fix.
+ *
  * An unpublished handle and a handle that does not exist are indistinguishable
  * from here, on purpose: the directory must not be usable to confirm that
  * somebody has an account.
@@ -45,62 +55,125 @@ export default async function PublicProfilePage({
   const profile = await getPublicProfile(handle, user.id);
   if (!profile) notFound();
 
+  const accent = accentInk(profile.accent);
+  const walked = profile.months.reduce((sum, month) => sum + month.count, 0);
+  const busiest = profile.months.reduce(
+    (best, month) => (month.count > best.count ? month : best),
+    profile.months[0] ?? { count: 0, label: "" },
+  );
+
+  const figures = profile.stats
+    ? [
+        { k: "Logged", v: NUMBER.format(profile.stats.logged) },
+        { k: "Kilometres", v: NUMBER.format(Math.round(profile.stats.km)) },
+        { k: "Metres up", v: NUMBER.format(Math.round(profile.stats.up)) },
+        { k: "Regions", v: NUMBER.format(profile.stats.regions) },
+      ]
+    : [];
+
   return (
     <>
-      <section
-        className="sq-card"
-        style={{ padding: 26, display: "flex", gap: 22, alignItems: "flex-start", flexWrap: "wrap" }}
-      >
-        <Avatar name={profile.name} size={112} />
+      <section className="sq-card" style={{ overflow: "hidden", padding: 0 }}>
+        <div
+          className="sq-profile-band"
+          style={{ ["--band" as string]: accent.deep } as CSSProperties}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+            <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.11em" }}>
+              @{profile.handle}
+              {profile.country ? ` · ${profile.country}` : ""}
+            </span>
+            <span className="sq-mono" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
+              Walking since {SINCE.format(profile.joinedAt)}
+            </span>
+          </div>
 
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <p className="sq-kicker-sm" style={{ marginBottom: 8, fontSize: 10, letterSpacing: "0.1em" }}>
-            @{profile.handle}
-            {profile.country ? ` · ${profile.country}` : ""}
-          </p>
-          <h1 style={{ fontSize: 34, lineHeight: 1.05, marginBottom: 8 }}>{profile.name}</h1>
-          {profile.headline ? (
-            <p style={{ fontSize: 15, lineHeight: 1.5, maxWidth: "46ch", color: "var(--ink-2)", marginBottom: 16 }}>
-              {profile.headline}
-            </p>
-          ) : null}
-
-          {profile.stats ? (
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-              {[
-                { k: "Logged", v: profile.stats.logged },
-                { k: "Kilometres", v: Math.round(profile.stats.km) },
-                { k: "Metres up", v: Math.round(profile.stats.up) },
-                { k: "Regions", v: profile.stats.regions },
-              ].map((stat) => (
-                <span key={stat.k} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 24, lineHeight: 1 }}>
-                    {stat.v}
-                  </b>
-                  <span className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
-                    {stat.k}
-                  </span>
-                </span>
-              ))}
-            </div>
-          ) : null}
+          <div className="sq-profile-face">
+            <Avatar name={profile.name} size={104} />
+          </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 150 }}>
-          {profile.isSelf ? (
-            <Link href="/settings/profile" className="sq-btn sq-btn-primary">
-              Edit your page
-            </Link>
-          ) : (
-            <Link href="/people?tab=groups" className="sq-btn sq-btn-ghost">
-              Walk together
-            </Link>
-          )}
-          <span className="sq-kicker-sm" style={{ textAlign: "center", fontSize: 9.5 }}>
-            Walking since {SINCE.format(profile.joinedAt)}
-          </span>
+        <div style={{ padding: "18px 26px 0", display: "flex", gap: 22, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <h1 style={{ fontSize: 34, lineHeight: 1.05, marginBottom: 8 }}>{profile.name}</h1>
+            {profile.headline ? (
+              <p style={{ fontSize: 15, lineHeight: 1.5, maxWidth: "46ch", color: "var(--ink-2)" }}>
+                {profile.headline}
+              </p>
+            ) : null}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 150 }}>
+            {profile.isSelf ? (
+              <Link href="/settings/profile" className="sq-btn sq-btn-primary">
+                Edit your page
+              </Link>
+            ) : (
+              <Link href="/people?tab=groups" className="sq-btn sq-btn-ghost">
+                Walk together
+              </Link>
+            )}
+          </div>
         </div>
+
+        {figures.length > 0 ? (
+          <div className="sq-figure-row">
+            {figures.map((figure, index) => {
+              const pen = FIGURE_INKS[index % FIGURE_INKS.length];
+              return (
+                <div
+                  key={figure.k}
+                  className="sq-figure-tile"
+                  style={
+                    {
+                      "--ink": pen.ink,
+                      "--wash": pen.wash,
+                      "--edge": pen.edge,
+                      "--i": index,
+                    } as CSSProperties
+                  }
+                >
+                  <b>{figure.v}</b>
+                  <span>{figure.k}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
+
+      {profile.months.length > 0 ? (
+        <article className="sq-card-flat" style={{ marginTop: 16, overflow: "hidden" }}>
+          <div className="sq-section-head sq-rule-head">
+            <h2 className="sq-h2">The last twelve months</h2>
+            <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+              {walked === 0
+                ? "Nothing approved yet"
+                : busiest.count > 0
+                  ? `Busiest: ${busiest.label}`
+                  : `${walked} walked`}
+            </span>
+          </div>
+          <div
+            className="sq-year"
+            style={
+              { "--ink": accent.ink, "--wash": accent.wash, "--edge": accent.edge } as CSSProperties
+            }
+          >
+            {profile.months.map((month, index) => (
+              <div key={month.key} className="sq-year-month">
+                <div
+                  className="sq-year-cell"
+                  data-heat={heat(month.count)}
+                  style={{ ["--i" as string]: index }}
+                  title={`${month.label} — ${month.count} ${month.count === 1 ? "quest" : "quests"}`}
+                />
+                <span>{month.short}</span>
+              </div>
+            ))}
+          </div>
+        </article>
+      ) : null}
 
       <div className="sq-grid sq-grid-fit-md" style={{ marginTop: 16, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -154,29 +227,25 @@ export default async function PublicProfilePage({
           ) : null}
 
           {profile.stickers.length > 0 ? (
-            <article className="sq-card-flat">
+            <article className="sq-card-flat" style={{ overflow: "hidden" }}>
               <div className="sq-section-head sq-rule-head">
                 <h2 className="sq-h2">Earned</h2>
                 <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
                   {profile.stickers.length}
                 </span>
               </div>
-              <div
-                style={{
-                  padding: "18px 22px",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill,minmax(56px,1fr))",
-                  gap: 10,
-                }}
-              >
+              <div className="sq-sticker-scatter">
                 {profile.stickers.map((sticker, index) => (
                   <span
                     key={sticker.id}
-                    className="sq-sticker"
-                    style={{ ["--i" as string]: index }}
-                    title={sticker.label}
+                    style={{ ["--tilt" as string]: tiltFor(index), display: "inline-flex" }}
                   >
-                    <Glyph name={glyphFor(sticker.sticker)} size={22} strokeWidth={1.8} />
+                    <SqSticker
+                      sticker={sticker.sticker}
+                      size={58}
+                      index={index}
+                      title={sticker.label}
+                    />
                   </span>
                 ))}
               </div>
@@ -226,6 +295,28 @@ export default async function PublicProfilePage({
                     {activity.retreated ? " · retreat" : ""}
                   </span>
 
+                  {activity.tags.length > 0 ? (
+                    <div className="sq-terrain">
+                      {[...new Set(activity.tags)].slice(0, 5).map((tag) => {
+                        const pen = terrainInk(tag);
+                        return (
+                          <span
+                            key={tag}
+                            style={
+                              {
+                                "--ink": pen.ink,
+                                "--wash": pen.wash,
+                                "--edge": pen.edge,
+                              } as CSSProperties
+                            }
+                          >
+                            {tag}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+
                   <div
                     style={{
                       display: "grid",
@@ -269,21 +360,8 @@ function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
-/** Sticker artwork keys map onto the field-guide glyph set. */
-function glyphFor(sticker: string): GlyphName {
-  const table: Record<string, GlyphName> = {
-    peak: "peak",
-    ridge: "ridge",
-    map: "map",
-    marker: "marker",
-    laurel: "laurel",
-    sun: "sun",
-    book: "book",
-    ascent: "ascent",
-    retreat: "retreat",
-    winter: "winter",
-    peaks: "peaks",
-    compass: "compass",
-  };
-  return table[sticker] ?? "peak";
+/** A fixed wobble rather than a random one, so a page does not reshuffle
+ *  itself between the server's render and the browser's. */
+function tiltFor(index: number): number {
+  return [-5, 3, -2, 6, -4, 2][index % 6];
 }

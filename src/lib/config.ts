@@ -277,6 +277,31 @@ export const CAPABILITY_COPY: Record<Capability, { title: string; detail: string
  * an Ultra member describes a limit they paid to remove. Superseded
  * capabilities are dropped from the telling, not from the grant.
  */
+/**
+ * Every capability the product sells, in the order a card lists them.
+ *
+ * Derived from the plans rather than written out again, so a capability added
+ * to a tier appears on the "what your plan includes" list without anybody
+ * remembering to add it twice.
+ */
+export const ALL_CAPABILITIES: Capability[] = [
+  ...new Set(PLANS.flatMap((plan) => plan.capabilities)),
+];
+
+/**
+ * The cheapest plan that grants a capability.
+ *
+ * What a locked feature should say to somebody who wants it: not "you don't
+ * have this" but "this one has it". Returns null for a capability no plan
+ * grants, which would be a definition bug rather than a state to render.
+ */
+export function lowestPlanWith(capability: Capability): PlanId | null {
+  const holder = [...PLANS]
+    .sort((a, b) => a.tier - b.tier)
+    .find((plan) => plan.capabilities.includes(capability));
+  return holder?.id ?? null;
+}
+
 export function headlineCapabilities(definition: PlanDefinition, limit = 3): Capability[] {
   const held = new Set(definition.capabilities);
   return definition.capabilities

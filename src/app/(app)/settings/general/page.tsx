@@ -57,7 +57,7 @@ export default async function GeneralSettingsPage() {
             <SqToggleRow
               name="expertStats"
               label="Expert figures"
-              tag={entitlement.isSubscribed ? undefined : "Explorer"}
+              tag={entitlement.isSubscribed ? undefined : "EXPLORER"}
               description="The extra per-quest figures — gradient, exposure, the spread over volume — on the dashboard card and the monthly."
               defaultOn={display?.expertStats ?? false}
               disabled={!entitlement.isSubscribed}

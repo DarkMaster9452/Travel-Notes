@@ -2,12 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SqCheckoutButton, SqPortalButton } from "@/components/sq/plan-actions";
+import { SqActivateButton } from "@/components/sq/unlock";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
-import { formatPrice, PLANS } from "@/lib/config";
+import { Glyph, LockGlyph } from "@/components/sq/icons";
+import { SqPaidChip } from "@/components/sq/locked";
+import {
+  ALL_CAPABILITIES,
+  CAPABILITY_COPY,
+  formatPrice,
+  lowestPlanWith,
+  PLANS,
+} from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import { isStripeEnabled, isUltraEnabled } from "@/lib/env";
+import { ENVELOPE_COPY, getEnvelopeStatus } from "@/lib/envelope";
+import { isDemoPlans, isStripeEnabled, isUltraEnabled } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Plan & billing" };
 export const dynamic = "force-dynamic";
@@ -25,14 +35,17 @@ const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", y
 export default async function BillingSettingsPage() {
   const user = await requireClient();
 
-  const [entitlement, subscription, address] = await Promise.all([
+  const [entitlement, subscription, address, envelope] = await Promise.all([
     getEntitlement(user.id),
     db.subscription.findUnique({ where: { userId: user.id } }),
     db.shippingAddress.findUnique({ where: { userId: user.id } }),
+    getEnvelopeStatus(user.id, user.name),
   ]);
 
   const current = entitlement.definition;
+  const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
   const yearly = subscription?.stripePriceId?.includes("yearly") ?? false;
+  const demo = isDemoPlans();
 
   return (
     <>
@@ -109,19 +122,76 @@ export default async function BillingSettingsPage() {
       <section className="sq-card" style={{ overflow: "hidden" }}>
         <div className="sq-section-head sq-rule-head">
           <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            What your plan includes
+          </h2>
+          <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+            {held.length} of {ALL_CAPABILITIES.length}
+          </span>
+        </div>
+        <ul>
+          {ALL_CAPABILITIES.map((capability) => {
+            const yours = entitlement.can(capability);
+            const from = lowestPlanWith(capability);
+            return (
+              <li
+                key={capability}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto minmax(0,1fr) auto",
+                  gap: 14,
+                  alignItems: "center",
+                  padding: "13px 24px",
+                  borderTop: "1px solid var(--line-2)",
+                  opacity: yours ? 1 : 0.72,
+                }}
+              >
+                <span style={{ color: yours ? "var(--moss)" : "var(--ink-3)" }}>
+                  {yours ? <Glyph name="check" size={16} strokeWidth={2.4} /> : <LockGlyph size={14} />}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <b style={{ display: "block", fontSize: 14, fontWeight: 600 }}>
+                    {CAPABILITY_COPY[capability].title}
+                  </b>
+                  <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink-2)" }}>
+                    {CAPABILITY_COPY[capability].detail}
+                  </span>
+                </span>
+                {yours ? (
+                  <span className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
+                    Yours
+                  </span>
+                ) : from ? (
+                  <SqPaidChip plan={from} />
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
             The plans
           </h2>
           <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-            {isStripeEnabled() ? "Cancel any time" : "Billing not configured here"}
+            {demo ? "Free while we are in demo" : isStripeEnabled() ? "Cancel any time" : "Billing not configured here"}
           </span>
         </div>
         <ul>
           {PLANS.map((plan) => {
             const isCurrent = plan.id === entitlement.plan;
             const buyable =
+              !demo &&
               isStripeEnabled() &&
               !isCurrent &&
               (plan.id === "explorer" || (plan.id === "ultra" && isUltraEnabled()));
+            // While plans are free, anything above free can simply be switched
+            // on. What somebody would *gain* is computed against what this
+            // account already holds, so the celebration lists what actually
+            // changed rather than reciting the plan's whole feature list.
+            const activatable = demo && !isCurrent && plan.id !== "free";
+            const gains = plan.capabilities.filter((capability) => !entitlement.can(capability));
 
             return (
               <li
@@ -157,13 +227,28 @@ export default async function BillingSettingsPage() {
 
                 <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span className="sq-mono" style={{ fontSize: 12, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
-                    {plan.price.monthly === 0 ? "Free" : `${formatPrice(plan.price.monthly)}/mo`}
+                    {plan.price.monthly === 0 ? (
+                      "Free"
+                    ) : demo ? (
+                      <>
+                        <s style={{ opacity: 0.55 }}>{formatPrice(plan.price.monthly)}/mo</s> Free
+                      </>
+                    ) : (
+                      `${formatPrice(plan.price.monthly)}/mo`
+                    )}
                   </span>
                   {buyable ? (
                     <SqCheckoutButton
                       plan={plan.id === "ultra" ? "ultra" : "explorer"}
                       interval="monthly"
                       label={plan.tier > entitlement.tier ? "Upgrade" : "Switch"}
+                      variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
+                    />
+                  ) : activatable ? (
+                    <SqActivateButton
+                      plan={plan.id === "ultra" ? "ultra" : "explorer"}
+                      label={plan.tier > entitlement.tier ? "Unlock it" : "Switch to it"}
+                      gains={[...gains]}
                       variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
                     />
                   ) : null}
@@ -174,40 +259,51 @@ export default async function BillingSettingsPage() {
         </ul>
       </section>
 
+      {/* One place decides whether post actually goes out — `lib/envelope` — so
+          this card, the sticker sheet and the address form cannot each reach
+          their own conclusion about somebody's envelope. */}
       <section className="sq-tinted sq-pad-sm">
         <div className="sq-section-head" style={{ marginBottom: 14 }}>
           <h3 className="sq-h2" style={{ fontSize: 19 }}>
             Where the envelope goes
           </h3>
           <Link href="/settings/address" style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
-            Edit address →
+            {envelope.posts ? "Edit address →" : "Add an address →"}
           </Link>
         </div>
+
+        <p style={{ marginBottom: 14 }}>
+          <Tag tone={envelope.posts ? "green" : envelope.reason === "no_address" ? "stamp" : "plain"} small>
+            {ENVELOPE_COPY[envelope.reason].title}
+          </Tag>
+        </p>
+
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
           <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            {address?.line1 ? (
+            {envelope.posts ? (
               <>
-                {address.recipient ?? user.name}
+                {envelope.address.recipient}
                 <br />
-                {address.line1}
+                {envelope.address.line1}
                 <br />
-                {address.line2 ? (
+                {envelope.address.line2 ? (
                   <>
-                    {address.line2}
+                    {envelope.address.line2}
                     <br />
                   </>
                 ) : null}
-                {[address.postcode, address.city].filter(Boolean).join(" ")}
+                {[envelope.address.postcode, envelope.address.city].filter(Boolean).join(" ")}
                 <br />
-                {address.country}
+                {envelope.address.country}
               </>
             ) : (
-              <span style={{ color: "var(--ink-3)" }}>No address on file — the envelope has nowhere to go.</span>
+              <span style={{ color: "var(--ink-3)" }}>
+                {address ? "Not enough of an address to post to — a street, a town and a country." : "No address on file."}
+              </span>
             )}
           </p>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
-            Quest cards and stickers post on the 2nd of each month. An address changed after the
-            28th applies to the envelope after next.
+            {ENVELOPE_COPY[envelope.reason].detail}
           </p>
         </div>
       </section>

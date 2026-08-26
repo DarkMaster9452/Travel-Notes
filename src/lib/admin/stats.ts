@@ -280,13 +280,28 @@ export type RevenueSummary = Awaited<ReturnType<typeof getRevenueSummary>>;
 export async function getRevenueSummary() {
   const rows = await db.subscription.findMany({
     where: { status: { in: [...LIVE_STATUSES] } },
-    select: { plan: true, status: true, cancelAtPeriodEnd: true, currentPeriodEnd: true },
+    select: {
+      plan: true,
+      status: true,
+      cancelAtPeriodEnd: true,
+      currentPeriodEnd: true,
+      demo: true,
+    },
   });
 
   let monthlyCents = 0;
   let leaving = 0;
+  let demo = 0;
 
   for (const row of rows) {
+    // A demo activation is a live subscription in every way that matters to
+    // the product and in no way that matters to the books. It is counted, and
+    // it is counted separately — folding it into the money would make this
+    // page report revenue nobody was charged.
+    if (row.demo) {
+      demo += 1;
+      continue;
+    }
     const id = planIdFromRecord(row.plan);
     const plan = PLANS.find((candidate) => candidate.id === id);
     if (plan) monthlyCents += plan.price.monthly;
@@ -302,6 +317,9 @@ export async function getRevenueSummary() {
 
   return {
     live: rows.length,
+    /** Of `live`, how many were switched on without money changing hands. */
+    demo,
+    paying: rows.length - demo,
     monthlyCents,
     yearlyCents: monthlyCents * 12,
     leaving,

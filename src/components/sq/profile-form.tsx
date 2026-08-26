@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 
 import { savePublicProfileAction, type PublicProfileState } from "@/app/(app)/profile/public-actions";
 import { Glyph } from "@/components/sq/icons";
+import { ACCENT_INK, ACCENT_KEYS } from "@/lib/accents";
 
 export type ProfileDraft = {
   handle: string;
@@ -21,8 +22,6 @@ export type ProfileDraft = {
   showActivities: boolean;
   showStickers: boolean;
 };
-
-const ACCENTS = ["PINE", "MOSS", "STONE", "WATER", "CLAY", "DUSK", "SIGNAL"];
 
 /**
  * The public page editor.
@@ -146,16 +145,38 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
             </label>
           </div>
 
-          <label className="sq-field">
-            <span className="sq-label">Accent</span>
-            <select className="sq-select" name="accent" defaultValue={draft.accent}>
-              {ACCENTS.map((accent) => (
-                <option key={accent} value={accent}>
-                  {accent.charAt(0) + accent.slice(1).toLowerCase()}
-                </option>
+          {/* Swatches rather than a dropdown. The accent is the one thing on
+              this form whose effect is purely visual, and a list of seven
+              words asks somebody to imagine seven colours they have never
+              seen. */}
+          <fieldset className="sq-field" style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend className="sq-label" style={{ padding: 0 }}>
+              Accent
+            </legend>
+            <p style={{ fontSize: 12, color: "var(--ink-2)", margin: "0 0 10px" }}>
+              The ink your page is printed in — the band behind your name, and the year strip.
+            </p>
+            <div className="sq-swatches">
+              {ACCENT_KEYS.map((key) => (
+                <label key={key} className="sq-swatch" title={ACCENT_INK[key].label}>
+                  <input
+                    type="radio"
+                    name="accent"
+                    value={key}
+                    defaultChecked={draft.accent === key}
+                  />
+                  <span
+                    aria-hidden
+                    style={{
+                      background: ACCENT_INK[key].deep,
+                      borderColor: ACCENT_INK[key].edge,
+                    }}
+                  />
+                  <b>{ACCENT_INK[key].label}</b>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
         </div>
 
         <ul>
