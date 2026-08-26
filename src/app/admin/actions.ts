@@ -4,8 +4,12 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireAdmin, requireOwner } from "@/lib/auth/guards";
+import { recordAudit } from "@/lib/admin/audit";
+import { sendVerdict } from "@/lib/email";
+import { scoreEntry } from "@/lib/leaderboard";
 import { db } from "@/lib/db";
+import { slugify } from "@/lib/utils";
 import { slotFromKey } from "@/lib/admin/schedule";
 
 /**
@@ -82,6 +86,42 @@ export async function reviewSubmissionAction(input: {
     }),
   ]);
 
+  await recordAudit({
+    actorId: admin.id,
+    action: approve ? "submission.approved" : "submission.declined",
+    subject: submissionId,
+    detail: note || null,
+  });
+
+  // The verdict is the thing the filer has been waiting for, so it is the one
+  // moment worth an email. Sent after the write, never inside the transaction:
+  // a mail server having a bad afternoon must not roll back an approval.
+  const decided = await db.submission.findUnique({
+    where: { id: submissionId },
+    select: {
+      userId: true,
+      retreated: true,
+      period: true,
+      quest: { select: { title: true, difficulty: true, distance: true, elevationGain: true } },
+    },
+  });
+  if (decided) {
+    await sendVerdict(decided.userId, {
+      approved: approve,
+      questTitle: decided.quest.title,
+      note,
+      points: approve
+        ? scoreEntry({
+            difficulty: decided.quest.difficulty,
+            distance: decided.quest.distance,
+            elevationGain: decided.quest.elevationGain,
+            retreated: decided.retreated,
+            featuredPeriod: decided.period,
+          })
+        : undefined,
+    });
+  }
+
   revalidatePath("/admin/review");
   revalidatePath("/admin/submissions");
   revalidatePath("/admin");
@@ -97,6 +137,46 @@ export async function reviewSubmissionAction(input: {
   };
 }
 
+/**
+ * Put the last verdict back in the queue.
+ *
+ * The deck is fast on purpose, and a fast deck needs a way back: this returns
+ * a decided submission to `PENDING` and clears the reviewer, the note and the
+ * timestamp, so the row reads as never-judged rather than as judged and then
+ * quietly amended. The completion it may have written is undone with it —
+ * a quest that counts as done because of a verdict that has been withdrawn is
+ * the one inconsistency this whole flow exists to prevent.
+ */
+export async function undoReviewAction(submissionId: string): Promise<AdminResult> {
+  const admin = await requireAdmin();
+
+  const submission = await db.submission.findUnique({
+    where: { id: submissionId },
+    select: { id: true, userId: true, questId: true, status: true },
+  });
+  if (!submission) return { ok: false, message: "That submission is gone." };
+  if (submission.status === "PENDING") return { ok: true };
+
+  await db.$transaction([
+    db.submission.update({
+      where: { id: submissionId },
+      data: { status: "PENDING", reviewedById: null, reviewedAt: null, reviewNote: null },
+    }),
+    db.questHistory.updateMany({
+      where: { userId: submission.userId, questId: submission.questId },
+      data: { completed: false, completedAt: null },
+    }),
+  ]);
+
+  await recordAudit({ actorId: admin.id, action: "submission.reopened", subject: submissionId });
+
+  revalidatePath("/admin/review");
+  revalidatePath("/admin/submissions");
+  revalidatePath("/admin");
+  revalidatePath("/submissions");
+  return { ok: true };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Accounts                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -105,7 +185,6 @@ const accountSchema = z.object({
   userId: z.string().trim().min(1).max(60),
   name: z.string().trim().min(1, "An account needs a name.").max(80),
   email: z.string().trim().toLowerCase().email("That isn't an email address.").max(160),
-  role: z.enum(["USER", "ADMIN"]),
   plan: z.enum(["FREE", "EXPLORER", "ULTRA"]),
   freeQuestsUsed: z.coerce.number().int().min(0).max(99),
   theme: z.enum(["SYSTEM", "LIGHT", "DARK"]),
@@ -137,7 +216,6 @@ export async function updateAccountAction(formData: FormData): Promise<AdminResu
     userId: formData.get("userId"),
     name: formData.get("name"),
     email: formData.get("email"),
-    role: formData.get("role"),
     plan: formData.get("plan"),
     freeQuestsUsed: formData.get("freeQuestsUsed"),
     theme: formData.get("theme") ?? "SYSTEM",
@@ -146,13 +224,13 @@ export async function updateAccountAction(formData: FormData): Promise<AdminResu
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Those values don't look right." };
   }
 
-  const { userId, name, email, role, plan, freeQuestsUsed, theme } = parsed.data;
+  const { userId, name, email, plan, freeQuestsUsed, theme } = parsed.data;
 
-  // An admin demoting themselves would lock the panel behind an account that
-  // can no longer open it. Refuse rather than strand them.
-  if (userId === admin.id && role !== "ADMIN") {
-    return { ok: false, message: "You can't remove your own admin role." };
-  }
+  // Roles are not written from this form. Correcting a typo in somebody's
+  // email and deciding who can read proof are different acts with different
+  // blast radii, and the second one lives on Panel access behind the owner
+  // guard. See `revokeStaffAction` for what the panel *can* do to a role, and
+  // why granting one is deliberately not it.
 
   const clash = await db.user.findFirst({
     where: { email, id: { not: userId } },
@@ -164,7 +242,7 @@ export async function updateAccountAction(formData: FormData): Promise<AdminResu
 
   await db.user.update({
     where: { id: userId },
-    data: { name, email, role, freeQuestsUsed, theme },
+    data: { name, email, freeQuestsUsed, theme },
   });
 
   if (plan === "FREE") {
@@ -185,6 +263,13 @@ export async function updateAccountAction(formData: FormData): Promise<AdminResu
       create: { userId, ...values },
     });
   }
+
+  await recordAudit({
+    actorId: admin.id,
+    action: "account.updated",
+    subject: `${name} <${email}>`,
+    detail: `plan ${plan}`,
+  });
 
   revalidatePath("/admin/users");
   revalidatePath("/admin");
@@ -388,7 +473,7 @@ export async function createQuestAction(
   _prev: QuestFormState,
   formData: FormData,
 ): Promise<QuestFormState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const parsed = questSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -442,14 +527,89 @@ export async function createQuestAction(
     select: { id: true },
   });
 
+  await recordAudit({ actorId: admin.id, action: "quest.written", subject: q.title, detail: quest.id });
+
   revalidatePath("/admin/quests");
   revalidatePath("/admin");
   return { ok: true, questId: quest.id };
 }
 
 /** Publish or unpublish. An unpublished quest can no longer be issued. */
+/**
+ * Edit a quest.
+ *
+ * The counterpart to `createQuestAction`, on the same schema, so the two forms
+ * cannot drift into accepting different things. The signature is recomputed on
+ * every write: it is derived from the defining fields, and a quest whose
+ * location or grade has changed is a different quest as far as the
+ * anti-repetition rule is concerned.
+ */
+export async function updateQuestAction(
+  _prev: QuestFormState,
+  formData: FormData,
+): Promise<QuestFormState> {
+  const admin = await requireAdmin();
+
+  const questId = String(formData.get("questId") ?? "").trim();
+  if (!questId) return { ok: false, errors: { form: "Unknown quest." } };
+
+  const parsed = questSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    const errors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = issue.path.join(".") || "form";
+      errors[key] ??= issue.message;
+    }
+    return { ok: false, errors };
+  }
+
+  const q = parsed.data;
+  const signature = [q.location, q.difficulty, Math.round(q.distance), q.region]
+    .join("|")
+    .toLowerCase();
+
+  await db.quest.update({
+    where: { id: questId },
+    data: {
+      title: q.title,
+      subtitle: q.subtitle,
+      objective: q.objective,
+      description: q.description,
+      bonus: q.bonus || null,
+      safetyNotes: q.safetyNotes || null,
+      category: q.category || null,
+      location: q.location,
+      region: q.region,
+      country: q.country,
+      latitude: q.latitude,
+      longitude: q.longitude,
+      distance: q.distance,
+      elevationGain: q.elevationGain,
+      duration: q.duration,
+      difficulty: q.difficulty,
+      published: q.published ?? false,
+      ...(q.coverImage ? { coverImage: q.coverImage } : {}),
+      parkingName: q.parkingName || null,
+      parkingLat: optionalNumber(q.parkingLat),
+      parkingLng: optionalNumber(q.parkingLng),
+      parkingNote: q.parkingNote || null,
+      approachTime: optionalNumber(q.approachTime),
+      transitNote: q.transitNote || null,
+      signature,
+    },
+  });
+
+  await recordAudit({ actorId: admin.id, action: "quest.updated", subject: q.title, detail: questId });
+
+  revalidatePath("/admin/quests");
+  revalidatePath(`/admin/quests/${questId}`);
+  revalidatePath(`/quests/${questId}`);
+  revalidatePath("/quests");
+  return { ok: true, questId };
+}
+
 export async function toggleQuestPublishedAction(questId: string): Promise<AdminResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const quest = await db.quest.findUnique({
     where: { id: questId },
     select: { published: true },
@@ -457,6 +617,11 @@ export async function toggleQuestPublishedAction(questId: string): Promise<Admin
   if (!quest) return { ok: false, message: "That quest is gone." };
 
   await db.quest.update({ where: { id: questId }, data: { published: !quest.published } });
+  await recordAudit({
+    actorId: admin.id,
+    action: quest.published ? "quest.unpublished" : "quest.published",
+    subject: questId,
+  });
   revalidatePath("/admin/quests");
   return { ok: true, message: quest.published ? "Unpublished." : "Published." };
 }
@@ -469,7 +634,7 @@ export async function toggleQuestPublishedAction(questId: string): Promise<Admin
  * Unpublish instead, which is what the message says.
  */
 export async function deleteQuestAction(questId: string): Promise<AdminResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const issued = await db.questHistory.count({ where: { questId } });
   if (issued > 0) {
@@ -480,8 +645,69 @@ export async function deleteQuestAction(questId: string): Promise<AdminResult> {
   }
 
   await db.quest.delete({ where: { id: questId } });
+  await recordAudit({ actorId: admin.id, action: "quest.deleted", subject: questId });
   revalidatePath("/admin/quests");
   return { ok: true, message: "Quest deleted." };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trailheads                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Rename or move a trailhead.
+ *
+ * There is no places table — a location exists because a quest points at it —
+ * so this writes across every quest standing at the old name. Moving the
+ * coordinates is opt-in and separate from renaming: correcting a spelling and
+ * correcting a pin are different mistakes, and doing both by accident is how a
+ * trailhead ends up in a lake.
+ */
+export async function moveTrailheadAction(input: {
+  location: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  moveCoordinates: boolean;
+}): Promise<AdminResult> {
+  const admin = await requireAdmin();
+
+  const parsed = z
+    .object({
+      location: z.string().trim().min(1).max(80),
+      name: z.string().trim().min(2, "A trailhead needs a name.").max(80),
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+      moveCoordinates: z.boolean(),
+    })
+    .safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Those values don't look right." };
+  }
+
+  const { location, name, latitude, longitude, moveCoordinates } = parsed.data;
+
+  const updated = await db.quest.updateMany({
+    where: { location },
+    data: {
+      location: name,
+      ...(moveCoordinates ? { latitude, longitude } : {}),
+    },
+  });
+
+  await recordAudit({
+    actorId: admin.id,
+    action: "trailhead.moved",
+    subject: `${location} → ${name}`,
+    detail: moveCoordinates ? `${latitude}, ${longitude}` : "name only",
+  });
+
+  revalidatePath("/admin/locations");
+  revalidatePath(`/admin/locations/${slugify(name)}`);
+  return {
+    ok: true,
+    message: `Updated ${updated.count} ${updated.count === 1 ? "quest" : "quests"}.`,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -551,6 +777,13 @@ export async function createScheduleAction(formData: FormData): Promise<AdminRes
       closeAt: slot.closeAt,
       createdById: admin.id,
     },
+  });
+
+  await recordAudit({
+    actorId: admin.id,
+    action: "slot.booked",
+    subject: `${period} ${slotKey}`,
+    detail: questId,
   });
 
   revalidatePath("/admin/schedule");
@@ -809,4 +1042,78 @@ export async function restoreStickerAction(
   revalidatePath(`/admin/users/${userId}`);
   revalidatePath("/achievements");
   return { ok: true, message: "Sticker restored." };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panel access                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Take somebody's staff role away.
+ *
+ * The panel can revoke and it cannot grant, and that asymmetry is the whole
+ * design: revoking is a thing you want to be able to do fast, from a phone, at
+ * two in the morning. Granting is a thing that should require somebody at a
+ * database prompt, because a panel that can promote accounts is one
+ * compromised session away from making an attacker permanent.
+ *
+ * Owner-only, and it refuses the owner's own account and the last owner: a
+ * panel nobody can open is not a safer panel.
+ */
+export async function revokeStaffAction(userId: string): Promise<AdminResult> {
+  const owner = await requireOwner();
+
+  if (userId === owner.id) {
+    return { ok: false, message: "You cannot take away your own keys." };
+  }
+
+  const target = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, role: true },
+  });
+  if (!target) return { ok: false, message: "That account is gone." };
+  if (target.role === "USER") return { ok: true, message: "Already a member." };
+
+  if (target.role === "OWNER") {
+    const owners = await db.user.count({ where: { role: "OWNER" } });
+    if (owners <= 1) return { ok: false, message: "That is the last owner." };
+  }
+
+  await db.$transaction([
+    db.user.update({ where: { id: userId }, data: { role: "USER" } }),
+    // Their panel sessions are what the role was letting through, so they go
+    // with it. A revoked admin holding a live cookie is a revoked admin only
+    // in the database.
+    db.session.deleteMany({ where: { userId } }),
+  ]);
+
+  await recordAudit({
+    actorId: owner.id,
+    action: "staff.revoked",
+    subject: target.name,
+    detail: `was ${target.role}`,
+  });
+
+  revalidatePath("/admin/access");
+  revalidatePath("/admin/users");
+  return { ok: true, message: `${target.name} is a member again, and signed out.` };
+}
+
+/** End every live session on one account, without touching its role. */
+export async function endSessionsAction(userId: string): Promise<AdminResult> {
+  const owner = await requireOwner();
+
+  const target = await db.user.findUnique({ where: { id: userId }, select: { name: true } });
+  if (!target) return { ok: false, message: "That account is gone." };
+
+  const dropped = await db.session.deleteMany({ where: { userId } });
+  await recordAudit({
+    actorId: owner.id,
+    action: "sessions.ended",
+    subject: target.name,
+    detail: `${dropped.count} dropped`,
+  });
+
+  revalidatePath("/admin/access");
+  return { ok: true, message: `${dropped.count} ${dropped.count === 1 ? "session" : "sessions"} ended.` };
 }

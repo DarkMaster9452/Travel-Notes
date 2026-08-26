@@ -1,44 +1,24 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import {
-  ScheduleCalendar,
-  type CalendarSlot,
-  type QuestOption,
-} from "@/components/admin/schedule-calendar";
-import { Reveal } from "@/components/app/motion";
-import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
-import {
-  slotLabel,
-  slotOpensLabel,
-  slotRange,
-  slotState,
-} from "@/lib/admin/schedule";
+import { SqSegmentedLinks } from "@/components/sq/controls";
+import { SqSlotEditor, type QuestOption, type SlotRow } from "@/components/sq/slot-editor";
+import { PageHeader, Tag } from "@/components/sq/ui";
+import { slotDatesLabel, slotLabel, slotOpensLabel, slotRange, slotState } from "@/lib/admin/schedule";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { stagger } from "@/lib/motion";
 
 export const metadata: Metadata = { title: "Schedule · Admin" };
 export const dynamic = "force-dynamic";
 
-const TABS = [
-  { key: "MONTHLY", label: "Monthly" },
-  { key: "WEEKLY", label: "Weekly" },
-] as const;
-
 /**
  * The calendar.
  *
- * The product's cadence is stated on the landing page and this page obeys it
- * rather than re-opening it: the weekly drops Monday at 06:00, the monthly on
- * the 1st, and there is nowhere here to type an hour because there is no hour
- * to choose. What an admin picks is *which* week or month, and which quest
- * goes in it.
- *
- * Monthly is the first tab because the monthly is the headline quest — the
- * big one — and the weekly is the thing alongside it.
+ * The cadence is stated on the landing page and this screen obeys it rather
+ * than re-opening it: the weekly drops Monday at 06:00 and the monthly on the
+ * 1st, and there is nowhere here to type an hour because there is no hour to
+ * choose. Monthly leads, because the monthly is the headline.
  */
-export default async function SchedulePage({
+export default async function AdminSchedulePage({
   searchParams,
 }: {
   searchParams: Promise<{ period?: string }>;
@@ -56,113 +36,131 @@ export default async function SchedulePage({
         id: true,
         slotKey: true,
         audience: true,
-        quest: { select: { id: true, title: true, location: true } },
+        quest: { select: { id: true, title: true, location: true, region: true } },
       },
     }),
-    // Only published quests can be booked — the action refuses an unpublished
-    // one, so offering it in the picker would only be a trap.
     db.quest.findMany({
       where: { published: true },
       orderBy: { title: "asc" },
       take: 300,
-      select: { id: true, title: true, location: true },
+      select: { id: true, title: true, location: true, region: true },
     }),
   ]);
 
   const bySlot = new Map(booked.map((row) => [row.slotKey, row]));
 
-  const slots: CalendarSlot[] = range.map((slot) => {
+  const slots: SlotRow[] = range.map((slot) => {
     const row = bySlot.get(slot.key);
     return {
       key: slot.key,
       label: slotLabel(slot),
       opensLabel: slotOpensLabel(slot),
+      dates: slotDatesLabel(slot),
       state: slotState(slot),
-      booked: row
+      booking: row
         ? {
             id: row.id,
             questId: row.quest.id,
-            questTitle: row.quest.title,
-            questLocation: row.quest.location,
-            audience: row.audience as "FREE" | "EXPLORER" | "ULTRA",
+            title: row.quest.title,
+            where: `${row.quest.location} · ${row.quest.region}`,
+            audience: row.audience,
           }
         : null,
     };
   });
 
-  const options: QuestOption[] = quests;
-  const filled = slots.filter((slot) => slot.booked).length;
-  const upcomingEmpty = slots.filter((slot) => slot.state === "future" && !slot.booked).length;
+  const options: QuestOption[] = quests.map((quest) => ({
+    id: quest.id,
+    title: quest.title,
+    where: `${quest.location} · ${quest.region}`,
+  }));
+
+  const empty = slots.filter((slot) => slot.state !== "past" && !slot.booking).length;
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>The calendar</Eyebrow>
-          <h1>Schedule.</h1>
-          <p>
-            The weekly drops Monday at 06:00. The monthly opens on the 1st. You pick which slot
-            and which quest — the times aren&apos;t yours to change.
-          </p>
-        </div>
-        <Link href="/admin/quests/new" className="btn btn-ghost btn-sm">
-          Write a new quest
-        </Link>
-      </Reveal>
-
-      <Reveal>
-        <Panel flush>
-          <PanelHead
-            title={period === "MONTHLY" ? "Monthly slots" : "Weekly slots"}
-            aside={
-              <Tag tone={upcomingEmpty > 0 ? "warm" : "pine"}>
-                {upcomingEmpty > 0 ? `${upcomingEmpty} still empty` : "All booked"}
-              </Tag>
-            }
+      <PageHeader
+        kicker="The cadence"
+        title="Schedule"
+        lede="One quest per slot. The weekly opens Monday at 06:00, the monthly on the 1st — the instants are derived from the slot, never typed."
+        right={
+          <SqSegmentedLinks
+            label="Cadence"
+            active={period}
+            options={[
+              { key: "MONTHLY", label: "Monthly", href: "/admin/schedule" },
+              { key: "WEEKLY", label: "Weekly", href: "/admin/schedule?period=WEEKLY" },
+            ]}
           />
+        }
+      />
 
-          <div className="admin-filters">
-            <nav aria-label="Cadence">
-              {TABS.map((tab) => (
-                <Link
-                  key={tab.key}
-                  href={`/admin/schedule?period=${tab.key}`}
-                  aria-current={tab.key === period ? "page" : undefined}
-                  scroll={false}
-                >
-                  {tab.label}
-                </Link>
-              ))}
-            </nav>
-            <p className="meta">{filled} scheduled in view</p>
-          </div>
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            {period === "MONTHLY" ? "Months" : "Weeks"}
+          </h2>
+          <span className="sq-kicker-sm" style={{ fontSize: 10.5, letterSpacing: "0.08em" }}>
+            {empty === 0 ? "Every slot ahead is booked" : `${empty} slots ahead still empty`}
+          </span>
+        </div>
 
-          <div className="px-5 py-5">
-            <ScheduleCalendar period={period} slots={slots} quests={options} />
-          </div>
-        </Panel>
-      </Reveal>
+        <ul className="sq-stagger">
+          {slots.map((slot, index) => (
+            <li
+              key={slot.key}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0,1fr) auto auto auto",
+                gap: 14,
+                alignItems: "center",
+                padding: "13px 22px",
+                borderTop: "1px solid var(--line-2)",
+                background: slot.state === "live" ? "var(--paper-2)" : "transparent",
+                opacity: slot.state === "past" ? 0.62 : 1,
+                ["--i" as string]: index,
+              }}
+            >
+              <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                {slot.key}
+              </span>
 
-      <Reveal delay={stagger(1)} className="mt-5">
-        <Panel>
-          <PanelHead title="How it works" />
-          <ul className="cadence-list">
-            <li>
-              <b>MON</b> The weekly drops at 06:00.
+              <span style={{ minWidth: 0 }}>
+                <b style={{ display: "block", fontSize: 15, fontWeight: 600 }}>
+                  {slot.booking ? slot.booking.title : `${slot.label} — nothing booked`}
+                </b>
+                <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+                  {slot.booking ? slot.booking.where : slot.dates} · opens {slot.opensLabel}
+                </span>
+              </span>
+
+              {slot.booking && slot.booking.audience !== "FREE" ? (
+                <Tag small>{slot.booking.audience}</Tag>
+              ) : (
+                <span />
+              )}
+
+              <Tag tone={slot.state === "live" ? "stamp" : "plain"} small>
+                {slot.state === "live" ? "OPEN" : slot.state === "past" ? "CLOSED" : "SEALED"}
+              </Tag>
+
+              <SqSlotEditor period={period} slot={slot} quests={options} />
             </li>
-            <li>
-              <b>SUN</b> The log closes at 23:59.
-            </li>
-            <li>
-              <b>1st</b> The monthly opens — the big one.
-            </li>
-          </ul>
-          <p className="note">
-            A slot that has already opened can be read but not changed. One quest per slot: to
-            swap it, edit the slot rather than adding a second.
-          </p>
-        </Panel>
-      </Reveal>
+          ))}
+        </ul>
+      </section>
+
+      <section className="sq-tinted sq-pad-sm" style={{ marginTop: 16 }}>
+        <h2 className="sq-h2" style={{ fontSize: 19, marginBottom: 10 }}>
+          What a slot means
+        </h2>
+        <ul style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13.5, lineHeight: 1.55 }}>
+          <li>A booked slot is the same quest for everybody. An empty one is generated per account.</li>
+          <li>A slot aimed above somebody&rsquo;s plan is skipped for them, and the generator fills the gap.</li>
+          <li>Proof filed against a slot is stamped at filing time and keeps that stamp for good.</li>
+          <li>Clearing a slot after it has opened does not un-stamp proof already filed against it.</li>
+        </ul>
+      </section>
     </>
   );
 }

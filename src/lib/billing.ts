@@ -159,3 +159,56 @@ export async function markPaymentFailed(customerId: string): Promise<void> {
     data: { status: "PAST_DUE" },
   });
 }
+
+/* -------------------------------------------------------------------------- */
+/* Invoices                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export type InvoiceLine = {
+  id: string;
+  /** When it was issued. */
+  date: Date;
+  what: string;
+  /** "paid" / "open" / "void" / "uncollectible", as Stripe reports it. */
+  state: string;
+  /** Already formatted in the invoice's own currency. */
+  amount: string;
+  /** Stripe's hosted invoice page, when there is one. */
+  href: string | null;
+};
+
+/**
+ * This account's invoices, from Stripe.
+ *
+ * Read live rather than mirrored into our own table: an invoice is Stripe's
+ * record, and a copy of it here would be a second answer to a question with
+ * one correct answer. An account with no customer id has no invoices, which is
+ * an empty list rather than an error.
+ */
+export async function listInvoices(userId: string, limit = 12): Promise<InvoiceLine[]> {
+  const stripe = getStripe();
+  if (!stripe) return [];
+
+  const subscription = await db.subscription.findUnique({
+    where: { userId },
+    select: { stripeCustomerId: true },
+  });
+  if (!subscription?.stripeCustomerId) return [];
+
+  const invoices = await stripe.invoices.list({
+    customer: subscription.stripeCustomerId,
+    limit,
+  });
+
+  return invoices.data.map((invoice) => ({
+    id: invoice.id ?? invoice.number ?? String(invoice.created),
+    date: new Date(invoice.created * 1000),
+    what: invoice.lines.data[0]?.description ?? "Subscription",
+    state: invoice.status ?? "unknown",
+    amount: new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: (invoice.currency ?? "eur").toUpperCase(),
+    }).format((invoice.total ?? 0) / 100),
+    href: invoice.hosted_invoice_url ?? null,
+  }));
+}

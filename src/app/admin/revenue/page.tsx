@@ -1,45 +1,42 @@
 import type { Metadata } from "next";
 
-import { SplitBar } from "@/components/admin/charts";
-import { StatGrid } from "@/components/admin/stat-grid";
-import { Reveal } from "@/components/app/motion";
-import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
-import { RAMP_3, STATUS_COLOR } from "@/lib/admin/palette";
+import { SqSplitBar } from "@/components/sq/charts";
+import { PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
 import { getPlanSplit, getRevenueSummary, getStatusSplit } from "@/lib/admin/stats";
 import { requireAdmin } from "@/lib/auth/guards";
-import { PLANS, formatPrice } from "@/lib/config";
+import { formatPrice, PLANS } from "@/lib/config";
 import { db } from "@/lib/db";
-import { stagger } from "@/lib/motion";
-import { formatDate } from "@/lib/utils";
+import { isStripeEnabled } from "@/lib/env";
 
-export const metadata: Metadata = { title: "Billing · Admin" };
+export const metadata: Metadata = { title: "Revenue · Admin" };
 export const dynamic = "force-dynamic";
 
+const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
 /**
- * Billing, from this side of the desk.
+ * The shape of the book, not the books.
  *
- * Recurring revenue is computed at list price and labelled as an estimate
- * everywhere it appears. Stripe knows what was actually charged; this page
- * knows the shape of the book, which is the question an operator is asking
- * when they open it.
+ * Every figure here is list price: we store the plan but not the billing
+ * interval, and Stripe is the authority on what anybody was actually charged
+ * after discounts, proration and tax. That is said on the page rather than
+ * left for somebody to discover when the numbers do not reconcile.
  */
 export default async function AdminRevenuePage() {
   await requireAdmin();
 
-  const [revenue, planSplit, statusSplit, recent] = await Promise.all([
+  const [revenue, plans, statuses, renewing] = await Promise.all([
     getRevenueSummary(),
     getPlanSplit(),
     getStatusSplit(),
     db.subscription.findMany({
-      orderBy: { updatedAt: "desc" },
-      take: 25,
+      where: { currentPeriodEnd: { gte: new Date() } },
+      orderBy: { currentPeriodEnd: "asc" },
+      take: 12,
       select: {
-        id: true,
         plan: true,
         status: true,
         cancelAtPeriodEnd: true,
         currentPeriodEnd: true,
-        updatedAt: true,
         user: { select: { name: true, email: true } },
       },
     }),
@@ -47,110 +44,162 @@ export default async function AdminRevenuePage() {
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>Money</Eyebrow>
-          <h1>Billing.</h1>
-          <p>
-            Recurring revenue at list price — before discounts, proration and tax. Stripe is the
-            authority on what was charged.
-          </p>
-        </div>
-        <Tag tone="ghost">{`${revenue.live} live`}</Tag>
-      </Reveal>
+      <PageHeader
+        kicker="The money"
+        title="Revenue"
+        lede="Recurring revenue at list price — before discounts, proration and tax. Stripe is the authority on what was charged."
+        right={
+          isStripeEnabled() ? null : (
+            <Tag tone="stamp" small>
+              Stripe not configured here
+            </Tag>
+          )
+        }
+      />
 
-      <Reveal>
-        <StatGrid
-          items={[
-            {
-              label: "Est. monthly",
-              value: revenue.monthlyCents,
-              display: formatPrice(revenue.monthlyCents),
-              foot: "At list price",
-            },
-            {
-              label: "Est. yearly",
-              value: revenue.yearlyCents,
-              display: formatPrice(revenue.yearlyCents),
-              foot: "Monthly × 12",
-            },
-            { label: "Live subscriptions", value: revenue.live },
-            { label: "Renewing this week", value: revenue.renewingSoon },
-            {
-              label: "Cancelling",
-              value: revenue.leaving,
-              foot: revenue.leaving > 0 ? "Ends at period end" : "Nobody on the way out",
-            },
-            {
-              label: "Past due",
-              value: revenue.pastDue,
-              foot: revenue.pastDue > 0 ? "Stripe is retrying" : "All payments clean",
-            },
-          ]}
+      <StatGrid>
+        <StatTile
+          label="Monthly, at list"
+          value={formatPrice(revenue.monthlyCents)}
+          note={`${revenue.live} live subscriptions`}
+          index={0}
         />
-      </Reveal>
+        <StatTile label="Yearly, at list" value={formatPrice(revenue.yearlyCents)} index={1} />
+        <StatTile label="Renewing this week" count={revenue.renewingSoon} index={2} />
+        <StatTile
+          label="Cancelling at period end"
+          count={revenue.leaving}
+          note={revenue.leaving > 0 ? "Access runs to the end of what they paid for" : undefined}
+          index={3}
+        />
+        <StatTile
+          label="Payment retrying"
+          count={revenue.pastDue}
+          note={revenue.pastDue > 0 ? "Access holds while Stripe retries" : undefined}
+          index={4}
+        />
+      </StatGrid>
 
-      <div className="chart-grid">
-        <Reveal delay={stagger(0)}>
-          <SplitBar
-            title="Where the revenue sits"
-            unitLabel="accounts"
-            segments={planSplit.map((segment, index) => ({
-              ...segment,
-              color: RAMP_3[Math.min(index, RAMP_3.length - 1)],
+      <section className="sq-grid sq-grid-fit-md" style={{ marginTop: 16, alignItems: "start" }}>
+        <article className="sq-tinted sq-pad-sm">
+          <h2 className="sq-h2" style={{ fontSize: 19, marginBottom: 16 }}>
+            Accounts by plan
+          </h2>
+          <SqSplitBar
+            parts={plans.map((plan, index) => ({
+              label: plan.label,
+              value: plan.value,
+              colour: ["var(--color-accent-300)", "var(--moss)", "var(--pine)"][index] ?? "var(--sage)",
             }))}
-            note={PLANS.filter((plan) => plan.price.monthly > 0)
-              .map((plan) => `${plan.name} ${formatPrice(plan.price.monthly)}/mo`)
-              .join(" · ")}
           />
-        </Reveal>
+        </article>
 
-        <Reveal delay={stagger(1)}>
-          <SplitBar
-            title="Subscription health"
-            unitLabel="subscriptions"
-            segments={[
-              { ...statusSplit[0], color: STATUS_COLOR.good },
-              { ...statusSplit[1], color: STATUS_COLOR.trialing },
-              { ...statusSplit[2], color: STATUS_COLOR.alert },
-              { ...statusSplit[3], color: STATUS_COLOR.dormant },
-            ]}
+        <article className="sq-card sq-pad-sm">
+          <h2 className="sq-h2" style={{ fontSize: 19, marginBottom: 16 }}>
+            Billing health
+          </h2>
+          <SqSplitBar
+            parts={statuses.map((status) => ({
+              label: status.label,
+              value: status.value,
+              colour:
+                status.key === "active"
+                  ? "var(--moss)"
+                  : status.key === "trialing"
+                    ? "var(--sage)"
+                    : status.key === "past_due"
+                      ? "var(--signal)"
+                      : "var(--color-neutral-400)",
+            }))}
           />
-        </Reveal>
-      </div>
+        </article>
 
-      <Reveal delay={stagger(2)} className="mt-5">
-        <Panel flush>
-          <PanelHead title="Latest billing changes" aside={<Tag tone="ghost">{`${recent.length} shown`}</Tag>} />
-          {recent.length === 0 ? (
-            <p className="chart-empty">No subscription rows yet.</p>
-          ) : (
-            <ul>
-              {recent.map((row, index) => (
-                <Reveal
-                  as="li"
-                  key={row.id}
-                  delay={stagger(index, 8)}
-                  className="admin-row border-b border-line px-5 py-4 last:border-b-0"
+        <article className="sq-card sq-pad-sm">
+          <h2 className="sq-h2" style={{ fontSize: 19, marginBottom: 16 }}>
+            What each tier is worth
+          </h2>
+          <ul style={{ display: "flex", flexDirection: "column" }}>
+            {PLANS.filter((plan) => plan.price.monthly > 0).map((plan) => {
+              const holders = plans.find((entry) => entry.key === plan.id)?.value ?? 0;
+              return (
+                <li
+                  key={plan.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "10px 0",
+                    borderTop: "1px solid var(--line-2)",
+                    fontSize: 13,
+                  }}
                 >
-                  <span className="min-w-[min(100%,14rem)] flex-1">
-                    <b className="block text-[15px] font-semibold">{row.user.name}</b>
-                    <span className="meta normal-case tracking-[0.06em]">{row.user.email}</span>
+                  <span>
+                    {plan.name} · {formatPrice(plan.price.monthly)}/mo
                   </span>
-                  <Tag tone={row.plan === "ULTRA" ? "pine" : row.plan === "EXPLORER" ? "pine" : "ghost"}>
-                    {row.plan}
+                  <b className="sq-mono" style={{ fontWeight: 500 }}>
+                    {holders} · {formatPrice(holders * plan.price.monthly)}
+                  </b>
+                </li>
+              );
+            })}
+          </ul>
+        </article>
+      </section>
+
+      <section className="sq-card" style={{ marginTop: 16, overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            Next renewals
+          </h2>
+          <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+            Soonest first
+          </span>
+        </div>
+        {renewing.length === 0 ? (
+          <p style={{ padding: "16px 22px", fontSize: 13, color: "var(--ink-3)" }}>
+            Nothing renews from here.
+          </p>
+        ) : (
+          <ul className="sq-stagger">
+            {renewing.map((row, index) => (
+              <li
+                key={row.user.email}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,1fr) auto auto auto",
+                  gap: 16,
+                  alignItems: "center",
+                  padding: "13px 22px",
+                  borderTop: "1px solid var(--line-2)",
+                  ["--i" as string]: index,
+                }}
+              >
+                <span style={{ minWidth: 0 }}>
+                  <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{row.user.name}</b>
+                  <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+                    {row.user.email}
+                  </span>
+                </span>
+                <Tag small>{row.plan}</Tag>
+                {row.cancelAtPeriodEnd ? (
+                  <Tag tone="stamp" small>
+                    LEAVING
                   </Tag>
-                  <Tag tone={row.status === "PAST_DUE" ? "warm" : "ghost"}>{row.status}</Tag>
-                  <span className="meta w-32 shrink-0">
-                    {row.currentPeriodEnd ? formatDate(row.currentPeriodEnd) : "—"}
-                  </span>
-                  {row.cancelAtPeriodEnd && <Tag tone="warm">Cancelling</Tag>}
-                </Reveal>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </Reveal>
+                ) : row.status === "PAST_DUE" ? (
+                  <Tag tone="stamp" small>
+                    RETRYING
+                  </Tag>
+                ) : (
+                  <span />
+                )}
+                <span className="sq-mono" style={{ fontSize: 11, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                  {row.currentPeriodEnd ? DATE.format(row.currentPeriodEnd) : "—"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </>
   );
 }

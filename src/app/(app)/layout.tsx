@@ -1,5 +1,9 @@
-import { AppShell, type NavItem } from "@/components/app/app-shell";
+import { SqShell } from "@/components/sq/shell";
+import { memberFootNav, memberNav } from "@/components/sq/nav";
+import { SqToastProvider } from "@/components/sq/toast";
+import { initialsOf } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
+import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 
 /**
@@ -8,54 +12,47 @@ import { getEntitlement } from "@/lib/entitlements";
  * never decides whether it is allowed to be here, and an admin is sent to the
  * panel rather than shown a dashboard that would be empty for them.
  *
- * The quest in your hand is still assigned rather than chosen — that has not
- * changed and is still the premise.
+ * Seven destinations and one footer item, which is the whole of the member
+ * side. The counts in the rail (proof still in review) are read here rather
+ * than on the page that owns them: a badge is something you need *before*
+ * you have chosen where to go.
  *
- * Six destinations, not twelve. The catalogue browse page, the submissions
- * inbox and the account-wide people directory are still there — nothing that
- * links to them broke — they are just no longer a permanent row in the rail.
- * A sidebar an admin scans in a second and a customer opens six times a day
- * should not carry the same weight of "everything that exists": the second
- * one is read constantly, and the tenth item down is what nobody was reading
- * anyway.
- *
- * Settings, billing and the rules moved out of this list entirely — they live
- * in the settings shell now, reached from the gear beside the account name
- * rather than mixed in with where you actually go to do something.
- *
- * Monthly sits above Weekly because the monthly quest is the headline — the
- * big one, opened on the 1st — and the weekly is the smaller thing alongside
- * it. The order of this list is the only place that hierarchy is stated, so
- * it states it.
+ * The account block at the bottom goes to the member's own public page when
+ * they have published one, and to the settings screen that publishes it when
+ * they have not — the block always leads somewhere about them.
  */
-function nav(): readonly NavItem[] {
-  return [
-    { href: "/dashboard", label: "Today", icon: "sun" },
-    { href: "/monthly", label: "Monthly", icon: "mountain" },
-    { href: "/weekly", label: "Weekly", icon: "calendar" },
-    { href: "/leaderboard", label: "Leaderboard", icon: "compass" },
-    { href: "/history", label: "History", icon: "book" },
-    { href: "/achievements", label: "Stickers", icon: "badge" },
-  ];
-}
-
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireClient();
-  const entitlement = await getEntitlement(user.id);
+
+  const [entitlement, pending, profile, preferences] = await Promise.all([
+    getEntitlement(user.id),
+    db.submission.count({ where: { userId: user.id, status: "PENDING" } }),
+    db.profile.findUnique({ where: { userId: user.id }, select: { handle: true, published: true } }),
+    db.userPreferences.findUnique({
+      where: { userId: user.id },
+      select: { homeLocation: true },
+    }),
+  ]);
+
+  const planName = entitlement.definition.name;
+  const region = preferences?.homeLocation?.split(",").pop()?.trim();
 
   return (
-    <AppShell
-      items={nav()}
-      userName={user.name}
-      theme={user.theme}
-      plan={entitlement.plan}
-      planName={
-        entitlement.isSubscribed
-          ? entitlement.definition.name
-          : `${entitlement.definition.name} plan`
-      }
-    >
-      {children}
-    </AppShell>
+    <SqToastProvider>
+      <SqShell
+        flag={region ? `${planName} · ${region}` : planName}
+        nav={memberNav(pending)}
+        footNav={memberFootNav(planName)}
+        account={{
+          href: profile?.published ? `/people/${profile.handle}` : "/settings/profile",
+          name: user.name,
+          initials: initialsOf(user.name),
+          note: entitlement.isSubscribed ? planName : `${planName} plan`,
+          avatar: user.avatar ?? null,
+        }}
+      >
+        {children}
+      </SqShell>
+    </SqToastProvider>
   );
 }

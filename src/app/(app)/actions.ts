@@ -13,6 +13,12 @@ import { getStripe } from "@/lib/stripe";
 import { LOCATIONS } from "@/lib/quest/locations";
 import { getFeaturedQuest, materialiseFeatured } from "@/lib/quest/featured";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
+import {
+  activityIdFrom,
+  disconnectStrava,
+  getActivity,
+  getStravaConnection,
+} from "@/lib/strava";
 import { questIdSchema } from "@/lib/validation";
 
 /**
@@ -610,4 +616,53 @@ export async function markStickersSeenAction(ids: string[]): Promise<void> {
   });
 
   revalidatePath("/achievements");
+}
+
+/* -------------------------------------------------------------------------- */
+/* Connected apps                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Read one Strava activity into the proof form's figures.
+ *
+ * The URL is the member's own paste, so this refuses anything that is not a
+ * Strava activity link before it goes anywhere near the API, and it reads
+ * through *this account's* token — an activity somebody else can see is not
+ * one this account may import.
+ */
+export async function importStravaActivityAction(url: string): Promise<{
+  ok: boolean;
+  message?: string;
+  distance?: number;
+  elevation?: number;
+  movingTime?: number;
+}> {
+  const user = await requireClient();
+
+  if (!activityIdFrom(url)) {
+    return { ok: false, message: "That is not a Strava activity link." };
+  }
+  if (!(await getStravaConnection(user.id))) {
+    return { ok: false, message: "Connect Strava in Settings first." };
+  }
+
+  const activity = await getActivity(user.id, url);
+  if (!activity) {
+    return { ok: false, message: "Strava would not hand that activity over." };
+  }
+
+  return {
+    ok: true,
+    distance: activity.distance,
+    elevation: activity.elevation,
+    movingTime: activity.movingTime,
+  };
+}
+
+/** Take the connection away. Deleting the row is the whole of disconnecting. */
+export async function disconnectStravaAction(): Promise<{ ok: boolean }> {
+  const user = await requireClient();
+  await disconnectStrava(user.id);
+  revalidatePath("/settings/connected");
+  return { ok: true };
 }

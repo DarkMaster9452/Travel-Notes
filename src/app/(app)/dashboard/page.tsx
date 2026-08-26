@@ -1,445 +1,349 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Countdown } from "@/components/app/countdown";
-import { IssueQuestButton } from "@/components/app/issue-quest";
-import { CountUp, Reveal } from "@/components/app/motion";
-import { PlanChip } from "@/components/app/plan-mark";
-import { QuestSheet } from "@/components/app/quest-sheet";
-import {
-  Eyebrow,
-  IconApproved,
-  IconArrowRight,
-  IconClock,
-  Panel,
-  PanelHead,
-  Tag,
-} from "@/components/field";
+import { LockGlyph } from "@/components/sq/icons";
+import { SqQuestCard, type QuestCardData } from "@/components/sq/quest-card";
+import { PageHeader, QuietLink, Stat, Tag } from "@/components/sq/ui";
+import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
-import { CAPABILITY_COPY, headlineCapabilities } from "@/lib/config";
 import { db } from "@/lib/db";
+import { getLeaderboard } from "@/lib/leaderboard";
+import { getAchievements } from "@/lib/achievements";
 import { getEntitlement } from "@/lib/entitlements";
-import { FEATURED_BONUS, getLeaderboard } from "@/lib/leaderboard";
-import { stagger } from "@/lib/motion";
-import { glanceFeaturedSlot, type FeaturedGlance } from "@/lib/quest/slot";
 import { getUserStats } from "@/lib/quest/service";
-import { formatDate, formatRelativeDate } from "@/lib/utils";
-import { toQuestSummary } from "@/types/quest";
+import { getOpenSlots, getSealedSlots } from "@/lib/quest/upcoming";
+import { glanceFeaturedSlot } from "@/lib/quest/slot";
 
-export const metadata: Metadata = { title: "Today" };
+export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
 /**
- * Today.
+ * The dashboard.
  *
- * A dashboard rather than a landing card: what you have done, what is on the
- * clock, and what is waiting on somebody else.
+ * Three questions in the order they matter: what is open and running, what is
+ * coming and still shut, and where that has put you. Nothing here writes —
+ * glancing at a summary card is not accepting a quest, so the featured slots
+ * are read without being materialised (see `glanceFeaturedSlot`).
  *
- * The two shared quests lead it, side by side and both carrying their
- * deadline. That is the product's whole cadence — everybody on the same quest
- * inside the same window — and it used to be advertised here as one dark
- * banner and one small panel in a side column, which reads as "one headline
- * and one afterthought" rather than as two obligations with clocks running.
- *
- * Nothing here writes. Glancing at the dashboard is not accepting a quest, so
- * the featured slots are read without being materialised — see
- * `glanceFeaturedSlot`.
+ * The headline is written from what is actually outstanding rather than from
+ * the time of day. "Two quests open, one clock running" is a fact about this
+ * account, and a greeting would not be.
  */
-export default async function TodayPage() {
+export default async function DashboardPage() {
   const user = await requireClient();
+  const now = new Date();
 
-  const [entitlement, stats, monthly, weekly, current, monthBoard, weekBoard, pending, recent] =
+  const [monthly, weekly, openSlots, sealed, board, stats, entitlement, revocations] =
     await Promise.all([
-      getEntitlement(user.id),
+      glanceFeaturedSlot(user.id, "month", now),
+      glanceFeaturedSlot(user.id, "week", now),
+      getOpenSlots(now),
+      getSealedSlots(3, now),
+      getLeaderboard("MONTHLY", undefined, now),
       getUserStats(user.id),
-      glanceFeaturedSlot(user.id, "month"),
-      glanceFeaturedSlot(user.id, "week"),
-      db.questHistory.findFirst({
-        where: { userId: user.id, completed: false },
-        orderBy: { generatedAt: "desc" },
-        include: { quest: true },
-      }),
-      getLeaderboard("MONTHLY"),
-      getLeaderboard("WEEKLY"),
-      db.submission.count({ where: { userId: user.id, status: "PENDING" } }),
-      db.questHistory.findMany({
-        where: { userId: user.id, completed: true },
-        orderBy: { completedAt: "desc" },
-        take: 4,
-        select: {
-          questId: true,
-          completedAt: true,
-          quest: { select: { title: true, region: true, distance: true, difficulty: true } },
-        },
+      getEntitlement(user.id),
+      db.achievementRevocation.findMany({
+        where: { userId: user.id },
+        select: { achievementId: true },
       }),
     ]);
 
-  const firstName = user.name.split(" ")[0] || user.name;
-  const quest = current ? toQuestSummary(current.quest, { generatedAt: current.generatedAt }) : null;
+  // The extra figures are a setting, not a variant: the switch on Settings →
+  // General is what decides whether the forest slab appears at all.
+  const display = await db.displaySettings.findUnique({
+    where: { userId: user.id },
+    select: { expertStats: true },
+  });
+  const expertStats = (display?.expertStats ?? false) && entitlement.isSubscribed;
 
-  const monthRow = monthBoard.rows.find((row) => row.userId === user.id) ?? null;
-  const weekRow = weekBoard.rows.find((row) => row.userId === user.id) ?? null;
+  const achievements = getAchievements(
+    stats,
+    entitlement.plan,
+    revocations.map((row) => row.achievementId),
+  );
 
-  // The one sentence the page opens with, chosen by what is actually urgent.
-  const outstanding = [monthly, weekly].filter(
-    (slot) => slot.featured && !slot.closed && slot.status === "NONE",
-  ).length;
+  const myRow = board.rows.find((row) => row.userId === user.id) ?? null;
+
+  const cards: QuestCardData[] = [];
+  for (const [slot, glance] of [
+    ["MONTHLY", monthly] as const,
+    ["WEEKLY", weekly] as const,
+  ]) {
+    if (!glance.featured || glance.closed) continue;
+    const summary = glance.featured.summary;
+    const open = openSlots.find((entry) => entry.period === slot);
+    cards.push({
+      id: summary.id,
+      kicker: slot === "MONTHLY" ? `The monthly · ${open?.label ?? ""}` : `The weekly · ${open?.label ?? ""}`,
+      grade: summary.difficulty,
+      title: summary.title,
+      where: `${summary.location} · ${summary.region}`,
+      distance: summary.distance,
+      elevationGain: summary.elevationGain,
+      duration: summary.duration,
+      latitude: summary.latitude,
+      longitude: summary.longitude,
+      parkingLat: summary.parkingLat,
+      parkingLng: summary.parkingLng,
+      parkingName: summary.parkingName,
+      openAt: slotFor(slot, now).openAt.toISOString(),
+      closeAt: glance.closesAt.toISOString(),
+      status: glance.status,
+      expert: expertStats
+        ? [
+            {
+              k: "m per km",
+              v: String(Math.round(summary.elevationGain / Math.max(1, summary.distance))),
+            },
+            {
+              k: "km per hour asked",
+              v: (summary.distance / Math.max(1, summary.duration / 60)).toFixed(1),
+            },
+            { k: "Travel", v: summary.travelTime ? `${summary.travelTime}m` : "—" },
+          ]
+        : null,
+      cta:
+        glance.status === "NONE" || glance.status === "REJECTED"
+          ? { label: "File proof", href: `/quests/${summary.id}/proof` }
+          : slot === "MONTHLY"
+            ? { label: "Open the monthly", href: "/monthly" }
+            : { label: "See the quest", href: `/quests/${summary.id}` },
+    });
+  }
+
+  const running = cards.filter((card) => card.status === "NONE" || card.status === "REJECTED").length;
+
+  const nearby = neighbours(board.rows, user.id);
+  const earned = achievements.filter((entry) => entry.earned);
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>
-            {new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" })
-              .format(new Date())
-              .toUpperCase()}
-          </Eyebrow>
-          <h1>Morning, {firstName}.</h1>
-          <p>
-            {outstanding === 2
-              ? "Both shared quests are open and neither is filed. They do not roll over."
-              : outstanding === 1
-                ? "One shared quest is still unfiled, and its window is closing."
-                : pending > 0
-                  ? `Everything is filed. ${pending} ${pending === 1 ? "submission is" : "submissions are"} waiting on a reader.`
-                  : "Both shared quests are filed. Anything else you do is yours to choose."}
-          </p>
-        </div>
-        <PlanChip plan={entitlement.plan} />
-      </Reveal>
-
-      {/* What you have done. The four figures the whole product is measured in,
-          plus where they put you on this month's board. */}
-      <Reveal className="mb-5">
-        <dl className="today-figures">
-          <Figure label="Logged" value={stats.completedCount} />
-          <Figure label="Kilometres" value={Math.round(stats.kmExplored)} />
-          <Figure label="Metres up" value={Math.round(stats.elevation)} />
-          <Figure label="Regions" value={stats.regions} />
-          <Figure
-            label="This month"
-            value={monthRow?.score ?? 0}
-            foot={monthRow ? `#${monthRow.rank} on the board` : "Nothing scored yet"}
-            href="/leaderboard?period=MONTHLY"
-          />
-          <Figure
-            label="This week"
-            value={weekRow?.score ?? 0}
-            foot={weekRow ? `#${weekRow.rank} on the board` : "Nothing scored yet"}
-            href="/leaderboard?period=WEEKLY"
-          />
-        </dl>
-      </Reveal>
-
-      {/* What is ahead. Two obligations, two clocks, side by side. */}
-      <div className="ahead-grid">
-        <Reveal delay={stagger(0)}>
-          <SlotCard
-            slot={monthly}
-            period="month"
-            href="/monthly"
-            kicker="The big one"
-            emphasis
-          />
-        </Reveal>
-        <Reveal delay={stagger(1)}>
-          <SlotCard slot={weekly} period="week" href="/weekly" kicker="Alongside it" />
-        </Reveal>
-      </div>
-
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1.35fr_1fr] lg:items-start">
-        <Reveal delay={stagger(2)}>
-          {quest ? (
-            <QuestSheet
-              quest={quest}
-              href={`/quests/${quest.id}`}
-              issuedAt={`Issued ${formatDate(current!.generatedAt)}`}
+      <PageHeader
+        kicker={`${openSlots.find((slot) => slot.period === "WEEKLY")?.label ?? ""} · ${new Intl.DateTimeFormat(
+          "en-GB",
+          { weekday: "long", day: "numeric", month: "long" },
+        ).format(now)}`}
+        title={headline(cards.length, running)}
+        right={
+          <>
+            <Stat
+              count={myRow?.score ?? 0}
+              countId="dash-points"
+              value={myRow?.score ?? 0}
+              label={`Points, ${board.label.split(" ")[0]}`}
             />
-          ) : (
-            <Panel flush>
-              <PanelHead title="Nothing in your hand" aside={<Tag tone="ghost">Optional</Tag>} />
-              <div className="flex flex-col items-start gap-4 px-5 py-5">
-                <p className="text-[14.5px] leading-[1.6] text-ink-2">
-                  Beyond the two shared quests, you can be issued one of your own — somewhere you
-                  have not been sent before. It stays open until you log it, and once you have, it
-                  never comes back.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <IssueQuestButton disabled={!entitlement.canUnlock} />
-                  <Link href="/quests" className="btn btn-ghost">
-                    Browse the database
-                    <IconArrowRight />
-                  </Link>
-                </div>
-              </div>
-            </Panel>
-          )}
-        </Reveal>
+            <Stat
+              value={myRow ? `#${myRow.rank}` : "—"}
+              count={myRow ? myRow.rank : undefined}
+              countId="dash-rank"
+              prefix="#"
+              label={`Of ${board.rows.length} on the board`}
+            />
+          </>
+        }
+      />
 
-        <div className="flex flex-col gap-5">
-          <Reveal delay={stagger(3)}>
-            <Panel flush className={entitlement.isSubscribed ? "member-panel" : undefined}>
-              <PanelHead
-                title="Waiting on us"
-                aside={
-                  pending > 0 ? (
-                    <Tag tone="warm">{`${pending} in review`}</Tag>
-                  ) : (
-                    <Tag tone="ghost">Nothing pending</Tag>
-                  )
-                }
-              />
-              <div className="px-5 py-4">
-                {pending > 0 ? (
-                  <p className="text-[14.5px] leading-[1.55] text-ink-2">
-                    A human reads every one. It counts from the moment they do —{" "}
-                    <Link href="/submissions" className="underline">
-                      see where yours has got to
-                    </Link>
-                    .
-                  </p>
-                ) : (
-                  <p className="text-[14.5px] leading-[1.55] text-ink-2">
-                    Nothing filed and unread. Proof goes in from a quest page or straight off a
-                    card in the database.
-                  </p>
-                )}
-              </div>
-              <div className="border-t border-dashed border-line px-5 py-4">
-                {entitlement.isSubscribed ? (
-                  <MemberLine
-                    planName={entitlement.definition.name}
-                    lines={headlineCapabilities(entitlement.definition).map(
-                      (capability) => CAPABILITY_COPY[capability].title,
-                    )}
-                  />
-                ) : (
-                  <FreeAllowance
-                    remaining={entitlement.freeQuestsRemaining}
-                    allowance={entitlement.freeQuestAllowance}
-                  />
-                )}
-              </div>
-            </Panel>
-          </Reveal>
-
-          {/* What you did, most recent first. Four is enough to recognise the
-              shape of a month without turning the dashboard into history. */}
-          <Reveal delay={stagger(4)}>
-            <Panel flush>
-              <PanelHead
-                title="Lately"
-                aside={
-                  <Link href="/history" className="btn btn-ghost btn-sm">
-                    All of it
-                  </Link>
-                }
-              />
-              {recent.length === 0 ? (
-                <p className="chart-empty">Nothing logged yet. The first one is the hard one.</p>
-              ) : (
-                <ul className="today-recent">
-                  {recent.map((entry) => (
-                    <li key={entry.questId}>
-                      <IconApproved />
-                      <span>
-                        <Link href={`/quests/${entry.questId}`}>{entry.quest.title}</Link>
-                        <em>
-                          {entry.quest.region} · {entry.quest.distance.toFixed(1)} km
-                        </em>
-                      </span>
-                      <span className="meta">
-                        {entry.completedAt ? formatRelativeDate(entry.completedAt) : "—"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Panel>
-          </Reveal>
+      <section className="sq-card-flat">
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2">What&rsquo;s coming</h2>
+          <span className="sq-meta">Weeklies drop Monday 06:00 · the monthly on the 1st</span>
         </div>
-      </div>
+
+        <div
+          className="sq-grid sq-grid-fit-sm"
+          style={{ gap: 10, padding: "16px 22px" }}
+        >
+          {openSlots.map((slot) => (
+            <div
+              key={`${slot.period}-${slot.key}`}
+              style={{
+                borderRadius: 8,
+                padding: "14px 16px",
+                background: slot.title ? "var(--color-accent-100)" : "var(--paper-2)",
+                border: `1px solid ${slot.title ? "var(--color-accent-200)" : "var(--line-2)"}`,
+              }}
+            >
+              <p className="sq-kicker-sm" style={{ marginBottom: 8 }}>
+                {slot.period === "MONTHLY" ? "The monthly" : "The weekly"} · {slot.label}
+              </p>
+              <b style={{ display: "block", fontSize: 15, lineHeight: 1.3, fontWeight: 700 }}>
+                {slot.title ?? "Generated for you"}
+              </b>
+              <p style={{ marginTop: 8, fontSize: 12, color: "var(--ink-2)" }}>
+                {slot.dates} · {slot.state}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <ul>
+          {sealed.map((slot) => (
+            <li
+              key={`${slot.period}-${slot.key}`}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0,1fr) auto",
+                gap: 14,
+                alignItems: "center",
+                padding: "12px 22px",
+                borderTop: "1px solid var(--line-2)",
+              }}
+            >
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "var(--paper-2)",
+                  color: "var(--ink-3)",
+                }}
+              >
+                <LockGlyph />
+              </span>
+              <span style={{ minWidth: 0, fontSize: 13.5, color: "var(--ink-2)" }}>{slot.text}</span>
+              <span
+                className="sq-mono"
+                style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}
+              >
+                {slot.when}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {cards.length > 0 ? (
+        <section className="sq-grid sq-grid-fit sq-stagger" style={{ marginTop: 18 }}>
+          {cards.map((card, index) => (
+            <SqQuestCard key={card.id} quest={card} index={index} />
+          ))}
+        </section>
+      ) : (
+        <section className="sq-card sq-pad" style={{ marginTop: 18 }}>
+          <h2 className="sq-h2" style={{ fontSize: 20, marginBottom: 8 }}>
+            Nothing is open right now
+          </h2>
+          <p style={{ fontSize: 13.5, color: "var(--ink-2)" }}>
+            The next weekly drops Monday at 06:00. Until then the quest database is open, and
+            anything you file against it still scores.
+          </p>
+          <Link href="/quests" className="sq-btn sq-btn-ghost sq-btn-sm" style={{ marginTop: 16 }}>
+            Open the quest database
+          </Link>
+        </section>
+      )}
+
+      <section
+        className="sq-grid sq-grid-fit-md"
+        style={{ marginTop: 18, alignItems: "start" }}
+      >
+        <article className="sq-tinted sq-pad-sm">
+          <div className="sq-section-head" style={{ marginBottom: 14 }}>
+            <h2 className="sq-h2" style={{ fontSize: 20 }}>
+              Around you on the board
+            </h2>
+            <QuietLink href="/leaderboard">Full board →</QuietLink>
+          </div>
+          <ul className="sq-stagger">
+            {nearby.map((row, index) => (
+              <li
+                key={row.userId}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 12px",
+                  borderRadius: 6,
+                  background: row.userId === user.id ? "var(--card)" : "transparent",
+                  borderLeft: `2px solid ${row.userId === user.id ? "var(--signal)" : "transparent"}`,
+                  ["--i" as string]: index,
+                }}
+              >
+                <span className="sq-mono" style={{ fontSize: 13, width: 24, color: "var(--ink-3)" }}>
+                  {row.rank}
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: 14,
+                    fontWeight: row.userId === user.id ? 600 : 400,
+                  }}
+                >
+                  {row.username}
+                </span>
+                <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
+                  {row.quests} {row.quests === 1 ? "quest" : "quests"}
+                </span>
+                <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17 }}>
+                  {row.score}
+                </b>
+              </li>
+            ))}
+            {nearby.length === 0 ? (
+              <li style={{ fontSize: 13, color: "var(--ink-3)", padding: "10px 12px" }}>
+                Nothing on the board yet this month. Approved proof is what puts you on it.
+              </li>
+            ) : null}
+          </ul>
+        </article>
+
+        <article className="sq-card sq-pad-sm">
+          <div className="sq-section-head" style={{ marginBottom: 6 }}>
+            <h2 className="sq-h2" style={{ fontSize: 20 }}>
+              Sticker sheet
+            </h2>
+            <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+              {earned.length} of {achievements.length} earned
+            </span>
+          </div>
+          <p style={{ fontSize: 12.5, color: "var(--ink-2)", marginBottom: 18 }}>
+            Two go out with each envelope, alongside the monthly quest card. Stick them where you
+            earned them.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 10 }}>
+            {achievements.slice(0, 10).map((entry, index) => (
+              <span
+                key={entry.id}
+                className="sq-sticker"
+                data-locked={entry.earned ? "0" : "1"}
+                style={{ ["--i" as string]: index }}
+                title={entry.earned ? entry.label : "Not earned yet"}
+              >
+                {entry.earned ? entry.label : ""}
+              </span>
+            ))}
+          </div>
+          <Link href="/stickers" className="sq-btn sq-btn-ghost sq-btn-sm" style={{ marginTop: 18 }}>
+            The whole sheet
+          </Link>
+        </article>
+      </section>
+
+      {cards.some((card) => card.status === "PENDING") ? (
+        <p style={{ marginTop: 18 }}>
+          <Tag tone="stamp">Proof filed · waiting on a reader</Tag>
+        </p>
+      ) : null}
     </>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* The two shared quests                                                       */
-/* -------------------------------------------------------------------------- */
-
-/**
- * One cadence, advertised.
- *
- * Everything a decision needs and nothing else: what it is, what it costs in
- * effort, what it is worth on the board, how long is left, and whether this
- * account has already answered it.
- */
-function SlotCard({
-  slot,
-  period,
-  href,
-  kicker,
-  emphasis,
-}: {
-  slot: FeaturedGlance;
-  period: "week" | "month";
-  href: string;
-  kicker: string;
-  emphasis?: boolean;
-}) {
-  const bonus = FEATURED_BONUS[period === "week" ? "WEEKLY" : "MONTHLY"];
-  const name = period === "week" ? "weekly" : "monthly";
-
-  if (!slot.featured) {
-    return (
-      <div className={`ahead${emphasis ? " is-lead" : ""} is-empty`}>
-        <span className="ahead-kicker">{kicker}</span>
-        <h2>No {name} placed.</h2>
-        <p className="ahead-blurb">
-          We couldn&apos;t put one inside your range and difficulty. Widen either in settings and
-          it turns up.
-        </p>
-        <Link href="/profile" className="ahead-cta">
-          Open settings
-          <IconArrowRight />
-        </Link>
-      </div>
-    );
-  }
-
-  const quest = slot.featured.summary;
-  const done = slot.status === "APPROVED" || slot.status === "PENDING";
-
-  return (
-    <Link href={href} className={`ahead${emphasis ? " is-lead" : ""}${done ? " is-done" : ""}`}>
-      <div className="ahead-head">
-        <span className="ahead-kicker">{kicker}</span>
-        {done ? (
-          <Tag tone={emphasis ? "inverse" : "pine"}>
-            {slot.status === "APPROVED" ? "Approved" : "Filed"}
-          </Tag>
-        ) : (
-          <Tag tone={emphasis ? "inverse" : "warm"}>{`+${bonus} points`}</Tag>
-        )}
-      </div>
-
-      <h2>{quest.title}</h2>
-      <p className="ahead-where">
-        {quest.location} · {quest.region}
-      </p>
-
-      <div className="ahead-facts">
-        <span>{quest.distance.toFixed(1)} km</span>
-        <span>{Math.round(quest.elevationGain)} m ↑</span>
-        <span>{quest.difficulty}</span>
-      </div>
-
-      <div className="ahead-clock">
-        <span className="ahead-clock-icon" aria-hidden="true">
-          {done ? <IconApproved /> : <IconClock />}
-        </span>
-        {slot.closed ? (
-          <b>The log is closed.</b>
-        ) : done ? (
-          <b>Filed. Nothing else is needed.</b>
-        ) : (
-          <>
-            <b>Closes in</b>
-            <Countdown to={slot.closesAt.toISOString()} className="ahead-countdown" />
-          </>
-        )}
-      </div>
-
-      <span className="ahead-cta">
-        {done ? `Open the ${name}` : slot.closed ? "See what it was" : `Log the ${name}`}
-        <IconArrowRight />
-      </span>
-    </Link>
-  );
+/** The one sentence the page opens with, decided by what is actually running. */
+function headline(open: number, running: number): string {
+  if (open === 0) return "Nothing open. The next one drops Monday.";
+  if (open === 2 && running === 2) return "Two quests open, both clocks running.";
+  if (open === 2 && running === 1) return "Two quests open, one clock running.";
+  if (open === 2) return "Two quests open, both already filed.";
+  if (running === 1) return "One quest open, and its window is closing.";
+  return "One quest open, already filed.";
 }
 
-/* -------------------------------------------------------------------------- */
-
-/**
- * One figure in the band.
- *
- * A `dl` may only contain `dt`, `dd` and `div`, so a linked cell is a div with
- * the anchor stretched across it rather than an anchor wrapping the pair. The
- * label stays the accessible name of the link, which is why the anchor carries
- * it rather than being empty.
- */
-function Figure({
-  label,
-  value,
-  foot,
-  href,
-}: {
-  label: string;
-  value: number;
-  foot?: string;
-  href?: string;
-}) {
-  return (
-    <div className={`today-figure${href ? " is-link" : ""}`}>
-      <dt>{label}</dt>
-      <dd>
-        <CountUp value={value} />
-      </dd>
-      {foot && <span>{foot}</span>}
-      {href && (
-        <Link href={href} className="today-figure-hit">
-          <span className="sr-only">{`${label} — open the board`}</span>
-        </Link>
-      )}
-    </div>
-  );
-}
-
-/**
- * The membership, restated on the page a member sees most.
- *
- * The counter it replaces was the most-looked-at number on this panel while the
- * account was free; leaving a blank space where it used to be is how a
- * subscription starts to feel like nothing happened. So the space keeps its
- * weight and says what was bought instead.
- */
-function MemberLine({ planName, lines }: { planName: string; lines: string[] }) {
-  return (
-    <div className="member-line">
-      <span className="member-line-mark" aria-hidden="true" />
-      <p>
-        <b>{planName}</b>
-        {lines.map((line, index) => (
-          <span key={line} className="tick-in" style={{ animationDelay: `${index * 90}ms` }}>
-            {line}
-          </span>
-        ))}
-      </p>
-    </div>
-  );
-}
-
-/** The free wall, stated plainly rather than sold. */
-function FreeAllowance({ remaining, allowance }: { remaining: number; allowance: number }) {
-  if (remaining > 0) {
-    return (
-      <p className="credits">
-        Free quests left: <b>{remaining}</b>
-        <span className="dots">
-          {Array.from({ length: allowance }, (_, index) => (
-            <i key={index} className={index < remaining ? undefined : "spent"} />
-          ))}
-        </span>
-      </p>
-    );
-  }
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <p className="credits">All {allowance} free quests used.</p>
-      <Link href="/upgrade" className="btn btn-primary btn-sm">
-        See the plans
-      </Link>
-    </div>
-  );
+/** The two above and the two below, which is the only part of a board you read. */
+function neighbours<T extends { userId: string }>(rows: T[], userId: string): T[] {
+  const index = rows.findIndex((row) => row.userId === userId);
+  if (index === -1) return rows.slice(0, 5);
+  return rows.slice(Math.max(0, index - 2), Math.max(0, index - 2) + 5);
 }

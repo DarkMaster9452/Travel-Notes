@@ -19,9 +19,17 @@ datasource db {
 /// Guests are not represented here — a guest has no account, sees only the
 /// landing page, and never reaches a real quest. Admins are flagged in the
 /// database and never self-serve: nothing in the product writes this column.
+/// Three roles, and the gap between the second and the third is the point.
+///
+/// `ADMIN` is staff: they read proof, write quests and book slots. `OWNER` is
+/// the one account that can change who else is staff, and it is deliberately
+/// not something the panel can grant — see `Panel access` for why a panel that
+/// could promote accounts is one compromised session away from making an
+/// attacker permanent.
 enum Role {
   USER
   ADMIN
+  OWNER
 }
 
 /// Which palette the signed-in app renders in. `SYSTEM` follows the device;
@@ -73,6 +81,13 @@ model User {
   revoked      AchievementRevocation[] @relation("RevocationAuthor")
   awards       LeaderboardAward[]      @relation("AwardHolder")
   adminMessages AdminMessage[]         @relation("AdminChatAuthor")
+  strava        StravaAccount?
+  groups        GroupMembership[]      @relation("GroupMember")
+  groupsCreated Group[]                @relation("GroupAuthor")
+  display       DisplaySettings?
+  shipping      ShippingAddress?
+  notifications NotificationSettings?
+  auditEntries  AdminAudit[]           @relation("AuditActor")
 
   @@map("users")
 }
@@ -657,4 +672,210 @@ model AdminMessage {
 
   @@index([createdAt])
   @@map("admin_messages")
+}
+
+// ---------------------------------------------------------------------------
+// Connected apps
+// ---------------------------------------------------------------------------
+
+/// A member's Strava connection.
+///
+/// Its own table rather than columns on `User` for the reason every OAuth
+/// connection eventually needs: it has a lifetime of its own. Disconnecting is
+/// deleting a row, which is a thing that can be done exactly and completely,
+/// rather than nulling five columns and hoping none was missed.
+///
+/// The access token is short-lived by Strava's design — six hours — so the
+/// refresh token is the thing that matters here, and `expiresAt` is stored so
+/// a refresh happens before a call fails rather than after.
+model StravaAccount {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  /// Strava's own id for the athlete. Stable, and what their API paths use.
+  athleteId    String    @map("athlete_id")
+  accessToken  String    @map("access_token")
+  refreshToken String    @map("refresh_token")
+  /// When the access token dies. Refreshed a minute early, never on failure.
+  expiresAt    DateTime  @map("expires_at")
+  scope        String    @default("")
+  /// What to call them in the settings row — Strava's own display name.
+  athleteName  String?   @map("athlete_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("strava_accounts")
+}
+
+// ---------------------------------------------------------------------------
+// Groups
+// ---------------------------------------------------------------------------
+
+enum GroupRole {
+  OWNER
+  MEMBER
+}
+
+/// A handful of people who walk together, and a board of their own.
+///
+/// Deliberately thin: a name, a line about it, and who is in it. There is no
+/// group-owned content, no group quests and no group settings beyond that,
+/// because everything a group would want to *do* already exists per-person —
+/// what a group adds is a smaller board to read, and a page to find each other
+/// on.
+///
+/// Membership is only ever visible to members. A group whose roster could be
+/// read from outside would leak exactly what the profile privacy model spends
+/// its whole design refusing to leak: who has an account.
+model Group {
+  id     String @id @default(cuid())
+  /// The bit after `/people/groups/`. Chosen once, unique across the product.
+  slug   String @unique
+  name   String
+  blurb  String?
+
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User?             @relation("GroupAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  members   GroupMembership[]
+
+  @@map("groups")
+}
+
+model GroupMembership {
+  id      String    @id @default(cuid())
+  groupId String    @map("group_id")
+  userId  String    @map("user_id")
+  role    GroupRole @default(MEMBER)
+
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation("GroupMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("group_memberships")
+}
+
+// ---------------------------------------------------------------------------
+// Account settings
+// ---------------------------------------------------------------------------
+
+enum Units {
+  METRIC
+  IMPERIAL
+}
+
+/// How figures and dates are written for one account.
+///
+/// Its own table rather than more columns on `UserPreferences`, because that
+/// model is about *what quest to generate* and this is about how the product
+/// is read. Mixing them means every quest generation reads four columns it has
+/// no use for.
+model DisplaySettings {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  units    Units  @default(METRIC)
+  /// BCP-47, and only the ones the product actually ships copy for.
+  language String @default("en")
+  /// Show the extra per-quest figures. Explorer and Ultra only; the entitlement
+  /// is what decides whether it can be turned on, this only records the wish.
+  expertStats Boolean @default(false) @map("expert_stats")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("display_settings")
+}
+
+/// Where the envelope goes.
+///
+/// Quest cards and stickers are posted, so this is a real address rather than
+/// a billing formality. Nullable everywhere except the country, because a
+/// half-filled address is a state somebody is legitimately in halfway through
+/// typing one, and refusing to store it would lose what they had typed.
+model ShippingAddress {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  recipient String?
+  line1     String?
+  line2     String?
+  city      String?
+  postcode  String?
+  country   String  @default("Slovakia")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("shipping_addresses")
+}
+
+/// Which emails an account has asked for.
+///
+/// Every one defaults on except product news: the four that are on are the
+/// product telling somebody something happened to *their* quest or their
+/// verdict, which is the thing they subscribed for. Marketing is the one that
+/// has to be asked for.
+model NotificationSettings {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
+  /// Monday 06:00 and the 1st.
+  questDrop   Boolean @default(true) @map("quest_drop")
+  /// Approved or sent back.
+  verdict     Boolean @default(true)
+  /// A monthly board closing with your name on it.
+  boardSealed Boolean @default(true) @map("board_sealed")
+  /// Anything that is not one of the above.
+  productNews Boolean @default(false) @map("product_news")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
+}
+
+
+/// Every write made from the panel.
+///
+/// Reads are not logged, deliberately: a log of who looked at what would be a
+/// second surveillance product nobody asked for, and it would bury the writes
+/// that actually matter. What is here is what somebody *changed*, who they
+/// were, and what it was about.
+///
+/// The actor detaches rather than cascades. Deleting a colleague's account
+/// should not rewrite last month's decisions out of the record — the entry
+/// stays, attributed to nobody, exactly as a reviewed submission keeps its
+/// verdict when the reviewer is gone.
+model AdminAudit {
+  id      String  @id @default(cuid())
+  actorId String? @map("actor_id")
+  /// A short verb-phrase key: `submission.approved`, `quest.published`, …
+  action  String
+  /// What it was about, in one line a human can read without a join.
+  subject String
+  /// Anything worth keeping beyond the subject. Never a secret.
+  detail  String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action])
+  @@map("admin_audit")
 }

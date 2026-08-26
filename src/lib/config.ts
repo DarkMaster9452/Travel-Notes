@@ -294,8 +294,8 @@ export function formatPrice(minorUnits: number, currency: PlanDefinition["curren
 }
 
 export const NAV_LINKS = [
-  { href: "/dashboard", label: "Home" },
-  { href: "/history", label: "Quests" },
-  { href: "/saved", label: "Saved" },
-  { href: "/profile", label: "Profile" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/monthly", label: "The monthly" },
+  { href: "/quests", label: "Quest database" },
+  { href: "/leaderboard", label: "Leaderboard" },
 ] as const;

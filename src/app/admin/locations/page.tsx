@@ -1,30 +1,28 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import { Reveal } from "@/components/app/motion";
-import { LocationsExplorer } from "@/components/admin/locations-explorer";
-import type { MapPoint } from "@/components/admin/locations-map";
-import { StatGrid } from "@/components/admin/stat-grid";
-import { Eyebrow, Panel, PanelHead, Tag } from "@/components/field";
+import { SqMap, type MapPoint } from "@/components/sq/map";
+import { EmptyState, PageHeader, StatGrid, StatTile } from "@/components/sq/ui";
 import { requireAdmin } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { getCountryPaths, MAP_HEIGHT, MAP_WIDTH, projectPoint } from "@/lib/admin/world-map";
-import { stagger } from "@/lib/motion";
 import { slugify } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Locations · Admin" };
 export const dynamic = "force-dynamic";
 
 /**
- * Where quests send people.
+ * Where the quests point.
  *
- * Built from the quests themselves rather than a separate places table: a
- * location exists because a quest points at it, so a second list would only
- * ever be a list that disagreed with this one.
+ * Built from the quests themselves rather than from a separate places table:
+ * a location exists because a quest points at it, so a second list would only
+ * ever be a list that disagreed with this one. The consequence is that
+ * "editing a trailhead" means editing the quests standing at it, which is what
+ * the row leads to.
  */
-export default async function LocationsPage() {
+export default async function AdminLocationsPage() {
   await requireAdmin();
 
-  const [grouped, regions, countries] = await Promise.all([
+  const [grouped, issued] = await Promise.all([
     db.quest.groupBy({
       by: ["location", "region", "country"],
       _count: { _all: true },
@@ -32,118 +30,134 @@ export default async function LocationsPage() {
       orderBy: { _count: { location: "desc" } },
       take: 200,
     }),
-    db.quest.findMany({ distinct: ["region"], select: { region: true } }),
-    db.quest.findMany({ distinct: ["country"], select: { country: true } }),
+    db.questHistory.findMany({ select: { quest: { select: { location: true } } } }),
   ]);
 
-  // Projected once on the server — see `lib/admin/world-map`. A place
-  // without coordinates that resolve on the map is skipped rather than
-  // plotted at the equator.
-  const points: MapPoint[] = grouped
-    .map((row) => {
-      const lat = row._avg.latitude;
-      const lng = row._avg.longitude;
-      if (lat == null || lng == null) return null;
-      const projected = projectPoint(lat, lng);
-      if (!projected) return null;
-      return {
-        slug: slugify(row.location),
-        location: row.location,
-        region: row.region,
-        country: row.country,
-        x: projected[0],
-        y: projected[1],
-        count: row._count._all,
-      };
-    })
-    .filter((p): p is MapPoint => p !== null);
-
   const issuedByLocation = new Map<string, number>();
-  const issued = await db.questHistory.findMany({
-    select: { quest: { select: { location: true } } },
-  });
   for (const row of issued) {
-    issuedByLocation.set(
-      row.quest.location,
-      (issuedByLocation.get(row.quest.location) ?? 0) + 1,
-    );
+    issuedByLocation.set(row.quest.location, (issuedByLocation.get(row.quest.location) ?? 0) + 1);
   }
+
+  const places = grouped
+    .filter((row) => row._avg.latitude != null && row._avg.longitude != null)
+    .map((row) => ({
+      slug: slugify(row.location),
+      location: row.location,
+      region: row.region,
+      country: row.country,
+      quests: row._count._all,
+      issued: issuedByLocation.get(row.location) ?? 0,
+      lat: row._avg.latitude as number,
+      lng: row._avg.longitude as number,
+      distance: row._avg.distance ?? 0,
+      ascent: row._avg.elevationGain ?? 0,
+    }));
+
+  const points: MapPoint[] = places.map((place) => ({
+    lat: place.lat,
+    lng: place.lng,
+    label: `${place.location} · ${place.quests} ${place.quests === 1 ? "quest" : "quests"}`,
+    kind: "stop",
+    href: `/admin/locations/${place.slug}`,
+  }));
+
+  const regions = new Set(places.map((place) => place.region));
+  const countries = new Set(places.map((place) => place.country));
 
   return (
     <>
-      <Reveal as="header" className="page-head">
-        <div>
-          <Eyebrow>The map</Eyebrow>
-          <h1>Locations.</h1>
-          <p>Every place a quest points at, and how often people have been sent there.</p>
-        </div>
-      </Reveal>
+      <PageHeader
+        kicker="The map"
+        title="Locations"
+        lede="Every place a quest points at, and how often people have been sent there. Built from the quests themselves — a second list would only ever disagree with this one."
+      />
 
-      <Reveal delay={stagger(0)} className="mb-5">
-        <StatGrid
-          items={[
-            { label: "Locations", value: grouped.length },
-            { label: "Regions", value: regions.length },
-            { label: "Countries", value: countries.length },
-            {
-              label: "Most used",
-              value: 0,
-              display: grouped[0]?.location ?? "—",
-              foot: grouped[0] ? `${grouped[0]._count._all} quests` : undefined,
-            },
-          ]}
+      <StatGrid>
+        <StatTile label="Trailheads" count={places.length} countId="locs-places" index={0} />
+        <StatTile label="Regions" count={regions.size} countId="locs-regions" index={1} />
+        <StatTile label="Countries" count={countries.size} countId="locs-countries" index={2} />
+        <StatTile
+          label="Times sent"
+          count={[...issuedByLocation.values()].reduce((sum, value) => sum + value, 0)}
+          countId="locs-issued"
+          index={3}
         />
-      </Reveal>
+      </StatGrid>
 
-      {points.length > 0 && (
-        <Reveal delay={stagger(1)} className="mb-5">
-          <Panel flush>
-            <PanelHead title="World map" aside={<Tag tone="ghost">{points.length} places · click a pin</Tag>} />
-            <LocationsExplorer
-              width={MAP_WIDTH}
-              height={MAP_HEIGHT}
-              countryPaths={getCountryPaths()}
-              points={points}
+      <section className="sq-card" style={{ marginTop: 16, overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            Where the quests point
+          </h2>
+          <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+            {places.length} plotted · click a pin
+          </span>
+        </div>
+        <SqMap points={points} height={440} drawRoute={false} style={{ borderRadius: 0, border: 0 }} />
+      </section>
+
+      <section className="sq-card" style={{ marginTop: 16, overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            Every trailhead
+          </h2>
+          <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+            Most used first
+          </span>
+        </div>
+
+        {places.length === 0 ? (
+          <div style={{ padding: 26 }}>
+            <EmptyState
+              glyph="marker"
+              title="Nothing is plotted yet"
+              body="A trailhead appears here as soon as a quest points at it."
+              action={
+                <Link href="/admin/quests/new" className="sq-btn sq-btn-primary sq-btn-sm">
+                  Write a quest
+                </Link>
+              }
             />
-          </Panel>
-        </Reveal>
-      )}
-
-      <Reveal delay={stagger(2)}>
-        <Panel flush>
-          <PanelHead title="Places" aside={<Tag tone="ghost">{grouped.length}</Tag>} />
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Location</th>
-                  <th>Region</th>
-                  <th>Country</th>
-                  <th className="num">Quests</th>
-                  <th className="num">Issued</th>
-                  <th className="num">Avg km</th>
-                  <th className="num">Avg m ↑</th>
-                </tr>
-              </thead>
-              <tbody>
-                {grouped.map((row) => (
-                  <tr key={`${row.location}-${row.region}`} id={slugify(row.location)}>
-                    <td>
-                      <b>{row.location}</b>
-                    </td>
-                    <td>{row.region}</td>
-                    <td>{row.country}</td>
-                    <td className="num">{row._count._all}</td>
-                    <td className="num">{issuedByLocation.get(row.location) ?? 0}</td>
-                    <td className="num">{(row._avg.distance ?? 0).toFixed(1)}</td>
-                    <td className="num">{Math.round(row._avg.elevationGain ?? 0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
-        </Panel>
-      </Reveal>
+        ) : (
+          <ul className="sq-stagger">
+            {places.map((place, index) => (
+              <li key={place.slug} style={{ ["--i" as string]: index }}>
+                <Link
+                  href={`/admin/locations/${place.slug}`}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0,1fr) auto auto auto",
+                    gap: 16,
+                    alignItems: "center",
+                    padding: "13px 22px",
+                    borderTop: "1px solid var(--line-2)",
+                    color: "var(--color-text)",
+                  }}
+                >
+                  <span style={{ minWidth: 0 }}>
+                    <b style={{ display: "block", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16 }}>
+                      {place.location}
+                    </b>
+                    <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+                      {place.region} · {place.country}
+                    </span>
+                  </span>
+                  <span className="sq-mono" style={{ fontSize: 11, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
+                    {place.distance.toFixed(1)} km avg · {Math.round(place.ascent)} m avg
+                  </span>
+                  <span className="sq-mono" style={{ fontSize: 11, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                    {place.quests} {place.quests === 1 ? "quest" : "quests"}
+                  </span>
+                  <span className="sq-mono" style={{ fontSize: 11, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
+                    sent {place.issued}×
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </>
   );
 }
