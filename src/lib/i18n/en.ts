@@ -282,6 +282,99 @@ export const en = {
 
   /* ---- the profile ------------------------------------------------------ */
   /* ---- plan & billing ---------------------------------------------------- */
+  /* ---- the dashboard ------------------------------------------------------ */
+  dashboard: {
+    title: "Dashboard",
+    headline: {
+      nothing: "Nothing open. The next one drops Monday.",
+      twoRunning: "Two quests open, both clocks running.",
+      twoOneRunning: "Two quests open, one clock running.",
+      twoFiled: "Two quests open, both already filed.",
+      oneRunning: "One quest open, and its window is closing.",
+      oneFiled: "One quest open, already filed.",
+    },
+    pointsLabel: (period: string) => `Points, ${period}`,
+    rankLabel: (total: number) => `Of ${total} on the board`,
+    coming: "What's coming",
+    comingNote: "Weeklies drop Monday 06:00 · the monthly on the 1st",
+    theMonthly: "The monthly",
+    theWeekly: "The weekly",
+    generatedForYou: "Generated for you",
+    nothingOpenHeading: "Nothing is open right now",
+    nothingOpenBody:
+      "The next weekly drops Monday at 06:00. Until then the quest database is open, and anything you file against it still scores.",
+    openDatabase: "Open the quest database",
+    board: "Around you on the board",
+    fullBoard: "Full board →",
+    boardEmpty: "Nothing on the board yet this month. Approved proof is what puts you on it.",
+    sheet: "Sticker sheet",
+    sheetCount: (earned: number, total: number) => `${earned} of ${total} earned`,
+    sheetNote:
+      "Two go out with each envelope, alongside the monthly quest card. Stick them where you earned them.",
+    wholeSheet: "The whole sheet",
+    waitingTag: "Proof filed · waiting on a reader",
+  },
+
+  /* ---- the open-quest card ------------------------------------------------ */
+  questCard: {
+    fileProof: "File proof",
+    openMonthly: "Open the monthly",
+    seeQuest: "See the quest",
+    closesIn: "Closes in",
+    waiting: "Waiting on a reader",
+    readByHuman: "Read by a human",
+    windowShut: "Window shut",
+    approved: (points: number) => `Approved · +${points}`,
+    sentBack: "Sent back",
+    stamp: (points: number) => `+${points} points`,
+    filedOn: (weekday: string) => `Filed ${weekday}`,
+    trailhead: "Trailhead",
+    summit: "Summit",
+    distance: "Distance",
+    ascent: "Ascent",
+    grade: "Grade",
+    fileAgain: "File it again",
+    expertFigures: "Expert figures",
+  },
+
+  /* ---- the third column --------------------------------------------------- */
+  rail: {
+    openNow: "Open now",
+    nextDrop: "The next drop",
+    thenMonthly: "Then the monthly",
+    untilWeekly: (when: string) => `until the next weekly opens, ${when} at 06:00. Whatever is open now stays open until its own window closes.`,
+    standing: "Where you stand",
+    fullBoard: "Full board",
+    open: "Open →",
+    behind: (points: number, name: string) => `${points} points behind ${name}.`,
+    youAreOn: (points: number, quests: string) => `You are on ${points} from ${quests}.`,
+    topOfBoard: (points: number) =>
+      `Top of the board on ${points} points. There is a month left to hold it.`,
+    notOnBoard:
+      "Not on the board this month. Approved proof is what puts you on it — one logged quest is enough.",
+    desk: "On a reader's desk",
+    deskEmpty: "Nothing waiting on a reader. Proof is usually read within a day of being filed.",
+    closest: "Closest sticker",
+    wholeSheet: "The whole sheet",
+    logbook: "The logbook",
+    allTime: "All time",
+    questsLogged: "Quests logged",
+    kilometres: "Kilometres",
+    metresClimbed: "Metres climbed",
+    regions: "Regions",
+    countries: (count: number) => `${count} countries`,
+  },
+
+  /* ---- unlocking a plan --------------------------------------------------- */
+  unlock: {
+    unlocked: "Unlocked",
+    lede: "It is on now, and it is free while we are in demo. Everything below opened the moment you pressed the button.",
+    envelopeNote:
+      "The printed envelope is part of this. We will ask where to send it in a day or so — not now.",
+    good: "Good",
+    unlocking: "Unlocking…",
+  },
+
   billing: {
     currentPlan: "Current plan",
     monthly: ", monthly",

@@ -317,6 +317,97 @@ export const de: Messages = {
     },
   },
 
+  dashboard: {
+    title: "Übersicht",
+    headline: {
+      nothing: "Nichts offen. Der nächste kommt am Montag.",
+      twoRunning: "Zwei Quests offen, bei beiden läuft die Uhr.",
+      twoOneRunning: "Zwei Quests offen, bei einem läuft die Uhr.",
+      twoFiled: "Zwei Quests offen, beide schon eingereicht.",
+      oneRunning: "Ein Quest offen, und das Fenster schließt sich.",
+      oneFiled: "Ein Quest offen, schon eingereicht.",
+    },
+    pointsLabel: (period) => `Punkte, ${period}`,
+    rankLabel: (total) => `von ${total} in der Rangliste`,
+    coming: "Was kommt",
+    comingNote: "Wöchentliche montags um 06:00 · der monatliche am 1.",
+    theMonthly: "Der Monatliche",
+    theWeekly: "Der Wöchentliche",
+    generatedForYou: "Wird für dich erzeugt",
+    nothingOpenHeading: "Gerade ist nichts offen",
+    nothingOpenBody:
+      "Der nächste wöchentliche kommt am Montag um 06:00. Bis dahin ist die Quest-Datenbank offen, und alles, was du daraus einreichst, zählt weiterhin.",
+    openDatabase: "Quest-Datenbank öffnen",
+    board: "Um dich herum in der Rangliste",
+    fullBoard: "Ganze Rangliste →",
+    boardEmpty:
+      "Diesen Monat steht noch niemand in der Rangliste. Hinein kommt man mit bestätigten Nachweisen.",
+    sheet: "Stickerbogen",
+    sheetCount: (earned, total) => `${earned} von ${total} verdient`,
+    sheetNote:
+      "Zwei liegen jedem Umschlag bei, neben der Questkarte des Monats. Kleb sie dorthin, wo du sie verdient hast.",
+    wholeSheet: "Der ganze Bogen",
+    waitingTag: "Nachweis eingereicht · wartet auf Prüfung",
+  },
+
+  questCard: {
+    fileProof: "Nachweis einreichen",
+    openMonthly: "Den monatlichen öffnen",
+    seeQuest: "Quest ansehen",
+    closesIn: "Schließt in",
+    waiting: "Wartet auf Prüfung",
+    readByHuman: "Geprüft",
+    windowShut: "Fenster zu",
+    approved: (points) => `Bestätigt · +${points}`,
+    sentBack: "Zurückgeschickt",
+    stamp: (points) => `+${points} Punkte`,
+    filedOn: (weekday) => `Eingereicht am ${weekday}`,
+    trailhead: "Startpunkt",
+    summit: "Gipfel",
+    distance: "Distanz",
+    ascent: "Anstieg",
+    grade: "Stufe",
+    fileAgain: "Erneut einreichen",
+    expertFigures: "Expertenzahlen",
+  },
+
+  rail: {
+    openNow: "Jetzt offen",
+    nextDrop: "Der nächste",
+    thenMonthly: "Dann der monatliche",
+    untilWeekly: (when) => `bis der nächste wöchentliche öffnet, ${when} um 06:00. Was jetzt offen ist, bleibt bis zum Ende seines eigenen Fensters offen.`,
+    standing: "Wo du stehst",
+    fullBoard: "Ganze Rangliste",
+    open: "Öffnen →",
+    behind: (points, name) => `${points} Punkte hinter ${name}.`,
+    youAreOn: (points, quests) => `Du hast ${points} aus ${quests}.`,
+    topOfBoard: (points) =>
+      `An der Spitze mit ${points} Punkten. Ein Monat bleibt, um sie zu halten.`,
+    notOnBoard:
+      "Diesen Monat nicht in der Rangliste. Hinein kommt man mit bestätigten Nachweisen — ein eingetragener Quest reicht.",
+    desk: "Auf dem Tisch der Prüfung",
+    deskEmpty:
+      "Nichts wartet auf Prüfung. Ein Nachweis wird meist innerhalb eines Tages gelesen.",
+    closest: "Nächster Sticker",
+    wholeSheet: "Der ganze Bogen",
+    logbook: "Das Logbuch",
+    allTime: "Insgesamt",
+    questsLogged: "Eingetragene Quests",
+    kilometres: "Kilometer",
+    metresClimbed: "Höhenmeter",
+    regions: "Regionen",
+    countries: (count) => `${count} Länder`,
+  },
+
+  unlock: {
+    unlocked: "Freigeschaltet",
+    lede: "Es ist an, und während der Demo kostenlos. Alles unten hat sich in dem Moment geöffnet, als du geklickt hast.",
+    envelopeNote:
+      "Der gedruckte Umschlag gehört dazu. Wohin er soll, fragen wir in einem Tag oder zwei — nicht jetzt.",
+    good: "Gut",
+    unlocking: "Wird freigeschaltet…",
+  },
+
   billing: {
     currentPlan: "Aktueller Tarif",
     monthly: ", monatlich",

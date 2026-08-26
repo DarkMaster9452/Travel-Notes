@@ -6,8 +6,9 @@ import { useState, useTransition } from "react";
 
 import { activatePlanAction } from "@/app/(app)/settings/plan-actions";
 import { Glyph } from "@/components/sq/icons";
+import { useT } from "@/components/sq/i18n";
 import { useToast } from "@/components/sq/toast";
-import { CAPABILITY_COPY, type Capability } from "@/lib/config";
+import { capabilityCopy, type Capability } from "@/lib/config";
 import { SHAPE_RADIUS, type StickerShape } from "@/lib/stickers";
 
 /**
@@ -51,6 +52,7 @@ export function SqActivateButton({
   gains: Capability[];
   variant?: "primary" | "ghost";
 }) {
+  const t = useT();
   const toast = useToast();
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -73,7 +75,7 @@ export function SqActivateButton({
           });
         }}
       >
-        {pending ? "Unlocking…" : label}
+        {pending ? t.unlock.unlocking : label}
       </button>
 
       {unlocked ? (
@@ -102,6 +104,8 @@ export function SqUnlockCelebration({
   gains: Capability[];
   onClose: () => void;
 }) {
+  const t = useT();
+
   return (
     <div className="sq-unlock" role="dialog" aria-modal="true" aria-label={`${name} unlocked`}>
       <div className="sq-unlock-scrim" onClick={onClose} />
@@ -159,13 +163,10 @@ export function SqUnlockCelebration({
         </div>
 
         <p className="sq-kicker" style={{ marginBottom: 10 }}>
-          Unlocked
+          {t.unlock.unlocked}
         </p>
         <h2 className="sq-unlock-title">{name}</h2>
-        <p className="sq-unlock-lede">
-          It is on now, and it is free while we are in demo. Everything below opened the moment
-          you pressed the button.
-        </p>
+        <p className="sq-unlock-lede">{t.unlock.lede}</p>
 
         {gains.length > 0 ? (
           <ul className="sq-unlock-list">
@@ -174,22 +175,19 @@ export function SqUnlockCelebration({
                 <span>
                   <Glyph name="check" size={14} strokeWidth={2.6} />
                 </span>
-                <b>{CAPABILITY_COPY[capability].title}</b>
-                <i>{CAPABILITY_COPY[capability].detail}</i>
+                <b>{capabilityCopy(t, capability).title}</b>
+                <i>{capabilityCopy(t, capability).detail}</i>
               </li>
             ))}
           </ul>
         ) : null}
 
         {gains.includes("mail") ? (
-          <p className="sq-unlock-note">
-            The printed envelope is part of this. We will ask where to send it in a day or so —
-            not now.
-          </p>
+          <p className="sq-unlock-note">{t.unlock.envelopeNote}</p>
         ) : null}
 
         <button type="button" className="sq-btn sq-btn-primary sq-unlock-go" onClick={onClose}>
-          Good
+          {t.unlock.good}
         </button>
       </div>
     </div>

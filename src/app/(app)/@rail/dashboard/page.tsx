@@ -8,14 +8,13 @@ import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { formatDate, formatNumber, plural } from "@/lib/i18n/format";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { getUserStats } from "@/lib/quest/service";
 
 export const dynamic = "force-dynamic";
 
-const NUMBER = new Intl.NumberFormat("en-GB");
-const FILED = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
-const OPENS = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
 /**
  * The column beside the dashboard.
@@ -42,7 +41,7 @@ export default async function DashboardRail() {
   const nextWeekly = slotFor("WEEKLY", nextWeek);
   const nextMonthly = slotFor("MONTHLY", nextMonth);
 
-  const [board, stats, entitlement, revocations, pending] = await Promise.all([
+  const [board, stats, entitlement, revocations, pending, t, locale] = await Promise.all([
     getLeaderboard("MONTHLY", undefined, now),
     getUserStats(user.id),
     getEntitlement(user.id),
@@ -56,12 +55,15 @@ export default async function DashboardRail() {
       take: 3,
       select: { id: true, createdAt: true, quest: { select: { title: true } } },
     }),
+    getT(user.id),
+    getLocale(user.id),
   ]);
 
   const achievements = getAchievements(
     stats,
     entitlement.plan,
     revocations.map((row) => row.achievementId),
+    t,
   );
 
   const myIndex = board.rows.findIndex((row) => row.userId === user.id);
@@ -84,36 +86,31 @@ export default async function DashboardRail() {
   return (
     <>
       <RailCard
-        title="The next drop"
+        title={t.rail.nextDrop}
         tone="dark"
         index={0}
         foot={
           <>
-            <span>Then the monthly</span>
-            <span>{OPENS.format(nextMonthly.openAt)}</span>
+            <span>{t.rail.thenMonthly}</span>
+            <span>{formatDate(locale, nextMonthly.openAt, "dayMonth")}</span>
           </>
         }
       >
         <RailFigure
-          value={<SqCountdown to={nextWeekly.openAt.toISOString()} closedLabel="Open now" />}
-          note={
-            <>
-              until the next weekly opens, {OPENS.format(nextWeekly.openAt)} at 06:00. Whatever is
-              open now stays open until its own window closes.
-            </>
-          }
+          value={<SqCountdown to={nextWeekly.openAt.toISOString()} closedLabel={t.rail.openNow} />}
+          note={t.rail.untilWeekly(formatDate(locale, nextWeekly.openAt, "dayMonth"))}
         />
       </RailCard>
 
       <RailCard
-        title="Where you stand"
+        title={t.rail.standing}
         meta={board.label}
         index={1}
         foot={
           <>
-            <span>Full board</span>
+            <span>{t.rail.fullBoard}</span>
             <Link href="/leaderboard" style={{ color: "inherit" }}>
-              Open →
+              {t.rail.open}
             </Link>
           </>
         }
@@ -124,24 +121,17 @@ export default async function DashboardRail() {
             note={
               above ? (
                 <>
-                  {NUMBER.format(above.score - myRow.score)} points behind {above.username}. You are
-                  on {NUMBER.format(myRow.score)} from {myRow.quests}{" "}
-                  {myRow.quests === 1 ? "quest" : "quests"}.
+                  {t.rail.behind(above.score - myRow.score, above.username)}{" "}
+                  {t.rail.youAreOn(myRow.score, plural(locale, myRow.quests, t.common.quests))}
                 </>
               ) : (
-                <>
-                  Top of the board on {NUMBER.format(myRow.score)} points. There is a month left to
-                  hold it.
-                </>
+                t.rail.topOfBoard(myRow.score)
               )
             }
           />
         ) : (
           <div className="sq-rail-body">
-            <p className="sq-rail-note">
-              Not on the board this month. Approved proof is what puts you on it — one logged quest
-              is enough.
-            </p>
+            <p className="sq-rail-note">{t.rail.notOnBoard}</p>
           </div>
         )}
 
@@ -160,22 +150,20 @@ export default async function DashboardRail() {
               {row.username}
             </span>
             <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 14 }}>
-              {NUMBER.format(row.score)}
+              {formatNumber(locale, row.score)}
             </b>
           </div>
         ))}
       </RailCard>
 
       <RailCard
-        title="On a reader's desk"
+        title={t.rail.desk}
         meta={pending.length > 0 ? String(pending.length) : undefined}
         index={2}
       >
         {pending.length === 0 ? (
           <div className="sq-rail-body">
-            <p className="sq-rail-note">
-              Nothing waiting on a reader. Proof is usually read within a day of being filed.
-            </p>
+            <p className="sq-rail-note">{t.rail.deskEmpty}</p>
           </div>
         ) : (
           pending.map((submission) => (
@@ -184,7 +172,7 @@ export default async function DashboardRail() {
               label={submission.quest.title}
               value={
                 <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-                  {FILED.format(submission.createdAt)}
+                  {formatDate(locale, submission.createdAt)}
                 </span>
               }
             />
@@ -194,13 +182,13 @@ export default async function DashboardRail() {
 
       {closest ? (
         <RailCard
-          title="Closest sticker"
+          title={t.rail.closest}
           index={3}
           foot={
             <>
-              <span>The whole sheet</span>
+              <span>{t.rail.wholeSheet}</span>
               <Link href="/stickers" style={{ color: "inherit" }}>
-                Open →
+                {t.rail.open}
               </Link>
             </>
           }
@@ -226,13 +214,15 @@ export default async function DashboardRail() {
         </RailCard>
       ) : null}
 
-      <RailCard title="The logbook" meta="All time" index={4}>
-        <RailLine label="Quests logged" value={NUMBER.format(stats.completedCount)} />
-        <RailLine label="Kilometres" value={NUMBER.format(stats.kmExplored)} />
-        <RailLine label="Metres climbed" value={NUMBER.format(stats.elevation)} />
+      <RailCard title={t.rail.logbook} meta={t.rail.allTime} index={4}>
+        <RailLine label={t.rail.questsLogged} value={formatNumber(locale, stats.completedCount)} />
+        <RailLine label={t.rail.kilometres} value={formatNumber(locale, stats.kmExplored)} />
+        <RailLine label={t.rail.metresClimbed} value={formatNumber(locale, stats.elevation)} />
         <RailLine
-          label="Regions"
-          value={`${stats.regions}${stats.countries > 1 ? ` · ${stats.countries} countries` : ""}`}
+          label={t.rail.regions}
+          value={`${stats.regions}${
+            stats.countries > 1 ? ` · ${t.rail.countries(stats.countries)}` : ""
+          }`}
         />
       </RailCard>
     </>
