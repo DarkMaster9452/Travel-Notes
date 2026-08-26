@@ -568,6 +568,50 @@ export const de: Messages = {
     logged: (n) => `${n} eingetragen`,
   },
 
+  settingsPages: {
+    general: {
+      heading: "Allgemein",
+      kicker: "Gilt für jeden Quest",
+      expertFigures: "Expertenzahlen",
+      expertDetail:
+        "Die zusätzlichen Zahlen je Quest — Steigung, Ausgesetztheit, die Verteilung über das Volumen — auf der Karte in der Übersicht und beim monatlichen.",
+      expertFooter:
+        "Expertenzahlen gehören zu Explorer und Ultra. Im kostenlosen Tarif zeigt ein Quest die vier Zahlen auf seiner Karte und sonst nichts.",
+      palette: "Palette",
+    },
+    address: {
+      heading: "Wohin der Umschlag geht",
+      footer:
+        "Questkarten und Sticker gehen am 2. jedes Monats raus. Eine nach dem 28. geänderte Adresse gilt erst für den übernächsten Umschlag.",
+      recipient: "Name auf dem Umschlag",
+      line1: "Straße",
+      line2: "Zweite Zeile",
+      city: "Ort oder Stadt",
+      postcode: "PLZ",
+      country: "Land",
+    },
+    notifications: {
+      heading: "Benachrichtigungen",
+      footer:
+        "Alles außer Produktneuigkeiten dreht sich um deine eigenen Quests und deine eigenen Bewertungen.",
+      questDrop: "Neuer Quest",
+      questDropDetail:
+        "Montags um 06:00 für den wöchentlichen, am 1. für den monatlichen. Eine E-Mail, mit dem Quest darin.",
+      verdict: "Eine Bewertung deines Nachweises",
+      verdictDetail: "Bestätigt oder zurückgeschickt, mit der Notiz der Prüfung, falls es eine gibt.",
+      boardSealed: "Eine Rangliste schließt mit deinem Namen",
+      boardSealedDetail:
+        "Nur wenn du in einem gerade geschlossenen Zeitraum unter den ersten drei warst.",
+      productNews: "Produktneuigkeiten",
+      productNewsDetail: "Gelegentlich, nie öfter als einmal im Monat. Aus, bis du danach fragst.",
+    },
+  },
+
+  shell: {
+    brand: "Summit Quest",
+    closeMenu: "Menü schließen",
+  },
+
   billing: {
     currentPlan: "Aktueller Tarif",
     monthly: ", monatlich",

@@ -4,6 +4,7 @@ import { SqSaveForm, SqToggleRow } from "@/components/sq/forms";
 import { saveDisplayAction } from "@/app/(app)/settings/actions";
 import { setThemeAction } from "@/app/(app)/actions";
 import { requireClient } from "@/lib/auth/guards";
+import { getT } from "@/lib/i18n/server";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { ThemePicker } from "@/components/sq/theme-picker";
@@ -21,9 +22,10 @@ export const dynamic = "force-dynamic";
 export default async function GeneralSettingsPage() {
   const user = await requireClient();
 
-  const [display, entitlement] = await Promise.all([
+  const [display, entitlement, t] = await Promise.all([
     db.displaySettings.findUnique({ where: { userId: user.id } }),
     getEntitlement(user.id),
+    getT(user.id),
   ]);
 
   return (
@@ -40,25 +42,25 @@ export default async function GeneralSettingsPage() {
           }}
         >
           <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            General
+            {t.settingsPages.general.heading}
           </h2>
           <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
-            Applies to every quest
+            {t.settingsPages.general.kicker}
           </span>
         </div>
 
         <SqSaveForm
           action={saveDisplayAction}
-          footer="Expert figures are part of Explorer and Ultra. On the free plan a quest shows the four figures on its card and nothing more."
+          footer={t.settingsPages.general.expertFooter}
         >
           <input type="hidden" name="units" value={display?.units ?? "METRIC"} />
           <input type="hidden" name="language" value={display?.language ?? "en"} />
           <ul>
             <SqToggleRow
               name="expertStats"
-              label="Expert figures"
+              label={t.settingsPages.general.expertFigures}
               tag={entitlement.isSubscribed ? undefined : "EXPLORER"}
-              description="The extra per-quest figures — gradient, exposure, the spread over volume — on the dashboard card and the monthly."
+              description={t.settingsPages.general.expertDetail}
               defaultOn={display?.expertStats ?? false}
               disabled={!entitlement.isSubscribed}
             />
@@ -69,7 +71,7 @@ export default async function GeneralSettingsPage() {
       <section className="sq-card" style={{ overflow: "hidden" }}>
         <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--line-2)" }}>
           <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            Palette
+            {t.settingsPages.general.palette}
           </h2>
         </div>
         <div style={{ padding: "18px 24px" }}>

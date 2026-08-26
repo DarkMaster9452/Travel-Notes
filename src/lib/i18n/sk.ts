@@ -568,6 +568,48 @@ export const sk: Messages = {
     logged: (n) => `${n} zapísaných`,
   },
 
+  settingsPages: {
+    general: {
+      heading: "Všeobecné",
+      kicker: "Platí pre každý quest",
+      expertFigures: "Expertné čísla",
+      expertDetail:
+        "Doplnkové čísla ku questu — sklon, exponovanosť, rozloženie objemu — na karte v prehľade a na mesačnom.",
+      expertFooter:
+        "Expertné čísla sú súčasťou plánov Explorer a Ultra. V pláne zadarmo quest ukazuje na karte štyri čísla a nič viac.",
+      palette: "Paleta",
+    },
+    address: {
+      heading: "Kam ide obálka",
+      footer:
+        "Karty questov a nálepky odchádzajú 2. každého mesiaca. Adresa zmenená po 28. platí až pre ďalšiu obálku.",
+      recipient: "Meno na obálke",
+      line1: "Ulica",
+      line2: "Druhý riadok",
+      city: "Mesto alebo obec",
+      postcode: "PSČ",
+      country: "Krajina",
+    },
+    notifications: {
+      heading: "Notifikácie",
+      footer: "Všetko okrem noviniek o produkte sa týka tvojich vlastných questov a verdiktov.",
+      questDrop: "Nový quest",
+      questDropDetail:
+        "Pondelok o 06:00 pre týždenný, 1. pre mesačný. Jeden e-mail, aj s questom v ňom.",
+      verdict: "Verdikt k tvojmu dôkazu",
+      verdictDetail: "Schválené alebo vrátené, spolu s poznámkou kontrolóra, ak nejaká je.",
+      boardSealed: "Uzavretie rebríčka s tvojím menom",
+      boardSealedDetail: "Len ak si skončil v prvej trojke práve uzavretého okna.",
+      productNews: "Novinky o produkte",
+      productNewsDetail: "Občas, nikdy nie viac než raz mesačne. Vypnuté, kým si o to nepovieš.",
+    },
+  },
+
+  shell: {
+    brand: "Summit Quest",
+    closeMenu: "Zavrieť menu",
+  },
+
   billing: {
     currentPlan: "Aktuálny plán",
     monthly: ", mesačne",

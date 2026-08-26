@@ -541,6 +541,49 @@ export const en = {
     logged: (n: number) => `${n} logged`,
   },
 
+  /* ---- the rest of settings ----------------------------------------------- */
+  settingsPages: {
+    general: {
+      heading: "General",
+      kicker: "Applies to every quest",
+      expertFigures: "Expert figures",
+      expertDetail:
+        "The extra per-quest figures — gradient, exposure, the spread over volume — on the dashboard card and the monthly.",
+      expertFooter:
+        "Expert figures are part of Explorer and Ultra. On the free plan a quest shows the four figures on its card and nothing more.",
+      palette: "Palette",
+    },
+    address: {
+      heading: "Where the envelope goes",
+      footer:
+        "Quest cards and stickers post on the 2nd of each month. An address changed after the 28th applies to the envelope after next.",
+      recipient: "Name on the envelope",
+      line1: "Street",
+      line2: "Second line",
+      city: "Town or city",
+      postcode: "Postcode",
+      country: "Country",
+    },
+    notifications: {
+      heading: "Notifications",
+      footer: "Everything except product news is about your own quests and your own verdicts.",
+      questDrop: "Quest drop",
+      questDropDetail:
+        "Monday at 06:00 for the weekly, the 1st for the monthly. One email, with the quest in it.",
+      verdict: "A verdict on your proof",
+      verdictDetail: "Approved or sent back, with the reader's note when there is one.",
+      boardSealed: "A board sealing with your name on it",
+      boardSealedDetail: "Only when you finished in the top three of a window that has just closed.",
+      productNews: "Product news",
+      productNewsDetail: "Occasional, and never more than once a month. Off unless you ask for it.",
+    },
+  },
+
+  shell: {
+    brand: "Summit Quest",
+    closeMenu: "Close menu",
+  },
+
   billing: {
     currentPlan: "Current plan",
     monthly: ", monthly",
