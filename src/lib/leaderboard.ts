@@ -57,13 +57,20 @@ const METRES_PER_POINT = 100;
 
 /**
  * Doing the featured quest is worth more than doing an equivalent quest of
- * your own choosing, and the monthly is worth more than the weekly. Without
- * this the shared quest is just another row on the board, and the two pages
- * the product is built around stop mattering to it.
+ * your own choosing, and the monthly is worth a great deal more than the
+ * weekly. Without this the shared quest is just another row on the board, and
+ * the two pages the product is built around stop mattering to it.
+ *
+ * The spread is wide on purpose. A weekly is a habit — it should be worth
+ * turning up for and no more. The monthly is the one somebody plans a Saturday
+ * around, and a month of weeklies should not quietly out-score it. This is
+ * also the only lever available: `getFeaturedQuest` generates both cadences
+ * from the same difficulty preference, so "weeklies are easier quests" is not
+ * something the scoring can express.
  */
 export const FEATURED_BONUS: Record<SchedulePeriod, number> = {
-  WEEKLY: 25,
-  MONTHLY: 60,
+  WEEKLY: 15,
+  MONTHLY: 90,
 };
 
 /**
