@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { GroupMembership } from "@/components/sq/group-membership";
 import { SqSegmentedLinks } from "@/components/sq/controls";
 import { Avatar, Bar, EmptyState, PageHeader, Tag } from "@/components/sq/ui";
+import { getT } from "@/lib/i18n/server";
 import { requireClient } from "@/lib/auth/guards";
 import { getGroup, getGroupBoard } from "@/lib/groups";
 
@@ -35,6 +36,7 @@ export default async function GroupPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const user = await requireClient();
+  const t = await getT(user.id);
   const { slug } = await params;
   const query = await searchParams;
   const period = query.period === "WEEKLY" ? "WEEKLY" : "MONTHLY";
@@ -45,11 +47,11 @@ export default async function GroupPage({
   if (!group.isMember) {
     return (
       <>
-        <PageHeader kicker="Group" title={group.name} lede={group.blurb ?? undefined} />
+        <PageHeader kicker={t.groups.kicker} title={group.name} lede={group.blurb ?? undefined} />
         <EmptyState
           glyph="users"
-          title="You are not in this group"
-          body="Who is in a group is visible to the people in it. Join with the link somebody sent you and the roster and the board open up."
+          title={t.groups.notIn}
+          body={t.groups.notInBody}
           action={<GroupMembership slug={group.slug} joined={false} />}
         />
       </>
@@ -79,7 +81,7 @@ export default async function GroupPage({
               {board.label} · {board.dates}
             </h2>
             <SqSegmentedLinks
-              label="Board cadence"
+              label={t.groups.cadence}
               active={period}
               options={[
                 { key: "MONTHLY", label: "Monthly", href: `/people/groups/${group.slug}` },
@@ -92,8 +94,8 @@ export default async function GroupPage({
             <div style={{ padding: 26 }}>
               <EmptyState
                 glyph="laurel"
-                title="Nothing scored in this window"
-                body="Approved proof is what puts somebody on a board. Nobody in the group has any inside these dates yet."
+                title={t.groups.nothingScored}
+                body={t.groups.nothingScoredBody}
               />
             </div>
           ) : (

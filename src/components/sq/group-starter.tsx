@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { createGroupAction } from "@/app/(app)/people/actions";
+import { useT } from "@/components/sq/i18n";
 import { useToast } from "@/components/sq/toast";
 
 /** Start a group. Two fields, because a group is two fields and a roster. */
 export function GroupStarter() {
+  const t = useT();
   const router = useRouter();
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
@@ -42,12 +44,12 @@ export function GroupStarter() {
 
       <label className="sq-field" style={{ marginBottom: 12 }}>
         <span className="sq-label">Name</span>
-        <input className="sq-input" name="name" required maxLength={60} placeholder="Tuesday nights" />
+        <input className="sq-input" name="name" required maxLength={60} placeholder={t.groups.namePlaceholder} />
       </label>
 
       <label className="sq-field" style={{ marginBottom: 14 }}>
         <span className="sq-label">One line about it</span>
-        <input className="sq-input" name="blurb" maxLength={240} placeholder="Short ones after work, all year." />
+        <input className="sq-input" name="blurb" maxLength={240} placeholder={t.groups.blurbPlaceholder} />
       </label>
 
       {error ? <p className="sq-error" style={{ marginBottom: 12 }}>{error}</p> : null}

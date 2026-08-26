@@ -717,6 +717,42 @@ export const de: Messages = {
     backToDashboard: "Zurück zur Übersicht",
   },
 
+  onboarding: {
+    steps: "Einrichtungsschritte",
+    whereYouWalk: "Wo du unterwegs bist",
+    oneCountry: "Ein Land",
+    outsideEurope: "Außerhalb Europas ist Ultra. Alles andere gibt es in jedem Tarif.",
+    howItReads: "Wie es sich liest",
+    unitsAndLanguage: "Einheiten und Sprache",
+    metricNote: "Quests sind metrisch geschrieben. Imperial wird bei der Anzeige umgerechnet.",
+    whichPlan: "Welcher Tarif",
+    takeExplorer: "Explorer nehmen",
+    takeUltra: "Ultra nehmen",
+    changeLater: "Das lässt sich später in den Einstellungen ändern.",
+    skip: "Vorerst überspringen",
+  },
+
+  groups: {
+    kicker: "Gruppe",
+    notIn: "Du bist nicht in dieser Gruppe",
+    notInBody:
+      "Wer in einer Gruppe ist, sehen nur die Leute darin. Tritt mit dem Link bei, den dir jemand geschickt hat, dann öffnen sich Liste und Rangliste.",
+    cadence: "Rhythmus der Rangliste",
+    nothingScored: "In diesem Zeitraum wurde nichts erzielt",
+    nothingScoredBody:
+      "In eine Rangliste kommt man mit bestätigten Nachweisen. Niemand in der Gruppe hat innerhalb dieser Daten welche.",
+    namePlaceholder: "Dienstagabende",
+    blurbPlaceholder: "Kurze nach der Arbeit, das ganze Jahr.",
+  },
+
+  privacyPane: {
+    clearIt: "Löschen",
+  },
+
+  theme: {
+    palette: "Palette",
+  },
+
   billing: {
     currentPlan: "Aktueller Tarif",
     monthly: ", monatlich",

@@ -692,6 +692,43 @@ export const en = {
     backToDashboard: "Back to the dashboard",
   },
 
+  /* ---- onboarding and groups ----------------------------------------------- */
+  onboarding: {
+    steps: "Setup steps",
+    whereYouWalk: "Where you walk",
+    oneCountry: "One country",
+    outsideEurope: "Outside Europe is Ultra. Everything else is on every plan.",
+    howItReads: "How it reads",
+    unitsAndLanguage: "Units and language",
+    metricNote: "Quests are written in metric. Imperial converts on the way out.",
+    whichPlan: "Which plan",
+    takeExplorer: "Take Explorer",
+    takeUltra: "Take Ultra",
+    changeLater: "You can change this later in Settings.",
+    skip: "Skip for now",
+  },
+
+  groups: {
+    kicker: "Group",
+    notIn: "You are not in this group",
+    notInBody:
+      "Who is in a group is visible to the people in it. Join with the link somebody sent you and the roster and the board open up.",
+    cadence: "Board cadence",
+    nothingScored: "Nothing scored in this window",
+    nothingScoredBody:
+      "Approved proof is what puts somebody on a board. Nobody in the group has any inside these dates yet.",
+    namePlaceholder: "Tuesday nights",
+    blurbPlaceholder: "Short ones after work, all year.",
+  },
+
+  privacyPane: {
+    clearIt: "Clear it",
+  },
+
+  theme: {
+    palette: "Palette",
+  },
+
   billing: {
     currentPlan: "Current plan",
     monthly: ", monthly",

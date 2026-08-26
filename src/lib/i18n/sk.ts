@@ -715,6 +715,42 @@ export const sk: Messages = {
     backToDashboard: "Späť na prehľad",
   },
 
+  onboarding: {
+    steps: "Kroky nastavenia",
+    whereYouWalk: "Kde chodíš",
+    oneCountry: "Jedna krajina",
+    outsideEurope: "Mimo Európy je Ultra. Všetko ostatné je v každom pláne.",
+    howItReads: "Ako sa to číta",
+    unitsAndLanguage: "Jednotky a jazyk",
+    metricNote: "Questy sú písané v metrických jednotkách. Imperiálne sa prepočítajú pri zobrazení.",
+    whichPlan: "Ktorý plán",
+    takeExplorer: "Vziať Explorer",
+    takeUltra: "Vziať Ultra",
+    changeLater: "Toto sa dá neskôr zmeniť v nastaveniach.",
+    skip: "Zatiaľ preskočiť",
+  },
+
+  groups: {
+    kicker: "Skupina",
+    notIn: "V tejto skupine nie si",
+    notInBody:
+      "Kto je v skupine, vidia len ľudia v nej. Pridaj sa cez odkaz, ktorý ti niekto poslal, a otvorí sa ti zoznam aj rebríček.",
+    cadence: "Kadencia rebríčka",
+    nothingScored: "V tomto okne zatiaľ nikto nebodoval",
+    nothingScoredBody:
+      "Do rebríčka sa dostaneš schváleným dôkazom. Nikto zo skupiny zatiaľ v týchto dátumoch žiadny nemá.",
+    namePlaceholder: "Utorkové večery",
+    blurbPlaceholder: "Krátke po práci, celý rok.",
+  },
+
+  privacyPane: {
+    clearIt: "Vymazať",
+  },
+
+  theme: {
+    palette: "Paleta",
+  },
+
   billing: {
     currentPlan: "Aktuálny plán",
     monthly: ", mesačne",

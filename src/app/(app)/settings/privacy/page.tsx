@@ -4,6 +4,7 @@ import Link from "next/link";
 import { clearMyDataAction, deleteAccountAction } from "@/app/(app)/profile/actions";
 import { SqDangerForm } from "@/components/sq/forms";
 import { Tag } from "@/components/sq/ui";
+import { getT } from "@/lib/i18n/server";
 import { requireClient } from "@/lib/auth/guards";
 import { DELETE_PHRASE } from "@/lib/config";
 import { db } from "@/lib/db";
@@ -21,6 +22,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function PrivacySettingsPage() {
   const user = await requireClient();
+  const t = await getT(user.id);
 
   const [profile, submissions] = await Promise.all([
     db.profile.findUnique({
@@ -60,7 +62,7 @@ export default async function PrivacySettingsPage() {
           {submissions === 1 ? "submission" : "submissions"}, including the photographs. The account
           stays; the record of what you have walked does not. This cannot be undone.
         </p>
-        <SqDangerForm action={clearMyDataAction} label="Clear it" phrase={DELETE_PHRASE} />
+        <SqDangerForm action={clearMyDataAction} label={t.privacyPane.clearIt} phrase={DELETE_PHRASE} />
       </section>
 
       <section className="sq-card sq-pad" style={{ borderColor: "var(--signal)" }}>
@@ -71,7 +73,7 @@ export default async function PrivacySettingsPage() {
           A hard delete: sessions, preferences, subscription, history and profile go with it. There
           is no soft-delete flag quietly keeping the row.
         </p>
-        <SqDangerForm action={deleteAccountAction} label="Delete everything" phrase={DELETE_PHRASE} />
+        <SqDangerForm action={deleteAccountAction} label={t.panes.privacy.deleteEverything} phrase={DELETE_PHRASE} />
       </section>
     </>
   );
