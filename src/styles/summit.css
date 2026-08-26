@@ -655,6 +655,24 @@
   color: var(--forest-ink-2);
 }
 
+/* `.sq-bar` on paper, this on a dark slab. Same hairline, a track that reads
+   against the forest ground, and enough margin underneath that the clock never
+   crowds the button it sits above. */
+.sq-slab-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  margin: 0 0 16px;
+}
+
+.sq-slab-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--signal-2);
+  transition: width var(--dur-spring) var(--ease-settle);
+}
+
 /* Three classes so it outranks `.sq a:not([class])` — a prose link on a dark
    slab has to take the slab's ink, not the paper palette's link green. */
 .sq .sq-slab a:not([class]) {
@@ -1019,9 +1037,11 @@
   padding: 0 26px;
 }
 
+/* A clock reads as a hairline, not as a bar chart. Thin enough to sit under a
+   line of text without competing with it. */
 .sq-bar {
-  height: 5px;
-  border-radius: 3px;
+  height: 3px;
+  border-radius: 2px;
   background: var(--paper-3);
   overflow: hidden;
 }
@@ -1830,6 +1850,10 @@
   font-size: 20px;
   line-height: 1;
   white-space: nowrap;
+}
+
+.sq-quest-clock {
+  margin-bottom: 6px;
 }
 
 .sq-quest-clock-row {
