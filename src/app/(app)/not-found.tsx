@@ -1,9 +1,12 @@
 import Link from "next/link";
 
 import { EmptyState } from "@/components/sq/ui";
+import { getT } from "@/lib/i18n/server";
 
 /** A member-side 404, inside the shell rather than dumped outside it. */
-export default function AppNotFound() {
+export default async function AppNotFound() {
+  const t = await getT();
+
   return (
     <>
       <header className="sq-head">
@@ -15,15 +18,15 @@ export default function AppNotFound() {
 
       <EmptyState
         glyph="map"
-        title="Nothing here"
-        body="The page you were looking for does not exist — or it belongs to somebody else's account."
+        title={t.errors.notFound}
+        body={t.errors.notFoundBody}
         action={
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
             <Link href="/dashboard" className="sq-btn sq-btn-primary sq-btn-sm">
-              Your dashboard
+              {t.nav.dashboard}
             </Link>
             <Link href="/quests" className="sq-btn sq-btn-ghost sq-btn-sm">
-              The quest database
+              {t.nav.quests}
             </Link>
           </div>
         }

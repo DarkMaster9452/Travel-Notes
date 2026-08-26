@@ -648,6 +648,75 @@ export const de: Messages = {
     tellUs: "Sag uns, was passiert ist — ein Satz reicht.",
   },
 
+  questPage: {
+    fromCatalogue: "Aus dem Katalog",
+    objective: "Ziel",
+    parkHere: "Hier parken",
+    walkedBy: "Gelaufen von",
+    fileProof: "Nachweis dafür einreichen",
+    editProof: "Nachweis bearbeiten",
+    waiting: "Wartet auf Prüfung",
+    sentBack: "Zurückgeschickt",
+    briefInEnglish: "Quest-Briefings sind auf Englisch geschrieben.",
+  },
+
+  panes: {
+    cancel: {
+      heading: "Pausieren oder kündigen",
+      pauseMonth: "Einen Monat pausieren",
+      pauseOne: "Einen Monat pausieren",
+      pauseThree: "Drei Monate pausieren",
+      pauseThreeShort: "Drei pausieren",
+      resume: "Zahlung fortsetzen",
+      resumeNow: "Jetzt fortsetzen",
+      cancelPlan: "Meinen Tarif kündigen",
+    },
+    privacy: {
+      published: "Veröffentlicht",
+      notPublished: "Nicht veröffentlicht",
+      editWhatItShows: "Bearbeiten, was sie zeigt",
+      setItUp: "Einrichten",
+      deleteEverything: "Alles löschen",
+    },
+    password: {
+      currentPassword: "Aktuelles Passwort",
+      newPassword: "Neues Passwort",
+      heading: "Passwort",
+      changeIt: "Ändern",
+      signsOut: "Ein Passwortwechsel meldet alle Sitzungen ab, auch diese.",
+    },
+    invoices: {
+      none: "Noch keine Rechnungen",
+      noneBody:
+        "Eine Rechnung erscheint, sobald die erste Zahlung durchgeht. Ein kostenloser Tarif erzeugt nie eine.",
+      notConfigured: "Zahlungen sind hier nicht eingerichtet",
+      notConfiguredBody: "Diese Installation hat keine Stripe-Schlüssel, also gibt es nichts zu lesen.",
+      openPortal: "Zahlungsportal öffnen",
+    },
+    connected: {
+      heading: "Verbundene Apps",
+      stravaDetail:
+        "Lies Distanz, Anstieg und Bewegungszeit direkt aus einer Aktivität, statt sie zu tippen. Nur Lesezugriff, und nur auf Aktivitäten.",
+      disconnect: "Trennen",
+      disconnectIt: "Trennen",
+      disconnected: "Strava getrennt.",
+      notConfigured: "Strava ist auf dieser Installation nicht eingerichtet.",
+      denied: "Strava wurde keine Erlaubnis erteilt.",
+      handshakeFailed: "Strava konnte die Verbindung nicht abschließen. Versuch es noch einmal.",
+    },
+  },
+
+  errors: {
+    unreadable: "Das konnten wir nicht lesen",
+    unreadableBody:
+      "Nichts von dem, was du eingereicht hast, ist verloren. Versuch es noch einmal — wenn es weiter passiert, sieht die Redaktion es in den Logs.",
+    notFound: "Hier ist nichts",
+    notFoundBody:
+      "Die Seite, die du gesucht hast, gibt es nicht — oder sie gehört zum Konto von jemand anderem.",
+    tryAgain: "Noch einmal versuchen",
+    backToDashboard: "Zurück zur Übersicht",
+  },
+
   billing: {
     currentPlan: "Aktueller Tarif",
     monthly: ", monatlich",

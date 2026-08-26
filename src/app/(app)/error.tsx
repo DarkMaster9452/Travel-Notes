@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { useT } from "@/components/sq/i18n";
 import { ErrorState } from "@/components/sq/ui";
 
 /**
@@ -20,6 +21,8 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -34,15 +37,15 @@ export default function AppError({
       </header>
 
       <ErrorState
-        title="We could not read that"
-        body="Nothing you filed has been lost. Try again — if it keeps happening, the desk will see it in the logs."
+        title={t.errors.unreadable}
+        body={t.errors.unreadableBody}
         action={
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
             <button type="button" className="sq-btn sq-btn-primary sq-btn-sm" onClick={reset}>
-              Try again
+              {t.errors.tryAgain}
             </button>
             <Link href="/dashboard" className="sq-btn sq-btn-ghost sq-btn-sm">
-              Back to the dashboard
+              {t.errors.backToDashboard}
             </Link>
           </div>
         }

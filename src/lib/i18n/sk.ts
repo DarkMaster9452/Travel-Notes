@@ -646,6 +646,75 @@ export const sk: Messages = {
     tellUs: "Povedz nám, čo sa stalo — stačí jedna veta.",
   },
 
+  questPage: {
+    fromCatalogue: "Z katalógu",
+    objective: "Cieľ",
+    parkHere: "Zaparkuj tu",
+    walkedBy: "Prešli",
+    fileProof: "Odovzdať dôkaz k tomuto",
+    editProof: "Upraviť dôkaz",
+    waiting: "Čaká na kontrolóra",
+    sentBack: "Vrátené",
+    briefInEnglish: "Zadania questov sú písané po anglicky.",
+  },
+
+  panes: {
+    cancel: {
+      heading: "Pozastaviť alebo zrušiť",
+      pauseMonth: "Pozastaviť na mesiac",
+      pauseOne: "Pozastaviť na jeden mesiac",
+      pauseThree: "Pozastaviť na tri mesiace",
+      pauseThreeShort: "Pozastaviť na tri",
+      resume: "Obnoviť platby",
+      resumeNow: "Obnoviť teraz",
+      cancelPlan: "Zrušiť môj plán",
+    },
+    privacy: {
+      published: "Zverejnené",
+      notPublished: "Nezverejnené",
+      editWhatItShows: "Upraviť, čo ukazuje",
+      setItUp: "Nastaviť",
+      deleteEverything: "Zmazať všetko",
+    },
+    password: {
+      currentPassword: "Súčasné heslo",
+      newPassword: "Nové heslo",
+      heading: "Heslo",
+      changeIt: "Zmeniť",
+      signsOut: "Zmena hesla odhlási všetky relácie vrátane tejto.",
+    },
+    invoices: {
+      none: "Zatiaľ žiadne faktúry",
+      noneBody:
+        "Faktúra sa objaví po prvej úspešnej platbe. Plán zadarmo žiadnu nevytvorí.",
+      notConfigured: "Platby tu nie sú nastavené",
+      notConfiguredBody: "Toto nasadenie nemá kľúče Stripe, takže nie je čo čítať.",
+      openPortal: "Otvoriť platobný portál",
+    },
+    connected: {
+      heading: "Prepojené aplikácie",
+      stravaDetail:
+        "Načítaj vzdialenosť, prevýšenie a čas v pohybe priamo z aktivity namiesto písania. Prístup len na čítanie a len k aktivitám.",
+      disconnect: "Odpojiť",
+      disconnectIt: "Odpojiť",
+      disconnected: "Strava odpojená.",
+      notConfigured: "Strava nie je na tomto nasadení nastavená.",
+      denied: "Strava nedostala povolenie.",
+      handshakeFailed: "Strave sa nepodarilo dokončiť prepojenie. Skús ešte raz.",
+    },
+  },
+
+  errors: {
+    unreadable: "Toto sa nepodarilo načítať",
+    unreadableBody:
+      "Nič z toho, čo si odovzdal, sa nestratilo. Skús to znova — ak sa to bude opakovať, redakcia to uvidí v logoch.",
+    notFound: "Tu nič nie je",
+    notFoundBody:
+      "Stránka, ktorú si hľadal, neexistuje — alebo patrí k účtu niekoho iného.",
+    tryAgain: "Skúsiť znova",
+    backToDashboard: "Späť na prehľad",
+  },
+
   billing: {
     currentPlan: "Aktuálny plán",
     monthly: ", mesačne",

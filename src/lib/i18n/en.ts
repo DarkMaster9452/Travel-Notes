@@ -621,6 +621,77 @@ export const en = {
     tellUs: "Tell us what happened — a sentence is enough.",
   },
 
+  /* ---- one quest, from the catalogue --------------------------------------- */
+  questPage: {
+    fromCatalogue: "From the catalogue",
+    objective: "Objective",
+    parkHere: "Park here",
+    walkedBy: "Walked by",
+    fileProof: "File proof for this one",
+    editProof: "Edit your proof",
+    waiting: "Waiting on a reader",
+    sentBack: "Sent back",
+    briefInEnglish: "Quest briefs are written in English.",
+  },
+
+  /* ---- the small panes ------------------------------------------------------ */
+  panes: {
+    cancel: {
+      heading: "Pause or cancel",
+      pauseMonth: "Pause a month",
+      pauseOne: "Pause one month",
+      pauseThree: "Pause three months",
+      pauseThreeShort: "Pause three",
+      resume: "Resume billing",
+      resumeNow: "Resume now",
+      cancelPlan: "Cancel my plan",
+    },
+    privacy: {
+      published: "Published",
+      notPublished: "Not published",
+      editWhatItShows: "Edit what it shows",
+      setItUp: "Set it up",
+      deleteEverything: "Delete everything",
+    },
+    password: {
+      currentPassword: "Current password",
+      newPassword: "New password",
+      heading: "Password",
+      changeIt: "Change it",
+      signsOut: "Changing a password signs out every session, including this one.",
+    },
+    invoices: {
+      none: "No invoices yet",
+      noneBody:
+        "An invoice appears the first time a payment goes through. A free plan never produces one.",
+      notConfigured: "Billing is not configured here",
+      notConfiguredBody: "This deployment has no Stripe keys, so there is nothing to read.",
+      openPortal: "Open the billing portal",
+    },
+    connected: {
+      heading: "Connected apps",
+      stravaDetail:
+        "Read distance, ascent and moving time straight off an activity instead of typing them. Read-only access, and only to activities.",
+      disconnect: "Disconnect",
+      disconnectIt: "Disconnect it",
+      disconnected: "Strava disconnected.",
+      notConfigured: "Strava is not configured on this deployment.",
+      denied: "Strava was not given permission.",
+      handshakeFailed: "Strava would not complete the handshake. Try once more.",
+    },
+  },
+
+  errors: {
+    unreadable: "We could not read that",
+    unreadableBody:
+      "Nothing you filed has been lost. Try again — if it keeps happening, the desk will see it in the logs.",
+    notFound: "Nothing here",
+    notFoundBody:
+      "The page you were looking for does not exist — or it belongs to somebody else's account.",
+    tryAgain: "Try again",
+    backToDashboard: "Back to the dashboard",
+  },
+
   billing: {
     currentPlan: "Current plan",
     monthly: ", monthly",
