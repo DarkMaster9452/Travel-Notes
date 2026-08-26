@@ -23,8 +23,18 @@ import { getDeskStatus } from "@/lib/admin/stats";
  * would refuse it: a staff account has no quests, no allowance, no stickers
  * and no subscription, and a menu offering them would be describing an account
  * that does not exist.
+ *
+ * The third column is a parallel route, same as on the member side: a panel
+ * screen that has something to put beside itself writes `@rail/<path>`, and
+ * everything else falls through to a default that renders nothing.
  */
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({
+  children,
+  rail,
+}: {
+  children: React.ReactNode;
+  rail: React.ReactNode;
+}) {
   const user = await requireAdmin();
 
   // The review badge is a number the desk needs before it has chosen where to
@@ -46,6 +56,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           avatar: user.avatar ?? null,
         }}
         signOut={logoutAction}
+        rail={rail}
       >
         {children}
       </SqShell>

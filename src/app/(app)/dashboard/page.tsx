@@ -8,7 +8,7 @@ import { PageHeader, QuietLink, Stat, Tag } from "@/components/sq/ui";
 import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { getLeaderboard } from "@/lib/leaderboard";
+import { getLeaderboard, scoreEntry } from "@/lib/leaderboard";
 import { getAchievements } from "@/lib/achievements";
 import { getEntitlement } from "@/lib/entitlements";
 import { getUserStats } from "@/lib/quest/service";
@@ -90,6 +90,14 @@ export default async function DashboardPage() {
       openAt: slotFor(slot, now).openAt.toISOString(),
       closeAt: glance.closesAt.toISOString(),
       status: glance.status,
+      points: scoreEntry({
+        difficulty: summary.difficulty,
+        distance: summary.distance,
+        elevationGain: summary.elevationGain,
+        retreated: false,
+        featuredPeriod: slot,
+      }),
+      filedAt: glance.filedAt?.toISOString() ?? null,
       expert: expertStats
         ? [
             {

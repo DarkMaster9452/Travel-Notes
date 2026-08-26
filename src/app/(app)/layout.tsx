@@ -21,8 +21,20 @@ import { getEntitlement } from "@/lib/entitlements";
  * The account block at the bottom goes to the member's own public page when
  * they have published one, and to the settings screen that publishes it when
  * they have not — the block always leads somewhere about them.
+ *
+ * `rail` is a parallel route: a screen that wants the third column writes
+ * `@rail/<its path>/page.tsx` and gets one, and every screen that does not
+ * falls through to `@rail/default.tsx`, which renders nothing. That keeps the
+ * column's content beside the screen it belongs to instead of in a switch
+ * here, and lets it stream in on its own rather than holding up the page.
  */
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+  rail,
+}: {
+  children: React.ReactNode;
+  rail: React.ReactNode;
+}) {
   const user = await requireClient();
 
   const [entitlement, pending, profile, preferences] = await Promise.all([
@@ -52,6 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           avatar: user.avatar ?? null,
         }}
         signOut={logoutAction}
+        rail={rail}
       >
         {children}
       </SqShell>

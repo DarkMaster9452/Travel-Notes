@@ -34,10 +34,19 @@ export type SqShellProps = {
   };
   /** The server action that ends the session. Both shells pass the same one. */
   signOut: () => Promise<void>;
+  /**
+   * The third column, on wide screens.
+   *
+   * A 1180px column on a 2000px monitor leaves half the window empty, which
+   * reads as a page that failed to load rather than as a page that is
+   * finished. Pages that have something worth standing beside the content put
+   * it here; pages that do not simply centre instead.
+   */
+  rail?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function SqShell({ flag, nav, footNav, account, signOut, children }: SqShellProps) {
+export function SqShell({ flag, nav, footNav, account, signOut, rail, children }: SqShellProps) {
   const pathname = usePathname();
 
   // The drawer remembers *which* route it was opened on rather than whether it
@@ -136,6 +145,13 @@ export function SqShell({ flag, nav, footNav, account, signOut, children }: SqSh
       <main key={pathname} className="sq-main sq-main-enter">
         {children}
       </main>
+
+      {/* Always rendered, often empty. Whether it takes a column is decided in
+          CSS by whether it actually has anything in it, so a route with no
+          rail needs no flag — it simply renders nothing into the slot. */}
+      <aside key={`${pathname}-rail`} className="sq-rail sq-main-enter" aria-label="Alongside">
+        {rail}
+      </aside>
     </div>
   );
 }

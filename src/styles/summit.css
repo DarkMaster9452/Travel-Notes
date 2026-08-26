@@ -292,6 +292,91 @@
   min-width: 0;
 }
 
+/* Placed rather than auto-flowed, because the rail folds under the main column
+   on middling screens (see below) and that puts a second row in the grid. The
+   sidebar has to span both, or the page would end where the fold begins and
+   leave a bare strip of background beside it. */
+@media (min-width: 901px) {
+  .sq-side {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: start;
+  }
+
+  .sq-main {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+/* Wide screens.
+   A fixed 1180px column against the left edge of a 2000px monitor leaves half
+   the window empty, which reads as a page that failed rather than one that is
+   finished. Two answers, and which one applies is the page's to decide: a page
+   with something worth standing beside the content gets a third column; a page
+   without one centres what it has. */
+@media (min-width: 1500px) {
+  .sq-shell:has(> .sq-rail:not(:empty)) {
+    grid-template-columns: 246px minmax(0, 1fr) 340px;
+  }
+
+  .sq-shell:not(:has(> .sq-rail:not(:empty))) .sq-main {
+    margin-inline: auto;
+  }
+
+  .sq-rail:not(:empty) {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    grid-column: 3;
+    grid-row: 1;
+    padding: 32px 40px 60px 0;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .sq-shell:has(> .sq-rail:not(:empty)) .sq-main {
+    padding-bottom: 60px;
+  }
+}
+
+/* Below that breakpoint the rail is not dropped, it folds: it takes the main
+   column's own track, underneath the page, and lays its cards out side by side
+   instead of stacked. Nothing written for the rail is unreachable on a laptop,
+   and it is written once rather than rendered twice. */
+.sq-rail {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  align-items: start;
+  gap: 14px;
+  padding: 0 40px 60px;
+  max-width: 1180px;
+  min-width: 0;
+}
+
+/* An empty slot must take no room at all, or every page without a rail would
+   carry an invisible band of padding at its foot. */
+.sq-rail:empty {
+  display: none;
+}
+
+/* Folded, the rail follows the page rather than sitting a screen below it. */
+.sq-shell:has(> .sq-rail:not(:empty)) .sq-main {
+  padding-bottom: 22px;
+}
+
+@media (max-width: 900px) {
+  .sq-rail {
+    grid-column: 1;
+    padding: 0 16px 40px;
+  }
+}
+
 .sq-topbar {
   display: none;
 }
@@ -1620,4 +1705,298 @@
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--ink-2);
+}
+
+/* --- the open-quest card -------------------------------------------------- */
+
+.sq-quest-card {
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform var(--dur-lift) var(--ease-settle), box-shadow var(--dur-lift) var(--ease-move);
+}
+
+.sq-quest-card:hover {
+  transform: translateY(calc(-2px * var(--motion)));
+  box-shadow: var(--shadow-lift);
+}
+
+/* Stamp ink only while the clock is genuinely short. A card that is always
+   urgent is a card nobody reads as urgent. */
+.sq-quest-card[data-urgent="1"] {
+  border-color: var(--signal);
+}
+
+.sq-quest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sq-quest-title {
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.sq-quest-where {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  margin-top: -6px;
+}
+
+.sq-quest-map {
+  position: relative;
+}
+
+/* The legend sits on the map rather than under it: two words that say what
+   the two pins are, where the pins are. */
+.sq-map-legend {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(249, 250, 243, 0.92);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  pointer-events: none;
+  z-index: 400;
+}
+
+.sq-map-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  display: block;
+}
+
+.sq-map-legend i[data-kind="start"] {
+  background: var(--signal-2);
+}
+
+.sq-map-legend i[data-kind="summit"] {
+  background: var(--pine);
+}
+
+.sq-quest-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line-2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sq-quest-facts > div {
+  background: var(--paper-2);
+  padding: 11px 14px;
+}
+
+.sq-quest-facts dt {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.sq-quest-facts dd {
+  margin-top: 5px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sq-quest-clock-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.sq-quest-clock-row b {
+  font-size: 13px;
+}
+
+.sq-quest-cta {
+  margin-top: auto;
+}
+
+/* --- the rail ------------------------------------------------------------- */
+
+/* Cards for the third column. Quieter than `.sq-card` on purpose: the rail is
+   read second, and a column of things competing with the page would make the
+   page harder to read rather than the window fuller. */
+.sq-rail-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  animation: sq-rise var(--dur-enter) var(--ease-move) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.sq-rail-card[data-tone="tinted"] {
+  background: var(--color-accent-100);
+  border-color: var(--color-accent-200);
+}
+
+.sq-rail-card[data-tone="dark"] {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: var(--forest-ink);
+}
+
+.sq-rail-card[data-tone="dark"] .sq-rail-head,
+.sq-rail-card[data-tone="dark"] .sq-rail-foot {
+  border-color: rgba(238, 242, 231, 0.14);
+}
+
+.sq-rail-card[data-tone="dark"] .sq-rail-title,
+.sq-rail-card[data-tone="dark"] .sq-rail-note {
+  color: var(--forest-ink-3);
+}
+
+.sq-rail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.sq-rail-title {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.sq-rail-body {
+  padding: 14px 15px;
+}
+
+.sq-rail-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* One big number and the sentence that explains it. */
+.sq-rail-figure {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  display: block;
+}
+
+.sq-rail-foot {
+  border-top: 1px solid var(--line-2);
+  padding: 9px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* A row inside a rail card: label left, figure right, hairline between. */
+.sq-rail-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 15px;
+  border-top: 1px solid var(--line-2);
+  font-size: 12.5px;
+}
+
+.sq-rail-line:first-child {
+  border-top: 0;
+}
+
+.sq-rail-line b {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+/* The board fragment: three names with this account's row picked out. */
+.sq-rail-standing {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 15px;
+  border-top: 1px solid var(--line-2);
+  font-size: 12.5px;
+}
+
+.sq-rail-standing[data-me="1"] {
+  background: var(--color-accent-100);
+  font-weight: 600;
+}
+
+.sq-rail-standing:first-child {
+  border-top: 0;
+}
+
+/* Progress toward the next sticker. Thinner than `.sq-bar`, because it sits
+   under a line of text rather than beside a heading. */
+.sq-rail-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--paper-3);
+  overflow: hidden;
+  margin-top: 9px;
+}
+
+.sq-rail-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--moss);
+  transform-origin: left;
+  animation: sq-fill var(--dur-spring) var(--ease-move) both;
+}
+
+@keyframes sq-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* The quiet list of shortcuts at the foot of the rail. */
+.sq-rail-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 15px;
 }
