@@ -1464,8 +1464,15 @@
   .sq-podium-col,
   .sq-podium-medal,
   .sq-year-week,
-  .sq-day-cell {
+  .sq-day-cell,
+  .sq-spark-line,
+  .sq-status-dot[data-status="down"] {
     animation: none !important;
+  }
+
+  /* Without the draw animation the dash offset would leave the curve invisible. */
+  .sq-spark-line {
+    stroke-dashoffset: 0;
   }
 
   .sq-map-route {
@@ -2815,4 +2822,196 @@
 .sq .sq-deck-fly-no,
 .sq .sq-deck-card:active {
   --lean: 0deg;
+}
+
+/* --- the systems board ---------------------------------------------------- */
+
+/*
+ * Colour is the whole point of this board, so it is defined once, here, and
+ * every tile, dot, ribbon and log row reads it through `--status`. A page that
+ * picked its own greens would eventually disagree with a page that picked its
+ * own reds, and the desk would learn to distrust both.
+ */
+.sq-system {
+  --status: var(--moss);
+  position: relative;
+  /* The stagger wrapper around each tile is a flex box, so the tile has to
+     claim it — otherwise a short detail line makes a short card in a row of
+     tall ones. */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  overflow: hidden;
+  color: var(--color-text);
+}
+
+/*
+ * The signal itself: a bar down the leading edge rather than a tinted card.
+ * A card washed in red is unreadable and a card washed in green is smug; an
+ * edge is legible at a glance across ten tiles and leaves the text alone.
+ */
+.sq-system::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--status);
+}
+
+.sq-system-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.sq-system-name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+}
+
+.sq-system-state {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--status);
+  white-space: nowrap;
+}
+
+.sq-system-detail {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  /* Two lines, so a long error message cannot make one tile taller than the
+     nine beside it and break the row. The full text is on the system's page. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 34px;
+}
+
+.sq-system-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+/* A tile that is a link answers harder, same contract as the rest of the site. */
+a.sq-system:hover {
+  border-color: var(--status);
+  box-shadow: var(--shadow-lift);
+}
+
+/*
+ * A tag that is a link. The liveliness layer already leans it; this is the
+ * colour half of the same contract — a decorative tag stays quiet ink, one you
+ * can follow warms to the accent.
+ */
+.sq a.sq-tag:hover {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+
+/* --- the dot -------------------------------------------------------------- */
+
+.sq-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 8px;
+  background: var(--status);
+  display: block;
+}
+
+/*
+ * Only a fault breathes. A board of ten pulsing green dots is a screensaver;
+ * one pulsing red one is the thing you look at. Distance is written through
+ * `--motion`, so reduced motion stops it dead without a second rule.
+ */
+.sq-status-dot[data-status="down"] {
+  animation: sq-status-pulse 1.8s var(--ease-move) infinite;
+}
+
+@keyframes sq-status-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 calc(6px * var(--motion)) color-mix(in srgb, var(--status) 0%, transparent);
+  }
+}
+
+/* --- the curve ------------------------------------------------------------ */
+
+/*
+ * The line draws itself in rather than appearing.
+ *
+ * The path carries `pathLength="1"`, which renormalises its own length, so the
+ * dash values here work for every curve regardless of how long it actually is
+ * — no measuring, no per-chart number. Dropped entirely under reduced motion, where a line that
+ * paints across the screen is exactly the kind of movement being refused.
+ */
+.sq-spark-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: sq-draw 900ms var(--ease-settle) forwards;
+}
+
+@keyframes sq-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* --- the log -------------------------------------------------------------- */
+
+.sq-log-row {
+  display: grid;
+  grid-template-columns: 8px 128px 74px minmax(0, 1fr) 62px;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 18px;
+  border-top: 1px solid var(--line-2);
+  font-size: 12.5px;
+}
+
+.sq-log-row:hover {
+  background: var(--paper-2);
+}
+
+.sq-log-detail {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .sq-log-row {
+    /* The mono detail line is the row's whole content on a phone; the
+       timestamp and duration go under it rather than squeezing it to nothing. */
+    grid-template-columns: 8px minmax(0, 1fr);
+    row-gap: 4px;
+  }
+
+  .sq-log-row > :nth-child(3),
+  .sq-log-row > :nth-child(5) {
+    grid-column: 2;
+  }
 }

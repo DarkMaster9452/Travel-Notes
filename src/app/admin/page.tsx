@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SqColumnChart, SqSplitBar, SqStackedBars } from "@/components/sq/charts";
+import { SqSystemsSummary, SqSystemTile } from "@/components/sq/systems";
 import { PageHeader, StatGrid, StatTile } from "@/components/sq/ui";
 import { getAdminNotices } from "@/lib/admin/notifications";
+import { readSystems } from "@/lib/admin/systems";
 import {
   getAdminOverview,
   getDifficultySplit,
@@ -29,15 +31,16 @@ const TONE_COLOUR: Record<string, string> = {
 /**
  * The panel's front page.
  *
- * Built around the queue rather than around the numbers: what needs attention
- * first, then the figures, then the shape of the month. Every figure is a live
- * count taken when the page loaded — nothing here is cached or rolled up, and
- * the page says so.
+ * Ordered by what would stop you reading the rest of it. Whether the product
+ * is working at all comes first, then what needs a decision inside it, then
+ * the figures, then the shape of the month. Every figure is a live count taken
+ * when the page loaded and every system was probed then too — nothing here is
+ * cached or rolled up, and the page says so.
  */
 export default async function AdminOverviewPage() {
   await requireAdmin();
 
-  const [overview, notices, queue, signups, quests, plans, grades, revenue] = await Promise.all([
+  const [overview, notices, queue, signups, quests, plans, grades, revenue, systems] = await Promise.all([
     getAdminOverview(),
     getAdminNotices(),
     getReviewQueue(100),
@@ -46,6 +49,7 @@ export default async function AdminOverviewPage() {
     getPlanSplit(),
     getDifficultySplit(),
     getRevenueSummary(),
+    readSystems(),
   ]);
 
   const open = notices.filter((notice) => notice.tone !== "clear");
@@ -56,9 +60,12 @@ export default async function AdminOverviewPage() {
       <PageHeader
         kicker="Behind the desk"
         title="Overview"
-        lede="Every figure on this page is a live count, taken when you loaded it."
+        lede="Every figure on this page is a live count, and every system above was checked seconds ago."
         right={
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/admin/systems" className="sq-btn sq-btn-ghost">
+              Systems
+            </Link>
             <Link href="/admin/database" className="sq-btn sq-btn-ghost">
               Inspect the database
             </Link>
@@ -68,6 +75,35 @@ export default async function AdminOverviewPage() {
           </div>
         }
       />
+
+      <section className="sq-card" style={{ overflow: "hidden", marginBottom: 16 }}>
+        <div className="sq-section-head sq-rule-head">
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <h2 className="sq-h2" style={{ fontSize: 19 }}>
+              Systems
+            </h2>
+            <SqSystemsSummary systems={systems} />
+          </div>
+          <Link href="/admin/systems" style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
+            Every system in full &rarr;
+          </Link>
+        </div>
+        <div
+          className="sq-stagger"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill,minmax(232px,1fr))",
+            gap: 12,
+            padding: 18,
+          }}
+        >
+          {systems.map((system, index) => (
+            <div key={system.id} style={{ ["--i" as string]: index, display: "flex" }}>
+              <SqSystemTile system={system} />
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="sq-card" style={{ overflow: "hidden" }}>
         <div className="sq-section-head sq-rule-head">
