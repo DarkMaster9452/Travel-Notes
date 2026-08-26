@@ -6,6 +6,8 @@ import { LogoSilhouette } from "@/components/sq/icons";
 import { Avatar, Bar, EmptyState, Tag } from "@/components/sq/ui";
 import { slotLabel } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
+import { plural } from "@/lib/i18n/format";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { getLeaderboard, pastSlots, SCORING_NOTES } from "@/lib/leaderboard";
 
 export const metadata: Metadata = { title: "Leaderboard" };
@@ -34,7 +36,11 @@ export default async function LeaderboardPage({
   const params = await searchParams;
   const period = params.period === "WEEKLY" ? "WEEKLY" : "MONTHLY";
 
-  const board = await getLeaderboard(period, params.slot);
+  const [board, t, locale] = await Promise.all([
+    getLeaderboard(period, params.slot),
+    getT(user.id),
+    getLocale(user.id),
+  ]);
   const slots = pastSlots(period, 8);
 
   const mine = board.rows.find((row) => row.userId === user.id) ?? null;
@@ -48,22 +54,21 @@ export default async function LeaderboardPage({
         <div className="sq-head-row">
           <div style={{ minWidth: 0 }}>
             <span className="sq-kicker" style={{ display: "block", marginBottom: 10 }}>
-              Everybody, ranked
+              {t.leaderboard.everybodyRanked}
             </span>
             <h1 className="sq-h1" style={{ fontSize: 40, maxWidth: "none", marginBottom: 12 }}>
-              Leaderboard
+              {t.leaderboard.title}
             </h1>
             <p className="sq-lede">
-              Points for approved proof, on the same weekly and monthly clock as everything else.
-              The top three of a closed board take a sticker — a different one for each cadence.
+              {t.leaderboard.lede}
             </p>
           </div>
           <SqSegmentedLinks
-            label="Board cadence"
+            label={t.leaderboard.cadence}
             active={period}
             options={[
-              { key: "MONTHLY", label: "Monthly", href: "/leaderboard" },
-              { key: "WEEKLY", label: "Weekly", href: "/leaderboard?period=WEEKLY" },
+              { key: "MONTHLY", label: t.leaderboard.monthlyTab, href: "/leaderboard" },
+              { key: "WEEKLY", label: t.leaderboard.weeklyTab, href: "/leaderboard?period=WEEKLY" },
             ]}
           />
         </div>
@@ -97,12 +102,14 @@ export default async function LeaderboardPage({
                   lineHeight: 1,
                 }}
               >
-                {mine?.score ?? 0} points
+                {t.leaderboard.yourPoints(mine?.score ?? 0)}
               </b>
               <span style={{ fontSize: 13, color: "var(--forest-ink-3)" }}>
                 {mine
-                  ? `${mine.quests} ${mine.quests === 1 ? "quest" : "quests"}${mine.tookFeatured ? " · took the featured one" : ""}`
-                  : "Nothing approved in this window yet"}
+                  ? `${plural(locale, mine.quests, t.common.quests)}${
+                      mine.tookFeatured ? ` · ${t.leaderboard.tookFeatured}` : ""
+                    }`
+                  : t.leaderboard.emptyWindow}
               </span>
             </span>
           </div>
@@ -120,13 +127,15 @@ export default async function LeaderboardPage({
             <p style={{ marginTop: 10, fontSize: 13, color: "var(--forest-ink-3)" }}>
               {mine && mine.rank > 1 ? (
                 <>
-                  <b style={{ color: "var(--forest-ink)" }}>+{mine.toOvertake} points</b> takes the
-                  place above. {mine.behindLeader} off the lead.
+                  <b style={{ color: "var(--forest-ink)" }}>
+                    {t.leaderboard.toOvertake(mine.toOvertake)}
+                  </b>{" "}
+                  {t.leaderboard.takesPlaceAbove} {t.leaderboard.offTheLead(mine.behindLeader)}
                 </>
               ) : mine ? (
-                "You are leading this one."
+                t.leaderboard.leading
               ) : (
-                "Approved proof is what puts you on it."
+                t.leaderboard.emptyBody
               )}
             </p>
           </div>
@@ -166,14 +175,14 @@ export default async function LeaderboardPage({
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <Tag tone={board.state === "live" ? "stamp" : "plain"} small>
               {board.state === "live"
-                ? `Open now · ${board.rows.length} contenders`
+                ? t.leaderboard.openNow(board.rows.length)
                 : board.sealed
-                  ? "Sealed"
-                  : "Closed"}
+                  ? t.leaderboard.sealed
+                  : t.leaderboard.closed}
             </Tag>
             <SqParamSelect
               name="slot"
-              label="Window"
+              label={t.leaderboard.window}
               value={board.slotKey}
               options={slots.map((slot) => ({ value: slot.key, label: slotLabel(slot) }))}
             />
@@ -183,11 +192,11 @@ export default async function LeaderboardPage({
         {board.rows.length === 0 ? (
           <EmptyState
             glyph="laurel"
-            title="Nothing on this board yet"
-            body="A board counts approved proof only. Until a reader has passed something, there is nothing to rank."
+            title={t.leaderboard.empty}
+            body={t.leaderboard.approvedOnly}
             action={
               <Link href="/monthly" className="sq-btn sq-btn-primary sq-btn-sm">
-                Open the monthly
+                {t.leaderboard.openMonthly}
               </Link>
             }
           />
@@ -220,10 +229,10 @@ export default async function LeaderboardPage({
                         {row.score}
                       </span>
                       <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
-                        {row.quests} {row.quests === 1 ? "quest" : "quests"}
+                        {plural(locale, row.quests, t.common.quests)}
                       </span>
                       <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-                        {["First", "Second", "Third"][place]}
+                        {[t.leaderboard.first, t.leaderboard.second, t.leaderboard.third][place]}
                       </span>
                     </div>
                   );

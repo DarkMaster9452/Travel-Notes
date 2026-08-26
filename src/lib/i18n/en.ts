@@ -468,6 +468,23 @@ export const en = {
 
   /* ---- the board ---------------------------------------------------------- */
   leaderboard: {
+    yourPoints: (points: number) => `${points} points`,
+    tookFeatured: "took the featured one",
+    toOvertake: (points: number) => `+${points} points`,
+    takesPlaceAbove: "takes the place above.",
+    offTheLead: (points: number) => `${points} off the lead.`,
+    everybodyRanked: "Everybody, ranked",
+    lede: "Points for approved proof, on the same weekly and monthly clock as everything else. The top three of a closed board take a sticker — a different one for each cadence.",
+    monthlyTab: "Monthly",
+    weeklyTab: "Weekly",
+    window: "Window",
+    openNow: (count: number) => `Open now · ${count} contenders`,
+    sealed: "Sealed",
+    closed: "Closed",
+    openMonthly: "Open the monthly",
+    first: "First",
+    second: "Second",
+    third: "Third",
     title: "Leaderboard",
     cadence: "Board cadence",
     approvedOnly:
@@ -504,6 +521,8 @@ export const en = {
 
   /* ---- people and groups -------------------------------------------------- */
   people: {
+    groupsTitle: "Groups",
+    peopleTitle: "People",
     title: "People & groups",
     tabs: "People or groups",
     directory: "Who else is out there",

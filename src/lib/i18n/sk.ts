@@ -497,6 +497,23 @@ export const sk: Messages = {
   },
 
   leaderboard: {
+    yourPoints: (points) => `${points} bodov`,
+    tookFeatured: "vzal si ten hlavný",
+    toOvertake: (points) => `+${points} bodov`,
+    takesPlaceAbove: "ťa posunie o miesto vyššie.",
+    offTheLead: (points) => `${points} za vedúcim.`,
+    everybodyRanked: "Všetci, zoradení",
+    lede: "Body za schválený dôkaz, na tých istých týždenných a mesačných hodinách ako všetko ostatné. Prví traja uzavretého rebríčka dostanú nálepku — pre každú kadenciu inú.",
+    monthlyTab: "Mesačný",
+    weeklyTab: "Týždenný",
+    window: "Okno",
+    openNow: (count) => `Otvorené · ${count} v hre`,
+    sealed: "Uzavreté",
+    closed: "Zatvorené",
+    openMonthly: "Otvoriť mesačný",
+    first: "Prvý",
+    second: "Druhý",
+    third: "Tretí",
     title: "Rebríček",
     cadence: "Kadencia rebríčka",
     approvedOnly:
@@ -531,6 +548,8 @@ export const sk: Messages = {
   },
 
   people: {
+    groupsTitle: "Skupiny",
+    peopleTitle: "Ľudia",
     title: "Ľudia a skupiny",
     tabs: "Ľudia alebo skupiny",
     directory: "Kto ďalší tam vonku je",

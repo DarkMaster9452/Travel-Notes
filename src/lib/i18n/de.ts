@@ -497,6 +497,23 @@ export const de: Messages = {
   },
 
   leaderboard: {
+    yourPoints: (points) => `${points} Punkte`,
+    tookFeatured: "hat den ausgewählten genommen",
+    toOvertake: (points) => `+${points} Punkte`,
+    takesPlaceAbove: "bringt dich einen Platz höher.",
+    offTheLead: (points) => `${points} hinter der Spitze.`,
+    everybodyRanked: "Alle, sortiert",
+    lede: "Punkte für bestätigte Nachweise, auf derselben wöchentlichen und monatlichen Uhr wie alles andere. Die ersten drei einer geschlossenen Rangliste bekommen einen Sticker — für jeden Rhythmus einen anderen.",
+    monthlyTab: "Monatlich",
+    weeklyTab: "Wöchentlich",
+    window: "Fenster",
+    openNow: (count) => `Jetzt offen · ${count} im Rennen`,
+    sealed: "Versiegelt",
+    closed: "Geschlossen",
+    openMonthly: "Den monatlichen öffnen",
+    first: "Erster",
+    second: "Zweiter",
+    third: "Dritter",
     title: "Rangliste",
     cadence: "Rhythmus der Rangliste",
     approvedOnly:
@@ -531,6 +548,8 @@ export const de: Messages = {
   },
 
   people: {
+    groupsTitle: "Gruppen",
+    peopleTitle: "Leute",
     title: "Leute & Gruppen",
     tabs: "Leute oder Gruppen",
     directory: "Wer sonst noch unterwegs ist",
