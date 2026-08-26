@@ -6,6 +6,8 @@
  * where "is this the panel?" is answered, and it is `isAdminPath`.
  */
 
+import type { Messages } from "@/lib/i18n";
+
 export type SqNavItem = {
   href: string;
   label: string;
@@ -17,20 +19,20 @@ export type SqNavItem = {
   prefix?: boolean;
 };
 
-export function memberNav(pendingSubmissions: number): SqNavItem[] {
+export function memberNav(pendingSubmissions: number, t: Messages): SqNavItem[] {
   return [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/monthly", label: "The monthly" },
-    { href: "/quests", label: "Quest database", prefix: true },
-    { href: "/leaderboard", label: "Leaderboard" },
-    { href: "/stickers", label: "Stickers" },
-    { href: "/submissions", label: "Submissions", badge: pendingSubmissions || null },
-    { href: "/people", label: "People & groups", prefix: true },
+    { href: "/dashboard", label: t.nav.dashboard },
+    { href: "/monthly", label: t.nav.monthly },
+    { href: "/quests", label: t.nav.quests, prefix: true },
+    { href: "/leaderboard", label: t.nav.leaderboard },
+    { href: "/stickers", label: t.nav.stickers },
+    { href: "/submissions", label: t.nav.submissions, badge: pendingSubmissions || null },
+    { href: "/people", label: t.nav.people, prefix: true },
   ];
 }
 
-export function memberFootNav(planName: string): SqNavItem[] {
-  return [{ href: "/settings", label: "Settings", note: planName, prefix: true }];
+export function memberFootNav(planName: string, t: Messages): SqNavItem[] {
+  return [{ href: "/settings", label: t.nav.settings, note: planName, prefix: true }];
 }
 
 /**

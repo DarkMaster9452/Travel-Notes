@@ -1035,7 +1035,7 @@ export async function revokeStickerAction(
   });
 
   revalidatePath(`/admin/users/${parsed.data.userId}`);
-  revalidatePath("/achievements");
+  revalidatePath("/stickers");
   return { ok: true, message: "Sticker withdrawn." };
 }
 
@@ -1052,7 +1052,7 @@ export async function restoreStickerAction(
     .catch(() => undefined);
 
   revalidatePath(`/admin/users/${userId}`);
-  revalidatePath("/achievements");
+  revalidatePath("/stickers");
   return { ok: true, message: "Sticker restored." };
 }
 

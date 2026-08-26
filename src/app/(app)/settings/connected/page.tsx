@@ -5,6 +5,7 @@ import { SqConfirmButton } from "@/components/sq/forms";
 import { StravaMark } from "@/components/sq/icons";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
+import { getT } from "@/lib/i18n/server";
 import { getStravaConnection, stravaEnabled } from "@/lib/strava";
 
 export const metadata: Metadata = { title: "Connected apps" };
@@ -32,6 +33,7 @@ export default async function ConnectedAppsPage({
   searchParams: Promise<{ connected?: string; error?: string }>;
 }) {
   const user = await requireClient();
+  const t = await getT(user.id);
   const params = await searchParams;
 
   const connection = await getStravaConnection(user.id);
@@ -96,7 +98,7 @@ export default async function ConnectedAppsPage({
               const result = await disconnectStravaAction();
               return { ok: result.ok, message: "Strava disconnected." };
             }}
-            label="Disconnect"
+            label={t.panes.connected.disconnect}
             confirmLabel="Disconnect it"
             tone="stamp"
           />

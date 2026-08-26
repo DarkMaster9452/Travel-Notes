@@ -1,4 +1,5 @@
 import { logoutAction } from "@/app/(auth)/actions";
+import { SqI18nProvider } from "@/components/sq/i18n";
 import { SqNudge } from "@/components/sq/nudge";
 import { SqShell } from "@/components/sq/shell";
 import { memberFootNav, memberNav } from "@/components/sq/nav";
@@ -7,6 +8,8 @@ import { initialsOf } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n";
 import { getDueNudges } from "@/lib/nudges";
 
 /**
@@ -39,7 +42,7 @@ export default async function AppLayout({
 }) {
   const user = await requireClient();
 
-  const [entitlement, pending, profile, preferences, nudges] = await Promise.all([
+  const [entitlement, pending, profile, preferences, nudges, locale] = await Promise.all([
     getEntitlement(user.id),
     db.submission.count({ where: { userId: user.id, status: "PENDING" } }),
     db.profile.findUnique({ where: { userId: user.id }, select: { handle: true, published: true } }),
@@ -48,40 +51,50 @@ export default async function AppLayout({
       select: { homeLocation: true },
     }),
     getDueNudges(user.id),
+    getLocale(user.id),
   ]);
+
+  // Resolved once here and handed down. `getLocale` is React-cached, so a page
+  // below that asks again costs nothing; the words themselves are looked up on
+  // the client from the locale string, because dictionaries hold functions and
+  // functions cannot cross the server boundary.
+  const t = getMessages(locale);
 
   const planName = entitlement.definition.name;
   const region = preferences?.homeLocation?.split(",").pop()?.trim();
 
   return (
-    <SqToastProvider>
-      <SqShell
-        flag={region ? `${planName} · ${region}` : planName}
-        nav={memberNav(pending)}
-        footNav={memberFootNav(planName)}
-        account={{
-          href: profile?.published ? `/people/${profile.handle}` : "/settings/profile",
-          name: user.name,
-          initials: initialsOf(user.name),
-          note: entitlement.isSubscribed ? planName : `${planName} plan`,
-          avatar: user.avatar ?? null,
-        }}
-        signOut={logoutAction}
-        rail={rail}
-        notice={
-          nudges.some((nudge) => nudge.kind === "SHIPPING_ADDRESS") ? (
-            <SqNudge
-              kind="SHIPPING_ADDRESS"
-              title="Where should the envelope go?"
-              body="Your plan includes the printed quest card and two stickers each month. Without an address we cannot post it — the month's card would arrive by email instead."
-              action="Add an address"
-              href="/settings/address"
-            />
-          ) : null
-        }
-      >
-        {children}
-      </SqShell>
-    </SqToastProvider>
+    <SqI18nProvider locale={locale}>
+      <SqToastProvider>
+        <SqShell
+          flag={region ? `${planName} · ${region}` : planName}
+          nav={memberNav(pending, t)}
+          footNav={memberFootNav(planName, t)}
+          lang={locale}
+          account={{
+            href: profile?.published ? `/people/${profile.handle}` : "/settings/profile",
+            name: user.name,
+            initials: initialsOf(user.name),
+            note: entitlement.isSubscribed ? planName : `${planName} plan`,
+            avatar: user.avatar ?? null,
+          }}
+          signOut={logoutAction}
+          rail={rail}
+          notice={
+            nudges.some((nudge) => nudge.kind === "SHIPPING_ADDRESS") ? (
+              <SqNudge
+                kind="SHIPPING_ADDRESS"
+                title={t.nudge.address.title}
+                body={t.nudge.address.body}
+                action={t.nudge.address.action}
+                href="/settings/address"
+              />
+            ) : null
+          }
+        >
+          {children}
+        </SqShell>
+      </SqToastProvider>
+    </SqI18nProvider>
   );
 }

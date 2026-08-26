@@ -9,20 +9,20 @@ import { Glyph, LockGlyph } from "@/components/sq/icons";
 import { SqPaidChip } from "@/components/sq/locked";
 import {
   ALL_CAPABILITIES,
-  CAPABILITY_COPY,
-  formatPrice,
+  capabilityCopy,
   lowestPlanWith,
+  planCopy,
   PLANS,
 } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import { ENVELOPE_COPY, getEnvelopeStatus } from "@/lib/envelope";
+import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
+import { formatDate, formatMoney } from "@/lib/i18n/format";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { isDemoPlans, isStripeEnabled, isUltraEnabled } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Plan & billing" };
 export const dynamic = "force-dynamic";
-
-const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
 /**
  * What this account is on, and what else there is.
@@ -35,14 +35,17 @@ const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", y
 export default async function BillingSettingsPage() {
   const user = await requireClient();
 
-  const [entitlement, subscription, address, envelope] = await Promise.all([
+  const [entitlement, subscription, address, envelope, t, locale] = await Promise.all([
     getEntitlement(user.id),
     db.subscription.findUnique({ where: { userId: user.id } }),
     db.shippingAddress.findUnique({ where: { userId: user.id } }),
     getEnvelopeStatus(user.id, user.name),
+    getT(user.id),
+    getLocale(user.id),
   ]);
 
   const current = entitlement.definition;
+  const currentCopy = planCopy(t, entitlement.plan);
   const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
   const yearly = subscription?.stripePriceId?.includes("yearly") ?? false;
   const demo = isDemoPlans();
@@ -52,24 +55,34 @@ export default async function BillingSettingsPage() {
       <section className="sq-card sq-pad">
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
-            <span className="sq-kicker">Current plan</span>
+            <span className="sq-kicker">{t.billing.currentPlan}</span>
             <h2 style={{ margin: "10px 0 6px", fontSize: 28, lineHeight: 1.1 }}>
-              {current.name}
-              {entitlement.isSubscribed ? (yearly ? ", yearly" : ", monthly") : ""}
+              {currentCopy.name}
+              {entitlement.isSubscribed ? (yearly ? t.billing.yearly : t.billing.monthly) : ""}
             </h2>
             <p style={{ fontSize: 13.5, color: "var(--ink-2)" }}>
               {entitlement.isSubscribed
-                ? `${formatPrice(current.price[yearly ? "yearly" : "monthly"])} ${yearly ? "a year" : "a month"}${
+                ? [
+                    yearly
+                      ? t.billing.aYear(formatMoney(locale, current.price.yearly))
+                      : t.billing.aMonth(formatMoney(locale, current.price.monthly)),
                     entitlement.currentPeriodEnd
-                      ? ` · ${entitlement.cancelAtPeriodEnd ? "ends" : "renews"} ${DATE.format(entitlement.currentPeriodEnd)}`
-                      : ""
-                  }`
-                : `${entitlement.freeQuestsRemaining} of ${entitlement.freeQuestAllowance} free quests left`}
+                      ? (entitlement.cancelAtPeriodEnd ? t.billing.ends : t.billing.renews)(
+                          formatDate(locale, entitlement.currentPeriodEnd, "dayMonth"),
+                        )
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : t.billing.freeLeft(
+                    entitlement.freeQuestsRemaining,
+                    entitlement.freeQuestAllowance,
+                  )}
             </p>
             {entitlement.inGrace ? (
               <p style={{ marginTop: 10 }}>
                 <Tag tone="stamp" small>
-                  Payment retrying · access holds
+                  {t.billing.retrying}
                 </Tag>
               </p>
             ) : null}
@@ -81,11 +94,11 @@ export default async function BillingSettingsPage() {
                 <SqCheckoutButton
                   plan={entitlement.plan === "ultra" ? "ultra" : "explorer"}
                   interval="yearly"
-                  label="Switch to yearly"
+                  label={t.billing.switchToYearly}
                   variant="ghost"
                 />
               ) : null}
-              <SqPortalButton />
+              <SqPortalButton label={t.billing.managePayment} />
             </div>
           ) : null}
         </div>
@@ -102,10 +115,30 @@ export default async function BillingSettingsPage() {
           }}
         >
           {[
-            { k: "Stickers", v: String(current.capabilities.length > 0 ? stickersFor(current.id) : 6) },
-            { k: "Quests", v: entitlement.isSubscribed ? "Unlimited" : `${entitlement.freeQuestsRemaining} left` },
-            { k: "Reach", v: current.capabilities.includes("worldwide") ? "Worldwide" : current.capabilities.includes("europe") ? "Europe" : "Home country" },
-            { k: "Post", v: current.capabilities.includes("mail") ? "Monthly envelope" : "Screen only" },
+            {
+              k: t.billing.facts.stickers,
+              v: String(current.capabilities.length > 0 ? stickersFor(current.id) : 6),
+            },
+            {
+              k: t.billing.facts.quests,
+              v: entitlement.isSubscribed
+                ? t.billing.facts.unlimited
+                : t.billing.facts.questsLeft(entitlement.freeQuestsRemaining),
+            },
+            {
+              k: t.billing.facts.reach,
+              v: current.capabilities.includes("worldwide")
+                ? t.billing.facts.worldwide
+                : current.capabilities.includes("europe")
+                  ? t.billing.facts.europe
+                  : t.billing.facts.homeCountry,
+            },
+            {
+              k: t.billing.facts.post,
+              v: current.capabilities.includes("mail")
+                ? t.billing.facts.envelope
+                : t.billing.facts.screenOnly,
+            },
           ].map((fact) => (
             <div key={fact.k} style={{ background: "var(--paper-2)", padding: "13px 15px" }}>
               <p className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
@@ -122,7 +155,7 @@ export default async function BillingSettingsPage() {
       <section className="sq-card" style={{ overflow: "hidden" }}>
         <div className="sq-section-head sq-rule-head">
           <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            What your plan includes
+            {t.billing.includesHeading}
           </h2>
           <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
             {held.length} of {ALL_CAPABILITIES.length}
@@ -150,15 +183,15 @@ export default async function BillingSettingsPage() {
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <b style={{ display: "block", fontSize: 14, fontWeight: 600 }}>
-                    {CAPABILITY_COPY[capability].title}
+                    {capabilityCopy(t, capability).title}
                   </b>
                   <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink-2)" }}>
-                    {CAPABILITY_COPY[capability].detail}
+                    {capabilityCopy(t, capability).detail}
                   </span>
                 </span>
                 {yours ? (
                   <span className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
-                    Yours
+                    {t.common.yours}
                   </span>
                 ) : from ? (
                   <SqPaidChip plan={from} />
@@ -172,10 +205,14 @@ export default async function BillingSettingsPage() {
       <section className="sq-card" style={{ overflow: "hidden" }}>
         <div className="sq-section-head sq-rule-head">
           <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            The plans
+            {t.billing.plansHeading}
           </h2>
           <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-            {demo ? "Free while we are in demo" : isStripeEnabled() ? "Cancel any time" : "Billing not configured here"}
+            {demo
+              ? t.billing.demoFree
+              : isStripeEnabled()
+                ? t.billing.cancelAnyTime
+                : t.billing.notConfigured}
           </span>
         </div>
         <ul>
@@ -192,6 +229,7 @@ export default async function BillingSettingsPage() {
             // changed rather than reciting the plan's whole feature list.
             const activatable = demo && !isCurrent && plan.id !== "free";
             const gains = plan.capabilities.filter((capability) => !entitlement.can(capability));
+            const copy = planCopy(t, plan.id);
 
             return (
               <li
@@ -208,46 +246,50 @@ export default async function BillingSettingsPage() {
               >
                 <span style={{ minWidth: 0 }}>
                   <b style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14.5, fontWeight: 600 }}>
-                    {plan.name}
-                    {plan.badge ? (
+                    {copy.name}
+                    {copy.badge ? (
                       <span className="sq-tag sq-tag-xs" style={{ fontSize: 9 }}>
-                        {plan.badge}
+                        {copy.badge}
                       </span>
                     ) : null}
                     {isCurrent ? (
                       <span className="sq-tag sq-tag-green sq-tag-xs" style={{ fontSize: 9 }}>
-                        Yours
+                        {t.common.yours}
                       </span>
                     ) : null}
                   </b>
                   <span style={{ display: "block", marginTop: 5, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-2)" }}>
-                    {plan.description}
+                    {copy.description}
                   </span>
                 </span>
 
                 <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span className="sq-mono" style={{ fontSize: 12, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
                     {plan.price.monthly === 0 ? (
-                      "Free"
+                      t.common.free
                     ) : demo ? (
                       <>
-                        <s style={{ opacity: 0.55 }}>{formatPrice(plan.price.monthly)}/mo</s> Free
+                        <s style={{ opacity: 0.55 }}>
+                          {formatMoney(locale, plan.price.monthly)}
+                          {t.common.perMonth}
+                        </s>{" "}
+                        {t.common.free}
                       </>
                     ) : (
-                      `${formatPrice(plan.price.monthly)}/mo`
+                      `${formatMoney(locale, plan.price.monthly)}${t.common.perMonth}`
                     )}
                   </span>
                   {buyable ? (
                     <SqCheckoutButton
                       plan={plan.id === "ultra" ? "ultra" : "explorer"}
                       interval="monthly"
-                      label={plan.tier > entitlement.tier ? "Upgrade" : "Switch"}
+                      label={plan.tier > entitlement.tier ? t.billing.upgrade : t.billing.switch}
                       variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
                     />
                   ) : activatable ? (
                     <SqActivateButton
                       plan={plan.id === "ultra" ? "ultra" : "explorer"}
-                      label={plan.tier > entitlement.tier ? "Unlock it" : "Switch to it"}
+                      label={plan.tier > entitlement.tier ? t.billing.unlockIt : t.billing.switchToIt}
                       gains={[...gains]}
                       variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
                     />
@@ -265,16 +307,16 @@ export default async function BillingSettingsPage() {
       <section className="sq-tinted sq-pad-sm">
         <div className="sq-section-head" style={{ marginBottom: 14 }}>
           <h3 className="sq-h2" style={{ fontSize: 19 }}>
-            Where the envelope goes
+            {t.billing.envelopeHeading}
           </h3>
           <Link href="/settings/address" style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
-            {envelope.posts ? "Edit address →" : "Add an address →"}
+            {envelope.posts ? t.billing.editAddress : t.billing.addAddress}
           </Link>
         </div>
 
         <p style={{ marginBottom: 14 }}>
           <Tag tone={envelope.posts ? "green" : envelope.reason === "no_address" ? "stamp" : "plain"} small>
-            {ENVELOPE_COPY[envelope.reason].title}
+            {envelopeCopy(t, envelope.reason).title}
           </Tag>
         </p>
 
@@ -298,12 +340,12 @@ export default async function BillingSettingsPage() {
               </>
             ) : (
               <span style={{ color: "var(--ink-3)" }}>
-                {address ? "Not enough of an address to post to — a street, a town and a country." : "No address on file."}
+                {address ? t.billing.partialAddress : t.billing.noAddress}
               </span>
             )}
           </p>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
-            {ENVELOPE_COPY[envelope.reason].detail}
+            {envelopeCopy(t, envelope.reason).detail}
           </p>
         </div>
       </section>

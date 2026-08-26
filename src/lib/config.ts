@@ -5,6 +5,8 @@
  * Safe to import from client components — no secrets.
  */
 
+import type { Messages } from "@/lib/i18n";
+
 export const BRAND = {
   name: "Summit Quest",
   tagline: "Your next summit is waiting.",
@@ -95,7 +97,7 @@ const EXPLORER_CAPABILITIES = [
 export const STICKER_ALLOWANCE: Record<PlanId, number> = {
   free: 6,
   explorer: 10,
-  ultra: 30,
+  ultra: 36,
 };
 
 /**
@@ -248,8 +250,8 @@ export const CAPABILITY_COPY: Record<Capability, { title: string; detail: string
     detail: "Ask for company and the board opens up.",
   },
   printedStickers: {
-    title: "Printed sticker sheets",
-    detail: "The die-cut sheet is posted to you once a season.",
+    title: "Stickers in the post",
+    detail: "Two die-cut stickers ride along with the quest card on the 2nd of each month.",
   },
   customQuests: {
     title: "Custom quests",
@@ -324,3 +326,64 @@ export const NAV_LINKS = [
   { href: "/quests", label: "Quest database" },
   { href: "/leaderboard", label: "Leaderboard" },
 ] as const;
+
+/* -------------------------------------------------------------------------- */
+/* The same plans, in the reader's language                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Plan copy, translated.
+ *
+ * `PLANS` keeps the facts — ids, tiers, prices, capabilities — because those
+ * are the same in every language and a price that varied by dictionary would
+ * be a bug waiting to happen. Only the words come from here, keyed by the
+ * plan's own id, and the counts are interpolated by the translation rather
+ * than baked into it, so a language can put the number where it wants it.
+ */
+export type PlanCopy = {
+  name: string;
+  kicker: string;
+  description: string;
+  features: string[];
+  missing: string[];
+  badge?: string;
+};
+
+export function planCopy(t: Messages, plan: PlanId): PlanCopy {
+  if (plan === "free") {
+    return {
+      name: t.plans.free.name,
+      kicker: t.plans.free.kicker(FREE_QUEST_ALLOWANCE),
+      description: t.plans.free.description,
+      features: t.plans.free.features(FREE_QUEST_ALLOWANCE, STICKER_ALLOWANCE.free),
+      missing: t.plans.free.missing,
+    };
+  }
+
+  if (plan === "explorer") {
+    return {
+      name: t.plans.explorer.name,
+      kicker: t.plans.explorer.kicker,
+      description: t.plans.explorer.description,
+      features: t.plans.explorer.features(STICKER_ALLOWANCE.explorer),
+      missing: t.plans.explorer.missing,
+      badge: t.plans.explorer.badge,
+    };
+  }
+
+  return {
+    name: t.plans.ultra.name,
+    kicker: t.plans.ultra.kicker,
+    description: t.plans.ultra.description,
+    features: t.plans.ultra.features(STICKER_ALLOWANCE.ultra),
+    missing: t.plans.ultra.missing,
+  };
+}
+
+/** What a capability is called, in the reader's language. */
+export function capabilityCopy(
+  t: Messages,
+  capability: Capability,
+): { title: string; detail: string } {
+  return t.capabilities[capability];
+}

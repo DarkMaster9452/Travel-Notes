@@ -3,6 +3,8 @@ import Link from "next/link";
 import { SqCountdown } from "@/components/sq/countdown";
 import { SqMap, type MapPoint } from "@/components/sq/map";
 import { Slab, SlabFigures } from "@/components/sq/ui";
+import type { Locale, Messages } from "@/lib/i18n";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 
 export type QuestCardData = {
   id: string;
@@ -37,8 +39,6 @@ const GRADE_LABEL: Record<QuestCardData["grade"], string> = {
   EXPERT: "Expert",
 };
 
-const NUMBER = new Intl.NumberFormat("en-GB");
-const FILED = new Intl.DateTimeFormat("en-GB", { weekday: "long" });
 
 /**
  * One open quest.
@@ -52,7 +52,17 @@ const FILED = new Intl.DateTimeFormat("en-GB", { weekday: "long" });
  * The card takes stamp ink only while its clock is genuinely short. A card
  * that is always urgent is a card nobody reads as urgent.
  */
-export function SqQuestCard({ quest, index = 0 }: { quest: QuestCardData; index?: number }) {
+export function SqQuestCard({
+  quest,
+  index = 0,
+  t,
+  locale,
+}: {
+  quest: QuestCardData;
+  index?: number;
+  t: Messages;
+  locale: Locale;
+}) {
   const points: MapPoint[] = [];
   if (quest.parkingLat != null && quest.parkingLng != null) {
     points.push({
@@ -87,14 +97,16 @@ export function SqQuestCard({ quest, index = 0 }: { quest: QuestCardData; index?
                 : { background: "var(--signal-wash)", color: "var(--signal)" }
             }
           >
-            {quest.status === "APPROVED" ? `Approved · +${quest.points}` : "Sent back"}
+            {quest.status === "APPROVED" ? t.questCard.approved(quest.points) : t.questCard.sentBack}
           </span>
         ) : quest.status === "PENDING" ? (
           <span className="sq-tag sq-tag-xs">
-            Filed{quest.filedAt ? ` ${FILED.format(new Date(quest.filedAt))}` : ""}
+            {quest.filedAt
+              ? t.questCard.filedOn(formatDate(locale, quest.filedAt, "weekday"))
+              : t.questCard.waiting}
           </span>
         ) : (
-          <span className="sq-tag sq-tag-stamp sq-tag-xs">+{quest.points} points</span>
+          <span className="sq-tag sq-tag-stamp sq-tag-xs">{t.questCard.stamp(quest.points)}</span>
         )}
       </div>
 
@@ -105,20 +117,23 @@ export function SqQuestCard({ quest, index = 0 }: { quest: QuestCardData; index?
         <SqMap points={points} height={190} interactive={false} style={{ borderRadius: 10 }} />
         <span className="sq-map-legend" aria-hidden="true">
           <i data-kind="start" />
-          Trailhead
+          {t.questCard.trailhead}
           <i data-kind="summit" />
-          Summit
+          {t.questCard.summit}
         </span>
       </div>
 
       <dl className="sq-quest-facts">
-        <Fact k="Distance" v={`${quest.distance.toFixed(1)} km`} />
-        <Fact k="Ascent" v={`${NUMBER.format(Math.round(quest.elevationGain))} m`} />
-        <Fact k="Grade" v={GRADE_LABEL[quest.grade]} />
+        <Fact k={t.questCard.distance} v={`${quest.distance.toFixed(1)} km`} />
+        <Fact
+          k={t.questCard.ascent}
+          v={`${formatNumber(locale, Math.round(quest.elevationGain))} m`}
+        />
+        <Fact k={t.questCard.grade} v={GRADE_LABEL[quest.grade]} />
       </dl>
 
       {quest.expert && quest.expert.length > 0 ? (
-        <Slab kicker="Expert figures" style={{ padding: "12px 14px", borderRadius: 10 }}>
+        <Slab kicker={t.questCard.expertFigures} style={{ padding: "12px 14px", borderRadius: 10 }}>
           <SlabFigures figures={quest.expert} />
         </Slab>
       ) : null}
@@ -127,10 +142,10 @@ export function SqQuestCard({ quest, index = 0 }: { quest: QuestCardData; index?
         <div className="sq-quest-clock-row">
           <span>
             {settled
-              ? "Read by a human"
+              ? t.questCard.readByHuman
               : quest.status === "PENDING"
-                ? "Waiting on a reader"
-                : "Closes in"}
+                ? t.questCard.waiting
+                : t.questCard.closesIn}
           </span>
           <b
             className="sq-mono"
@@ -146,12 +161,12 @@ export function SqQuestCard({ quest, index = 0 }: { quest: QuestCardData; index?
           >
             {settled ? (
               quest.status === "APPROVED" ? (
-                `Approved · +${quest.points}`
+                t.questCard.approved(quest.points)
               ) : (
-                "File it again"
+                t.questCard.fileAgain
               )
             ) : (
-              <SqCountdown to={quest.closeAt} closedLabel="Window shut" />
+              <SqCountdown to={quest.closeAt} closedLabel={t.questCard.windowShut} />
             )}
           </b>
         </div>

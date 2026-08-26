@@ -8,6 +8,9 @@ import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { formatNumber, tagFor } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Quest database" };
@@ -44,7 +47,11 @@ export default async function QuestDatabasePage({
   const month = params.month ?? "all";
   const search = (params.q ?? "").trim();
 
-  const entitlement = await getEntitlement(user.id);
+  const [entitlement, t, locale] = await Promise.all([
+    getEntitlement(user.id),
+    getT(user.id),
+    getLocale(user.id),
+  ]);
 
   // Range is a capability: free stops at the country somebody measures from,
   // Explorer opens Europe, Ultra opens the map. The filter still lists every
@@ -120,18 +127,21 @@ export default async function QuestDatabasePage({
   ]);
 
   const held = new Map(mine.map((row) => [row.questId, row.completed]));
-  const monthOptions = uniqueMonths(months.map((row) => row.createdAt));
+  const monthOptions = uniqueMonths(
+    months.map((row) => row.createdAt),
+    locale,
+  );
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <>
       <PageHeader
-        kicker="Everything ever issued"
-        title="Quest database"
-        lede="Every quest the engine has written, including the ones that were never yours. Yours are marked, and anything here can be filed against."
+        kicker={t.questsPage.kicker}
+        title={t.questsPage.title}
+        lede={t.questsPage.lede}
         right={
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <Tag small>{new Intl.NumberFormat("en-GB").format(total)} quests</Tag>
+            <Tag small>{t.questsPage.count(formatNumber(locale, total))}</Tag>
             {reach === "home" ? <SqPaidChip plan="explorer" /> : null}
           </div>
         }
@@ -154,47 +164,51 @@ export default async function QuestDatabasePage({
           <span style={{ color: "var(--ink-3)" }}>
             <LockGlyph size={14} />
           </span>
-          Showing {home?.homeLocation ?? "your country"} only. Explorer opens every European range;
-          Ultra opens the rest of the map.
+          {t.questsPage.homeOnly(home?.homeLocation ?? t.questsPage.yourCountry)}
         </p>
       ) : null}
 
       <SqFilterBar>
-        <SqParamSearch name="q" value={search} label="Find" placeholder="Region or trailhead" />
+        <SqParamSearch
+          name="q"
+          value={search}
+          label={t.questsPage.find}
+          placeholder={t.questsPage.findPlaceholder}
+        />
         <SqParamSelect
           name="region"
           value={region}
-          label="Region"
+          label={t.questsPage.region}
           options={[
-            { value: "all", label: "Every region" },
+            { value: "all", label: t.questsPage.everyRegion },
             ...regions.map((row) => ({ value: row.region, label: row.region })),
           ]}
         />
         <SqParamSelect
           name="grade"
           value={grade ?? "all"}
-          label="Grade"
+          label={t.questsPage.grade}
           options={[
-            { value: "all", label: "Any grade" },
+            { value: "all", label: t.questsPage.anyGrade },
             ...GRADES.map((value) => ({ value, label: title(value) })),
           ]}
         />
         <SqParamSelect
           name="cadence"
           value={cadence}
-          label="Cadence"
+          label={t.questsPage.cadence}
           options={[
-            { value: "all", label: "Any" },
-            { value: "MONTHLY", label: "Was a monthly" },
-            { value: "WEEKLY", label: "Was a weekly" },
-            { value: "none", label: "Never booked" },
+            { value: "all", label: t.questsPage.any },
+            { value: "MONTHLY", label: t.questsPage.wasMonthly },
+            { value: "WEEKLY", label: t.questsPage.wasWeekly },
+            { value: "none", label: t.questsPage.neverBooked },
           ]}
         />
         <SqParamSelect
           name="month"
           value={month}
-          label="Written"
-          options={[{ value: "all", label: "Any month" }, ...monthOptions]}
+          label={t.questsPage.written}
+          options={[{ value: "all", label: t.questsPage.anyMonth }, ...monthOptions]}
         />
       </SqFilterBar>
 
@@ -203,11 +217,11 @@ export default async function QuestDatabasePage({
           <div style={{ padding: 26 }}>
             <EmptyState
               glyph="search"
-              title="Nothing matches that"
-              body="Widen the filters — region and grade together will cut a catalogue of thousands down to nothing quite quickly."
+              title={t.questsPage.noMatch}
+              body={t.questsPage.noMatchBody}
               action={
                 <Link href="/quests" className="sq-btn sq-btn-ghost sq-btn-sm">
-                  Clear the filters
+                  {t.questsPage.clearFilters}
                 </Link>
               }
             />
@@ -264,7 +278,7 @@ export default async function QuestDatabasePage({
                         color: status ? "var(--moss)" : status === false ? "var(--signal)" : "transparent",
                       }}
                     >
-                      {status ? "DONE" : status === false ? "YOURS" : "—"}
+                      {status ? t.questsPage.done : status === false ? t.questsPage.yours : "—"}
                     </span>
                   </Link>
                 </li>
@@ -277,19 +291,19 @@ export default async function QuestDatabasePage({
       {pages > 1 ? (
         <nav
           style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }}
-          aria-label="Pages"
+          aria-label={t.common.pages}
         >
           {page > 1 ? (
             <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={pageHref(params, page - 1)}>
-              ← Newer
+              {t.questsPage.newer}
             </Link>
           ) : null}
           <span className="sq-mono" style={{ alignSelf: "center", fontSize: 11, color: "var(--ink-3)" }}>
-            {page} of {pages}
+            {t.questsPage.page(page, pages)}
           </span>
           {page < pages ? (
             <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={pageHref(params, page + 1)}>
-              Older →
+              {t.questsPage.older}
             </Link>
           ) : null}
         </nav>
@@ -307,16 +321,17 @@ function pageHref(params: Record<string, string | undefined>, page: number): str
   return `/quests?${next.toString()}`;
 }
 
-function uniqueMonths(dates: Date[]): { value: string; label: string }[] {
+function uniqueMonths(dates: Date[], locale: Locale): { value: string; label: string }[] {
   const seen = new Map<string, string>();
+  const format = new Intl.DateTimeFormat(tagFor(locale), {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+
   for (const date of dates) {
     const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-    if (!seen.has(key)) {
-      seen.set(
-        key,
-        new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(date),
-      );
-    }
+    if (!seen.has(key)) seen.set(key, format.format(date));
   }
   return [...seen].map(([value, label]) => ({ value, label }));
 }

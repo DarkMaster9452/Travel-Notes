@@ -4,6 +4,7 @@ import { cancelPlanAction } from "@/app/(app)/actions";
 import { pausePlanAction, resumePlanAction } from "@/app/(app)/settings/actions";
 import { SqConfirmButton } from "@/components/sq/forms";
 import { Tag } from "@/components/sq/ui";
+import { getT } from "@/lib/i18n/server";
 import { requireClient } from "@/lib/auth/guards";
 import { REFUND_WINDOW_DAYS } from "@/lib/config";
 import { db } from "@/lib/db";
@@ -23,6 +24,7 @@ const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", y
  */
 export default async function CancelSettingsPage() {
   const user = await requireClient();
+  const t = await getT(user.id);
 
   const [entitlement, subscription] = await Promise.all([
     getEntitlement(user.id),
@@ -52,19 +54,19 @@ export default async function CancelSettingsPage() {
         ) : paused ? (
           <SqConfirmButton
             action={resumePlanAction}
-            label="Resume billing"
+            label={t.panes.cancel.resume}
             confirmLabel="Resume now"
           />
         ) : (
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <SqConfirmButton
               action={() => pausePlanAction(1)}
-              label="Pause a month"
+              label={t.panes.cancel.pauseMonth}
               confirmLabel="Pause one month"
             />
             <SqConfirmButton
               action={() => pausePlanAction(3)}
-              label="Pause three"
+              label={t.panes.cancel.pauseThreeShort}
               confirmLabel="Pause three months"
             />
           </div>
@@ -93,7 +95,7 @@ export default async function CancelSettingsPage() {
               const result = await cancelPlanAction();
               return { ok: result.ok, message: result.message };
             }}
-            label="Cancel my plan"
+            label={t.panes.cancel.cancelPlan}
             confirmLabel="Yes, cancel it"
             tone="stamp"
           />

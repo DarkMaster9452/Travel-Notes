@@ -10,6 +10,8 @@ import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getMyGroups } from "@/lib/groups";
 import { getEntitlement } from "@/lib/entitlements";
+import { getT } from "@/lib/i18n/server";
+import type { Messages } from "@/lib/i18n";
 import { getDirectory, type DirectoryEntry } from "@/lib/profile";
 
 export const metadata: Metadata = { title: "People & groups" };
@@ -33,11 +35,12 @@ export default async function PeoplePage({
   const params = await searchParams;
   const tab = params.tab === "groups" ? "groups" : "people";
 
-  const [directory, groups, mine, entitlement] = await Promise.all([
+  const [directory, groups, mine, entitlement, t] = await Promise.all([
     getDirectory(),
     getMyGroups(user.id),
     db.profile.findUnique({ where: { userId: user.id }, select: { published: true } }),
     getEntitlement(user.id),
+    getT(user.id),
   ]);
 
   // Two different gates, because they are two different promises: the
@@ -50,23 +53,23 @@ export default async function PeoplePage({
   return (
     <>
       <PageHeader
-        kicker="Who else is out there"
-        title={tab === "groups" ? "Groups" : "People"}
+        kicker={t.people.directory}
+        title={tab === "groups" ? t.people.groupsTitle : t.people.peopleTitle}
         lede={
           tab === "groups"
-            ? "A group is a smaller board and a page to find each other on. Who is in one is visible to the people in it, and to nobody else."
-            : "Everybody who has published a page. Nobody is here who has not chosen to be, and nothing here says whether anyone else has an account."
+            ? t.people.groupsNote
+            : t.people.directoryLede
         }
         right={
           <Link href="/settings/profile" className="sq-btn sq-btn-ghost">
-            {mine?.published ? "Edit your page" : "Publish your page"}
+            {mine?.published ? t.people.editYours : t.people.publishYours}
           </Link>
         }
       />
 
       <div style={{ marginBottom: 18 }}>
         <SqSegmentedLinks
-          label="People or groups"
+          label={t.people.tabs}
           active={tab}
           options={[
             { key: "people", label: "People", href: "/people" },
@@ -78,21 +81,21 @@ export default async function PeoplePage({
       {tab === "people" ? (
         !canMatch ? (
           <SqLocked capability="matching" plan="explorer">
-            <PeopleGrid people={directory.slice(0, 8)} />
+            <PeopleGrid t={t} people={directory.slice(0, 8)} />
           </SqLocked>
         ) : directory.length === 0 ? (
           <EmptyState
             glyph="users"
-            title="Nobody has published a page yet"
-            body="Publishing yours is what puts you here. It shows what you have logged, and nothing about your account."
+            title={t.people.nobodyYet}
+            body={t.people.nobodyYetBody}
             action={
               <Link href="/settings/profile" className="sq-btn sq-btn-primary sq-btn-sm">
-                Publish your page
+                {t.people.publishYours}
               </Link>
             }
           />
         ) : (
-          <PeopleGrid people={directory} />
+          <PeopleGrid t={t} people={directory} />
         )
       ) : !canCrew ? (
         <SqLocked capability="crews" plan="ultra">
@@ -121,8 +124,8 @@ export default async function PeoplePage({
             {groups.length === 0 ? (
               <EmptyState
                 glyph="users"
-                title="You are not in a group"
-                body="Start one and send the link to whoever you walk with. A group is a board of its own, on the same points as everything else."
+                title={t.people.noGroup}
+                body={t.people.noGroupBody}
               />
             ) : (
               groups.map((group) => (
@@ -158,7 +161,7 @@ export default async function PeoplePage({
 }
 
 /** The directory grid, shared by the real list and the locked preview. */
-function PeopleGrid({ people }: { people: DirectoryEntry[] }) {
+function PeopleGrid({ people, t }: { people: DirectoryEntry[]; t: Messages }) {
   return (
     <section
       className="sq-stagger"
@@ -233,7 +236,7 @@ function PeopleGrid({ people }: { people: DirectoryEntry[] }) {
             }}
           >
             <i style={{ fontStyle: "normal" }}>{person.country ?? "—"}</i>
-            <i style={{ fontStyle: "normal" }}>{person.logged} logged</i>
+            <i style={{ fontStyle: "normal" }}>{t.people.logged(person.logged)}</i>
           </span>
         </Link>
         );

@@ -8,7 +8,9 @@ import { updatePreferencesAction, type ProfileState } from "@/app/(app)/profile/
 import { saveDisplayAction } from "@/app/(app)/settings/actions";
 import { Glyph } from "@/components/sq/icons";
 import { SqCheckoutButton } from "@/components/sq/plan-actions";
+import { useT } from "@/components/sq/i18n";
 import { useToast } from "@/components/sq/toast";
+import { LOCALES } from "@/lib/i18n";
 
 type Step = { key: string; label: string };
 
@@ -47,6 +49,7 @@ export function SqOnboarding({
   ultraEnabled: boolean;
   stravaEnabled: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const toast = useToast();
   const [step, setStep] = useState(current.country ? (current.plan === "free" ? 2 : 3) : 0);
@@ -72,7 +75,7 @@ export function SqOnboarding({
       </header>
 
       <div className="sq-settings-grid">
-        <nav aria-label="Setup steps" style={{ display: "flex", flexDirection: "column", gap: 1, position: "sticky", top: 24 }}>
+        <nav aria-label={t.onboarding.steps} style={{ display: "flex", flexDirection: "column", gap: 1, position: "sticky", top: 24 }}>
           {STEPS.map((entry, index) => (
             <button
               key={entry.key}
@@ -106,7 +109,7 @@ export function SqOnboarding({
         <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           {step === 0 ? (
             <form action={saveRegion} className="sq-card" style={{ overflow: "hidden" }}>
-              <Head title="Where you walk" note="One country" />
+              <Head title={t.onboarding.whereYouWalk} note={t.onboarding.oneCountry} />
               <div style={{ padding: "18px 24px", display: "grid", gap: 14 }}>
                 <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--ink-2)" }}>
                   A country, never a town and never an address. It is what the generator measures
@@ -134,7 +137,7 @@ export function SqOnboarding({
                 </label>
               </div>
               <Foot
-                note="Outside Europe is Ultra. Everything else is on every plan."
+                note={t.onboarding.outsideEurope}
                 label={regionPending ? "Saving…" : "Next"}
                 onNext={() => setStep(1)}
                 submit
@@ -144,7 +147,7 @@ export function SqOnboarding({
 
           {step === 1 ? (
             <section className="sq-card" style={{ overflow: "hidden" }}>
-              <Head title="How it reads" note="Units and language" />
+              <Head title={t.onboarding.howItReads} note={t.onboarding.unitsAndLanguage} />
               <div style={{ padding: "18px 24px", display: "grid", gap: 14 }}>
                 <label className="sq-field">
                   <span className="sq-label">Units</span>
@@ -156,13 +159,16 @@ export function SqOnboarding({
                 <label className="sq-field">
                   <span className="sq-label">Language</span>
                   <select className="sq-select" value={language} onChange={(event) => setLanguage(event.target.value)}>
-                    <option value="en">English</option>
-                    <option value="sk">Slovenčina</option>
+                    {LOCALES.map((locale) => (
+                      <option key={locale.id} value={locale.id}>
+                        {locale.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
               <Foot
-                note="Quests are written in metric. Imperial converts on the way out."
+                note={t.onboarding.metricNote}
                 label="Next"
                 onNext={() => {
                   const data = new FormData();
@@ -181,7 +187,7 @@ export function SqOnboarding({
 
           {step === 2 ? (
             <section className="sq-card" style={{ overflow: "hidden" }}>
-              <Head title="Which plan" note={billingEnabled ? "Cancel any time" : "Not configured here"} />
+              <Head title={t.onboarding.whichPlan} note={billingEnabled ? "Cancel any time" : "Not configured here"} />
               <div style={{ padding: "18px 24px", display: "grid", gap: 14 }}>
                 <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--ink-2)" }}>
                   Free gets you three quests to see whether the thing is for you. Explorer is the
@@ -190,22 +196,22 @@ export function SqOnboarding({
                 </p>
                 {billingEnabled ? (
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <SqCheckoutButton plan="explorer" interval="monthly" label="Take Explorer" />
+                    <SqCheckoutButton plan="explorer" interval="monthly" label={t.onboarding.takeExplorer} />
                     {ultraEnabled ? (
-                      <SqCheckoutButton plan="ultra" interval="monthly" label="Take Ultra" variant="ghost" />
+                      <SqCheckoutButton plan="ultra" interval="monthly" label={t.onboarding.takeUltra} variant="ghost" />
                     ) : null}
                   </div>
                 ) : (
                   <p className="sq-hint">This deployment has no Stripe keys, so everybody is on Free.</p>
                 )}
               </div>
-              <Foot note="You can change this later in Settings." label="Skip for now" onNext={() => setStep(3)} />
+              <Foot note={t.onboarding.changeLater} label={t.onboarding.skip} onNext={() => setStep(3)} />
             </section>
           ) : null}
 
           {step === 3 ? (
             <section className="sq-card" style={{ overflow: "hidden" }}>
-              <Head title="Your watch" note="Optional" />
+              <Head title={t.common.yourWatch} note={t.proof.optional} />
               <div style={{ padding: "18px 24px", display: "grid", gap: 14 }}>
                 <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--ink-2)" }}>
                   Connect Strava and the proof form reads distance, ascent and moving time straight

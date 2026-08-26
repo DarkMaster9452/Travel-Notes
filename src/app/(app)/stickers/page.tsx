@@ -3,12 +3,15 @@ import Link from "next/link";
 
 import { Glyph, LockGlyph } from "@/components/sq/icons";
 import { SqSticker } from "@/components/sq/sticker";
+import { SqStickersSeen } from "@/components/sq/sticker-seen";
 import { PageHeader, Stat } from "@/components/sq/ui";
 import { getAchievements, stickerAllowance } from "@/lib/achievements";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import { ENVELOPE_COPY, getEnvelopeStatus } from "@/lib/envelope";
+import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
+import { getT } from "@/lib/i18n/server";
+import { planCopy } from "@/lib/config";
 import { getUserStats } from "@/lib/quest/service";
 import { SHAPE_RADIUS, stickerStyle } from "@/lib/stickers";
 
@@ -32,7 +35,7 @@ export const dynamic = "force-dynamic";
 export default async function StickersPage() {
   const user = await requireClient();
 
-  const [stats, entitlement, revocations, seen, envelope] = await Promise.all([
+  const [stats, entitlement, revocations, seen, envelope, t] = await Promise.all([
     getUserStats(user.id),
     getEntitlement(user.id),
     db.achievementRevocation.findMany({
@@ -41,12 +44,14 @@ export default async function StickersPage() {
     }),
     db.user.findUnique({ where: { id: user.id }, select: { seenAchievements: true } }),
     getEnvelopeStatus(user.id, user.name),
+    getT(user.id),
   ]);
 
   const achievements = getAchievements(
     stats,
     entitlement.plan,
     revocations.map((row) => row.achievementId),
+    t,
   );
 
   const seenSet = new Set(seen?.seenAchievements ?? []);
@@ -57,19 +62,24 @@ export default async function StickersPage() {
   return (
     <>
       <PageHeader
-        kicker="Printed, gummed, posted"
-        title="Stickers"
-        lede="Nothing here is a screen trophy. Each one is a real sticker, and an envelope carries at most two of them alongside the monthly quest card — the rest wait their turn."
+        kicker={t.stickers.kicker}
+        title={t.stickers.heading}
+        lede={t.stickers.lede}
         right={
           <>
-            <Stat count={earned.length} countId="stickers-earned" value={earned.length} label="Earned" />
+            <Stat
+              count={earned.length}
+              countId="stickers-earned"
+              value={earned.length}
+              label={t.stickers.earned}
+            />
             <Stat
               count={stickerAllowance(entitlement.plan)}
               countId="stickers-plan"
               value={reachable.length}
-              label="On your plan"
+              label={t.stickers.onYourPlan}
             />
-            <Stat value={achievements.length} label="Printed in all" />
+            <Stat value={achievements.length} label={t.stickers.printedInAll} />
           </>
         }
       />
@@ -93,18 +103,22 @@ export default async function StickersPage() {
         </span>
         <span style={{ minWidth: 0, flex: 1 }}>
           <b style={{ display: "block", fontSize: 13.5, fontWeight: 600 }}>
-            {ENVELOPE_COPY[envelope.reason].title}
+            {envelopeCopy(t, envelope.reason).title}
           </b>
           <span style={{ display: "block", marginTop: 2, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-2)" }}>
-            {ENVELOPE_COPY[envelope.reason].detail}
+            {envelopeCopy(t, envelope.reason).detail}
           </span>
         </span>
         {envelope.reason === "no_address" ? (
           <Link href="/settings/address" className="sq-btn sq-btn-primary sq-btn-sm">
-            Add an address
+            {t.stickers.addAddress}
           </Link>
         ) : null}
       </aside>
+
+      <SqStickersSeen
+        ids={reachable.filter((entry) => entry.earned && !seenSet.has(entry.id)).map((entry) => entry.id)}
+      />
 
       <section
         className="sq-stagger"
@@ -148,7 +162,23 @@ export default async function StickersPage() {
                   {entry.label}
                 </b>
                 <span style={{ display: "block", marginTop: 4, fontSize: 11.5, lineHeight: 1.4, color: "var(--ink-3)" }}>
-                  {entry.revoked ? "Withdrawn by the desk" : entry.earned ? entry.description : entry.progressLabel}
+                  {entry.revoked ? t.stickers.withdrawn : entry.earned ? entry.description : entry.progressLabel}
+                </span>
+                {/* Most of the sheet is ink on a screen. Saying which ones are
+                    really cut and posted is the difference between "thirty
+                    stickers" and "thirty stickers you will hold". */}
+                <span
+                  className="sq-mono"
+                  style={{
+                    display: "block",
+                    marginTop: 7,
+                    fontSize: 9,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: entry.printed ? "var(--moss)" : "var(--ink-3)",
+                  }}
+                >
+                  {entry.printed ? t.stickers.posted : t.stickers.onScreen}
                 </span>
               </span>
             </article>
@@ -170,12 +200,14 @@ export default async function StickersPage() {
           >
             <div>
               <h2 className="sq-h2" style={{ fontSize: 22, marginBottom: 8 }}>
-                {beyond.length} sheets you cannot see yet
+                {t.stickers.beyondHeading(beyond.length)}
               </h2>
               <p style={{ maxWidth: "58ch", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink-2)" }}>
-                The {entitlement.definition.name} plan prints {reachable.length} of the{" "}
-                {achievements.length}. The rest are cut for members further up — what they are stays
-                sealed until the plan is.
+                {t.stickers.beyondBody(
+                  planCopy(t, entitlement.plan).name,
+                  reachable.length,
+                  achievements.length,
+                )}
               </p>
             </div>
             <Link
@@ -183,7 +215,7 @@ export default async function StickersPage() {
               className="sq-btn sq-btn-primary"
               style={{ background: "var(--pine)" }}
             >
-              See the plans
+              {t.stickers.seePlans}
             </Link>
           </div>
 
@@ -191,7 +223,7 @@ export default async function StickersPage() {
             {beyond.map((entry, index) => (
               <span
                 key={entry.id}
-                aria-label="Locked"
+                aria-label={t.common.locked}
                 title={`${entry.label} · ${planNameFor(entry.requiredPlan)}`}
                 className="sq-sticker sq-sticker-sealed"
                 data-locked="1"

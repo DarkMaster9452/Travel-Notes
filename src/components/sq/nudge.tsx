@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 
 import { dismissNudgeAction } from "@/app/(app)/nudge-actions";
 import { Glyph } from "@/components/sq/icons";
+import { useT } from "@/components/sq/i18n";
 
 /**
  * The ask that waited.
@@ -32,6 +33,7 @@ export function SqNudge({
   action: string;
   href: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [gone, setGone] = useState(false);
   const [pending, start] = useTransition();
@@ -67,7 +69,7 @@ export function SqNudge({
             });
           }}
         >
-          Not now
+          {t.nudge.notNow}
         </button>
       </span>
     </aside>

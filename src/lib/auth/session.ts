@@ -5,6 +5,7 @@ import { cache } from "react";
 
 import type { Role, Theme } from "@prisma/client";
 
+import { touch } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import {
@@ -78,6 +79,9 @@ export async function createSession(userId: string): Promise<void> {
     data: { userId, expiresAt },
     select: { id: true },
   });
+
+  // Turning up counts. Fire-and-forget on purpose — see `lib/activity`.
+  void touch(userId);
 
   const token = await signSessionToken({ sub: userId, sid: session.id });
   const store = await cookies();

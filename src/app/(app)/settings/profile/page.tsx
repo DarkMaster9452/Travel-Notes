@@ -38,6 +38,7 @@ export default async function ProfileSettingsPage() {
         showCountry: profile?.showCountry ?? true,
         showActivities: profile?.showActivities ?? true,
         showStickers: profile?.showStickers ?? true,
+        showActivityGrid: profile?.showActivityGrid ?? true,
       }}
     />
   );

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { useT } from "@/components/sq/i18n";
 import { useToast } from "@/components/sq/toast";
 
 const OPTIONS = [
@@ -18,12 +19,13 @@ export function ThemePicker({
   current: string;
   save: (value: string) => Promise<{ ok: boolean }>;
 }) {
+  const t = useT();
   const [value, setValue] = useState(current);
   const [, start] = useTransition();
   const toast = useToast();
 
   return (
-    <div className="sq-seg" role="group" aria-label="Palette">
+    <div className="sq-seg" role="group" aria-label={t.theme.palette}>
       {OPTIONS.map((option) => (
         <button
           key={option.value}

@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 
 import { savePublicProfileAction, type PublicProfileState } from "@/app/(app)/profile/public-actions";
 import { Glyph } from "@/components/sq/icons";
+import { useT } from "@/components/sq/i18n";
 import { ACCENT_INK, ACCENT_KEYS } from "@/lib/accents";
 
 export type ProfileDraft = {
@@ -21,6 +22,7 @@ export type ProfileDraft = {
   showCountry: boolean;
   showActivities: boolean;
   showStickers: boolean;
+  showActivityGrid: boolean;
 };
 
 /**
@@ -32,6 +34,7 @@ export type ProfileDraft = {
  * section turned off is absent from the page, not blank on it.
  */
 export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
+  const t = useT();
   const [state, action, pending] = useActionState<PublicProfileState, FormData>(
     savePublicProfileAction,
     undefined,
@@ -43,6 +46,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
     showCountry: draft.showCountry,
     showActivities: draft.showActivities,
     showStickers: draft.showStickers,
+    showActivityGrid: draft.showActivityGrid,
   });
 
   const errors = state && !state.ok ? state.errors : {};
@@ -87,7 +91,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
             type="button"
             role="switch"
             aria-checked={published}
-            aria-label="Published"
+            aria-label={t.common.published}
             className="sq-switch"
             onClick={() => setPublished((value) => !value)}
           >
@@ -110,7 +114,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
               name="displayName"
               defaultValue={draft.displayName}
               maxLength={60}
-              placeholder="Leave empty to use the name on the account"
+              placeholder={t.common.displayNamePlaceholder}
             />
           </label>
 
@@ -121,7 +125,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
               name="headline"
               defaultValue={draft.headline}
               maxLength={90}
-              placeholder="Slow up, slower down. Mostly the Fatras."
+              placeholder={t.common.headlinePlaceholder}
             />
           </label>
 
@@ -182,10 +186,19 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
         <ul>
           {(
             [
-              ["showStats", "What you have logged", "The four figures — quests, kilometres, ascent, regions."],
-              ["showCountry", "Your country", "The country you measure from. Never a town, never an address."],
-              ["showActivities", "What you have walked", "Approved proof only, with your own account of each day."],
-              ["showStickers", "Stickers", "The ones you have earned. Locked ones are never shown to a reader."],
+              ["showStats", t.profile.switches.stats.label, t.profile.switches.stats.detail],
+              ["showCountry", t.profile.switches.country.label, t.profile.switches.country.detail],
+              [
+                "showActivities",
+                t.profile.switches.activities.label,
+                t.profile.switches.activities.detail,
+              ],
+              ["showStickers", t.profile.switches.stickers.label, t.profile.switches.stickers.detail],
+              [
+                "showActivityGrid",
+                t.profile.switches.activityGrid.label,
+                t.profile.switches.activityGrid.detail,
+              ],
             ] as const
           ).map(([key, label, description]) => (
             <li

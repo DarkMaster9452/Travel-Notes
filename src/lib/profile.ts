@@ -2,6 +2,8 @@ import "server-only";
 
 import type { ProfileAccent } from "@prisma/client";
 
+import { getActivityGrid, type ActivityGrid } from "@/lib/activity";
+import type { Locale } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { getAchievements } from "@/lib/achievements";
 import { planIdFromRecord } from "@/lib/config";
@@ -122,8 +124,16 @@ export type PublicProfile = {
   stats: { logged: number; km: number; up: number; regions: number; countries: number } | null;
   stickers: { id: string; label: string; sticker: string }[];
   activities: ProfileActivity[];
-  /** The last twelve months, oldest first — the strip across the header. */
+  /** The last twelve months, oldest first. Still read by the directory. */
   months: ProfileMonth[];
+  /**
+   * A year of days, when the owner has left the grid switched on.
+   *
+   * Its own switch rather than riding on `showActivities`, because it says
+   * something different: how often somebody is *here*, not what ground they
+   * covered. Null when it is off, and then not fetched at all.
+   */
+  activityGrid: ActivityGrid | null;
   /** True when the reader is looking at their own page. */
   isSelf: boolean;
 };
@@ -138,6 +148,8 @@ export type PublicProfile = {
 export async function getPublicProfile(
   handle: string,
   readerId: string,
+  /** The *reader's* language, not the profile owner's — they may differ. */
+  locale: Locale = "en",
 ): Promise<PublicProfile | null> {
   const profile = await db.profile.findUnique({
     where: { handle },
@@ -200,6 +212,12 @@ export async function getPublicProfile(
     ? await Promise.all([getProfileActivities(profile.userId), getProfileMonths(profile.userId)])
     : [[] as ProfileActivity[], [] as ProfileMonth[]];
 
+  // Not fetched when it is off, matching how every other section here behaves:
+  // a switch turned off means the data does not leave the database.
+  const activityGrid = profile.showActivityGrid
+    ? await getActivityGrid(profile.userId, new Date(), locale)
+    : null;
+
   const socials: PublicProfile["socials"] = [];
   for (const key of ["instagram", "facebook", "strava"] as const) {
     const value = profile[key];
@@ -228,6 +246,7 @@ export async function getPublicProfile(
     stickers,
     activities,
     months,
+    activityGrid,
     isSelf,
   };
 }

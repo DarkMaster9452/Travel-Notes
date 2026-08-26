@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/sq/i18n";
 import { Chevron, LogoMark } from "@/components/sq/icons";
 import { isActive, type SqNavItem } from "@/components/sq/nav";
 
@@ -52,6 +53,15 @@ export type SqShellProps = {
    * that never gets answered.
    */
   notice?: React.ReactNode;
+  /**
+   * What language the app is in.
+   *
+   * Set here rather than on `<html>` because the root layout wraps the
+   * marketing site as well, and that stays English. A `lang` on the app's own
+   * subtree is valid HTML, is what a screen reader actually needs, and leaves
+   * the landing page's own declaration honest.
+   */
+  lang?: string;
   children: React.ReactNode;
 };
 
@@ -63,9 +73,11 @@ export function SqShell({
   signOut,
   rail,
   notice,
+  lang,
   children,
 }: SqShellProps) {
   const pathname = usePathname();
+  const t = useT();
 
   // The drawer remembers *which* route it was opened on rather than whether it
   // is open, so a navigation closes it during render instead of through an
@@ -78,11 +90,11 @@ export function SqShell({
   };
 
   return (
-    <div className="sq sq-shell" data-drawer={drawer ? "open" : "closed"}>
+    <div className="sq sq-shell" lang={lang} data-drawer={drawer ? "open" : "closed"}>
       <header className="sq-topbar">
-        <Link href={nav[0]?.href ?? "/"} className="sq-brand" aria-label="Summit Quest">
+        <Link href={nav[0]?.href ?? "/"} className="sq-brand" aria-label={t.shell.brand}>
           <LogoMark size={26} />
-          <span>Summit Quest</span>
+          <span>{t.shell.brand}</span>
         </Link>
         <button
           type="button"
@@ -95,7 +107,7 @@ export function SqShell({
       </header>
 
       <aside className="sq-side">
-        <Link href={nav[0]?.href ?? "/"} className="sq-brand" aria-label="Summit Quest">
+        <Link href={nav[0]?.href ?? "/"} className="sq-brand" aria-label={t.shell.brand}>
           <LogoMark />
           <span>
             Summit
@@ -139,7 +151,7 @@ export function SqShell({
               destroys a session can be fired by anything that prefetches. */}
           <form action={signOut}>
             <button type="submit" className="sq-signout">
-              Sign out
+              {t.nav.signOut}
             </button>
           </form>
         </div>
@@ -148,7 +160,7 @@ export function SqShell({
       {drawer ? (
         <button
           type="button"
-          aria-label="Close menu"
+          aria-label={t.shell.closeMenu}
           onClick={() => setDrawer(false)}
           style={{
             position: "fixed",
@@ -168,7 +180,7 @@ export function SqShell({
       {/* Always rendered, often empty. Whether it takes a column is decided in
           CSS by whether it actually has anything in it, so a route with no
           rail needs no flag — it simply renders nothing into the slot. */}
-      <aside key={`${pathname}-rail`} className="sq-rail sq-main-enter" aria-label="Alongside">
+      <aside key={`${pathname}-rail`} className="sq-rail sq-main-enter" aria-label={t.nav.alongside}>
         {rail}
       </aside>
     </div>

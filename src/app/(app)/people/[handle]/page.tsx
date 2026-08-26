@@ -3,17 +3,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { SqActivityGrid } from "@/components/sq/activity-grid";
 import { SqSticker } from "@/components/sq/sticker";
 import { Avatar } from "@/components/sq/ui";
-import { accentInk, FIGURE_INKS, heat, terrainInk } from "@/lib/accents";
+import { accentInk, FIGURE_INKS, terrainInk } from "@/lib/accents";
 import { requireClient } from "@/lib/auth/guards";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { getPublicProfile } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
-const WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
-const SINCE = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric" });
-const NUMBER = new Intl.NumberFormat("en-GB");
 
 export async function generateMetadata({
   params,
@@ -36,7 +36,7 @@ export async function generateMetadata({
  * It is also the one screen in the product that is allowed to be *theirs*.
  * The rest of the app is one house style on one paper; here the account's
  * `accent` prints the band behind their name, the figures come in four
- * different inks, the year strip shows the months they actually walked, and
+ * different inks, a year of days shows how often they are actually here, and
  * the ground each quest crossed is a colour rather than another grey word. A
  * page about a person that looked like a table row was the thing to fix.
  *
@@ -52,22 +52,22 @@ export default async function PublicProfilePage({
   const user = await requireClient();
   const { handle } = await params;
 
-  const profile = await getPublicProfile(handle, user.id);
+  const locale = await getLocale(user.id);
+  const [profile, t] = await Promise.all([
+    getPublicProfile(handle, user.id, locale),
+    getT(user.id),
+  ]);
   if (!profile) notFound();
 
   const accent = accentInk(profile.accent);
   const walked = profile.months.reduce((sum, month) => sum + month.count, 0);
-  const busiest = profile.months.reduce(
-    (best, month) => (month.count > best.count ? month : best),
-    profile.months[0] ?? { count: 0, label: "" },
-  );
 
   const figures = profile.stats
     ? [
-        { k: "Logged", v: NUMBER.format(profile.stats.logged) },
-        { k: "Kilometres", v: NUMBER.format(Math.round(profile.stats.km)) },
-        { k: "Metres up", v: NUMBER.format(Math.round(profile.stats.up)) },
-        { k: "Regions", v: NUMBER.format(profile.stats.regions) },
+        { k: t.profile.logged, v: formatNumber(locale, profile.stats.logged) },
+        { k: t.profile.kilometres, v: formatNumber(locale, Math.round(profile.stats.km)) },
+        { k: t.profile.metresUp, v: formatNumber(locale, Math.round(profile.stats.up)) },
+        { k: t.profile.regions, v: formatNumber(locale, profile.stats.regions) },
       ]
     : [];
 
@@ -84,7 +84,7 @@ export default async function PublicProfilePage({
               {profile.country ? ` · ${profile.country}` : ""}
             </span>
             <span className="sq-mono" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
-              Walking since {SINCE.format(profile.joinedAt)}
+              {t.profile.since(formatDate(locale, profile.joinedAt, "monthYear"))}
             </span>
           </div>
 
@@ -106,11 +106,11 @@ export default async function PublicProfilePage({
           <div style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 150 }}>
             {profile.isSelf ? (
               <Link href="/settings/profile" className="sq-btn sq-btn-primary">
-                Edit your page
+                {t.profile.editYourPage}
               </Link>
             ) : (
               <Link href="/people?tab=groups" className="sq-btn sq-btn-ghost">
-                Walk together
+                {t.profile.walkTogether}
               </Link>
             )}
           </div>
@@ -142,36 +142,21 @@ export default async function PublicProfilePage({
         ) : null}
       </section>
 
-      {profile.months.length > 0 ? (
+      {profile.activityGrid ? (
         <article className="sq-card-flat" style={{ marginTop: 16, overflow: "hidden" }}>
           <div className="sq-section-head sq-rule-head">
-            <h2 className="sq-h2">The last twelve months</h2>
+            <h2 className="sq-h2">{t.profile.yearHeading}</h2>
             <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-              {walked === 0
-                ? "Nothing approved yet"
-                : busiest.count > 0
-                  ? `Busiest: ${busiest.label}`
-                  : `${walked} walked`}
+              {walked === 0 ? t.profile.nothingApproved : t.profile.walked(walked)}
             </span>
           </div>
-          <div
-            className="sq-year"
-            style={
-              { "--ink": accent.ink, "--wash": accent.wash, "--edge": accent.edge } as CSSProperties
-            }
-          >
-            {profile.months.map((month, index) => (
-              <div key={month.key} className="sq-year-month">
-                <div
-                  className="sq-year-cell"
-                  data-heat={heat(month.count)}
-                  style={{ ["--i" as string]: index }}
-                  title={`${month.label} — ${month.count} ${month.count === 1 ? "quest" : "quests"}`}
-                />
-                <span>{month.short}</span>
-              </div>
-            ))}
-          </div>
+          <SqActivityGrid
+            grid={profile.activityGrid}
+            accent={accent}
+            name={firstName(profile.name)}
+            locale={locale}
+            t={t}
+          />
         </article>
       ) : null}
 
@@ -180,7 +165,7 @@ export default async function PublicProfilePage({
           {profile.bio ? (
             <article className="sq-card-flat">
               <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
-                <h2 className="sq-h2">About</h2>
+                <h2 className="sq-h2">{t.profile.about}</h2>
               </div>
               <p
                 style={{
@@ -199,7 +184,7 @@ export default async function PublicProfilePage({
           {profile.socials.length > 0 ? (
             <article className="sq-card-flat">
               <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
-                <h2 className="sq-h2">Elsewhere</h2>
+                <h2 className="sq-h2">{t.profile.elsewhere}</h2>
               </div>
               <ul>
                 {profile.socials.map((social) => (
@@ -229,7 +214,7 @@ export default async function PublicProfilePage({
           {profile.stickers.length > 0 ? (
             <article className="sq-card-flat" style={{ overflow: "hidden" }}>
               <div className="sq-section-head sq-rule-head">
-                <h2 className="sq-h2">Earned</h2>
+                <h2 className="sq-h2">{t.profile.earnedHeading}</h2>
                 <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
                   {profile.stickers.length}
                 </span>
@@ -255,15 +240,15 @@ export default async function PublicProfilePage({
 
         <article className="sq-card" style={{ overflow: "hidden" }}>
           <div className="sq-section-head sq-rule-head">
-            <h2 className="sq-h2">What {firstName(profile.name)} has walked</h2>
+            <h2 className="sq-h2">{t.profile.walkedHeading(firstName(profile.name))}</h2>
             <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-              Approved only
+              {t.profile.approvedOnly}
             </span>
           </div>
 
           {profile.activities.length === 0 ? (
             <p style={{ padding: "18px 22px", fontSize: 13, color: "var(--ink-3)" }}>
-              Nothing approved yet. Only proof a reader has passed shows up here.
+              {t.profile.nothingHere}
             </p>
           ) : (
             <ul className="sq-stagger">
@@ -287,12 +272,12 @@ export default async function PublicProfilePage({
                       className="sq-mono"
                       style={{ fontSize: 10, letterSpacing: "0.06em", whiteSpace: "nowrap", color: "var(--ink-3)" }}
                     >
-                      {WHEN.format(activity.loggedAt)}
+                      {formatDate(locale, activity.loggedAt)}
                     </span>
                   </div>
                   <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.07em" }}>
                     {activity.location} · {activity.region}
-                    {activity.retreated ? " · retreat" : ""}
+                    {activity.retreated ? ` · ${t.profile.retreat}` : ""}
                   </span>
 
                   {activity.tags.length > 0 ? (

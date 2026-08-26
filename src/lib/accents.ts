@@ -58,21 +58,6 @@ export const FIGURE_INKS = [
 ] as const;
 
 /**
- * How busy a month was, as a step from 0–4.
- *
- * Capped rather than scaled to the person's own maximum: a strip that
- * normalised to each profile would print somebody's one-walk month as solid
- * black, and two profiles side by side would be lying about each other.
- */
-export function heat(count: number): 0 | 1 | 2 | 3 | 4 {
-  if (count <= 0) return 0;
-  if (count === 1) return 1;
-  if (count === 2) return 2;
-  if (count <= 4) return 3;
-  return 4;
-}
-
-/**
  * What the ground was, in colour.
  *
  * Bucketed by what a tag *is* rather than matched exactly, because the quest

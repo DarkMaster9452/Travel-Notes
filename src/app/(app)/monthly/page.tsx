@@ -8,13 +8,14 @@ import { slotFor, slotLabel } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { formatNumber, plural } from "@/lib/i18n/format";
+import { getLocale, getT } from "@/lib/i18n/server";
+import type { Locale, Messages } from "@/lib/i18n";
 import { scoreBreakdown } from "@/lib/leaderboard";
 import { loadFeaturedSlot } from "@/lib/quest/slot";
 
 export const metadata: Metadata = { title: "The monthly" };
 export const dynamic = "force-dynamic";
-
-const NUMBER = new Intl.NumberFormat("en-GB");
 
 /**
  * The monthly, in full.
@@ -29,23 +30,24 @@ export default async function MonthlyPage() {
   const now = new Date();
   const slot = slotFor("MONTHLY", now);
 
-  const state = await loadFeaturedSlot(user.id, "month", now);
+  const [state, t, locale] = await Promise.all([
+    loadFeaturedSlot(user.id, "month", now),
+    getT(user.id),
+    getLocale(user.id),
+  ]);
   const featured = state.featured;
 
   if (!featured) {
     return (
       <>
-        <PageHeader
-          kicker={`The big one · ${slotLabel(slot)}`}
-          title="No monthly is placed yet."
-        />
+        <PageHeader kicker={t.monthly.theBigOne(slotLabel(slot))} title={t.monthly.noMonthly} />
         <EmptyState
           glyph="peaks"
-          title="Nothing booked for this month"
-          body="A monthly is either booked by the desk or generated against your preferences. Widen your range in settings and it will find you one."
+          title={t.monthly.nothingBooked}
+          body={t.monthly.nothingBookedBody}
           action={
             <Link href="/settings/general" className="sq-btn sq-btn-ghost sq-btn-sm">
-              Open settings
+              {t.monthly.openSettings}
             </Link>
           }
         />
@@ -93,7 +95,7 @@ export default async function MonthlyPage() {
     points.push({
       lat: quest.parkingLat,
       lng: quest.parkingLng,
-      label: quest.parkingName ?? "Park here",
+      label: quest.parkingName ?? t.monthly.parkHere,
       kind: "start",
     });
   }
@@ -118,53 +120,109 @@ export default async function MonthlyPage() {
             </p>
           </div>
           <Tag tone={state.closed ? "plain" : "stamp"} small>
-            {state.closed ? "Window shut" : <>Closes in <SqCountdown to={state.closesAt.toISOString()} /></>}
+            {state.closed ? (
+              t.questCard.windowShut
+            ) : (
+              <>
+                {t.questCard.closesIn} <SqCountdown to={state.closesAt.toISOString()} />
+              </>
+            )}
           </Tag>
         </div>
       </header>
 
+      {/* One grid, two columns that grow together.
+
+          This used to be two independent grids stacked, both with
+          `alignItems: start`. The right column of the first was far taller
+          than the left, so the difference sat as a dead band above "The
+          approach". Column-pairs cannot leave a hole; two stacked grids
+          always can. */}
       <section className="sq-grid sq-grid-fit" style={{ alignItems: "start" }}>
-        <article className="sq-card" style={{ overflow: "hidden" }}>
-          <SqMap points={points} height={300} style={{ borderRadius: 0, border: 0 }} />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))",
-              gap: 1,
-              background: "var(--line-2)",
-            }}
-          >
-            {[
-              { k: "Distance", v: `${quest.distance.toFixed(1)} km` },
-              { k: "Ascent", v: `${NUMBER.format(quest.elevationGain)} m` },
-              { k: "Moving", v: hours(quest.duration) },
-              { k: "Grade", v: title(quest.difficulty) },
-            ].map((fact) => (
-              <div key={fact.k} style={{ background: "var(--paper-2)", padding: "13px 15px" }}>
-                <p className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
-                  {fact.k}
-                </p>
-                <b
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <article className="sq-card" style={{ overflow: "hidden" }}>
+            <SqMap points={points} height={300} style={{ borderRadius: 0, border: 0 }} />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))",
+                gap: 1,
+                background: "var(--line-2)",
+              }}
+            >
+              {[
+                { k: t.questCard.distance, v: `${quest.distance.toFixed(1)} km` },
+                { k: t.questCard.ascent, v: `${formatNumber(locale, quest.elevationGain)} m` },
+                { k: t.monthly.window, v: hours(quest.duration) },
+                { k: t.questCard.grade, v: title(quest.difficulty) },
+              ].map((fact) => (
+                <div key={fact.k} style={{ background: "var(--paper-2)", padding: "13px 15px" }}>
+                  <p className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
+                    {fact.k}
+                  </p>
+                  <b
+                    style={{
+                      display: "block",
+                      marginTop: 4,
+                      fontFamily: "var(--font-heading)",
+                      fontWeight: 600,
+                      fontSize: 19,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {fact.v}
+                  </b>
+                </div>
+              ))}
+            </div>
+          </article>
+
+
+          <article className="sq-card-flat">
+            <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
+              <h2 className="sq-h2">{t.monthly.approach}</h2>
+            </div>
+            <ul>
+              {approachLegs(quest, t, locale).map((leg) => (
+                <li
+                  key={leg.place}
                   style={{
-                    display: "block",
-                    marginTop: 4,
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 600,
-                    fontSize: 19,
-                    whiteSpace: "nowrap",
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0,1fr) auto",
+                    gap: 14,
+                    alignItems: "baseline",
+                    padding: "13px 22px",
+                    borderTop: "1px solid var(--line-2)",
                   }}
                 >
-                  {fact.v}
-                </b>
-              </div>
-            ))}
-          </div>
-        </article>
+                  <span
+                    className="sq-mono"
+                    style={{ fontSize: 10, letterSpacing: "0.07em", color: "var(--ink-3)" }}
+                  >
+                    {leg.at}
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <b style={{ display: "block", fontSize: 14, fontWeight: 600 }}>{leg.place}</b>
+                    <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ink-3)" }}>
+                      {leg.what}
+                    </span>
+                  </span>
+                  <span
+                    className="sq-mono"
+                    style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-2)" }}
+                  >
+                    {leg.up}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <article className="sq-card sq-pad-sm">
             <h2 className="sq-h2" style={{ fontSize: 20, marginBottom: 12 }}>
-              The brief
+              {t.monthly.brief}
             </h2>
             <p
               style={{
@@ -178,7 +236,7 @@ export default async function MonthlyPage() {
               {quest.objective}
             </p>
             <ul>
-              {briefLines(quest).map((line) => (
+              {briefLines(quest, t, locale).map((line) => (
                 <li
                   key={line.k}
                   style={{
@@ -210,175 +268,44 @@ export default async function MonthlyPage() {
           </article>
 
           <article className="sq-slab" style={{ padding: "22px 24px" }}>
-            <span className="sq-kicker">Window</span>
+            <span className="sq-kicker">{t.monthly.window}</span>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 14, margin: "12px 0 14px" }}>
               <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 36, lineHeight: 0.9 }}>
                 {state.closed ? "Shut" : <SqCountdown to={state.closesAt.toISOString()} />}
               </b>
               <span style={{ fontSize: 13, paddingBottom: 5, color: "var(--forest-ink-3)" }}>
-                {state.closed ? "for this month" : "left to file"}
+                {state.closed ? t.monthly.forThisMonth : t.monthly.leftToFile}
               </span>
             </div>
-            <div
-              style={{
-                height: 6,
-                borderRadius: 3,
-                background: "rgba(255,255,255,0.14)",
-                overflow: "hidden",
-                marginBottom: 10,
-              }}
-            >
-              <span
-                style={{ display: "block", height: "100%", width: `${gone}%`, background: "var(--signal-2)" }}
-              />
+            <div className="sq-slab-bar">
+              <span style={{ width: `${gone}%` }} />
             </div>
             <p style={{ fontSize: 12.5, color: "var(--forest-ink-3)", marginBottom: 18 }}>
-              {daysGone} of {daysTotal} days gone · {filed} {filed === 1 ? "person has" : "people have"} filed ·{" "}
-              {approved} approved so far
+              {t.monthly.daysGone(daysGone, daysTotal)} ·{" "}
+              {t.monthly.haveFiled(plural(locale, filed, t.common.people))} ·{" "}
+              {t.monthly.approvedSoFar(approved)}
             </p>
             <Link
               href={`/quests/${quest.id}/proof`}
               className="sq-btn sq-btn-block"
               style={{ background: "var(--signal)", color: "#fff" }}
             >
-              {filedAlready ? "Edit your proof" : "File your proof"}
+              {filedAlready ? t.monthly.editProof : t.monthly.fileProof}
             </Link>
           </article>
 
           <article className="sq-tinted" style={{ padding: "20px 22px" }}>
             <h3 className="sq-h2" style={{ fontSize: 17, marginBottom: 10 }}>
-              What counts as proof
+              {t.monthly.whatCounts}
             </h3>
             <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
-              A written account, at least one photo, and your figures if a watch recorded them. A
-              retreat filed honestly scores half — turning back and saying so is worth more than
-              nothing.
+              {t.monthly.whatCountsBody}
             </p>
           </article>
-        </div>
-      </section>
 
-      {expertStats ? (
-        <section className="sq-slab" style={{ marginTop: 16, padding: "22px 26px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              justifyContent: "space-between",
-              gap: 14,
-              marginBottom: 18,
-              flexWrap: "wrap",
-            }}
-          >
-            <h2 className="sq-h2" style={{ fontSize: 19 }}>
-              Expert figures
-            </h2>
-            <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
-              On because you turned them on in Settings
-            </span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
-            {[
-              {
-                k: "Metres per kilometre",
-                v: String(Math.round(quest.elevationGain / Math.max(1, quest.distance))),
-                note: "How steep the day is on average, before any single climb.",
-              },
-              {
-                k: "Asked pace",
-                v: `${(quest.distance / Math.max(1, quest.duration / 60)).toFixed(1)} km/h`,
-                note: "What the moving-time estimate assumes you keep up.",
-              },
-              {
-                k: "Travel from home",
-                v: quest.travelTime ? `${quest.travelTime} min` : "—",
-                note: "From the country you measure from, not from an address.",
-              },
-              {
-                k: "Filed so far",
-                v: String(filed),
-                note: `${approved} of them have been approved.`,
-              },
-              {
-                k: "Approval rate",
-                v: filed === 0 ? "—" : `${Math.round((approved / filed) * 100)}%`,
-                note: "Of the proof a reader has already reached.",
-              },
-              {
-                k: "Worth, approved",
-                v: `${total} pts`,
-                note: "Grade, distance, ascent and the monthly bonus.",
-              },
-            ].map((figure) => (
-              <div key={figure.k} style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "14px 16px" }}>
-                <p className="sq-kicker-sm" style={{ fontSize: 9.5, marginBottom: 7 }}>
-                  {figure.k}
-                </p>
-                <b
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 600,
-                    fontSize: 22,
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {figure.v}
-                </b>
-                <p style={{ marginTop: 8, fontSize: 11.5, lineHeight: 1.4, color: "var(--forest-ink-3)" }}>
-                  {figure.note}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="sq-grid sq-grid-fit-md" style={{ marginTop: 16, alignItems: "start" }}>
-        <article className="sq-card-flat">
-          <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
-            <h2 className="sq-h2">The approach</h2>
-          </div>
-          <ul>
-            {approachLegs(quest).map((leg) => (
-              <li
-                key={leg.place}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto minmax(0,1fr) auto",
-                  gap: 14,
-                  alignItems: "baseline",
-                  padding: "13px 22px",
-                  borderTop: "1px solid var(--line-2)",
-                }}
-              >
-                <span
-                  className="sq-mono"
-                  style={{ fontSize: 10, letterSpacing: "0.07em", color: "var(--ink-3)" }}
-                >
-                  {leg.at}
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <b style={{ display: "block", fontSize: 14, fontWeight: 600 }}>{leg.place}</b>
-                  <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ink-3)" }}>
-                    {leg.what}
-                  </span>
-                </span>
-                <span
-                  className="sq-mono"
-                  style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-2)" }}
-                >
-                  {leg.up}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <article className="sq-card-flat">
             <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
-              <h2 className="sq-h2">How it scores</h2>
+              <h2 className="sq-h2">{t.monthly.howItScores}</h2>
             </div>
             <ul>
               {lines.map((line) => (
@@ -413,7 +340,7 @@ export default async function MonthlyPage() {
                   color: "var(--signal)",
                 }}
               >
-                <span>If it is approved</span>
+                <span>{t.monthly.ifApproved}</span>
                 <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12.5 }}>
                   {total} points
                 </b>
@@ -423,12 +350,11 @@ export default async function MonthlyPage() {
 
           <article className="sq-tinted" style={{ padding: "20px 22px" }}>
             <h3 className="sq-h2" style={{ fontSize: 17, marginBottom: 12 }}>
-              Conditions, as filed by others
+              {t.monthly.conditions}
             </h3>
             {conditions.length === 0 ? (
               <p style={{ fontSize: 13, color: "var(--ink-3)" }}>
-                Nobody has filed approved proof of this one yet. Yours would be the first word on
-                the ground.
+                {t.monthly.conditionsEmpty}
               </p>
             ) : (
               <ul>
@@ -465,6 +391,82 @@ export default async function MonthlyPage() {
           </article>
         </div>
       </section>
+
+      {expertStats ? (
+        <section className="sq-slab" style={{ marginTop: 16, padding: "22px 26px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              gap: 14,
+              marginBottom: 18,
+              flexWrap: "wrap",
+            }}
+          >
+            <h2 className="sq-h2" style={{ fontSize: 19 }}>
+              {t.monthly.expertFigures}
+            </h2>
+            <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
+              {t.monthly.expertNote}
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
+            {[
+              {
+                k: t.monthly.expert.metresPerKm,
+                v: String(Math.round(quest.elevationGain / Math.max(1, quest.distance))),
+                note: t.monthly.expert.metresPerKmNote,
+              },
+              {
+                k: t.monthly.expert.askedPace,
+                v: `${(quest.distance / Math.max(1, quest.duration / 60)).toFixed(1)} km/h`,
+                note: t.monthly.expert.askedPaceNote,
+              },
+              {
+                k: t.monthly.expert.travel,
+                v: quest.travelTime ? `${quest.travelTime} min` : "—",
+                note: t.monthly.expert.travelNote,
+              },
+              {
+                k: t.monthly.expert.filedSoFar,
+                v: String(filed),
+                note: t.monthly.expert.filedSoFarNote(approved),
+              },
+              {
+                k: t.monthly.expert.approvalRate,
+                v: filed === 0 ? "—" : `${Math.round((approved / filed) * 100)}%`,
+                note: t.monthly.expert.approvalRateNote,
+              },
+              {
+                k: t.monthly.expert.worth,
+                v: `${total} pts`,
+                note: t.monthly.expert.worthNote,
+              },
+            ].map((figure) => (
+              <div key={figure.k} style={{ background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "14px 16px" }}>
+                <p className="sq-kicker-sm" style={{ fontSize: 9.5, marginBottom: 7 }}>
+                  {figure.k}
+                </p>
+                <b
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontWeight: 600,
+                    fontSize: 22,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {figure.v}
+                </b>
+                <p style={{ marginTop: 8, fontSize: 11.5, lineHeight: 1.4, color: "var(--forest-ink-3)" }}>
+                  {figure.note}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }
@@ -496,20 +498,24 @@ function briefLines(quest: {
   terrain: string[];
   features: string[];
   mood: string | null;
-}): { k: string; text: string }[] {
+}, t: Messages, locale: Locale): { k: string; text: string }[] {
   const lines: { k: string; text: string }[] = [
     {
-      k: "Asked",
-      text: `${quest.distance.toFixed(1)} km, ${NUMBER.format(quest.elevationGain)} m of ascent, about ${hours(quest.duration)} moving.`,
+      k: t.monthly.asked,
+      text: t.monthly.askedLine(
+        quest.distance.toFixed(1),
+        formatNumber(locale, quest.elevationGain),
+        hours(quest.duration),
+      ),
     },
   ];
   if (quest.terrain.length > 0) {
-    lines.push({ k: "Ground", text: quest.terrain.join(", ") });
+    lines.push({ k: t.monthly.ground, text: quest.terrain.join(", ") });
   }
   if (quest.features.length > 0) {
-    lines.push({ k: "Look for", text: quest.features.join(", ") });
+    lines.push({ k: t.monthly.lookFor, text: quest.features.join(", ") });
   }
-  if (quest.mood) lines.push({ k: "Mood", text: quest.mood });
+  if (quest.mood) lines.push({ k: t.monthly.mood, text: quest.mood });
   return lines;
 }
 
@@ -531,31 +537,31 @@ function approachLegs(quest: {
   distance: number;
   elevationGain: number;
   duration: number;
-}): { at: string; place: string; what: string; up: string }[] {
+}, t: Messages, locale: Locale): { at: string; place: string; what: string; up: string }[] {
   const legs: { at: string; place: string; what: string; up: string }[] = [];
 
   if (quest.parkingName) {
     legs.push({
       at: "00:00",
       place: quest.parkingName,
-      what: quest.parkingNote ?? "Leave the car here.",
+      what: quest.parkingNote ?? t.monthly.parkHereNote,
       up: "0 m",
     });
   }
   if (quest.transitNote) {
-    legs.push({ at: "—", place: "Without a car", what: quest.transitNote, up: "" });
+    legs.push({ at: "—", place: t.monthly.withoutCar, what: quest.transitNote, up: "" });
   }
   legs.push({
-    at: quest.approachTime ? `+${quest.approachTime}m` : "Start",
+    at: quest.approachTime ? `+${quest.approachTime}m` : t.monthly.start,
     place: quest.location,
-    what: "Where the route proper begins.",
+    what: t.monthly.startNote,
     up: "",
   });
   legs.push({
     at: hours(quest.duration),
     place: quest.title,
-    what: `${quest.distance.toFixed(1)} km from the start.`,
-    up: `${NUMBER.format(quest.elevationGain)} m ↑`,
+    what: t.monthly.fromStart(quest.distance.toFixed(1)),
+    up: `${formatNumber(locale, quest.elevationGain)} m ↑`,
   });
 
   return legs;

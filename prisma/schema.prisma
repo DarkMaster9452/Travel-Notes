@@ -95,6 +95,8 @@ model User {
   shipping      ShippingAddress?
   notifications NotificationSettings?
   nudges        Nudge[]
+  despatched    StickerDespatch[]
+  activity      ActivityDay[]
   auditEntries  AdminAudit[]           @relation("AuditActor")
   invitesSent   StaffInvite[]          @relation("InviteAuthor")
 
@@ -553,6 +555,11 @@ model Profile {
   showCountry    Boolean @default(true) @map("show_country")
   showActivities Boolean @default(true) @map("show_activities")
   showStickers   Boolean @default(true) @map("show_stickers")
+  /// The year grid. Its own switch rather than riding on `showActivities`,
+  /// because it describes time spent here rather than ground covered — a
+  /// different thing to be public about, and some people will want one
+  /// without the other.
+  showActivityGrid Boolean @default(true) @map("show_activity_grid")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -877,6 +884,65 @@ model Nudge {
   @@unique([userId, kind])
   @@index([userId, dueAt])
   @@map("nudges")
+}
+
+/// Which printed stickers have actually gone in an envelope.
+///
+/// Stickers are derived, so there is no row whose existence means "earned" —
+/// and that was fine until something had to be posted. Without a log the
+/// despatch job cannot tell a sticker it has already sent from one it has not,
+/// and the promise of "two in each envelope" has no way of being kept: the job
+/// would either send the same two every month or send none, which is what it
+/// did.
+///
+/// One row per account per sticker, written the moment it is put in a
+/// despatch list. Unique on the pair, so a job that runs twice on the 2nd
+/// posts nothing twice.
+model StickerDespatch {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
+  /// The achievement id, matching `lib/achievements`. Ids there are frozen
+  /// precisely so this column keeps meaning something.
+  achievementId String @map("achievement_id")
+
+  postedAt DateTime @default(now()) @map("posted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId, postedAt])
+  @@map("sticker_despatches")
+}
+
+/// One row per account per day something happened.
+///
+/// The public profile draws a year of these as a grid, so this is the record
+/// behind "how much somebody is around". Deliberately a *count per day* rather
+/// than a row per event: the grid only ever asks how busy a day was, a year of
+/// days is 365 rows instead of thousands, and nothing here can be worked
+/// backwards into a timeline of exactly what somebody did and when.
+///
+/// Written by `lib/activity`, which is fire-and-forget — a failed write must
+/// never roll back the thing the person actually did.
+model ActivityDay {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
+  /// The UTC calendar day, at midnight. UTC throughout, matching the rest of
+  /// the reporting, so two profiles side by side are comparable.
+  day DateTime @db.Date
+
+  count Int @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([userId, day])
+  @@map("activity_days")
 }
 
 enum NudgeKind {

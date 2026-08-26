@@ -5,12 +5,13 @@ import { notFound } from "next/navigation";
 import { SqMap, type MapPoint } from "@/components/sq/map";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
+import { formatNumber } from "@/lib/i18n/format";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { db } from "@/lib/db";
 import { scoreBreakdown } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
-const NUMBER = new Intl.NumberFormat("en-GB");
 
 export async function generateMetadata({
   params,
@@ -43,12 +44,14 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
 
   if (!quest || (!quest.published && !quest.isShowcase)) notFound();
 
-  const [submission, walked] = await Promise.all([
+  const [submission, walked, t, locale] = await Promise.all([
     db.submission.findUnique({
       where: { userId_questId: { userId: user.id, questId: quest.id } },
       select: { status: true, reviewNote: true, createdAt: true },
     }),
     db.submission.count({ where: { questId: quest.id, status: "APPROVED" } }),
+    getT(user.id),
+    getLocale(user.id),
   ]);
 
   const booking = quest.schedules[0] ?? null;
@@ -67,7 +70,7 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
     points.push({
       lat: quest.parkingLat,
       lng: quest.parkingLng,
-      label: quest.parkingName ?? "Park here",
+      label: quest.parkingName ?? t.questPage.parkHere,
       kind: "start",
     });
   }
@@ -82,7 +85,7 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
           <div style={{ minWidth: 0 }}>
             <span className="sq-kicker" style={{ display: "block", marginBottom: 10 }}>
               {quest.number ? `Quest № ${String(quest.number).padStart(4, "0")} · ` : ""}
-              {quest.category ?? "From the catalogue"}
+              {quest.category ?? t.questPage.fromCatalogue}
             </span>
             <h1 className="sq-h1" style={{ fontSize: 40, maxWidth: "22ch", marginBottom: 10 }}>
               {quest.title}
@@ -103,8 +106,8 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
                 {submission.status === "APPROVED"
                   ? "Approved"
                   : submission.status === "REJECTED"
-                    ? "Sent back"
-                    : "Waiting on a reader"}
+                    ? t.questPage.sentBack
+                    : t.questPage.waiting}
               </Tag>
             ) : null}
           </div>
@@ -124,9 +127,9 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
           >
             {[
               { k: "Distance", v: `${quest.distance.toFixed(1)} km` },
-              { k: "Ascent", v: `${NUMBER.format(quest.elevationGain)} m` },
+              { k: "Ascent", v: `${formatNumber(locale, quest.elevationGain)} m` },
               { k: "Moving", v: hours(quest.duration) },
-              { k: "Walked by", v: String(walked) },
+              { k: t.questPage.walkedBy, v: String(walked) },
             ].map((fact) => (
               <div key={fact.k} style={{ background: "var(--paper-2)", padding: "13px 15px" }}>
                 <p className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
@@ -159,7 +162,7 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
             </p>
             <ul style={{ marginTop: 14 }}>
               {[
-                { k: "Objective", text: quest.objective },
+                { k: t.questPage.objective, text: quest.objective },
                 ...(quest.bonus ? [{ k: "Bonus", text: quest.bonus }] : []),
                 ...(quest.safetyNotes ? [{ k: "Safety", text: quest.safetyNotes }] : []),
                 ...(quest.terrain.length > 0 ? [{ k: "Ground", text: quest.terrain.join(", ") }] : []),
@@ -240,7 +243,7 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
           </article>
 
           <Link href={`/quests/${quest.id}/proof`} className="sq-btn sq-btn-primary sq-btn-block">
-            {submission ? "Edit your proof" : "File proof for this one"}
+            {submission ? t.questPage.editProof : t.questPage.fileProof}
           </Link>
         </div>
       </section>

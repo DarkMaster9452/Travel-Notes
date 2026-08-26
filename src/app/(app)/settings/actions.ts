@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { touch } from "@/lib/activity";
 import { requireClient } from "@/lib/auth/guards";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
@@ -19,7 +20,7 @@ export type SettingsResult = { ok: boolean; message?: string };
 
 const displaySchema = z.object({
   units: z.enum(["METRIC", "IMPERIAL"]),
-  language: z.enum(["en", "sk"]),
+  language: z.enum(["en", "sk", "de"]),
   expertStats: z.coerce.boolean().optional(),
 });
 
@@ -50,8 +51,9 @@ export async function saveDisplayAction(formData: FormData): Promise<SettingsRes
     create: { userId: user.id, ...values },
   });
 
-  revalidatePath("/settings/units");
-  revalidatePath("/settings/general");
+  // Every member route, not just the two that own the form. A language change
+  // invalidates the words on every cached page in the app.
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -93,6 +95,8 @@ export async function saveAddressAction(formData: FormData): Promise<SettingsRes
   // the act of opening the form. A row with only a country in it leaves the
   // notice standing, which is correct: there is still nowhere to send anything.
   if (isPostable(values)) await completeNudge(user.id, "SHIPPING_ADDRESS");
+
+  void touch(user.id);
 
   revalidatePath("/settings/address");
   revalidatePath("/settings/billing");
