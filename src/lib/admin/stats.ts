@@ -74,7 +74,7 @@ export async function getAdminOverview() {
     quests,
   ] = await Promise.all([
     db.user.count(),
-    db.user.count({ where: { role: "ADMIN" } }),
+    db.user.count({ where: { role: { in: ["READER", "WRITER", "ADMIN", "OWNER"] } } }),
     db.subscription.count({ where: { status: { in: [...LIVE_STATUSES] } } }),
     db.questHistory.count(),
     db.questHistory.count({ where: { completed: true } }),

@@ -3,31 +3,51 @@ import type { Metadata } from "next";
 import { SqSegmentedLinks } from "@/components/sq/controls";
 import { SqSlotEditor, type QuestOption, type SlotRow } from "@/components/sq/slot-editor";
 import { PageHeader, Tag } from "@/components/sq/ui";
-import { slotDatesLabel, slotLabel, slotOpensLabel, slotRange, slotState } from "@/lib/admin/schedule";
-import { requireAdmin } from "@/lib/auth/guards";
+import {
+  slotDatesLabel,
+  slotLabel,
+  slotOpensLabel,
+  slotRange,
+  slotState,
+} from "@/lib/admin/schedule";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Schedule · Admin" };
 export const dynamic = "force-dynamic";
 
+const OPENED = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+
+const AUDIENCE_LABEL: Record<string, string> = {
+  FREE: "Everyone",
+  EXPLORER: "Explorer and up",
+  ULTRA: "Ultra only",
+};
+
 /**
  * The calendar.
  *
- * The cadence is stated on the landing page and this screen obeys it rather
- * than re-opening it: the weekly drops Monday at 06:00 and the monthly on the
- * 1st, and there is nowhere here to type an hour because there is no hour to
- * choose. Monthly leads, because the monthly is the headline.
+ * A board rather than a list: a schedule is a shape you read at a glance —
+ * where the gaps are, which one is running — and a column of rows makes every
+ * slot look equally urgent. The open slot is the only one in stamp ink,
+ * because it is the only one anybody is walking right now.
+ *
+ * The cadence itself is not editable anywhere. The weekly drops Monday at
+ * 06:00 and the monthly on the 1st, so what the desk picks is *which* quest
+ * goes in a slot that already exists — and once a slot has opened, not even
+ * that: an opened slot is read-only, because people are already out on it.
  */
 export default async function AdminSchedulePage({
   searchParams,
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
-  await requireAdmin();
+  await requireRank("WRITER");
   const params = await searchParams;
   const period = params.period === "WEEKLY" ? "WEEKLY" : "MONTHLY";
 
-  const range = slotRange(period);
+  const now = new Date();
+  const range = slotRange(period, now, period === "MONTHLY" ? { back: 8, forward: 5 } : { back: 4, forward: 8 });
 
   const [booked, quests] = await Promise.all([
     db.questSchedule.findMany({
@@ -56,7 +76,8 @@ export default async function AdminSchedulePage({
       label: slotLabel(slot),
       opensLabel: slotOpensLabel(slot),
       dates: slotDatesLabel(slot),
-      state: slotState(slot),
+      state: slotState(slot, now),
+      openAt: slot.openAt.toISOString(),
       booking: row
         ? {
             id: row.id,
@@ -75,15 +96,25 @@ export default async function AdminSchedulePage({
     where: `${quest.location} · ${quest.region}`,
   }));
 
-  const empty = slots.filter((slot) => slot.state !== "past" && !slot.booking).length;
+  const openable = slots.filter((slot) => slot.state === "future");
+  const empty = openable.filter((slot) => !slot.booking).length;
+  const first = slots[0];
+  const last = slots[slots.length - 1];
 
   return (
     <>
       <PageHeader
-        kicker="The cadence"
+        kicker="The calendar"
         title="Schedule"
-        lede="One quest per slot. The weekly opens Monday at 06:00, the monthly on the 1st — the instants are derived from the slot, never typed."
-        right={
+        lede={
+          period === "MONTHLY"
+            ? "The monthly opens on the 1st at 06:00. You pick which slot and which quest — the times aren't yours to change."
+            : "The weekly drops Monday at 06:00. You pick which slot and which quest — the times aren't yours to change."
+        }
+      />
+
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
           <SqSegmentedLinks
             label="Cadence"
             active={period}
@@ -92,75 +123,153 @@ export default async function AdminSchedulePage({
               { key: "WEEKLY", label: "Weekly", href: "/admin/schedule?period=WEEKLY" },
             ]}
           />
-        }
-      />
-
-      <section className="sq-card" style={{ overflow: "hidden" }}>
-        <div className="sq-section-head sq-rule-head">
-          <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            {period === "MONTHLY" ? "Months" : "Weeks"}
-          </h2>
-          <span className="sq-kicker-sm" style={{ fontSize: 10.5, letterSpacing: "0.08em" }}>
-            {empty === 0 ? "Every slot ahead is booked" : `${empty} slots ahead still empty`}
-          </span>
+          <Tag tone={empty > 0 ? "stamp" : "green"} small>
+            {empty === 0 ? "Every slot ahead is booked" : `${empty} still empty`} ·{" "}
+            {first?.label} → {last?.label}
+          </Tag>
         </div>
 
-        <ul className="sq-stagger">
+        <div className="sq-slot-grid sq-stagger">
           {slots.map((slot, index) => (
-            <li
-              key={slot.key}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "auto minmax(0,1fr) auto auto auto",
-                gap: 14,
-                alignItems: "center",
-                padding: "13px 22px",
-                borderTop: "1px solid var(--line-2)",
-                background: slot.state === "live" ? "var(--paper-2)" : "transparent",
-                opacity: slot.state === "past" ? 0.62 : 1,
-                ["--i" as string]: index,
-              }}
-            >
-              <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>
-                {slot.key}
-              </span>
-
-              <span style={{ minWidth: 0 }}>
-                <b style={{ display: "block", fontSize: 15, fontWeight: 600 }}>
-                  {slot.booking ? slot.booking.title : `${slot.label} — nothing booked`}
-                </b>
-                <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-                  {slot.booking ? slot.booking.where : slot.dates} · opens {slot.opensLabel}
-                </span>
-              </span>
-
-              {slot.booking && slot.booking.audience !== "FREE" ? (
-                <Tag small>{slot.booking.audience}</Tag>
-              ) : (
-                <span />
-              )}
-
-              <Tag tone={slot.state === "live" ? "stamp" : "plain"} small>
-                {slot.state === "live" ? "OPEN" : slot.state === "past" ? "CLOSED" : "SEALED"}
-              </Tag>
-
-              <SqSlotEditor period={period} slot={slot} quests={options} />
-            </li>
+            <SlotCard key={slot.key} slot={slot} quests={options} period={period} index={index} />
           ))}
-        </ul>
+        </div>
       </section>
 
-      <section className="sq-tinted sq-pad-sm" style={{ marginTop: 16 }}>
-        <h2 className="sq-h2" style={{ fontSize: 19, marginBottom: 10 }}>
-          What a slot means
-        </h2>
-        <ul style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13.5, lineHeight: 1.55 }}>
-          <li>A booked slot is the same quest for everybody. An empty one is generated per account.</li>
-          <li>A slot aimed above somebody&rsquo;s plan is skipped for them, and the generator fills the gap.</li>
-          <li>Proof filed against a slot is stamped at filing time and keeps that stamp for good.</li>
-          <li>Clearing a slot after it has opened does not un-stamp proof already filed against it.</li>
-        </ul>
+      <section className="sq-grid sq-grid-fit-md" style={{ marginTop: 16, alignItems: "start" }}>
+        <article className="sq-tinted sq-pad-sm">
+          <h2 className="sq-h2" style={{ fontSize: 19, marginBottom: 14 }}>
+            The cadence
+          </h2>
+          <ul>
+            {[
+              { k: "Mon", text: "The weekly drops at 06:00." },
+              { k: "Sun", text: "The weekly log closes at 23:59." },
+              { k: "1st", text: "The monthly opens at 06:00." },
+              { k: "Last", text: "The monthly log closes with the month." },
+            ].map((line) => (
+              <li
+                key={line.k}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "54px minmax(0,1fr)",
+                  gap: 14,
+                  alignItems: "baseline",
+                  padding: "11px 0",
+                  borderTop: "1px solid var(--line-2)",
+                  fontSize: 13.5,
+                }}
+              >
+                <span
+                  className="sq-mono"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--moss)",
+                  }}
+                >
+                  {line.k}
+                </span>
+                <span>{line.text}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article className="sq-card sq-pad-sm">
+          <h2 className="sq-h2" style={{ fontSize: 19, marginBottom: 10 }}>
+            A slot that has opened is read-only
+          </h2>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)", marginBottom: 12 }}>
+            One quest per slot, and only a published quest can be booked into one. Swapping the
+            quest under people who are already walking it is not an edit, it is a different quest —
+            so once a slot opens, the booking is fixed.
+          </p>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
+            An empty slot is not a gap: it is generated per account instead, against that member&rsquo;s
+            own preferences. Booking one is how the whole product does the same quest at once.
+          </p>
+        </article>
       </section>
     </>
+  );
+}
+
+function SlotCard({
+  slot,
+  quests,
+  period,
+  index,
+}: {
+  slot: SlotRow;
+  quests: QuestOption[];
+  period: "WEEKLY" | "MONTHLY";
+  index: number;
+}) {
+  const live = slot.state === "live";
+  const past = slot.state === "past";
+  const editable = slot.state === "future";
+
+  const state = live ? "OPEN" : past ? "CLOSED" : slot.booking ? "BOOKED" : "EMPTY";
+
+  return (
+    <article
+      className="sq-slot-card"
+      data-live={live ? "1" : "0"}
+      data-past={past ? "1" : "0"}
+      style={{ ["--i" as string]: index }}
+    >
+      <div className="sq-section-head" style={{ marginBottom: 10 }}>
+        <h3 style={{ fontSize: 17 }}>{slot.label}</h3>
+        <span
+          className="sq-mono"
+          style={{
+            fontSize: 9.5,
+            letterSpacing: "0.08em",
+            color: live ? "var(--signal)" : "var(--ink-3)",
+          }}
+        >
+          {state}
+        </span>
+      </div>
+
+      <p className="sq-kicker-sm" style={{ fontSize: 9.5, marginBottom: 12 }}>
+        {past || live ? "Opened" : "Opens"} {OPENED.format(new Date(slot.openAt))} · {slot.dates}
+      </p>
+
+      {slot.booking ? (
+        <>
+          <b style={{ display: "block", fontSize: 14.5, lineHeight: 1.3, fontWeight: 600 }}>
+            {slot.booking.title}
+          </b>
+          <span style={{ display: "block", marginTop: 4, fontSize: 12.5, color: "var(--ink-3)" }}>
+            {slot.booking.where}
+          </span>
+        </>
+      ) : (
+        <>
+          <b style={{ display: "block", fontSize: 14.5, lineHeight: 1.3, fontWeight: 600, color: "var(--ink-2)" }}>
+            Nothing booked
+          </b>
+          <span style={{ display: "block", marginTop: 4, fontSize: 12.5, color: "var(--ink-3)" }}>
+            {editable ? "Generated per account until one is" : "Generated per account"}
+          </span>
+        </>
+      )}
+
+      <div className="sq-slot-foot">
+        <span className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
+          {slot.booking ? AUDIENCE_LABEL[slot.booking.audience] ?? slot.booking.audience : "—"}
+        </span>
+        {editable ? (
+          <SqSlotEditor period={period} slot={slot} quests={quests} />
+        ) : (
+          <span className="sq-mono" style={{ fontSize: 9.5, color: "var(--ink-3)" }}>
+            read-only
+          </span>
+        )}
+      </div>
+    </article>
   );
 }

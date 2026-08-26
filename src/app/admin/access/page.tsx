@@ -4,9 +4,15 @@ import Link from "next/link";
 import { SqStaffControls } from "@/components/sq/staff-controls";
 import { Glyph } from "@/components/sq/icons";
 import { Avatar, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
-import { PANEL_TABS, canOpen } from "@/lib/admin/access";
+import {
+  canOpen,
+  PANEL_TABS,
+  ROLE_LABEL,
+  STAFF_ROLES,
+  type StaffRole,
+} from "@/lib/admin/access";
 import { getAuditLog } from "@/lib/admin/audit";
-import { requireOwner } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Panel access · Admin" };
@@ -29,16 +35,19 @@ const WHEN = new Intl.DateTimeFormat("en-GB", {
  * guard reads, so the matrix on this page cannot drift from what is enforced.
  */
 export default async function PanelAccessPage() {
-  const owner = await requireOwner();
+  // Readable by an admin — knowing who holds a key is part of running the
+  // desk. Acting on one is the owner's, and every control below says which.
+  const me = await requireRank("ADMIN");
+  const isOwner = me.role === "OWNER";
 
   const [staff, sessions, log] = await Promise.all([
     db.user.findMany({
-      where: { role: { in: ["ADMIN", "OWNER"] } },
-      orderBy: [{ role: "asc" }, { name: "asc" }],
+      where: { role: { in: [...STAFF_ROLES] } },
+      orderBy: [{ role: "desc" }, { name: "asc" }],
       select: { id: true, name: true, email: true, role: true, createdAt: true },
     }),
     db.session.findMany({
-      where: { expiresAt: { gt: new Date() }, user: { role: { in: ["ADMIN", "OWNER"] } } },
+      where: { expiresAt: { gt: new Date() }, user: { role: { in: [...STAFF_ROLES] } } },
       orderBy: { createdAt: "desc" },
       take: 20,
       select: {
@@ -58,7 +67,11 @@ export default async function PanelAccessPage() {
       <PageHeader
         kicker="Keys to the panel"
         title="Panel access"
-        lede="Which tabs each role can open, which sessions are live right now, and what has been done from them."
+        lede={
+          isOwner
+            ? "Which tabs each role can open, which sessions are live right now, and what has been done from them."
+            : "Which tabs each role can open, which sessions are live right now, and what has been done from them. Taking a role away is the owner's."
+        }
         right={
           <Link href="/admin/staff" className="sq-btn sq-btn-ghost">
             Staff settings
@@ -67,7 +80,7 @@ export default async function PanelAccessPage() {
       />
 
       <StatGrid>
-        <StatTile label="Staff" count={staff.length - owners} index={0} />
+        <StatTile label="At the desk" count={staff.length} index={0} />
         <StatTile label="Owners" count={owners} index={1} />
         <StatTile label="Live panel sessions" count={sessions.length} index={2} />
         <StatTile label="Tabs" count={PANEL_TABS.length} index={3} />
@@ -88,25 +101,43 @@ export default async function PanelAccessPage() {
               <tr>
                 <th style={{ paddingLeft: 22, paddingTop: 12 }}>Tab</th>
                 <th>What it is</th>
-                <th style={{ textAlign: "center" }}>Staff</th>
-                <th style={{ textAlign: "center", paddingRight: 22 }}>Owner</th>
+                {STAFF_ROLES.map((role, index) => (
+                  <th
+                    key={role}
+                    style={{
+                      textAlign: "center",
+                      paddingRight: index === STAFF_ROLES.length - 1 ? 22 : undefined,
+                    }}
+                  >
+                    {ROLE_LABEL[role]}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {PANEL_TABS.map((tab) => (
                 <tr key={tab.href}>
                   <td style={{ paddingLeft: 22 }}>
-                    <Link href={tab.href} style={{ color: "var(--color-text)", fontWeight: 600 }}>
-                      {tab.label}
-                    </Link>
+                    {canOpen(me.role, tab) ? (
+                      <Link href={tab.href} style={{ color: "var(--color-text)", fontWeight: 600 }}>
+                        {tab.label}
+                      </Link>
+                    ) : (
+                      <span style={{ fontWeight: 600, color: "var(--ink-3)" }}>{tab.label}</span>
+                    )}
                   </td>
                   <td style={{ color: "var(--ink-2)" }}>{tab.what}</td>
-                  <td style={{ textAlign: "center" }}>
-                    <Mark on={canOpen("ADMIN", tab)} />
-                  </td>
-                  <td style={{ textAlign: "center", paddingRight: 22 }}>
-                    <Mark on={canOpen("OWNER", tab)} />
-                  </td>
+                  {STAFF_ROLES.map((role: StaffRole, index) => (
+                    <td
+                      key={role}
+                      style={{
+                        textAlign: "center",
+                        paddingRight: index === STAFF_ROLES.length - 1 ? 22 : undefined,
+                      }}
+                    >
+                      <Mark on={canOpen(role, tab)} />
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -141,20 +172,21 @@ export default async function PanelAccessPage() {
               <span style={{ minWidth: 0 }}>
                 <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>
                   {person.name}
-                  {person.id === owner.id ? " · you" : ""}
+                  {person.id === me.id ? " · you" : ""}
                 </b>
                 <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
                   {person.email} · since {WHEN.format(person.createdAt)}
                 </span>
               </span>
               <Tag tone={person.role === "OWNER" ? "stamp" : "plain"} small>
-                {person.role}
+                {ROLE_LABEL[person.role].toUpperCase()}
               </Tag>
               <SqStaffControls
                 userId={person.id}
                 name={person.name}
-                isSelf={person.id === owner.id}
+                isSelf={person.id === me.id}
                 lastOwner={person.role === "OWNER" && owners <= 1}
+                canRevoke={isOwner}
               />
             </li>
           ))}
@@ -169,9 +201,10 @@ export default async function PanelAccessPage() {
             color: "var(--ink-2)",
           }}
         >
-          <b>Promotion still needs a psql prompt.</b> An owner can revoke and end sessions from
-          here, but granting the staff role itself is done in the database by a human — a panel that
-          can promote accounts is one compromised session away from making an attacker permanent.
+          <b>Owners are made at a database prompt.</b> Readers, writers and admins are invited
+          from Staff settings and can be revoked here; nothing in the panel mints an owner, because
+          a panel that could is one compromised session away from making an attacker permanent.
+          Use <code className="sq-mono" style={{ fontSize: 11.5 }}>npm run staff:grant</code>.
         </p>
       </section>
 

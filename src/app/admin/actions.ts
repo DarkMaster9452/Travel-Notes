@@ -4,9 +4,16 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin, requireOwner } from "@/lib/auth/guards";
+import {
+  atLeast,
+  invitableBy,
+  isStaffRole,
+  ROLE_LABEL,
+} from "@/lib/admin/access";
+import { upsertInvite } from "@/lib/admin/invites";
+import { requireAdmin, requireOwner, requireRank } from "@/lib/auth/guards";
 import { recordAudit } from "@/lib/admin/audit";
-import { sendVerdict } from "@/lib/email";
+import { sendStaffInvite, sendVerdict } from "@/lib/email";
 import { scoreEntry } from "@/lib/leaderboard";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
@@ -210,7 +217,7 @@ const accountSchema = z.object({
  * point: there is no second definition of "is this account paid".
  */
 export async function updateAccountAction(formData: FormData): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("ADMIN");
 
   const parsed = accountSchema.safeParse({
     userId: formData.get("userId"),
@@ -293,7 +300,7 @@ export async function setAccountPasswordAction(
   userId: string,
   password: string,
 ): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("ADMIN");
 
   if (userId === admin.id) {
     return { ok: false, message: "Change your own password in settings — this would sign you out." };
@@ -340,7 +347,7 @@ export async function moderateProfileAction(
   userId: string,
   change: { published?: boolean; clearHeadline?: boolean; clearBio?: boolean },
 ): Promise<AdminResult> {
-  await requireAdmin();
+  await requireRank("ADMIN");
 
   const profile = await db.profile.findUnique({
     where: { userId },
@@ -372,7 +379,7 @@ export async function moderateProfileAction(
 
 /** Sign an account out everywhere by dropping its sessions. */
 export async function revokeSessionsAction(userId: string): Promise<AdminResult> {
-  await requireAdmin();
+  await requireRank("ADMIN");
   const { count } = await db.session.deleteMany({ where: { userId } });
   revalidatePath("/admin/users");
   return { ok: true, message: `${count} session${count === 1 ? "" : "s"} ended.` };
@@ -391,7 +398,7 @@ export async function revokeSessionsAction(userId: string): Promise<AdminResult>
  * would be nobody left who could open this page to undo it.
  */
 export async function deleteAccountAction(userId: string): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("ADMIN");
 
   if (userId === admin.id) {
     return { ok: false, message: "You can't delete the account you're signed in as." };
@@ -403,9 +410,14 @@ export async function deleteAccountAction(userId: string): Promise<AdminResult> 
   });
   if (!target) return { ok: false, message: "That account is already gone." };
 
-  if (target.role === "ADMIN") {
-    const otherAdmins = await db.user.count({ where: { role: "ADMIN", id: { not: userId } } });
-    if (otherAdmins === 0) {
+  // The desk must keep somebody who can administer it. Deleting the last
+  // admin-or-owner would leave a panel nobody can fully open, and no way back
+  // in short of the database.
+  if (atLeast(target.role, "ADMIN")) {
+    const others = await db.user.count({
+      where: { role: { in: ["ADMIN", "OWNER"] }, id: { not: userId } },
+    });
+    if (others === 0) {
       return { ok: false, message: "That's the last admin — the panel would lock everyone out." };
     }
   }
@@ -473,7 +485,7 @@ export async function createQuestAction(
   _prev: QuestFormState,
   formData: FormData,
 ): Promise<QuestFormState> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("WRITER");
 
   const parsed = questSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -548,7 +560,7 @@ export async function updateQuestAction(
   _prev: QuestFormState,
   formData: FormData,
 ): Promise<QuestFormState> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("WRITER");
 
   const questId = String(formData.get("questId") ?? "").trim();
   if (!questId) return { ok: false, errors: { form: "Unknown quest." } };
@@ -609,7 +621,7 @@ export async function updateQuestAction(
 }
 
 export async function toggleQuestPublishedAction(questId: string): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("WRITER");
   const quest = await db.quest.findUnique({
     where: { id: questId },
     select: { published: true },
@@ -634,7 +646,7 @@ export async function toggleQuestPublishedAction(questId: string): Promise<Admin
  * Unpublish instead, which is what the message says.
  */
 export async function deleteQuestAction(questId: string): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("WRITER");
 
   const issued = await db.questHistory.count({ where: { questId } });
   if (issued > 0) {
@@ -670,7 +682,7 @@ export async function moveTrailheadAction(input: {
   longitude: number;
   moveCoordinates: boolean;
 }): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("WRITER");
 
   const parsed = z
     .object({
@@ -735,7 +747,7 @@ const scheduleSchema = z.object({
  * reads as one at the call site.
  */
 export async function createScheduleAction(formData: FormData): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("WRITER");
 
   const parsed = scheduleSchema.safeParse({
     period: formData.get("period"),
@@ -793,7 +805,7 @@ export async function createScheduleAction(formData: FormData): Promise<AdminRes
 /** Change which quest fills a slot, or who can see it. The slot itself is
  *  fixed: moving a quest to a different week is a delete and a create. */
 export async function updateScheduleAction(formData: FormData): Promise<AdminResult> {
-  await requireAdmin();
+  await requireRank("WRITER");
 
   const parsed = z
     .object({
@@ -842,7 +854,7 @@ export async function updateScheduleAction(formData: FormData): Promise<AdminRes
  * slot is history, and history is not an edit surface.
  */
 export async function unscheduleAction(id: string): Promise<AdminResult> {
-  await requireAdmin();
+  await requireRank("WRITER");
 
   const existing = await db.questSchedule.findUnique({
     where: { id },
@@ -904,7 +916,7 @@ export type PlaceDetail = {
  * geometry it sits next to, and almost none of it is ever opened.
  */
 export async function getPlaceDetailAction(location: string): Promise<PlaceDetail | null> {
-  await requireAdmin();
+  await requireRank("WRITER");
 
   const quests = await db.quest.findMany({
     where: { location },
@@ -995,7 +1007,7 @@ export async function revokeStickerAction(
   achievementId: string,
   reason?: string,
 ): Promise<AdminResult> {
-  const admin = await requireAdmin();
+  const admin = await requireRank("ADMIN");
 
   const parsed = z
     .object({
@@ -1033,7 +1045,7 @@ export async function restoreStickerAction(
   userId: string,
   achievementId: string,
 ): Promise<AdminResult> {
-  await requireAdmin();
+  await requireRank("ADMIN");
 
   await db.achievementRevocation
     .delete({ where: { userId_achievementId: { userId, achievementId } } })
@@ -1047,6 +1059,90 @@ export async function restoreStickerAction(
 /* -------------------------------------------------------------------------- */
 /* Panel access                                                                */
 /* -------------------------------------------------------------------------- */
+
+const inviteSchema = z.object({
+  email: z.string().trim().toLowerCase().email("That isn't an email address.").max(160),
+  role: z.enum(["READER", "WRITER", "ADMIN"]),
+});
+
+/**
+ * Invite somebody to the desk.
+ *
+ * Which roles an inviter may hand out comes from `invitableBy` rather than
+ * from this form: an admin can bring in readers and writers, an owner can also
+ * bring in an admin, and nobody mints an owner from a browser. The check is
+ * here as well as in the picker, because a picker is a convenience and this is
+ * the rule.
+ *
+ * The invitation is written whether or not email is configured, and the action
+ * hands the link back either way — a desk that cannot send mail can still
+ * paste a link into whatever it already uses to talk to people.
+ */
+export async function inviteStaffAction(
+  formData: FormData,
+): Promise<AdminResult & { link?: string }> {
+  const actor = await requireRank("ADMIN");
+
+  const parsed = inviteSchema.safeParse({
+    email: formData.get("email"),
+    role: formData.get("role"),
+  });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "That won't do." };
+  }
+
+  const { email, role } = parsed.data;
+
+  if (!invitableBy(actor.role).includes(role)) {
+    return { ok: false, message: `You cannot hand out the ${ROLE_LABEL[role].toLowerCase()} role.` };
+  }
+
+  const existing = await db.user.findUnique({
+    where: { email },
+    select: { id: true, name: true, role: true },
+  });
+  if (existing && isStaffRole(existing.role)) {
+    return { ok: false, message: `${existing.name} is already ${ROLE_LABEL[existing.role].toLowerCase()}.` };
+  }
+
+  const invite = await upsertInvite(email, role, actor.id);
+
+  await sendStaffInvite(email, {
+    role: ROLE_LABEL[role],
+    link: invite.link,
+    invitedBy: actor.name,
+    expiresAt: invite.expiresAt,
+  });
+
+  await recordAudit({
+    actorId: actor.id,
+    action: "staff.invited",
+    subject: email,
+    detail: `as ${ROLE_LABEL[role].toLowerCase()}`,
+  });
+
+  revalidatePath("/admin/staff");
+  revalidatePath("/admin/access");
+  return {
+    ok: true,
+    message: `Invited ${email} as ${ROLE_LABEL[role].toLowerCase()}.`,
+    link: invite.link,
+  };
+}
+
+/** Withdraw an invitation that has not been claimed. */
+export async function revokeInviteAction(email: string): Promise<AdminResult> {
+  const actor = await requireRank("ADMIN");
+
+  const removed = await db.staffInvite.deleteMany({ where: { email, acceptedAt: null } });
+  if (removed.count === 0) return { ok: false, message: "There is no live invitation for that address." };
+
+  await recordAudit({ actorId: actor.id, action: "staff.invite_revoked", subject: email });
+
+  revalidatePath("/admin/staff");
+  revalidatePath("/admin/access");
+  return { ok: true, message: "Invitation withdrawn." };
+}
 
 /**
  * Take somebody's staff role away.
@@ -1101,7 +1197,9 @@ export async function revokeStaffAction(userId: string): Promise<AdminResult> {
 
 /** End every live session on one account, without touching its role. */
 export async function endSessionsAction(userId: string): Promise<AdminResult> {
-  const owner = await requireOwner();
+  // Ending a session is reversible — they sign in again. Revoking a role is
+  // not, from the panel, so that one stays the owner's.
+  const owner = await requireRank("ADMIN");
 
   const target = await db.user.findUnique({ where: { id: userId }, select: { name: true } });
   if (!target) return { ok: false, message: "That account is gone." };

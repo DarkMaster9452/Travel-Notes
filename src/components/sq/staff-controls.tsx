@@ -18,11 +18,14 @@ export function SqStaffControls({
   name,
   isSelf,
   lastOwner,
+  canRevoke,
 }: {
   userId: string;
   name: string;
   isSelf: boolean;
   lastOwner: boolean;
+  /** Only an owner may take a role away. Ending a session is reversible. */
+  canRevoke: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -47,9 +50,9 @@ export function SqStaffControls({
         End sessions
       </button>
 
-      {isSelf || lastOwner ? (
+      {!canRevoke || isSelf || lastOwner ? (
         <span className="sq-mono" style={{ fontSize: 10, color: "var(--ink-3)", alignSelf: "center" }}>
-          {isSelf ? "your own keys" : "last owner"}
+          {isSelf ? "your own keys" : lastOwner ? "last owner" : "owner only"}
         </span>
       ) : asking ? (
         <>

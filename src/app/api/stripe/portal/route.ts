@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isStaffRole } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { appUrl } from "@/lib/env";
@@ -24,7 +25,7 @@ export async function POST() {
   }
 
   // Admin accounts have no customer side: nothing to bill, nothing to manage.
-  if (user.role === "ADMIN") {
+  if (isStaffRole(user.role)) {
     return NextResponse.json(
       { ok: false, message: "Admin accounts don't have a subscription." },
       { status: 403 },

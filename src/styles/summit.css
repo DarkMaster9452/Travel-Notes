@@ -130,14 +130,26 @@
   padding: 0;
 }
 
-.sq a {
+/* Anchors that are *links*, not anchors that are components.
+   `.sq a` would outspecify every single-class component rule (`.sq a` is
+   0-1-1; `.sq-btn-primary` is 0-1-0), which painted every Link-based button,
+   nav item and account block in link green — including dark-green text on a
+   dark-green fill. Matching only classless anchors keeps prose links green and
+   leaves every component's own colour alone. */
+.sq a:not([class]) {
   color: var(--color-accent-700);
   text-decoration: none;
   transition: color var(--dur-tint) var(--ease-move);
 }
 
-.sq a:hover {
+.sq a:not([class]):hover {
   color: var(--color-accent-800);
+}
+
+/* Underline is reset for every anchor; colour deliberately is not, so a
+   component class stays the only thing that decides its own ink. */
+.sq a {
+  text-decoration: none;
 }
 
 .sq ::selection {
@@ -558,7 +570,9 @@
   color: var(--forest-ink-2);
 }
 
-.sq-slab a {
+/* Three classes so it outranks `.sq a:not([class])` — a prose link on a dark
+   slab has to take the slab's ink, not the paper palette's link green. */
+.sq .sq-slab a:not([class]) {
   color: var(--forest-ink);
 }
 
@@ -1428,4 +1442,101 @@
   .sq-settings-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* --- account block -------------------------------------------------------- */
+
+.sq-account-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sq-signout {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 7px 11px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-tint) var(--ease-move), color var(--dur-tint) var(--ease-move);
+}
+
+.sq-signout:hover {
+  background: var(--signal-wash);
+  color: var(--signal);
+}
+
+.sq-signout:active {
+  transform: translateY(calc(1px * var(--motion)));
+}
+
+/* --- the desk ------------------------------------------------------------- */
+
+.sq-desk-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 22px;
+  border-top: 1px solid var(--line-2);
+}
+
+@media (max-width: 900px) {
+  .sq-desk-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 8px;
+  }
+}
+
+/* --- schedule board ------------------------------------------------------- */
+
+.sq-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  padding: 18px 22px 22px;
+}
+
+.sq-slot-card {
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 168px;
+  transition: transform var(--dur-lift) var(--ease-settle), border-color var(--dur-tint) var(--ease-move);
+}
+
+.sq-slot-card:hover {
+  transform: translateY(calc(-2px * var(--motion)));
+  border-color: var(--color-accent-300);
+}
+
+/* The one slot anybody is actually walking. */
+.sq-slot-card[data-live="1"] {
+  background: var(--signal-wash);
+  border-color: var(--signal);
+}
+
+/* Closed slots stay legible but stop competing for attention. */
+.sq-slot-card[data-past="1"] {
+  background: var(--paper-2);
+  border-color: transparent;
+}
+
+.sq-slot-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
 }

@@ -218,3 +218,52 @@ function ordinal(rank: number): string {
   if (rank === 3) return "third";
   return `${rank}th`;
 }
+
+/**
+ * An invitation to the desk.
+ *
+ * Not gated on notification settings, and deliberately so: the recipient has
+ * no account with settings yet, and this is not a notification about their
+ * quests — it is the credential half of an invitation somebody at the desk
+ * just wrote. It is sent directly rather than through `send` for that reason.
+ */
+export async function sendStaffInvite(
+  email: string,
+  invite: { role: string; link: string; invitedBy: string; expiresAt: Date },
+): Promise<{ sent: boolean; reason?: string }> {
+  const from = process.env.EMAIL_FROM || "Summit Quest <quests@summitquest.app>";
+  const when = invite.expiresAt.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+  });
+
+  const message: Message = {
+    subject: `${invite.invitedBy} has asked you to join the Summit Quest desk`,
+    body: [
+      `You have been invited as a ${invite.role.toLowerCase()}.`,
+      "Sign in with this address first, then open the link below — it only works for the account it was written to.",
+      `The invitation expires on ${when}.`,
+    ],
+    action: { label: "Accept the invitation", href: invite.link },
+  };
+
+  const resend = mailer();
+  if (!resend) {
+    console.info(`[email:invite] → ${email}: ${invite.link}`);
+    return { sent: true, reason: "logged — no RESEND_API_KEY" };
+  }
+
+  try {
+    await resend.emails.send({
+      from,
+      to: email,
+      subject: message.subject,
+      html: render(email.split("@")[0], message),
+      text: [...message.body, invite.link].join("\n\n"),
+    });
+    return { sent: true };
+  } catch (error) {
+    console.error("[email:invite] failed", error);
+    return { sent: false, reason: "send failed" };
+  }
+}

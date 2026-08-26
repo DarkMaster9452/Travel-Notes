@@ -32,10 +32,12 @@ export type SqShellProps = {
     note: string;
     avatar?: string | null;
   };
+  /** The server action that ends the session. Both shells pass the same one. */
+  signOut: () => Promise<void>;
   children: React.ReactNode;
 };
 
-export function SqShell({ flag, nav, footNav, account, children }: SqShellProps) {
+export function SqShell({ flag, nav, footNav, account, signOut, children }: SqShellProps) {
   const pathname = usePathname();
 
   // The drawer remembers *which* route it was opened on rather than whether it
@@ -89,21 +91,31 @@ export function SqShell({ flag, nav, footNav, account, children }: SqShellProps)
           ))}
         </div>
 
-        <Link href={account.href} className="sq-account">
-          <span className="sq-account-mark">
-            {account.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element -- avatars come from arbitrary hosts
-              <img src={account.avatar} alt="" width={32} height={32} />
-            ) : (
-              account.initials
-            )}
-          </span>
-          <span className="sq-account-name">
-            <b>{account.name}</b>
-            <span>{account.note}</span>
-          </span>
-          <Chevron />
-        </Link>
+        <div className="sq-account-block">
+          <Link href={account.href} className="sq-account">
+            <span className="sq-account-mark">
+              {account.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element -- avatars come from arbitrary hosts
+                <img src={account.avatar} alt="" width={32} height={32} />
+              ) : (
+                account.initials
+              )}
+            </span>
+            <span className="sq-account-name">
+              <b>{account.name}</b>
+              <span>{account.note}</span>
+            </span>
+            <Chevron />
+          </Link>
+
+          {/* Signing out is a POST to a server action, not a link: a GET that
+              destroys a session can be fired by anything that prefetches. */}
+          <form action={signOut}>
+            <button type="submit" className="sq-signout">
+              Sign out
+            </button>
+          </form>
+        </div>
       </aside>
 
       {drawer ? (

@@ -3,6 +3,9 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import type { Role } from "@prisma/client";
+
+import { atLeast, isStaffRole } from "@/lib/admin/access";
 import { SESSION_COOKIE } from "@/lib/auth/jwt";
 import { getCurrentUser, type SessionUser } from "@/lib/auth/session";
 
@@ -49,9 +52,23 @@ export async function requireAdmin(returnTo?: string): Promise<SessionUser> {
   return user;
 }
 
-/** Staff is either role that can open the panel. */
+/** Staff is any of the four roles that can open the panel. */
 export function isStaff(user: Pick<SessionUser, "role"> | null): boolean {
-  return user?.role === "ADMIN" || user?.role === "OWNER";
+  return user ? isStaffRole(user.role) : false;
+}
+
+/**
+ * Require a rank, not a role.
+ *
+ * Every panel screen guards itself with the same minimum its tab declares in
+ * `lib/admin/access`, so a reader who types `/admin/revenue` is sent back to
+ * the overview rather than shown a screen the rail deliberately did not offer
+ * them. Sent back, not to login: they are staff, just not this far up.
+ */
+export async function requireRank(minimum: Role, returnTo?: string): Promise<SessionUser> {
+  const user = await requireAdmin(returnTo);
+  if (!atLeast(user.role, minimum)) redirect("/admin");
+  return user;
 }
 
 /**

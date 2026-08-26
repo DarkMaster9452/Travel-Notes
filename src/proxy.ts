@@ -21,6 +21,9 @@ const PROTECTED = [
   "/people",
   "/settings",
   "/onboarding",
+  // The invitation lands here signed-in or not; the guard needs a session to
+  // compare the invite's email against, so the redirect happens at the edge.
+  "/invite",
   // The panel too. Which *role* may be here is decided in `requireAdmin`,
   // against the database — the proxy can only tell that someone is signed in.
   "/admin",

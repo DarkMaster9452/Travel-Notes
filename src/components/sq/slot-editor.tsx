@@ -17,6 +17,8 @@ export type SlotRow = {
   opensLabel: string;
   dates: string;
   state: "past" | "live" | "future";
+  /** ISO instant the slot opens, for the board's own date formatting. */
+  openAt: string;
   booking: { id: string; questId: string; title: string; where: string; audience: string } | null;
 };
 
@@ -50,7 +52,10 @@ export function SqSlotEditor({
         type="button"
         className="sq-btn sq-btn-ghost sq-btn-sm"
         onClick={() => setOpen(true)}
-        disabled={slot.state === "past" && !slot.booking}
+        // Only a slot that has not opened is editable. The board does not
+        // render this for the others, and the check is repeated here so the
+        // component cannot be misused from somewhere that forgets.
+        disabled={slot.state !== "future"}
       >
         {slot.booking ? "Change" : "Book"}
       </button>
@@ -79,7 +84,8 @@ export function SqSlotEditor({
           >
             <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)", marginBottom: 16 }}>
               Opens {slot.opensLabel}. Only published quests can be booked — the action refuses an
-              unpublished one, so it is not offered here either.
+              unpublished one, so it is not offered here either. Once this slot opens the booking
+              is fixed: people will already be walking it.
             </p>
 
             <label className="sq-field" style={{ marginBottom: 14 }}>

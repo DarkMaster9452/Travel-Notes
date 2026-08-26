@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { SqTrailheadEditor } from "@/components/sq/trailhead-editor";
 import { PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export async function generateMetadata({
  * because a rename that silently touched forty rows would be a surprise.
  */
 export default async function TrailheadPage({ params }: { params: Promise<{ slug: string }> }) {
-  await requireAdmin();
+  await requireRank("WRITER");
   const { slug } = await params;
 
   // The slug is derived, not stored, so the match happens in memory over the
