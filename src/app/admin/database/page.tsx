@@ -9,7 +9,7 @@ import {
   isBrowsableTable,
   type TableName,
 } from "@/lib/admin/stats";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 
 export const metadata: Metadata = { title: "Database · Admin" };
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ export default async function AdminDatabasePage({
 }: {
   searchParams: Promise<{ table?: string }>;
 }) {
-  await requireAdmin();
+  await requireRank("ADMIN");
   const params = await searchParams;
 
   const table: TableName = isBrowsableTable(params.table) ? params.table : "users";

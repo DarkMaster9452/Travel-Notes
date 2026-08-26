@@ -1,3 +1,4 @@
+import { logoutAction } from "@/app/(auth)/actions";
 import { SqShell } from "@/components/sq/shell";
 import { memberFootNav, memberNav } from "@/components/sq/nav";
 import { SqToastProvider } from "@/components/sq/toast";
@@ -50,6 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           note: entitlement.isSubscribed ? planName : `${planName} plan`,
           avatar: user.avatar ?? null,
         }}
+        signOut={logoutAction}
       >
         {children}
       </SqShell>

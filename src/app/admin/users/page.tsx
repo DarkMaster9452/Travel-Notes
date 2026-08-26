@@ -4,7 +4,8 @@ import type { Prisma } from "@prisma/client";
 
 import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
 import { Avatar, EmptyState, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
-import { requireAdmin } from "@/lib/auth/guards";
+import { ROLE_LABEL, STAFF_ROLES } from "@/lib/admin/access";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Users · Admin" };
@@ -33,7 +34,7 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<{ q?: string; plan?: string; state?: string; page?: string }>;
 }) {
-  await requireAdmin();
+  await requireRank("ADMIN");
   const params = await searchParams;
 
   const page = Math.max(1, Number(params.page ?? "1") || 1);
@@ -57,7 +58,7 @@ export default async function AdminUsersPage({
   else if (plan !== "all") {
     and.push({ subscription: { is: { plan: plan as "EXPLORER" | "ULTRA", status: { in: [...LIVE] } } } });
   }
-  if (state === "staff") and.push({ role: "ADMIN" });
+  if (state === "staff") and.push({ role: { in: [...STAFF_ROLES] } });
   if (state === "members") and.push({ role: "USER" });
   if (state === "pastdue") and.push({ subscription: { is: { status: "PAST_DUE" } } });
   if (and.length > 0) where.AND = and;
@@ -82,7 +83,7 @@ export default async function AdminUsersPage({
     }),
     Promise.all([
       db.user.count({ where: { role: "USER" } }),
-      db.user.count({ where: { role: "ADMIN" } }),
+      db.user.count({ where: { role: { in: [...STAFF_ROLES] } } }),
       db.subscription.count({ where: { status: { in: [...LIVE] } } }),
       db.subscription.count({ where: { status: "PAST_DUE" } }),
     ]),
@@ -234,7 +235,7 @@ export default async function AdminUsersPage({
                           minWidth: 0,
                         }}
                       >
-                        {user.role === "ADMIN" ? <Tag small>STAFF</Tag> : null}
+                        {user.role !== "USER" ? <Tag small>{ROLE_LABEL[user.role].toUpperCase()}</Tag> : null}
                         <span
                           className="sq-tag sq-tag-xs"
                           style={{ background: tone.bg, color: tone.fg }}

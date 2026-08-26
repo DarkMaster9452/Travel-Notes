@@ -307,17 +307,34 @@ constant time.
 
 ### Roles
 
-Three: member, staff (`ADMIN`), owner (`OWNER`). Staff read proof, write quests
-and book slots. The owner is the one account that can take another's keys away
-— and the panel deliberately **cannot grant** the staff role. Revoking is a
-thing you want to do fast from a phone at two in the morning; granting should
-require somebody at a database prompt, because a panel that can promote
-accounts is one compromised session away from making an attacker permanent.
+Five, and additive: `USER` is a member; `READER` opens the review deck and
+decides proof and sees nothing about money; `WRITER` adds quests and slots;
+`ADMIN` adds users, billing and the database browser; `OWNER` adds the desk
+itself — invitations, revocations, panel access.
 
-Which tabs each role may open lives in `src/lib/admin/access.ts`, read by both
-the matrix drawn on Panel access and the guard that enforces it, so the page
-cannot drift from what is actually allowed. Every write from the panel is
-stamped into `AdminAudit`; reads are not logged.
+Which tabs each rank may open lives in `src/lib/admin/access.ts`, read by three
+things that must agree: the rail (`tabsFor`), the per-screen guard
+(`requireRank`), and the matrix drawn on Panel access. One table, so the page
+cannot promise what the guard refuses.
+
+People join the desk by **invitation**, from Staff settings. An invite names an
+email and a role and is claimed by that email signing in and opening the link,
+so a leaked token is useless to anybody who cannot receive mail at the address
+it was written to. An admin can invite readers and writers; an owner can also
+invite an admin.
+
+Nothing in the panel mints an **owner**. That one happens at a database prompt:
+
+```bash
+npm run staff:grant -- somebody@example.com OWNER
+```
+
+Revoking is a thing you want to do fast from a phone at two in the morning;
+granting an owner should require somebody who already has the database, because
+a panel that can mint owners is one compromised session away from making an
+attacker permanent. Every write from the panel is stamped into `AdminAudit`
+(the command-line grant included, attributed to nobody, which is what it was);
+reads are not logged.
 
 ### Stripe setup
 

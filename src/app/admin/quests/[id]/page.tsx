@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { SqQuestEditor } from "@/components/sq/quest-editor";
 import { SqQuestDangerZone } from "@/components/sq/quest-danger";
 import { PageHeader, Tag } from "@/components/sq/ui";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export async function generateMetadata({
  * anybody holds it — the action says why, and unpublishing is the answer.
  */
 export default async function EditQuestPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  await requireRank("WRITER");
   const { id } = await params;
 
   const quest = await db.quest.findUnique({

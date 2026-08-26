@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 
 import { SqAccountEditor } from "@/components/sq/account-editor";
 import { Avatar, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
-import { requireAdmin } from "@/lib/auth/guards";
+import { ROLE_LABEL } from "@/lib/admin/access";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,7 @@ export async function generateMetadata({
  * write, with one confirmation.
  */
 export default async function AdminUserPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  await requireRank("ADMIN");
   const { id } = await params;
 
   const user = await db.user.findUnique({
@@ -78,7 +79,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
         right={
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <Avatar name={user.name} size={48} />
-            {user.role === "ADMIN" ? <Tag small>STAFF</Tag> : null}
+            {user.role !== "USER" ? <Tag small>{ROLE_LABEL[user.role].toUpperCase()}</Tag> : null}
             {user.profile?.published ? (
               <Link href={`/people/${user.profile.handle}`} className="sq-btn sq-btn-ghost sq-btn-sm">
                 Public page

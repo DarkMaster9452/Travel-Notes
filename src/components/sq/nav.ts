@@ -33,26 +33,41 @@ export function memberFootNav(planName: string): SqNavItem[] {
   return [{ href: "/settings", label: "Settings", note: planName, prefix: true }];
 }
 
-export function adminNav(pendingReviews: number): SqNavItem[] {
-  return [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/review", label: "Review", badge: pendingReviews || null },
-    { href: "/admin/submissions", label: "Submissions" },
-    { href: "/admin/users", label: "Users", prefix: true },
-    { href: "/admin/quests", label: "Quests", prefix: true },
-    { href: "/admin/schedule", label: "Schedule" },
-    { href: "/admin/locations", label: "Locations", prefix: true },
-    { href: "/admin/leaderboard", label: "Leaderboards" },
-    { href: "/admin/revenue", label: "Revenue" },
-    { href: "/admin/database", label: "Database" },
-  ];
+/**
+ * The panel rail is built from the access table, not written out twice.
+ *
+ * The layout passes in the tabs this role may open (`tabsFor`), so a reader
+ * simply does not see Revenue rather than seeing it and being bounced — and
+ * the rail cannot drift from what the guards allow, because there is only one
+ * list.
+ *
+ * The last two tabs are the desk itself and sit in the footer, away from the
+ * work.
+ */
+const FOOTER_TABS = new Set(["/admin/staff", "/admin/access"]);
+
+export type PanelTabInput = {
+  href: string;
+  label: string;
+  prefix?: boolean;
+  badge?: "review";
+};
+
+export function adminNav(tabs: PanelTabInput[], pendingReviews: number): SqNavItem[] {
+  return tabs
+    .filter((tab) => !FOOTER_TABS.has(tab.href))
+    .map((tab) => ({
+      href: tab.href,
+      label: tab.label,
+      prefix: tab.prefix,
+      badge: tab.badge === "review" ? pendingReviews || null : null,
+    }));
 }
 
-export function adminFootNav(): SqNavItem[] {
-  return [
-    { href: "/admin/staff", label: "Staff settings", prefix: true },
-    { href: "/admin/access", label: "Panel access" },
-  ];
+export function adminFootNav(tabs: PanelTabInput[]): SqNavItem[] {
+  return tabs
+    .filter((tab) => FOOTER_TABS.has(tab.href))
+    .map((tab) => ({ href: tab.href, label: tab.label, prefix: tab.prefix }));
 }
 
 export function isActive(pathname: string, item: SqNavItem): boolean {

@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 
 import { EMPTY_QUEST, SqQuestEditor } from "@/components/sq/quest-editor";
 import { PageHeader } from "@/components/sq/ui";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 
 export const metadata: Metadata = { title: "Write a quest · Admin" };
 export const dynamic = "force-dynamic";
 
 /** A new quest. Saved as a draft unless the publish switch is on. */
 export default async function NewQuestPage() {
-  await requireAdmin();
+  await requireRank("WRITER");
 
   return (
     <>

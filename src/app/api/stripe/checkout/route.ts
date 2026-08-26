@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isStaffRole } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { linkCustomer } from "@/lib/billing";
 import { db } from "@/lib/db";
@@ -24,13 +25,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Log in first." }, { status: 401 });
   }
 
-  // An admin has no allowance to lift and no quests to unlock, so there is
-  // nothing for them to buy. Refused here as well as hidden in the UI: the
+  // A staff account has no allowance to lift and no quests to unlock, so
+  // there is nothing for them to buy. Refused here as well as hidden in the UI: the
   // panel never renders a checkout button, and this is what makes that true
   // rather than merely tidy.
-  if (user.role === "ADMIN") {
+  if (isStaffRole(user.role)) {
     return NextResponse.json(
-      { ok: false, message: "Admin accounts can't hold a subscription." },
+      { ok: false, message: "Staff accounts can't hold a subscription." },
       { status: 403 },
     );
   }

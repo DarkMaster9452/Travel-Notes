@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
 import { Bar, EmptyState, PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
 import { getDifficultySplit, getTopLocations } from "@/lib/admin/stats";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Quests · Admin" };
@@ -28,7 +28,7 @@ export default async function AdminQuestsPage({
 }: {
   searchParams: Promise<{ q?: string; grade?: string; state?: string; page?: string }>;
 }) {
-  await requireAdmin();
+  await requireRank("WRITER");
   const params = await searchParams;
 
   const page = Math.max(1, Number(params.page ?? "1") || 1);

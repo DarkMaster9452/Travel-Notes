@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { SqSplitBar } from "@/components/sq/charts";
 import { PageHeader, StatGrid, StatTile, Tag } from "@/components/sq/ui";
 import { getPlanSplit, getRevenueSummary, getStatusSplit } from "@/lib/admin/stats";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 import { formatPrice, PLANS } from "@/lib/config";
 import { db } from "@/lib/db";
 import { isStripeEnabled } from "@/lib/env";
@@ -22,7 +22,7 @@ const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", 
  * left for somebody to discover when the numbers do not reconcile.
  */
 export default async function AdminRevenuePage() {
-  await requireAdmin();
+  await requireRank("ADMIN");
 
   const [revenue, plans, statuses, renewing] = await Promise.all([
     getRevenueSummary(),

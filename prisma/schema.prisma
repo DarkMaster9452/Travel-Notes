@@ -19,15 +19,22 @@ datasource db {
 /// Guests are not represented here — a guest has no account, sees only the
 /// landing page, and never reaches a real quest. Admins are flagged in the
 /// database and never self-serve: nothing in the product writes this column.
-/// Three roles, and the gap between the second and the third is the point.
+/// Five roles, and the gaps between them are the point.
 ///
-/// `ADMIN` is staff: they read proof, write quests and book slots. `OWNER` is
-/// the one account that can change who else is staff, and it is deliberately
-/// not something the panel can grant — see `Panel access` for why a panel that
-/// could promote accounts is one compromised session away from making an
-/// attacker permanent.
+/// `USER` is a member. The four above it are the desk, and they are additive:
+/// a reader opens the deck and decides proof and sees nothing about money; a
+/// writer adds quests and slots; an admin adds users, billing and the database
+/// browser; an owner adds the desk itself — invitations, revocations, panel
+/// access.
+///
+/// `OWNER` is deliberately not something the panel can grant. An owner can
+/// invite and revoke, but promoting an account *to owner* happens at a
+/// database prompt (`scripts/grant-role.ts`), because a panel that can mint
+/// owners is one compromised session away from making an attacker permanent.
 enum Role {
   USER
+  READER
+  WRITER
   ADMIN
   OWNER
 }
@@ -88,6 +95,7 @@ model User {
   shipping      ShippingAddress?
   notifications NotificationSettings?
   auditEntries  AdminAudit[]           @relation("AuditActor")
+  invitesSent   StaffInvite[]          @relation("InviteAuthor")
 
   @@map("users")
 }
@@ -878,4 +886,36 @@ model AdminAudit {
   @@index([createdAt])
   @@index([action])
   @@map("admin_audit")
+}
+
+
+/// An invitation to the desk.
+///
+/// The panel can invite and it can revoke; it cannot promote. An invite names
+/// an email and a role, and it is claimed by *that* email signing in and
+/// opening the link — so an invite that leaks is still useless to anybody who
+/// cannot receive mail at the address it was written to.
+///
+/// One live invite per email, enforced by the unique index: re-inviting
+/// somebody replaces the invitation rather than leaving two tokens alive.
+model StaffInvite {
+  id    String @id @default(cuid())
+  email String @unique
+  /// Never `OWNER`, and never `USER`. Checked in the action, not just here.
+  role  Role   @default(READER)
+
+  /// The secret in the link. Random, single-use, and rotated by a resend.
+  token String @unique
+
+  invitedById String?  @map("invited_by_id")
+  expiresAt   DateTime @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invitedBy User? @relation("InviteAuthor", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
+  @@map("staff_invites")
 }

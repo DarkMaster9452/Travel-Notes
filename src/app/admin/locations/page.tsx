@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { SqMap, type MapPoint } from "@/components/sq/map";
 import { EmptyState, PageHeader, StatGrid, StatTile } from "@/components/sq/ui";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireRank } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
  * the row leads to.
  */
 export default async function AdminLocationsPage() {
-  await requireAdmin();
+  await requireRank("WRITER");
 
   const [grouped, issued] = await Promise.all([
     db.quest.groupBy({

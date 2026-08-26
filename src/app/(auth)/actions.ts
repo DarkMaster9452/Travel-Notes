@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { burnPasswordCycle, hashPassword, verifyPassword } from "@/lib/auth/password";
+import { isStaffRole } from "@/lib/admin/access";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { AUTH_RATE_LIMIT } from "@/lib/config";
 import { db } from "@/lib/db";
@@ -135,10 +136,13 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
 
   await createSession(user.id);
 
-  // An admin lands in the panel, not on a customer dashboard they would only
-  // be bounced off. A `?next=` that points into the customer side is dropped
-  // for the same reason — following it would be a redirect straight back here.
-  if (user.role === "ADMIN") {
+  // Anybody at the desk lands in the panel, not on a customer dashboard they
+  // would only be bounced off. A `?next=` that points into the customer side
+  // is dropped for the same reason — following it would be a redirect straight
+  // back here. The one exception is an invitation link, which is where a new
+  // reader is trying to go and is not part of the customer side.
+  const invited = safeNext(formData.get("next"))?.startsWith("/invite/");
+  if (isStaffRole(user.role) && !invited) {
     const next = safeNext(formData.get("next"));
     redirect(next?.startsWith("/admin") ? next : "/admin");
   }
