@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Glyph, LockGlyph, type GlyphName } from "@/components/sq/icons";
+import { LockGlyph } from "@/components/sq/icons";
+import { SqSticker } from "@/components/sq/sticker";
 import { PageHeader, Stat } from "@/components/sq/ui";
 import { getAchievements, stickerAllowance } from "@/lib/achievements";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { getUserStats } from "@/lib/quest/service";
+import { SHAPE_RADIUS, stickerStyle } from "@/lib/stickers";
 
 export const metadata: Metadata = { title: "Stickers" };
 export const dynamic = "force-dynamic";
@@ -92,20 +94,13 @@ export default async function StickersPage() {
                 ["--i" as string]: index,
               }}
             >
-              <span
-                className="sq-sticker"
-                data-fresh={fresh ? "1" : "0"}
-                style={{
-                  width: 58,
-                  height: 58,
-                  flex: "0 0 58px",
-                  background: entry.earned ? "var(--color-accent-100)" : "var(--paper-3)",
-                  color: entry.earned ? "var(--color-accent-700)" : "var(--ink-3)",
-                  ["--i" as string]: index,
-                }}
-              >
-                <Glyph name={glyphFor(entry.sticker)} size={27} strokeWidth={1.8} />
-              </span>
+              <SqSticker
+                sticker={entry.sticker}
+                earned={entry.earned}
+                fresh={fresh}
+                index={index}
+                title={entry.label}
+              />
               <span style={{ minWidth: 0 }}>
                 <b
                   style={{
@@ -159,21 +154,19 @@ export default async function StickersPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(56px,1fr))", gap: 10 }}>
-            {beyond.map((entry) => (
+            {beyond.map((entry, index) => (
               <span
                 key={entry.id}
                 aria-label="Locked"
+                title={`${entry.label} · ${planNameFor(entry.requiredPlan)}`}
+                className="sq-sticker sq-sticker-sealed"
+                data-locked="1"
                 style={{
-                  aspectRatio: "1",
-                  borderRadius: 999,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "var(--paper-3)",
-                  color: "var(--ink-3)",
-                  opacity: 0.65,
+                  borderRadius: SHAPE_RADIUS[stickerStyle(entry.sticker).shape],
+                  ["--i" as string]: index,
                 }}
               >
-                <LockGlyph size={20} />
+                <LockGlyph size={18} />
               </span>
             ))}
           </div>
@@ -183,20 +176,7 @@ export default async function StickersPage() {
   );
 }
 
-function glyphFor(sticker: string): GlyphName {
-  const table: Record<string, GlyphName> = {
-    peak: "peak",
-    ridge: "ridge",
-    map: "map",
-    marker: "marker",
-    laurel: "laurel",
-    sun: "sun",
-    book: "book",
-    ascent: "ascent",
-    retreat: "retreat",
-    winter: "winter",
-    peaks: "peaks",
-    compass: "compass",
-  };
-  return table[sticker] ?? "peak";
+/** "Explorer" / "Ultra Explorer" — what a sealed sticker is waiting on. */
+function planNameFor(plan: string): string {
+  return plan === "ultra" ? "Ultra Explorer" : plan === "explorer" ? "Explorer" : "Free";
 }

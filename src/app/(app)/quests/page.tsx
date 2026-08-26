@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
+import { LockGlyph } from "@/components/sq/icons";
+import { SqPaidChip } from "@/components/sq/locked";
 import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { getEntitlement } from "@/lib/entitlements";
 import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Quest database" };
@@ -41,7 +44,24 @@ export default async function QuestDatabasePage({
   const month = params.month ?? "all";
   const search = (params.q ?? "").trim();
 
+  const entitlement = await getEntitlement(user.id);
+
+  // Range is a capability: free stops at the country somebody measures from,
+  // Explorer opens Europe, Ultra opens the map. The filter still lists every
+  // region — a region nobody can see is a region nobody upgrades for — but
+  // picking one beyond the plan is refused and marked.
+  const home = await db.userPreferences.findUnique({
+    where: { userId: user.id },
+    select: { homeLocation: true },
+  });
+  const reach = entitlement.can("worldwide")
+    ? "worldwide"
+    : entitlement.can("europe")
+      ? "europe"
+      : "home";
+
   const where: Prisma.QuestWhereInput = { published: true };
+  if (reach === "home" && home?.homeLocation) where.country = home.homeLocation;
   if (grade !== "all") where.difficulty = grade as (typeof GRADES)[number];
   if (region !== "all") where.region = region;
   if (search) {
@@ -109,8 +129,35 @@ export default async function QuestDatabasePage({
         kicker="Everything ever issued"
         title="Quest database"
         lede="Every quest the engine has written, including the ones that were never yours. Yours are marked, and anything here can be filed against."
-        right={<Tag small>{new Intl.NumberFormat("en-GB").format(total)} quests</Tag>}
+        right={
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <Tag small>{new Intl.NumberFormat("en-GB").format(total)} quests</Tag>
+            {reach === "home" ? <SqPaidChip plan="explorer" /> : null}
+          </div>
+        }
       />
+
+      {reach === "home" ? (
+        <p
+          className="sq-tinted"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "12px 18px",
+            marginBottom: 16,
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: "var(--ink-2)",
+          }}
+        >
+          <span style={{ color: "var(--ink-3)" }}>
+            <LockGlyph size={14} />
+          </span>
+          Showing {home?.homeLocation ?? "your country"} only. Explorer opens every European range;
+          Ultra opens the rest of the map.
+        </p>
+      ) : null}
 
       <SqFilterBar>
         <SqParamSearch name="q" value={search} label="Find" placeholder="Region or trailhead" />

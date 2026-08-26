@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LockGlyph } from "@/components/sq/icons";
+import { SqSticker } from "@/components/sq/sticker";
 import { SqQuestCard, type QuestCardData } from "@/components/sq/quest-card";
 import { PageHeader, QuietLink, Stat, Tag } from "@/components/sq/ui";
 import { slotFor } from "@/lib/admin/schedule";
@@ -303,17 +304,16 @@ export default async function DashboardPage() {
             Two go out with each envelope, alongside the monthly quest card. Stick them where you
             earned them.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             {achievements.slice(0, 10).map((entry, index) => (
-              <span
+              <SqSticker
                 key={entry.id}
-                className="sq-sticker"
-                data-locked={entry.earned ? "0" : "1"}
-                style={{ ["--i" as string]: index }}
-                title={entry.earned ? entry.label : "Not earned yet"}
-              >
-                {entry.earned ? entry.label : ""}
-              </span>
+                sticker={entry.sticker}
+                earned={entry.earned}
+                size={52}
+                index={index}
+                title={entry.earned ? entry.label : `${entry.label} — ${entry.progressLabel}`}
+              />
             ))}
           </div>
           <Link href="/stickers" className="sq-btn sq-btn-ghost sq-btn-sm" style={{ marginTop: 18 }}>

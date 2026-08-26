@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Glyph, type GlyphName } from "@/components/sq/icons";
+import { SqSticker } from "@/components/sq/sticker";
 import { Avatar } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { getPublicProfile } from "@/lib/profile";
@@ -170,14 +170,13 @@ export default async function PublicProfilePage({
                 }}
               >
                 {profile.stickers.map((sticker, index) => (
-                  <span
+                  <SqSticker
                     key={sticker.id}
-                    className="sq-sticker"
-                    style={{ ["--i" as string]: index }}
+                    sticker={sticker.sticker}
+                    size={54}
+                    index={index}
                     title={sticker.label}
-                  >
-                    <Glyph name={glyphFor(sticker.sticker)} size={22} strokeWidth={1.8} />
-                  </span>
+                  />
                 ))}
               </div>
             </article>
@@ -269,21 +268,3 @@ function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
-/** Sticker artwork keys map onto the field-guide glyph set. */
-function glyphFor(sticker: string): GlyphName {
-  const table: Record<string, GlyphName> = {
-    peak: "peak",
-    ridge: "ridge",
-    map: "map",
-    marker: "marker",
-    laurel: "laurel",
-    sun: "sun",
-    book: "book",
-    ascent: "ascent",
-    retreat: "retreat",
-    winter: "winter",
-    peaks: "peaks",
-    compass: "compass",
-  };
-  return table[sticker] ?? "peak";
-}

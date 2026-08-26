@@ -3,11 +3,13 @@ import Link from "next/link";
 
 import { GroupStarter } from "@/components/sq/group-starter";
 import { SqSegmentedLinks } from "@/components/sq/controls";
+import { SqLocked } from "@/components/sq/locked";
 import { Avatar, EmptyState, PageHeader } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getMyGroups } from "@/lib/groups";
-import { getDirectory } from "@/lib/profile";
+import { getEntitlement } from "@/lib/entitlements";
+import { getDirectory, type DirectoryEntry } from "@/lib/profile";
 
 export const metadata: Metadata = { title: "People & groups" };
 export const dynamic = "force-dynamic";
@@ -30,11 +32,19 @@ export default async function PeoplePage({
   const params = await searchParams;
   const tab = params.tab === "groups" ? "groups" : "people";
 
-  const [directory, groups, mine] = await Promise.all([
+  const [directory, groups, mine, entitlement] = await Promise.all([
     getDirectory(),
     getMyGroups(user.id),
     db.profile.findUnique({ where: { userId: user.id }, select: { published: true } }),
+    getEntitlement(user.id),
   ]);
+
+  // Two different gates, because they are two different promises: the
+  // directory is Explorer's partner matching, and a group is Ultra's private
+  // crew. Both stay on screen either way — a capability nobody can see is a
+  // capability nobody buys.
+  const canMatch = entitlement.can("matching");
+  const canCrew = entitlement.can("crews");
 
   return (
     <>
@@ -65,7 +75,11 @@ export default async function PeoplePage({
       </div>
 
       {tab === "people" ? (
-        directory.length === 0 ? (
+        !canMatch ? (
+          <SqLocked capability="matching" plan="explorer">
+            <PeopleGrid people={directory.slice(0, 8)} />
+          </SqLocked>
+        ) : directory.length === 0 ? (
           <EmptyState
             glyph="users"
             title="Nobody has published a page yet"
@@ -77,66 +91,29 @@ export default async function PeoplePage({
             }
           />
         ) : (
-          <section
-            className="sq-stagger"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill,minmax(216px,1fr))",
-              gap: 14,
-            }}
-          >
-            {directory.map((person, index) => (
-              <Link
-                key={person.handle}
-                href={`/people/${person.handle}`}
-                className="sq-card sq-lift"
-                style={{ padding: 18, color: "var(--color-text)", ["--i" as string]: index }}
-              >
-                <Avatar name={person.name} size={48} />
-                <b
-                  style={{
-                    display: "block",
-                    marginTop: 12,
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 600,
-                    fontSize: 17,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {person.name}
-                </b>
-                {person.headline ? (
-                  <span
-                    style={{
-                      display: "block",
-                      marginTop: 5,
-                      fontSize: 12.5,
-                      lineHeight: 1.45,
-                      color: "var(--ink-2)",
-                    }}
-                  >
-                    {person.headline}
-                  </span>
-                ) : null}
-                <span
-                  className="sq-kicker-sm"
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    marginTop: 14,
-                    paddingTop: 11,
-                    borderTop: "1px solid var(--line-2)",
-                    fontSize: 9.5,
-                    letterSpacing: "0.07em",
-                  }}
-                >
-                  <i style={{ fontStyle: "normal" }}>{person.country ?? "—"}</i>
-                  <i style={{ fontStyle: "normal" }}>{person.logged} logged</i>
-                </span>
-              </Link>
-            ))}
-          </section>
+          <PeopleGrid people={directory} />
         )
+      ) : !canCrew ? (
+        <SqLocked capability="crews" plan="ultra">
+          <section className="sq-grid sq-grid-fit-md" style={{ alignItems: "start" }}>
+            <div className="sq-card sq-pad-sm">
+              <h2 className="sq-h2" style={{ fontSize: 19 }}>
+                Tuesday nights
+              </h2>
+              <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.55, color: "var(--ink-2)" }}>
+                Short ones after work, all year.
+              </p>
+            </div>
+            <div className="sq-tinted sq-pad-sm">
+              <h2 className="sq-h2" style={{ fontSize: 19 }}>
+                Start a group
+              </h2>
+              <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.55, color: "var(--ink-2)" }}>
+                Whoever you send the link to is in it.
+              </p>
+            </div>
+          </section>
+        </SqLocked>
       ) : (
         <section className="sq-grid sq-grid-fit-md" style={{ alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -176,5 +153,70 @@ export default async function PeoplePage({
         </section>
       )}
     </>
+  );
+}
+
+/** The directory grid, shared by the real list and the locked preview. */
+function PeopleGrid({ people }: { people: DirectoryEntry[] }) {
+  return (
+    <section
+      className="sq-stagger"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill,minmax(216px,1fr))",
+        gap: 14,
+      }}
+    >
+      {people.map((person, index) => (
+        <Link
+          key={person.handle}
+          href={`/people/${person.handle}`}
+          className="sq-card sq-lift"
+          style={{ padding: 18, color: "var(--color-text)", ["--i" as string]: index }}
+        >
+          <Avatar name={person.name} size={48} />
+          <b
+            style={{
+              display: "block",
+              marginTop: 12,
+              fontFamily: "var(--font-heading)",
+              fontWeight: 600,
+              fontSize: 17,
+              lineHeight: 1.2,
+            }}
+          >
+            {person.name}
+          </b>
+          {person.headline ? (
+            <span
+              style={{
+                display: "block",
+                marginTop: 5,
+                fontSize: 12.5,
+                lineHeight: 1.45,
+                color: "var(--ink-2)",
+              }}
+            >
+              {person.headline}
+            </span>
+          ) : null}
+          <span
+            className="sq-kicker-sm"
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: 14,
+              paddingTop: 11,
+              borderTop: "1px solid var(--line-2)",
+              fontSize: 9.5,
+              letterSpacing: "0.07em",
+            }}
+          >
+            <i style={{ fontStyle: "normal" }}>{person.country ?? "—"}</i>
+            <i style={{ fontStyle: "normal" }}>{person.logged} logged</i>
+          </span>
+        </Link>
+      ))}
+    </section>
   );
 }

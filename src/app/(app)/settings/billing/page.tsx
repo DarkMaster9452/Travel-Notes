@@ -4,7 +4,15 @@ import Link from "next/link";
 import { SqCheckoutButton, SqPortalButton } from "@/components/sq/plan-actions";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
-import { formatPrice, PLANS } from "@/lib/config";
+import { Glyph, LockGlyph } from "@/components/sq/icons";
+import { SqPaidChip } from "@/components/sq/locked";
+import {
+  ALL_CAPABILITIES,
+  CAPABILITY_COPY,
+  formatPrice,
+  lowestPlanWith,
+  PLANS,
+} from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { isStripeEnabled, isUltraEnabled } from "@/lib/env";
@@ -32,6 +40,7 @@ export default async function BillingSettingsPage() {
   ]);
 
   const current = entitlement.definition;
+  const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
   const yearly = subscription?.stripePriceId?.includes("yearly") ?? false;
 
   return (
@@ -104,6 +113,56 @@ export default async function BillingSettingsPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="sq-card" style={{ overflow: "hidden" }}>
+        <div className="sq-section-head sq-rule-head">
+          <h2 className="sq-h2" style={{ fontSize: 19 }}>
+            What your plan includes
+          </h2>
+          <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
+            {held.length} of {ALL_CAPABILITIES.length}
+          </span>
+        </div>
+        <ul>
+          {ALL_CAPABILITIES.map((capability) => {
+            const yours = entitlement.can(capability);
+            const from = lowestPlanWith(capability);
+            return (
+              <li
+                key={capability}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto minmax(0,1fr) auto",
+                  gap: 14,
+                  alignItems: "center",
+                  padding: "13px 24px",
+                  borderTop: "1px solid var(--line-2)",
+                  opacity: yours ? 1 : 0.72,
+                }}
+              >
+                <span style={{ color: yours ? "var(--moss)" : "var(--ink-3)" }}>
+                  {yours ? <Glyph name="check" size={16} strokeWidth={2.4} /> : <LockGlyph size={14} />}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <b style={{ display: "block", fontSize: 14, fontWeight: 600 }}>
+                    {CAPABILITY_COPY[capability].title}
+                  </b>
+                  <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink-2)" }}>
+                    {CAPABILITY_COPY[capability].detail}
+                  </span>
+                </span>
+                {yours ? (
+                  <span className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
+                    Yours
+                  </span>
+                ) : from ? (
+                  <SqPaidChip plan={from} />
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section className="sq-card" style={{ overflow: "hidden" }}>

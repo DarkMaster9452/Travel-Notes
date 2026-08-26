@@ -1256,26 +1256,32 @@
 
 .sq-sticker {
   aspect-ratio: 1;
-  border-radius: 999px;
   display: grid;
   place-items: center;
   text-align: center;
-  gap: 6px;
-  padding: 10px;
   box-sizing: border-box;
-  background: var(--color-accent-100);
-  color: var(--color-accent-700);
   font-family: var(--font-mono);
   font-size: 9px;
   line-height: 1.2;
+  /* The die-cut, the ink and the glyph all arrive inline from `lib/stickers` —
+     a printed thing is not the design system's to recolour. */
   animation: sq-pop 320ms var(--ease-settle) both;
   animation-delay: calc(var(--i, 0) * 26ms);
+  transition: transform var(--dur-lift) var(--ease-settle);
 }
 
+/* A sheet of stickers should feel like one, so they sit at slight angles —
+   derived from the index rather than random, so a sticker keeps its tilt. */
+.sq-sticker[data-locked="0"]:hover {
+  transform: rotate(calc((var(--i, 0) % 5 - 2) * 1.4deg)) scale(calc(1 + 0.06 * var(--motion)));
+}
+
+/* Locked keeps the die-cut and loses the ink: the shape is what says which
+   sticker is missing, and the colour is the part you go and earn. */
 .sq-sticker[data-locked="1"] {
-  background: var(--paper-2);
-  color: transparent;
   animation: none;
+  border: 1px dashed var(--line);
+  opacity: 0.85;
 }
 
 .sq-sticker[data-fresh="1"] {
@@ -1539,4 +1545,79 @@
   gap: 10px;
   margin-top: auto;
   padding-top: 14px;
+}
+
+/* A sticker cut for a plan this account does not hold. Same die, no ink. */
+.sq-sticker-sealed {
+  background: var(--paper-3);
+  color: var(--ink-3);
+  opacity: 0.7;
+}
+
+/* --- locked features ------------------------------------------------------ */
+
+.sq-locked {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The feature stays where it lives — dimmed and inert, never removed. */
+.sq-locked-under {
+  filter: saturate(0.35) blur(1.5px);
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sq-locked-over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 20px;
+  text-align: center;
+  background: linear-gradient(
+    180deg,
+    rgba(239, 240, 229, 0.72) 0%,
+    rgba(239, 240, 229, 0.94) 55%
+  );
+}
+
+.sq-locked[data-compact="1"] .sq-locked-over {
+  flex-direction: row;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.sq-locked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: rgba(217, 161, 60, 0.22);
+  color: #7c5a17;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.sq-locked-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.sq-locked-detail {
+  max-width: 34ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
 }
