@@ -95,7 +95,7 @@ const EXPLORER_CAPABILITIES = [
 export const STICKER_ALLOWANCE: Record<PlanId, number> = {
   free: 6,
   explorer: 10,
-  ultra: 30,
+  ultra: 36,
 };
 
 /**
@@ -248,8 +248,8 @@ export const CAPABILITY_COPY: Record<Capability, { title: string; detail: string
     detail: "Ask for company and the board opens up.",
   },
   printedStickers: {
-    title: "Printed sticker sheets",
-    detail: "The die-cut sheet is posted to you once a season.",
+    title: "Stickers in the post",
+    detail: "Two die-cut stickers ride along with the quest card on the 2nd of each month.",
   },
   customQuests: {
     title: "Custom quests",

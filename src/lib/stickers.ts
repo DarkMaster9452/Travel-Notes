@@ -96,11 +96,15 @@ export const STICKER_STYLES: Record<string, StickerStyle> = {
   "waterfall-chaser": { shape: "disc", bg: "#6f97a8", fg: PAPER, glyph: "ridge" },
   "ruin-hunter": { shape: "arch", bg: "#8a6b4a", fg: PAPER, glyph: "book" },
 
-  /* ---- the ones with a verdict behind them ------------------------------ */
-  "honest-retreat": { shape: "disc", bg: "#7e9a80", fg: PAPER, glyph: "retreat" },
-  "dawn-start": { shape: "disc", bg: "#e8622f", fg: PAPER, glyph: "sun" },
-  "winter-ridge": { shape: "leafFlipped", bg: "#b9c2a8", fg: DEEP, glyph: "winter" },
-  "field-notes": { shape: "arch", bg: "#cbd8c4", fg: DEEP, glyph: "book" },
+  /* ---- the rare tier ----------------------------------------------------
+     Deeper ink than the ladders above, because these are the ones that take a
+     year rather than a season, and a sheet should show that at a glance. */
+  "field-notes": { shape: "arch", bg: "#4c5460", fg: PAPER, glyph: "book" },
+  "winter-ridge": { shape: "leafFlipped", bg: "#26596f", fg: PAPER, glyph: "winter" },
+  "twelve-months": { shape: "disc", bg: "#544576", fg: PAPER, glyph: "calendar" },
+  unbroken: { shape: "shield", bg: "#14251b", fg: "#d9a13c", glyph: "laurelRing" },
+  "dawn-start": { shape: "blob", bg: "#8a3212", fg: PAPER, glyph: "compass" },
+  "honest-retreat": { shape: "leaf", bg: "#1e3b2c", fg: "#d9a13c", glyph: "peaks" },
 };
 
 export const DEFAULT_STICKER: StickerStyle = {

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Glyph, LockGlyph } from "@/components/sq/icons";
 import { SqSticker } from "@/components/sq/sticker";
+import { SqStickersSeen } from "@/components/sq/sticker-seen";
 import { PageHeader, Stat } from "@/components/sq/ui";
 import { getAchievements, stickerAllowance } from "@/lib/achievements";
 import { requireClient } from "@/lib/auth/guards";
@@ -106,6 +107,10 @@ export default async function StickersPage() {
         ) : null}
       </aside>
 
+      <SqStickersSeen
+        ids={reachable.filter((entry) => entry.earned && !seenSet.has(entry.id)).map((entry) => entry.id)}
+      />
+
       <section
         className="sq-stagger"
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}
@@ -149,6 +154,22 @@ export default async function StickersPage() {
                 </b>
                 <span style={{ display: "block", marginTop: 4, fontSize: 11.5, lineHeight: 1.4, color: "var(--ink-3)" }}>
                   {entry.revoked ? "Withdrawn by the desk" : entry.earned ? entry.description : entry.progressLabel}
+                </span>
+                {/* Most of the sheet is ink on a screen. Saying which ones are
+                    really cut and posted is the difference between "thirty
+                    stickers" and "thirty stickers you will hold". */}
+                <span
+                  className="sq-mono"
+                  style={{
+                    display: "block",
+                    marginTop: 7,
+                    fontSize: 9,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: entry.printed ? "var(--moss)" : "var(--ink-3)",
+                  }}
+                >
+                  {entry.printed ? "Posted to you" : "On screen"}
                 </span>
               </span>
             </article>

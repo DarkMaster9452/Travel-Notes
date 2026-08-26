@@ -1,7 +1,9 @@
 import "server-only";
 
+import { getAchievements } from "@/lib/achievements";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { getUserStats } from "@/lib/quest/service";
 
 /**
  * Whether a monthly envelope actually goes out, and why not when it doesn't.
@@ -19,6 +21,15 @@ import { getEntitlement } from "@/lib/entitlements";
  * worse version of the same thing rather than nothing at all. That is the
  * whole of "no address, no envelope, an email instead".
  */
+
+/**
+ * How many stickers ride along with the quest card.
+ *
+ * Two, because the envelope is a card and two stickers and that is the whole
+ * of it. Stated once so the copy, the job and anything that ever counts them
+ * cannot drift apart — this number is a promise printed on the settings page.
+ */
+export const STICKERS_PER_ENVELOPE = 2;
 
 export type EnvelopeStatus =
   /** Post goes out on the 2nd. */
@@ -100,3 +111,46 @@ export const ENVELOPE_COPY: Record<EnvelopeStatus["reason"], { title: string; de
       "Your plan includes the printed envelope, but we have no address to send it to — so the quest card and your stickers arrive by email instead. Add an address and the next envelope goes in the post.",
   },
 };
+
+
+/**
+ * Which stickers go in this month's envelope.
+ *
+ * Earned, printed, and not already posted — in sheet order, so somebody
+ * collects them in the order the sheet reads rather than in whatever order the
+ * database happened to return. At most `STICKERS_PER_ENVELOPE`; the rest wait
+ * for next month, which is what makes the sheet something that arrives over a
+ * year rather than in one parcel.
+ *
+ * Only the reachable sheet is considered: `getAchievements` already refuses to
+ * mark anything beyond the plan as earned, so an account that downgrades stops
+ * being sent stickers it can no longer hold.
+ */
+export async function pickStickersToPost(
+  userId: string,
+  limit = STICKERS_PER_ENVELOPE,
+): Promise<{ id: string; label: string }[]> {
+  const [stats, entitlement, revocations, alreadySent] = await Promise.all([
+    getUserStats(userId),
+    getEntitlement(userId),
+    db.achievementRevocation.findMany({ where: { userId }, select: { achievementId: true } }),
+    db.stickerDespatch.findMany({ where: { userId }, select: { achievementId: true } }),
+  ]);
+
+  const sent = new Set(alreadySent.map((row) => row.achievementId));
+
+  return getAchievements(
+    stats,
+    entitlement.plan,
+    revocations.map((row) => row.achievementId),
+  )
+    .filter((entry) => entry.earned && entry.printed && !sent.has(entry.id))
+    .slice(0, limit)
+    .map((entry) => ({ id: entry.id, label: entry.label }));
+}
+
+/** How many printed stickers are earned and still waiting for an envelope. */
+export async function countStickersWaiting(userId: string): Promise<number> {
+  const waiting = await pickStickersToPost(userId, Number.MAX_SAFE_INTEGER);
+  return waiting.length;
+}

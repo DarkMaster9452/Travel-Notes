@@ -37,6 +37,15 @@ export type Achievement = {
   /** Taken back by an admin. Distinct again from both other locked states:
    *  the work was done and the plan reaches it, but it has been withdrawn. */
   revoked: boolean;
+  /**
+   * This one is actually printed and posted.
+   *
+   * Most of the sheet is ink on a screen. A minority are real die-cut stickers
+   * that go in the envelope, and somebody deciding whether a plan is worth
+   * paying for should be able to see which is which — "thirty stickers" and
+   * "thirty stickers you will hold" are different offers.
+   */
+  printed: boolean;
 };
 
 type Definition = {
@@ -48,6 +57,8 @@ type Definition = {
   target: number;
   value: (stats: UserStats) => number;
   unit?: string;
+  /** Goes in the envelope. See `Achievement.printed`. */
+  printed?: boolean;
 };
 
 const DEFINITIONS: Definition[] = [
@@ -58,47 +69,49 @@ const DEFINITIONS: Definition[] = [
     description: "You actually went. Log your first quest.",
     sticker: "first-light",
     target: 1,
+    printed: true,
     value: (s) => s.completedCount,
   },
   {
     id: "second-wind",
     label: "Second wind",
-    description: "Three logged. The first one wasn't a fluke.",
+    description: "Five logged. The first one was not a fluke.",
     sticker: "second-wind",
-    target: 3,
+    target: 5,
     value: (s) => s.completedCount,
   },
   {
     id: "into-the-trees",
     label: "Into the trees",
-    description: "A quest that spent its day under a canopy.",
+    description: "Three days spent under a canopy.",
     sticker: "into-the-trees",
-    target: 1,
+    target: 3,
     value: (s) => s.forests,
   },
   {
     id: "first-ridge",
     label: "First ridge",
-    description: "One quest with a mountain in it.",
+    description: "Three quests with a mountain in them.",
     sticker: "first-ridge",
-    target: 1,
+    target: 3,
     value: (s) => s.mountains,
   },
   {
     id: "twenty-five",
-    label: "Twenty-five",
-    description: "Twenty-five kilometres, all told.",
+    label: "Sixty",
+    description: "Sixty kilometres, all told.",
     sticker: "twenty-five",
-    target: 25,
+    target: 60,
     value: (s) => s.kmExplored,
     unit: "km",
   },
   {
     id: "thousand-up",
-    label: "A thousand up",
-    description: "A thousand metres of ascent behind you.",
+    label: "Two and a half",
+    description: "Two and a half thousand metres of ascent behind you.",
     sticker: "thousand-metres",
-    target: 1000,
+    target: 2500,
+    printed: true,
     value: (s) => s.elevation,
     unit: "m",
   },
@@ -106,34 +119,36 @@ const DEFINITIONS: Definition[] = [
   /* ---- Explorer's four. ------------------------------------------------ */
   {
     id: "ten-logged",
-    label: "Ten logged",
-    description: "Ten quests logged, no repeats.",
+    label: "Twenty-five logged",
+    description: "Twenty-five quests logged, no repeats.",
     sticker: "ten-logged",
-    target: 10,
+    target: 25,
+    printed: true,
     value: (s) => s.completedCount,
   },
   {
     id: "cartographer",
     label: "Cartographer",
-    description: "Five different regions.",
+    description: "Eight different regions.",
     sticker: "cartographer",
-    target: 5,
+    target: 8,
     value: (s) => s.regions,
   },
   {
     id: "gorge-rat",
     label: "Gorge Rat",
-    description: "Three quests with water in them.",
+    description: "Six quests with water in them.",
     sticker: "gorge-rat",
-    target: 3,
+    target: 6,
     value: (s) => s.waterfalls,
   },
   {
     id: "long-hauler",
     label: "Long hauler",
-    description: "A hundred kilometres under your boots.",
+    description: "Two hundred and fifty kilometres under your boots.",
     sticker: "long-hauler",
-    target: 100,
+    target: 250,
+    printed: true,
     value: (s) => s.kmExplored,
     unit: "km",
   },
@@ -141,42 +156,44 @@ const DEFINITIONS: Definition[] = [
   /* ---- The rest of the sheet. Ultra. ----------------------------------- */
   {
     id: "twenty-five-logged",
-    label: "Twenty-five logged",
-    description: "Twenty-five quests. A season of them.",
+    label: "Sixty logged",
+    description: "Sixty quests. More than a season of them.",
     sticker: "twenty-five-logged",
-    target: 25,
+    target: 60,
     value: (s) => s.completedCount,
   },
   {
     id: "fifty-logged",
-    label: "Fifty logged",
-    description: "Fifty quests logged. That is a habit now.",
+    label: "Hundred and twenty",
+    description: "A hundred and twenty quests logged.",
     sticker: "fifty-logged",
-    target: 50,
+    target: 120,
     value: (s) => s.completedCount,
   },
   {
     id: "hundred-logged",
-    label: "Hundred logged",
-    description: "One hundred quests. Go outside more.",
+    label: "Two hundred and fifty",
+    description: "Two hundred and fifty quests. Go outside less, perhaps.",
     sticker: "hundred-logged",
-    target: 100,
+    target: 250,
+    printed: true,
     value: (s) => s.completedCount,
   },
   {
     id: "two-hundred-logged",
-    label: "Two hundred",
-    description: "Two hundred logged. We've run out of things to say.",
+    label: "Five hundred",
+    description: "Five hundred logged. We have run out of things to say.",
     sticker: "two-hundred-logged",
-    target: 200,
+    target: 500,
+    printed: true,
     value: (s) => s.completedCount,
   },
   {
     id: "five-thousand-up",
-    label: "Five thousand up",
-    description: "Five thousand metres of ascent, all told.",
+    label: "Twelve thousand up",
+    description: "Twelve thousand metres of ascent, all told.",
     sticker: "five-thousand-up",
-    target: 5000,
+    target: 12000,
     value: (s) => s.elevation,
     unit: "m",
   },
@@ -186,68 +203,72 @@ const DEFINITIONS: Definition[] = [
     description: "8,848 metres climbed. The height of the big one.",
     sticker: "everest",
     target: 8848,
+    printed: true,
     value: (s) => s.elevation,
     unit: "m",
   },
   {
     id: "ten-thousand-up",
-    label: "Ten thousand up",
-    description: "Ten thousand metres of ascent.",
+    label: "Twenty-five thousand up",
+    description: "Twenty-five thousand metres of ascent.",
     sticker: "ten-thousand-up",
-    target: 10000,
-    value: (s) => s.elevation,
-    unit: "m",
-  },
-  {
-    id: "twenty-five-thousand-up",
-    label: "Twenty-five thousand",
-    description: "Twenty-five thousand metres up. Three Everests.",
-    sticker: "twenty-five-thousand-up",
     target: 25000,
     value: (s) => s.elevation,
     unit: "m",
   },
   {
+    id: "twenty-five-thousand-up",
+    label: "Sixty thousand",
+    description: "Sixty thousand metres up. Nearly seven Everests.",
+    sticker: "twenty-five-thousand-up",
+    target: 60000,
+    printed: true,
+    value: (s) => s.elevation,
+    unit: "m",
+  },
+  {
     id: "two-fifty-km",
-    label: "Two-fifty",
-    description: "Two hundred and fifty kilometres walked.",
+    label: "Six hundred",
+    description: "Six hundred kilometres walked.",
     sticker: "two-fifty-km",
-    target: 250,
+    target: 600,
     value: (s) => s.kmExplored,
     unit: "km",
   },
   {
     id: "five-hundred-km",
-    label: "Five hundred",
-    description: "Five hundred kilometres. A country's worth.",
+    label: "Twelve hundred",
+    description: "Twelve hundred kilometres. A long country's worth.",
     sticker: "five-hundred-km",
-    target: 500,
+    target: 1200,
     value: (s) => s.kmExplored,
     unit: "km",
   },
   {
     id: "thousand-km",
-    label: "Four figures",
-    description: "One thousand kilometres logged.",
+    label: "Four figures, twice",
+    description: "Two and a half thousand kilometres logged.",
     sticker: "thousand-km",
-    target: 1000,
+    target: 2500,
+    printed: true,
     value: (s) => s.kmExplored,
     unit: "km",
   },
   {
     id: "ten-regions",
-    label: "Ten regions",
-    description: "Ten different regions visited.",
+    label: "Fifteen regions",
+    description: "Fifteen different regions visited.",
     sticker: "ten-regions",
-    target: 10,
+    target: 15,
     value: (s) => s.regions,
   },
   {
     id: "twenty-regions",
-    label: "Twenty regions",
-    description: "Twenty regions. You are running out of map.",
+    label: "Thirty regions",
+    description: "Thirty regions. You are running out of map.",
     sticker: "twenty-regions",
-    target: 20,
+    target: 30,
+    printed: true,
     value: (s) => s.regions,
   },
   {
@@ -256,55 +277,120 @@ const DEFINITIONS: Definition[] = [
     description: "A quest in a second country.",
     sticker: "border-crosser",
     target: 2,
+    printed: true,
     value: (s) => s.countries,
   },
   {
     id: "five-countries",
-    label: "Five countries",
-    description: "Five countries on the log.",
+    label: "Eight countries",
+    description: "Eight countries on the log.",
     sticker: "five-countries",
-    target: 5,
+    target: 8,
     value: (s) => s.countries,
   },
   {
     id: "peak-bagger",
     label: "Peak bagger",
-    description: "Ten quests with a mountain in them.",
+    description: "Twenty-five quests with a mountain in them.",
     sticker: "peak-bagger",
-    target: 10,
+    target: 25,
+    printed: true,
     value: (s) => s.mountains,
   },
   {
     id: "deep-woods",
     label: "Deep woods",
-    description: "Ten quests under trees.",
+    description: "Twenty-five quests under trees.",
     sticker: "deep-woods",
-    target: 10,
+    target: 25,
     value: (s) => s.forests,
   },
   {
     id: "lake-district",
     label: "Lake district",
-    description: "Five quests with a lake on the route.",
+    description: "Twelve quests with a lake on the route.",
     sticker: "lake-district",
-    target: 5,
+    target: 12,
     value: (s) => s.lakes,
   },
   {
     id: "waterfall-chaser",
     label: "Waterfall chaser",
-    description: "Ten quests with falling water.",
+    description: "Twenty-five quests with falling water.",
     sticker: "waterfall-chaser",
-    target: 10,
+    target: 25,
     value: (s) => s.waterfalls,
   },
   {
     id: "ruin-hunter",
     label: "Ruin hunter",
-    description: "Five castles or ruins reached.",
+    description: "Twelve castles or ruins reached.",
     sticker: "ruin-hunter",
-    target: 5,
+    target: 12,
     value: (s) => s.ruins,
+  },
+
+  /* ---- The rare tier. --------------------------------------------------
+     Everything above this line is a ladder: walk further, climb higher, go
+     again. These six are not. They ask what *kind* of walker somebody is —
+     whether they go in February as well as July, whether they take the hard
+     one occasionally, whether they keep turning up. None of them can be
+     reached by one enormous weekend, which is the point of them, and every
+     one is printed. */
+  {
+    id: "every-grade",
+    label: "All four grades",
+    description: "Easy, Moderate, Hard and Expert — one of each, at least once.",
+    sticker: "field-notes",
+    target: 4,
+    value: (s) => s.gradesWalked,
+    printed: true,
+  },
+  {
+    id: "four-seasons",
+    label: "Four seasons",
+    description: "A quest in winter, in spring, in summer and in autumn.",
+    sticker: "winter-ridge",
+    target: 4,
+    value: (s) => s.seasons,
+    printed: true,
+  },
+  {
+    id: "twelve-months",
+    label: "Every month",
+    description: "You have walked in all twelve months of the year.",
+    sticker: "twelve-months",
+    target: 12,
+    value: (s) => s.monthsWalked,
+    printed: true,
+  },
+  {
+    id: "unbroken",
+    label: "Unbroken",
+    description: "Eight weeks running with something logged in every one.",
+    sticker: "unbroken",
+    target: 8,
+    value: (s) => s.bestStreakWeeks,
+    printed: true,
+  },
+  {
+    id: "all-terrain",
+    label: "All terrain",
+    description: "Mountain, forest, lake, waterfall and ruin. Every kind of ground.",
+    sticker: "dawn-start",
+    target: 5,
+    value: (s) => s.terrainsWalked,
+    printed: true,
+  },
+  {
+    id: "the-long-year",
+    label: "The long year",
+    description: "A thousand kilometres inside a single calendar year.",
+    sticker: "honest-retreat",
+    target: 1000,
+    value: (s) => s.bestYearKm,
+    unit: "km",
+    printed: true,
   },
 ];
 
@@ -362,8 +448,14 @@ export function getAchievements(
       planLocked,
       requiredPlan: requiredPlanFor(index),
       revoked,
+      printed: definition.printed === true,
     };
   });
+}
+
+/** The ones that are really printed, in sheet order. */
+export function printedAchievements(achievements: Achievement[]): Achievement[] {
+  return achievements.filter((entry) => entry.printed);
 }
 
 export function countEarned(achievements: Achievement[]): number {

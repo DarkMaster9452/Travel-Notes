@@ -350,6 +350,7 @@ export async function getUserStats(userId: string) {
             terrain: true,
             region: true,
             country: true,
+            difficulty: true,
           },
         },
       },
@@ -361,6 +362,23 @@ export async function getUserStats(userId: string) {
   const countFeature = (tag: string) =>
     history.filter((h) => h.quest.features.includes(tag) || h.quest.terrain.includes(tag)).length;
 
+  // The rare stickers ask questions about *when* and *how varied*, not just
+  // how much, so they need the dates and the grades rather than another
+  // running total. All of it comes off the rows already loaded above.
+  const when = completed.map((h) => h.completedAt ?? h.generatedAt);
+
+  const mountains = countFeature("mountains");
+  const forests = countFeature("forest");
+  const waterfalls = countFeature("waterfall");
+  const lakes = countFeature("lake");
+  const ruins = countFeature("ruins") + countFeature("castle");
+
+  const kmByYear = new Map<number, number>();
+  for (const entry of completed) {
+    const year = (entry.completedAt ?? entry.generatedAt).getUTCFullYear();
+    kmByYear.set(year, (kmByYear.get(year) ?? 0) + entry.quest.distance);
+  }
+
   return {
     questCount: history.length,
     completedCount: completed.length,
@@ -368,14 +386,66 @@ export async function getUserStats(userId: string) {
     kmExplored: Math.round(completed.reduce((sum, h) => sum + h.quest.distance, 0)),
     kmOffered: Math.round(history.reduce((sum, h) => sum + h.quest.distance, 0)),
     elevation: Math.round(completed.reduce((sum, h) => sum + h.quest.elevationGain, 0)),
-    mountains: countFeature("mountains"),
-    forests: countFeature("forest"),
-    waterfalls: countFeature("waterfall"),
-    lakes: countFeature("lake"),
-    ruins: countFeature("ruins") + countFeature("castle"),
+    mountains,
+    forests,
+    waterfalls,
+    lakes,
+    ruins,
     regions: new Set(history.map((h) => h.quest.region)).size,
     countries: new Set(history.map((h) => h.quest.country)).size,
+
+    /* ---- the rare tier -------------------------------------------------- */
+
+    /** How many of the four grades have been walked at least once. */
+    gradesWalked: new Set(completed.map((h) => h.quest.difficulty)).size,
+    /** How many of the four seasons. */
+    seasons: new Set(when.map(seasonOf)).size,
+    /** How many distinct calendar months, ever — not months in a row. */
+    monthsWalked: new Set(when.map((date) => date.getUTCMonth())).size,
+    /** The longest run of consecutive weeks with something logged in each. */
+    bestStreakWeeks: longestWeekStreak(when),
+    /** How many of the five kinds of ground have been touched at least once. */
+    terrainsWalked: [mountains, forests, waterfalls, lakes, ruins].filter((n) => n > 0).length,
+    /** The best single calendar year, in kilometres. */
+    bestYearKm: Math.round(Math.max(0, ...kmByYear.values())),
   };
+}
+
+/** Meteorological seasons: whole months, which is how people talk about them. */
+function seasonOf(date: Date): 0 | 1 | 2 | 3 {
+  const month = date.getUTCMonth();
+  if (month <= 1 || month === 11) return 0; // Dec–Feb
+  if (month <= 4) return 1; // Mar–May
+  if (month <= 7) return 2; // Jun–Aug
+  return 3; // Sep–Nov
+}
+
+/**
+ * Which Monday-started week a date falls in, as a single integer.
+ *
+ * Counted from the epoch rather than reusing the ISO week *key*, because a
+ * streak needs weeks to be comparable by subtraction — "2026-W52" and
+ * "2027-W01" are consecutive but do not look it as strings.
+ */
+function weekIndex(date: Date): number {
+  const day = Math.floor(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86_400_000,
+  );
+  // 1 Jan 1970 was a Thursday, so +3 shifts the boundary onto Monday.
+  return Math.floor((day + 3) / 7);
+}
+
+function longestWeekStreak(dates: Date[]): number {
+  if (dates.length === 0) return 0;
+  const weeks = [...new Set(dates.map(weekIndex))].sort((a, b) => a - b);
+
+  let best = 1;
+  let run = 1;
+  for (let i = 1; i < weeks.length; i += 1) {
+    run = weeks[i] === weeks[i - 1] + 1 ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+  return best;
 }
 
 export type UserStats = Awaited<ReturnType<typeof getUserStats>>;

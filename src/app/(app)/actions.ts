@@ -615,7 +615,7 @@ export async function markStickersSeenAction(ids: string[]): Promise<void> {
     data: { seenAchievements: [...merged] },
   });
 
-  revalidatePath("/achievements");
+  revalidatePath("/stickers");
 }
 
 /* -------------------------------------------------------------------------- */

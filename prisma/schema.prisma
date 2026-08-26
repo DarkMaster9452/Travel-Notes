@@ -95,6 +95,7 @@ model User {
   shipping      ShippingAddress?
   notifications NotificationSettings?
   nudges        Nudge[]
+  despatched    StickerDespatch[]
   auditEntries  AdminAudit[]           @relation("AuditActor")
   invitesSent   StaffInvite[]          @relation("InviteAuthor")
 
@@ -877,6 +878,35 @@ model Nudge {
   @@unique([userId, kind])
   @@index([userId, dueAt])
   @@map("nudges")
+}
+
+/// Which printed stickers have actually gone in an envelope.
+///
+/// Stickers are derived, so there is no row whose existence means "earned" —
+/// and that was fine until something had to be posted. Without a log the
+/// despatch job cannot tell a sticker it has already sent from one it has not,
+/// and the promise of "two in each envelope" has no way of being kept: the job
+/// would either send the same two every month or send none, which is what it
+/// did.
+///
+/// One row per account per sticker, written the moment it is put in a
+/// despatch list. Unique on the pair, so a job that runs twice on the 2nd
+/// posts nothing twice.
+model StickerDespatch {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
+  /// The achievement id, matching `lib/achievements`. Ids there are frozen
+  /// precisely so this column keeps meaning something.
+  achievementId String @map("achievement_id")
+
+  postedAt DateTime @default(now()) @map("posted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId, postedAt])
+  @@map("sticker_despatches")
 }
 
 enum NudgeKind {
