@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
+import { useT } from "@/components/sq/i18n";
 import { Glyph, StravaMark } from "@/components/sq/icons";
 import { useToast } from "@/components/sq/toast";
 
@@ -56,6 +57,7 @@ export function SqProofForm({
     url: string,
   ) => Promise<{ ok: boolean; message?: string; distance?: number; elevation?: number; movingTime?: number }>;
 }) {
+  const t = useT();
   const router = useRouter();
   const toast = useToast();
 
@@ -86,7 +88,7 @@ export function SqProofForm({
       const response = await fetch("/api/uploads", { method: "POST", body });
       const result = (await response.json()) as { ok: boolean; url?: string; message?: string };
       if (result.ok && result.url) added.push(result.url);
-      else toast(result.message ?? "That photograph would not upload.", "stamp");
+      else toast(result.message ?? t.proof.uploadFailed, "stamp");
     }
     setPhotos((current) => [...current, ...added].slice(0, 4));
     setUploading(false);
@@ -95,8 +97,8 @@ export function SqProofForm({
 
   function validate(): boolean {
     const next: Record<string, string> = {};
-    if (note.trim().length < 10) next.note = "Tell us what happened — a sentence is enough.";
-    if (strava && !/^https?:\/\//.test(strava)) next.strava = "That needs to be a full link.";
+    if (note.trim().length < 10) next.note = t.proof.tellUs;
+    if (strava && !/^https?:\/\//.test(strava)) next.strava = t.proof.stravaBadLink;
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -121,11 +123,11 @@ export function SqProofForm({
       void submit(data).then((result) => {
         if (!result.ok) {
           setState("idle");
-          setErrors({ form: result.message ?? "That would not file." });
+          setErrors({ form: result.message ?? t.proof.failed });
           return;
         }
         setState("done");
-        toast(retreated ? "Retreat filed. A reader will get to it." : "Filed. A reader will get to it.");
+        toast(retreated ? t.proof.retreatFiled : t.proof.filed);
         window.setTimeout(() => router.push("/submissions"), 700);
       });
     });
@@ -140,13 +142,13 @@ export function SqProofForm({
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <section className="sq-card" style={{ overflow: "hidden" }}>
-          <SectionHead title="What happened" note="Required" />
+          <SectionHead title={t.proof.whatHappened} note={t.proof.required} />
           <div style={{ padding: "18px 22px 20px" }}>
             <textarea
               className="sq-textarea"
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Left the car park at 04:40 to catch the light on the ridge…"
+              placeholder={t.proof.notePlaceholder}
               style={{ minHeight: 132, background: "var(--paper-2)" }}
             />
             {errors.note ? <p className="sq-error">{errors.note}</p> : null}
@@ -170,7 +172,7 @@ export function SqProofForm({
         </section>
 
         <section className="sq-card" style={{ overflow: "hidden" }}>
-          <SectionHead title="Photographs" note="Up to four" />
+          <SectionHead title={t.proof.photographs} note={t.proof.upToFour} />
           <div
             style={{
               padding: "18px 22px 20px",
@@ -198,7 +200,7 @@ export function SqProofForm({
                 />
                 <button
                   type="button"
-                  aria-label="Remove this photograph"
+                  aria-label={t.proof.removePhoto}
                   onClick={() => setPhotos((current) => current.filter((entry) => entry !== photo))}
                   className="sq-btn sq-btn-ghost sq-btn-sm"
                   style={{ position: "absolute", top: 6, right: 6, padding: "4px 8px" }}
@@ -228,7 +230,7 @@ export function SqProofForm({
                 }}
               >
                 <Glyph name="camera" size={20} />
-                {uploading ? "Uploading…" : "Add a photograph"}
+                {uploading ? t.proof.uploading : t.proof.addPhoto}
               </button>
             ) : null}
 
@@ -248,7 +250,7 @@ export function SqProofForm({
         </section>
 
         <section className="sq-card" style={{ overflow: "hidden" }}>
-          <SectionHead title="Your figures" note="Optional" />
+          <SectionHead title={t.proof.yourFigures} note={t.proof.optional} />
           <div
             style={{
               display: "grid",
@@ -258,7 +260,7 @@ export function SqProofForm({
             }}
           >
             <FigureCell
-              label="Distance"
+              label={t.proof.distance}
               unit="km"
               value={distance}
               onChange={setDistance}
@@ -272,7 +274,7 @@ export function SqProofForm({
               asked={`asked ${Math.round(ask.elevationGain)}`}
             />
             <FigureCell
-              label="Moving time"
+              label={t.proof.movingTime}
               unit="min"
               value={movingTime}
               onChange={setMovingTime}
@@ -309,7 +311,7 @@ export function SqProofForm({
           >
             <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13.5, color: "var(--signal)" }}>
               <StravaMark size={13} />
-              {stravaConnected ? "Strava connected" : "Strava activity"}
+              {stravaConnected ? t.proof.stravaConnected : t.proof.strava}
             </span>
             <span style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 220 }}>
               <input
@@ -326,13 +328,13 @@ export function SqProofForm({
                   startTransition(() => {
                     void importStrava(strava).then((result) => {
                       if (!result.ok) {
-                        toast(result.message ?? "That activity could not be read.", "stamp");
+                        toast(result.message ?? t.proof.stravaUnreadable, "stamp");
                         return;
                       }
                       if (result.distance != null) setDistance(result.distance.toFixed(1));
                       if (result.elevation != null) setElevation(String(Math.round(result.elevation)));
                       if (result.movingTime != null) setMovingTime(String(Math.round(result.movingTime)));
-                      toast("Figures taken from the activity.");
+                      toast(t.proof.stravaRead);
                     });
                   });
                 }}
@@ -366,7 +368,7 @@ export function SqProofForm({
             type="button"
             role="switch"
             aria-checked={retreated}
-            aria-label="File this as a retreat"
+            aria-label={t.proof.retreat}
             className="sq-switch"
             onClick={() => setRetreated((value) => !value)}
           >
@@ -398,7 +400,7 @@ export function SqProofForm({
             disabled={state !== "idle"}
           >
             {state === "idle" ? (
-              retreated ? "File the retreat" : "File it"
+              retreated ? t.proof.fileRetreat : t.proof.file
             ) : state === "saving" ? (
               <Spinner />
             ) : (
@@ -415,14 +417,14 @@ export function SqProofForm({
 
         <section className="sq-tinted" style={{ padding: "20px 22px" }}>
           <h3 className="sq-h2" style={{ fontSize: 17, marginBottom: 12 }}>
-            What a reader looks for
+            {t.proof.readerLooksFor}
           </h3>
           <ol>
             {[
-              "An account of the day in your own words, not a caption.",
-              "Photographs with ground in them — where you were, not just your face.",
-              "Figures that sit near what the quest asked for, or a line saying why they do not.",
-              "A retreat said plainly. Turning back is a judgement, not a failure.",
+              t.proof.whatHappenedHint,
+              t.proof.photographsHint,
+              t.proof.figuresHint,
+              t.proof.retreatHint,
             ].map((line) => (
               <li
                 key={line}
