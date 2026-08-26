@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { SqActivityGrid } from "@/components/sq/activity-grid";
 import { SqSticker } from "@/components/sq/sticker";
 import { Avatar } from "@/components/sq/ui";
-import { accentInk, FIGURE_INKS, heat, terrainInk } from "@/lib/accents";
+import { accentInk, FIGURE_INKS, terrainInk } from "@/lib/accents";
 import { requireClient } from "@/lib/auth/guards";
 import { getPublicProfile } from "@/lib/profile";
 
@@ -36,7 +37,7 @@ export async function generateMetadata({
  * It is also the one screen in the product that is allowed to be *theirs*.
  * The rest of the app is one house style on one paper; here the account's
  * `accent` prints the band behind their name, the figures come in four
- * different inks, the year strip shows the months they actually walked, and
+ * different inks, a year of days shows how often they are actually here, and
  * the ground each quest crossed is a colour rather than another grey word. A
  * page about a person that looked like a table row was the thing to fix.
  *
@@ -57,10 +58,6 @@ export default async function PublicProfilePage({
 
   const accent = accentInk(profile.accent);
   const walked = profile.months.reduce((sum, month) => sum + month.count, 0);
-  const busiest = profile.months.reduce(
-    (best, month) => (month.count > best.count ? month : best),
-    profile.months[0] ?? { count: 0, label: "" },
-  );
 
   const figures = profile.stats
     ? [
@@ -142,36 +139,19 @@ export default async function PublicProfilePage({
         ) : null}
       </section>
 
-      {profile.months.length > 0 ? (
+      {profile.activityGrid ? (
         <article className="sq-card-flat" style={{ marginTop: 16, overflow: "hidden" }}>
           <div className="sq-section-head sq-rule-head">
-            <h2 className="sq-h2">The last twelve months</h2>
+            <h2 className="sq-h2">A year of turning up</h2>
             <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-              {walked === 0
-                ? "Nothing approved yet"
-                : busiest.count > 0
-                  ? `Busiest: ${busiest.label}`
-                  : `${walked} walked`}
+              {walked === 0 ? "Nothing approved yet" : `${walked} walked`}
             </span>
           </div>
-          <div
-            className="sq-year"
-            style={
-              { "--ink": accent.ink, "--wash": accent.wash, "--edge": accent.edge } as CSSProperties
-            }
-          >
-            {profile.months.map((month, index) => (
-              <div key={month.key} className="sq-year-month">
-                <div
-                  className="sq-year-cell"
-                  data-heat={heat(month.count)}
-                  style={{ ["--i" as string]: index }}
-                  title={`${month.label} — ${month.count} ${month.count === 1 ? "quest" : "quests"}`}
-                />
-                <span>{month.short}</span>
-              </div>
-            ))}
-          </div>
+          <SqActivityGrid
+            grid={profile.activityGrid}
+            accent={accent}
+            name={firstName(profile.name)}
+          />
         </article>
       ) : null}
 

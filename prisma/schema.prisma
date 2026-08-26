@@ -96,6 +96,7 @@ model User {
   notifications NotificationSettings?
   nudges        Nudge[]
   despatched    StickerDespatch[]
+  activity      ActivityDay[]
   auditEntries  AdminAudit[]           @relation("AuditActor")
   invitesSent   StaffInvite[]          @relation("InviteAuthor")
 
@@ -554,6 +555,11 @@ model Profile {
   showCountry    Boolean @default(true) @map("show_country")
   showActivities Boolean @default(true) @map("show_activities")
   showStickers   Boolean @default(true) @map("show_stickers")
+  /// The year grid. Its own switch rather than riding on `showActivities`,
+  /// because it describes time spent here rather than ground covered — a
+  /// different thing to be public about, and some people will want one
+  /// without the other.
+  showActivityGrid Boolean @default(true) @map("show_activity_grid")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -907,6 +913,36 @@ model StickerDespatch {
   @@unique([userId, achievementId])
   @@index([userId, postedAt])
   @@map("sticker_despatches")
+}
+
+/// One row per account per day something happened.
+///
+/// The public profile draws a year of these as a grid, so this is the record
+/// behind "how much somebody is around". Deliberately a *count per day* rather
+/// than a row per event: the grid only ever asks how busy a day was, a year of
+/// days is 365 rows instead of thousands, and nothing here can be worked
+/// backwards into a timeline of exactly what somebody did and when.
+///
+/// Written by `lib/activity`, which is fire-and-forget — a failed write must
+/// never roll back the thing the person actually did.
+model ActivityDay {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
+  /// The UTC calendar day, at midnight. UTC throughout, matching the rest of
+  /// the reporting, so two profiles side by side are comparable.
+  day DateTime @db.Date
+
+  count Int @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@index([userId, day])
+  @@map("activity_days")
 }
 
 enum NudgeKind {

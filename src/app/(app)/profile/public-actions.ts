@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { touch } from "@/lib/activity";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { normaliseHandle, normaliseSocial, uniqueHandle } from "@/lib/profile";
@@ -30,6 +31,7 @@ const publicProfileSchema = z.object({
   showCountry: z.coerce.boolean().optional(),
   showActivities: z.coerce.boolean().optional(),
   showStickers: z.coerce.boolean().optional(),
+  showActivityGrid: z.coerce.boolean().optional(),
 });
 
 export type PublicProfileState =
@@ -57,6 +59,7 @@ export async function savePublicProfileAction(
     showCountry: formData.get("showCountry") === "true",
     showActivities: formData.get("showActivities") === "true",
     showStickers: formData.get("showStickers") === "true",
+    showActivityGrid: formData.get("showActivityGrid") === "true",
   });
 
   if (!parsed.success) {
@@ -98,6 +101,7 @@ export async function savePublicProfileAction(
     showCountry: input.showCountry ?? false,
     showActivities: input.showActivities ?? false,
     showStickers: input.showStickers ?? false,
+    showActivityGrid: input.showActivityGrid ?? false,
   };
 
   await db.profile.upsert({
@@ -105,6 +109,8 @@ export async function savePublicProfileAction(
     update: values,
     create: { userId: user.id, ...values },
   });
+
+  void touch(user.id);
 
   revalidatePath("/profile");
   revalidatePath("/profile/public");

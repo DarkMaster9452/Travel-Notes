@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { touch } from "@/lib/activity";
 import { requireClient } from "@/lib/auth/guards";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
@@ -93,6 +94,8 @@ export async function saveAddressAction(formData: FormData): Promise<SettingsRes
   // the act of opening the form. A row with only a country in it leaves the
   // notice standing, which is correct: there is still nowhere to send anything.
   if (isPostable(values)) await completeNudge(user.id, "SHIPPING_ADDRESS");
+
+  void touch(user.id);
 
   revalidatePath("/settings/address");
   revalidatePath("/settings/billing");

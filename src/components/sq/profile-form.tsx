@@ -21,6 +21,7 @@ export type ProfileDraft = {
   showCountry: boolean;
   showActivities: boolean;
   showStickers: boolean;
+  showActivityGrid: boolean;
 };
 
 /**
@@ -43,6 +44,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
     showCountry: draft.showCountry,
     showActivities: draft.showActivities,
     showStickers: draft.showStickers,
+    showActivityGrid: draft.showActivityGrid,
   });
 
   const errors = state && !state.ok ? state.errors : {};
@@ -186,6 +188,11 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
               ["showCountry", "Your country", "The country you measure from. Never a town, never an address."],
               ["showActivities", "What you have walked", "Approved proof only, with your own account of each day."],
               ["showStickers", "Stickers", "The ones you have earned. Locked ones are never shown to a reader."],
+              [
+                "showActivityGrid",
+                "Your year",
+                "The grid of days you have been here. How often, never what you did.",
+              ],
             ] as const
           ).map(([key, label, description]) => (
             <li

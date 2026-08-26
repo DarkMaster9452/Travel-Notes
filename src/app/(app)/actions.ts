@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getAchievements } from "@/lib/achievements";
+import { touch } from "@/lib/activity";
 import { requireClient, requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { isWithinRefundWindow } from "@/lib/config";
@@ -86,6 +87,8 @@ export async function issueQuestAction(): Promise<IssueState> {
   if (!outcome.ok) return { ok: false, message: outcome.message };
 
   revalidateQuestPaths(outcome.quest.id);
+  void touch(user.id);
+
   return { ok: true, questId: outcome.quest.id, title: outcome.quest.title };
 }
 
@@ -307,6 +310,8 @@ async function fileProof(
     });
   }
 
+  void touch(userId);
+
   revalidateQuestPaths(questId);
   revalidatePath("/weekly");
   revalidatePath("/monthly");
@@ -417,6 +422,8 @@ export async function logQuestAction(rawQuestId: string): Promise<LogResult> {
         .filter((achievement) => achievement.earned && !before.has(achievement.id))
         .map(({ id, label, description }) => ({ id, label, description }))
     : [];
+
+  void touch(user.id);
 
   revalidateQuestPaths(questId);
   return { ok: true, completed, unlocked };
