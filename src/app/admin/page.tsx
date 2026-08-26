@@ -262,7 +262,7 @@ export default async function AdminOverviewPage() {
               {formatPrice(revenue.monthlyCents)}
             </b>
             <span className="sq-mono" style={{ fontSize: 12, paddingBottom: 5, color: "var(--ink-3)" }}>
-              list price · {revenue.live} live
+              list price · {revenue.paying} paying{revenue.demo > 0 ? `, ${revenue.demo} demo` : ""}
             </span>
           </div>
           <ul style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>

@@ -94,6 +94,7 @@ model User {
   display       DisplaySettings?
   shipping      ShippingAddress?
   notifications NotificationSettings?
+  nudges        Nudge[]
   auditEntries  AdminAudit[]           @relation("AuditActor")
   invitesSent   StaffInvite[]          @relation("InviteAuthor")
 
@@ -147,6 +148,15 @@ model Subscription {
   cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
   currentPeriodStart   DateTime?          @map("current_period_start")
   currentPeriodEnd     DateTime?          @map("current_period_end")
+
+  /// Activated without money changing hands.
+  ///
+  /// Entitlement treats a demo subscription exactly like a paid one — that is
+  /// the point of it — but the books must not. Revenue counts what was
+  /// charged, and a row with this set was never charged, so it is excluded
+  /// from the money and counted separately.
+  demo                 Boolean            @default(false)
+
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
@@ -828,6 +838,51 @@ model ShippingAddress {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("shipping_addresses")
+}
+
+/// Something the product needs to ask for, later.
+///
+/// The whole reason this table exists is the word *later*. An ask that lands
+/// in the middle of something good — "you have unlocked Explorer, now type
+/// your postcode" — turns the good thing into a form, and people answer it
+/// worse than if it had waited a day. So the ask is queued with a time on it
+/// and shown when that time comes, once, as a notice they can answer or wave
+/// away.
+///
+/// One row per kind per account, so activating twice does not queue the same
+/// question twice. `doneAt` and `dismissedAt` are deliberately separate: the
+/// first means we got what we asked for, the second means we did not, and the
+/// consequences of those two differ (an account with no address gets an email
+/// instead of an envelope).
+model Nudge {
+  id     String    @id @default(cuid())
+  userId String    @map("user_id")
+  kind   NudgeKind
+
+  /// Not shown before this instant.
+  dueAt DateTime @map("due_at")
+
+  seenAt      DateTime? @map("seen_at")
+  doneAt      DateTime? @map("done_at")
+  dismissedAt DateTime? @map("dismissed_at")
+
+  /// What the ask is about — the plan that was activated, for instance.
+  context Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind])
+  @@index([userId, dueAt])
+  @@map("nudges")
+}
+
+enum NudgeKind {
+  /// Where the monthly envelope should go. Asked a day after a plan that
+  /// includes post is activated, never at the moment of activating it.
+  SHIPPING_ADDRESS
 }
 
 /// Which emails an account has asked for.

@@ -212,6 +212,57 @@ export async function sendBoardSealed(
   });
 }
 
+/**
+ * The envelope, one way or the other.
+ *
+ * Two messages rather than one, because they are two different pieces of news
+ * and a single hedged sentence would serve neither: one says a parcel is in
+ * the post, the other says it is not and here is the card instead.
+ *
+ * Filed under `questDrop` rather than under a fifth switch. This is the
+ * monthly card arriving — the same thing that switch already governs — and an
+ * account that has turned off "a quest has opened" has said it does not want
+ * to hear about the month's card by mail.
+ */
+export async function sendEnvelopePosted(
+  userId: string,
+  envelope: { month: string; stickers: number },
+) {
+  return send(userId, "questDrop", {
+    subject: `Your ${envelope.month} envelope is in the post`,
+    body: [
+      `The ${envelope.month} quest card${envelope.stickers > 0 ? ` and ${envelope.stickers === 1 ? "a sticker" : `${envelope.stickers} stickers`}` : ""} went out today, to the address on your account.`,
+      "If it has not arrived within a fortnight, reply to this and we will send another.",
+    ],
+    action: { label: "Check the address", href: "/settings/address" },
+  });
+}
+
+/**
+ * No address, so no envelope.
+ *
+ * Said plainly, with the remedy attached. The point of this message is that
+ * nobody silently loses something their plan includes: they get the card, it
+ * simply arrives on a screen instead of on paper, and the one thing standing
+ * between them and the paper version is named.
+ */
+export async function sendEnvelopeByEmail(
+  userId: string,
+  envelope: { month: string; stickers: number },
+) {
+  return send(userId, "questDrop", {
+    subject: `Your ${envelope.month} quest card — by email this time`,
+    body: [
+      `Your plan includes the printed envelope, but we have no postal address for you, so the ${envelope.month} card is here rather than in a jiffy bag.`,
+      envelope.stickers > 0
+        ? `${envelope.stickers === 1 ? "One sticker is" : `${envelope.stickers} stickers are`} waiting to be printed and will go out with the first envelope we can actually post.`
+        : "Your stickers will go out with the first envelope we can actually post.",
+      "Add an address and the next one goes in the post.",
+    ],
+    action: { label: "Add an address", href: "/settings/address" },
+  });
+}
+
 function ordinal(rank: number): string {
   if (rank === 1) return "first";
   if (rank === 2) return "second";

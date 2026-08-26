@@ -1,4 +1,5 @@
 import { logoutAction } from "@/app/(auth)/actions";
+import { SqNudge } from "@/components/sq/nudge";
 import { SqShell } from "@/components/sq/shell";
 import { memberFootNav, memberNav } from "@/components/sq/nav";
 import { SqToastProvider } from "@/components/sq/toast";
@@ -6,6 +7,7 @@ import { initialsOf } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { getDueNudges } from "@/lib/nudges";
 
 /**
  * Everything under this layout is the *customer* product, and requires a
@@ -37,7 +39,7 @@ export default async function AppLayout({
 }) {
   const user = await requireClient();
 
-  const [entitlement, pending, profile, preferences] = await Promise.all([
+  const [entitlement, pending, profile, preferences, nudges] = await Promise.all([
     getEntitlement(user.id),
     db.submission.count({ where: { userId: user.id, status: "PENDING" } }),
     db.profile.findUnique({ where: { userId: user.id }, select: { handle: true, published: true } }),
@@ -45,6 +47,7 @@ export default async function AppLayout({
       where: { userId: user.id },
       select: { homeLocation: true },
     }),
+    getDueNudges(user.id),
   ]);
 
   const planName = entitlement.definition.name;
@@ -65,6 +68,17 @@ export default async function AppLayout({
         }}
         signOut={logoutAction}
         rail={rail}
+        notice={
+          nudges.some((nudge) => nudge.kind === "SHIPPING_ADDRESS") ? (
+            <SqNudge
+              kind="SHIPPING_ADDRESS"
+              title="Where should the envelope go?"
+              body="Your plan includes the printed quest card and two stickers each month. Without an address we cannot post it — the month's card would arrive by email instead."
+              action="Add an address"
+              href="/settings/address"
+            />
+          ) : null
+        }
       >
         {children}
       </SqShell>

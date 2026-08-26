@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { LockGlyph } from "@/components/sq/icons";
+import { Glyph, LockGlyph } from "@/components/sq/icons";
 import { SqSticker } from "@/components/sq/sticker";
 import { PageHeader, Stat } from "@/components/sq/ui";
 import { getAchievements, stickerAllowance } from "@/lib/achievements";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { ENVELOPE_COPY, getEnvelopeStatus } from "@/lib/envelope";
 import { getUserStats } from "@/lib/quest/service";
 import { SHAPE_RADIUS, stickerStyle } from "@/lib/stickers";
 
@@ -31,7 +32,7 @@ export const dynamic = "force-dynamic";
 export default async function StickersPage() {
   const user = await requireClient();
 
-  const [stats, entitlement, revocations, seen] = await Promise.all([
+  const [stats, entitlement, revocations, seen, envelope] = await Promise.all([
     getUserStats(user.id),
     getEntitlement(user.id),
     db.achievementRevocation.findMany({
@@ -39,6 +40,7 @@ export default async function StickersPage() {
       select: { achievementId: true },
     }),
     db.user.findUnique({ where: { id: user.id }, select: { seenAchievements: true } }),
+    getEnvelopeStatus(user.id, user.name),
   ]);
 
   const achievements = getAchievements(
@@ -71,6 +73,38 @@ export default async function StickersPage() {
           </>
         }
       />
+
+      {/* Whether these actually reach a letterbox is decided in one place —
+          `lib/envelope` — and said out loud here, because the page above
+          promises real post and the promise has a condition on it. */}
+      <aside
+        className={envelope.posts ? "sq-tinted" : "sq-card-flat"}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          padding: "13px 18px",
+          marginBottom: 16,
+          borderColor: envelope.reason === "no_address" ? "var(--signal)" : undefined,
+        }}
+      >
+        <span style={{ color: envelope.posts ? "var(--moss)" : "var(--signal)" }}>
+          <Glyph name="envelope" size={18} strokeWidth={1.9} />
+        </span>
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <b style={{ display: "block", fontSize: 13.5, fontWeight: 600 }}>
+            {ENVELOPE_COPY[envelope.reason].title}
+          </b>
+          <span style={{ display: "block", marginTop: 2, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-2)" }}>
+            {ENVELOPE_COPY[envelope.reason].detail}
+          </span>
+        </span>
+        {envelope.reason === "no_address" ? (
+          <Link href="/settings/address" className="sq-btn sq-btn-primary sq-btn-sm">
+            Add an address
+          </Link>
+        ) : null}
+      </aside>
 
       <section
         className="sq-stagger"

@@ -43,10 +43,28 @@ export type SqShellProps = {
    * it here; pages that do not simply centre instead.
    */
   rail?: React.ReactNode;
+  /**
+   * Anything the product needs to say before the page says anything.
+   *
+   * Above `children` rather than inside each page, because a notice that
+   * belonged to one screen would disappear the moment somebody navigated —
+   * and an ask that only exists on the screen you happen to be on is an ask
+   * that never gets answered.
+   */
+  notice?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function SqShell({ flag, nav, footNav, account, signOut, rail, children }: SqShellProps) {
+export function SqShell({
+  flag,
+  nav,
+  footNav,
+  account,
+  signOut,
+  rail,
+  notice,
+  children,
+}: SqShellProps) {
   const pathname = usePathname();
 
   // The drawer remembers *which* route it was opened on rather than whether it
@@ -143,6 +161,7 @@ export function SqShell({ flag, nav, footNav, account, signOut, rail, children }
       ) : null}
 
       <main key={pathname} className="sq-main sq-main-enter">
+        {notice}
         {children}
       </main>
 
