@@ -18,6 +18,14 @@ import type { Messages } from "@/lib/i18n";
  */
 export const sk: Messages = {
   common: {
+    published: "Zverejnené",
+    displayNamePlaceholder: "Nechaj prázdne a použije sa meno z účtu",
+    headlinePlaceholder: "Hore pomaly, dole ešte pomalšie. Väčšinou Fatry.",
+    yourWatch: "Tvoje hodinky",
+    locked: "Zamknuté",
+    pages: "Strany",
+    loading: "Načítava sa",
+    filing: "Odovzdáva sa",
     save: "Uložiť",
     saving: "Ukladá sa…",
     saved: "Uložené",

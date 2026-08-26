@@ -267,7 +267,7 @@ export function SqProofForm({
               asked={`asked ${ask.distance.toFixed(1)}`}
             />
             <FigureCell
-              label="Ascent"
+              label={t.proof.ascent}
               unit="m"
               value={elevation}
               onChange={setElevation}
@@ -402,7 +402,7 @@ export function SqProofForm({
             {state === "idle" ? (
               retreated ? t.proof.fileRetreat : t.proof.file
             ) : state === "saving" ? (
-              <Spinner />
+              <Spinner label={t.common.filing} />
             ) : (
               <Glyph name="check" size={18} strokeWidth={2.4} />
             )}
@@ -528,10 +528,10 @@ function FigureCell({
   );
 }
 
-function Spinner() {
+function Spinner({ label }: { label: string }) {
   return (
     <span
-      aria-label="Filing"
+      aria-label={label}
       style={{
         width: 16,
         height: 16,

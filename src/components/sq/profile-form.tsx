@@ -91,7 +91,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
             type="button"
             role="switch"
             aria-checked={published}
-            aria-label="Published"
+            aria-label={t.common.published}
             className="sq-switch"
             onClick={() => setPublished((value) => !value)}
           >
@@ -114,7 +114,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
               name="displayName"
               defaultValue={draft.displayName}
               maxLength={60}
-              placeholder="Leave empty to use the name on the account"
+              placeholder={t.common.displayNamePlaceholder}
             />
           </label>
 
@@ -125,7 +125,7 @@ export function SqProfileForm({ draft }: { draft: ProfileDraft }) {
               name="headline"
               defaultValue={draft.headline}
               maxLength={90}
-              placeholder="Slow up, slower down. Mostly the Fatras."
+              placeholder={t.common.headlinePlaceholder}
             />
           </label>
 

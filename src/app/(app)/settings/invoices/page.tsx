@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { SqPortalButton } from "@/components/sq/plan-actions";
 import { EmptyState } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
+import { getT } from "@/lib/i18n/server";
 import { listInvoices } from "@/lib/billing";
 import { isStripeEnabled } from "@/lib/env";
 
@@ -14,6 +15,7 @@ const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", 
 /** Stripe's record, read live. Nothing here is a copy kept on our side. */
 export default async function InvoicesSettingsPage() {
   const user = await requireClient();
+  const t = await getT(user.id);
   const invoices = isStripeEnabled() ? await listInvoices(user.id) : [];
 
   return (
@@ -22,7 +24,7 @@ export default async function InvoicesSettingsPage() {
         <h2 className="sq-h2" style={{ fontSize: 19 }}>
           Invoices
         </h2>
-        {isStripeEnabled() ? <SqPortalButton label="Open the billing portal" /> : null}
+        {isStripeEnabled() ? <SqPortalButton label={t.panes.invoices.openPortal} /> : null}
       </div>
 
       {invoices.length === 0 ? (

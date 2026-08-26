@@ -27,6 +27,14 @@ import type { PluralForms } from "@/lib/i18n/format";
 export const en = {
   /* ---- words the whole app shares --------------------------------------- */
   common: {
+    published: "Published",
+    displayNamePlaceholder: "Leave empty to use the name on the account",
+    headlinePlaceholder: "Slow up, slower down. Mostly the Fatras.",
+    yourWatch: "Your watch",
+    locked: "Locked",
+    pages: "Pages",
+    loading: "Loading",
+    filing: "Filing",
     save: "Save",
     saving: "Saving…",
     saved: "Saved",

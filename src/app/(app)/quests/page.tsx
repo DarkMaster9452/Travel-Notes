@@ -291,7 +291,7 @@ export default async function QuestDatabasePage({
       {pages > 1 ? (
         <nav
           style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }}
-          aria-label="Pages"
+          aria-label={t.common.pages}
         >
           {page > 1 ? (
             <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={pageHref(params, page - 1)}>

@@ -223,7 +223,7 @@ export default async function StickersPage() {
             {beyond.map((entry, index) => (
               <span
                 key={entry.id}
-                aria-label="Locked"
+                aria-label={t.common.locked}
                 title={`${entry.label} · ${planNameFor(entry.requiredPlan)}`}
                 className="sq-sticker sq-sticker-sealed"
                 data-locked="1"

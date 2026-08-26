@@ -211,7 +211,7 @@ export function SqOnboarding({
 
           {step === 3 ? (
             <section className="sq-card" style={{ overflow: "hidden" }}>
-              <Head title="Your watch" note="Optional" />
+              <Head title={t.common.yourWatch} note={t.proof.optional} />
               <div style={{ padding: "18px 24px", display: "grid", gap: 14 }}>
                 <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--ink-2)" }}>
                   Connect Strava and the proof form reads distance, ascent and moving time straight

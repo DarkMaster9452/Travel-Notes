@@ -17,6 +17,14 @@ import type { Messages } from "@/lib/i18n";
  */
 export const de: Messages = {
   common: {
+    published: "Veröffentlicht",
+    displayNamePlaceholder: "Leer lassen, dann gilt der Name aus dem Konto",
+    headlinePlaceholder: "Langsam rauf, noch langsamer runter. Meistens die Fatra.",
+    yourWatch: "Deine Uhr",
+    locked: "Gesperrt",
+    pages: "Seiten",
+    loading: "Lädt",
+    filing: "Wird eingereicht",
     save: "Speichern",
     saving: "Wird gespeichert…",
     saved: "Gespeichert",
