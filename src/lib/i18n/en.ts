@@ -433,6 +433,95 @@ export const en = {
     },
   },
 
+  /* ---- the quest database ------------------------------------------------- */
+  questsPage: {
+    kicker: "Everything ever issued",
+    title: "Quest database",
+    lede: "Every quest the engine has written, including the ones that were never yours. Yours are marked, and anything here can be filed against.",
+    count: (n: string) => `${n} quests`,
+    homeOnly: (country: string) =>
+      `Showing ${country} only. Explorer opens every European range; Ultra opens the rest of the map.`,
+    yourCountry: "your country",
+    find: "Find",
+    findPlaceholder: "Region or trailhead",
+    region: "Region",
+    everyRegion: "Every region",
+    grade: "Grade",
+    anyGrade: "Any grade",
+    cadence: "Cadence",
+    any: "Any",
+    wasMonthly: "Was a monthly",
+    wasWeekly: "Was a weekly",
+    neverBooked: "Never booked",
+    written: "Written",
+    anyMonth: "Any month",
+    noMatch: "Nothing matches that",
+    noMatchBody:
+      "Widen the filters — region and grade together will cut a catalogue of thousands down to nothing quite quickly.",
+    clearFilters: "Clear the filters",
+    done: "DONE",
+    yours: "YOURS",
+    newer: "← Newer",
+    older: "Older →",
+    page: (page: number, pages: number) => `${page} of ${pages}`,
+  },
+
+  /* ---- the board ---------------------------------------------------------- */
+  leaderboard: {
+    title: "Leaderboard",
+    cadence: "Board cadence",
+    approvedOnly:
+      "A board counts approved proof only. Until a reader has passed something, there is nothing to rank.",
+    empty: "Nothing on this board yet",
+    emptyWindow: "Nothing approved in this window yet",
+    emptyBody: "Approved proof is what puts you on it.",
+    leading: "You are leading this one.",
+  },
+
+  /* ---- submissions -------------------------------------------------------- */
+  submissions: {
+    title: "Your submissions",
+    filed: "Filed",
+    summary: (filed: number, approved: number, waiting: number) =>
+      `${filed} filed · ${approved} approved · ${waiting} waiting`,
+    inReview: "In review",
+    approvedTag: "Approved",
+    photos: { one: "# photo", other: "# photos" } as PluralForms,
+    stravaAttached: "Strava attached",
+    readOn: (when: string) => `Read ${when}.`,
+    retreat: "retreat",
+    approved: "Approved.",
+    sentBack: "Sent back.",
+    waiting: "Waiting on a reader.",
+    unread: "Nobody has read it yet — everything is read in the order it was filed.",
+    editWhileWaiting: "Edit while it waits",
+    addAndRefile: "Add to it and file again",
+    seeQuest: "See the quest",
+    empty: "Nothing filed yet",
+    emptyBody:
+      "Proof is what makes a quest count. File against the monthly, the weekly, or anything in the database.",
+  },
+
+  /* ---- people and groups -------------------------------------------------- */
+  people: {
+    title: "People & groups",
+    tabs: "People or groups",
+    directory: "Who else is out there",
+    directoryLede:
+      "Everybody who has published a page. Nobody is here who has not chosen to be, and nothing here says whether anyone else has an account.",
+    nobodyYet: "Nobody has published a page yet",
+    nobodyYetBody:
+      "Publishing yours is what puts you here. It shows what you have logged, and nothing about your account.",
+    publishYours: "Publish your page",
+    editYours: "Edit your page",
+    noGroup: "You are not in a group",
+    noGroupBody:
+      "Start one and send the link to whoever you walk with. A group is a board of its own, on the same points as everything else.",
+    groupsNote:
+      "A group is a smaller board and a page to find each other on. Who is in one is visible to the people in it, and to nobody else.",
+    logged: (n: number) => `${n} logged`,
+  },
+
   billing: {
     currentPlan: "Current plan",
     monthly: ", monthly",

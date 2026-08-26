@@ -464,6 +464,91 @@ export const de: Messages = {
     },
   },
 
+  questsPage: {
+    kicker: "Alles, was je herausging",
+    title: "Quest-Datenbank",
+    lede: "Jeder Quest, den die Maschine geschrieben hat, auch die, die nie deine waren. Deine sind markiert, und gegen alles hier kann ein Nachweis eingereicht werden.",
+    count: (n) => `${n} Quests`,
+    homeOnly: (country) =>
+      `Es wird nur ${country} gezeigt. Explorer öffnet jedes europäische Gebirge, Ultra den Rest der Karte.`,
+    yourCountry: "dein Land",
+    find: "Suchen",
+    findPlaceholder: "Region oder Startpunkt",
+    region: "Region",
+    everyRegion: "Jede Region",
+    grade: "Stufe",
+    anyGrade: "Beliebige Stufe",
+    cadence: "Rhythmus",
+    any: "Beliebig",
+    wasMonthly: "War ein monatlicher",
+    wasWeekly: "War ein wöchentlicher",
+    neverBooked: "Nie geplant",
+    written: "Geschrieben",
+    anyMonth: "Beliebiger Monat",
+    noMatch: "Dazu passt nichts",
+    noMatchBody:
+      "Lockere die Filter — Region und Stufe zusammen schrumpfen einen Katalog von Tausenden sehr schnell auf null.",
+    clearFilters: "Filter zurücksetzen",
+    done: "FERTIG",
+    yours: "DEINS",
+    newer: "← Neuer",
+    older: "Älter →",
+    page: (page, pages) => `${page} von ${pages}`,
+  },
+
+  leaderboard: {
+    title: "Rangliste",
+    cadence: "Rhythmus der Rangliste",
+    approvedOnly:
+      "Eine Rangliste zählt nur bestätigte Nachweise. Solange niemand geprüft hat, gibt es nichts zu ordnen.",
+    empty: "In dieser Rangliste steht noch niemand",
+    emptyWindow: "In diesem Zeitraum noch nichts bestätigt",
+    emptyBody: "Hinein kommt man mit bestätigten Nachweisen.",
+    leading: "Die hier führst du.",
+  },
+
+  submissions: {
+    title: "Deine Einreichungen",
+    filed: "Eingereicht",
+    summary: (filed, approved, waiting) =>
+      `${filed} eingereicht · ${approved} bestätigt · ${waiting} wartend`,
+    inReview: "In Prüfung",
+    approvedTag: "Bestätigt",
+    photos: { one: "# Foto", other: "# Fotos" },
+    stravaAttached: "Strava angehängt",
+    readOn: (when) => `Gelesen am ${when}.`,
+    retreat: "Umkehr",
+    approved: "Bestätigt.",
+    sentBack: "Zurückgeschickt.",
+    waiting: "Wartet auf Prüfung.",
+    unread: "Es hat noch niemand gelesen — alles wird in der Reihenfolge des Eingangs gelesen.",
+    editWhileWaiting: "Bearbeiten, solange es wartet",
+    addAndRefile: "Ergänzen und erneut einreichen",
+    seeQuest: "Quest ansehen",
+    empty: "Noch nichts eingereicht",
+    emptyBody:
+      "Der Nachweis ist das, was einen Quest zählen lässt. Reiche ihn zum monatlichen, zum wöchentlichen oder zu allem aus der Datenbank ein.",
+  },
+
+  people: {
+    title: "Leute & Gruppen",
+    tabs: "Leute oder Gruppen",
+    directory: "Wer sonst noch unterwegs ist",
+    directoryLede:
+      "Alle, die ihre Seite veröffentlicht haben. Niemand ist hier, der sich nicht dafür entschieden hat, und nichts hier verrät, ob sonst jemand ein Konto hat.",
+    nobodyYet: "Noch hat niemand eine Seite veröffentlicht",
+    nobodyYetBody:
+      "Deine zu veröffentlichen bringt dich hierher. Sie zeigt, was du eingetragen hast, und nichts über dein Konto.",
+    publishYours: "Deine Seite veröffentlichen",
+    editYours: "Deine Seite bearbeiten",
+    noGroup: "Du bist in keiner Gruppe",
+    noGroupBody:
+      "Gründe eine und schick den Link an die, mit denen du gehst. Eine Gruppe ist eine eigene Rangliste, auf denselben Punkten wie alles andere.",
+    groupsNote:
+      "Eine Gruppe ist eine kleinere Rangliste und eine Seite, um einander zu finden. Wer drin ist, sehen nur die Leute darin, sonst niemand.",
+    logged: (n) => `${n} eingetragen`,
+  },
+
   billing: {
     currentPlan: "Aktueller Tarif",
     monthly: ", monatlich",

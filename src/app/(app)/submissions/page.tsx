@@ -5,11 +5,13 @@ import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import { formatDate, plural } from "@/lib/i18n/format";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { planCopy } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Your submissions" };
 export const dynamic = "force-dynamic";
 
-const WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 /**
  * Everything this account has filed, newest first.
@@ -22,7 +24,7 @@ const WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", 
 export default async function SubmissionsPage() {
   const user = await requireClient();
 
-  const [submissions, entitlement] = await Promise.all([
+  const [submissions, entitlement, t, locale] = await Promise.all([
     db.submission.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -41,6 +43,8 @@ export default async function SubmissionsPage() {
       },
     }),
     getEntitlement(user.id),
+    getT(user.id),
+    getLocale(user.id),
   ]);
 
   const approved = submissions.filter((entry) => entry.status === "APPROVED").length;
@@ -49,17 +53,21 @@ export default async function SubmissionsPage() {
   return (
     <>
       <PageHeader
-        kicker="Filed"
-        title="Your submissions"
-        lede={`${submissions.length} filed · ${approved} approved · ${waiting} waiting`}
-        right={<Tag tone="green" small>{entitlement.definition.name.toUpperCase()}</Tag>}
+        kicker={t.submissions.filed}
+        title={t.submissions.title}
+        lede={t.submissions.summary(submissions.length, approved, waiting)}
+        right={
+          <Tag tone="green" small>
+            {planCopy(t, entitlement.plan).name.toUpperCase()}
+          </Tag>
+        }
       />
 
       {submissions.length === 0 ? (
         <EmptyState
           glyph="book"
-          title="Nothing filed yet"
-          body="Proof is what makes a quest count. File against the monthly, the weekly, or anything in the database."
+          title={t.submissions.empty}
+          body={t.submissions.emptyBody}
           action={
             <Link href="/monthly" className="sq-btn sq-btn-primary sq-btn-sm">
               Open the monthly
@@ -99,10 +107,10 @@ export default async function SubmissionsPage() {
                     small
                   >
                     {entry.status === "APPROVED"
-                      ? "Approved"
+                      ? t.submissions.approvedTag
                       : declined
-                        ? "Sent back"
-                        : "In review"}
+                        ? t.questCard.sentBack
+                        : t.submissions.inReview}
                   </Tag>
                 </div>
 
@@ -110,7 +118,7 @@ export default async function SubmissionsPage() {
                   <p className="sq-mono" style={{ fontSize: 10.5, letterSpacing: "0.05em", color: "var(--ink-3)" }}>
                     {entry.quest.location} · {entry.quest.region}
                     {entry.period ? ` · ${entry.period === "MONTHLY" ? "monthly" : "weekly"} ${entry.slotKey ?? ""}` : ""}
-                    {entry.retreated ? " · retreat" : ""}
+                    {entry.retreated ? ` · ${t.submissions.retreat}` : ""}
                   </p>
 
                   <p
@@ -139,8 +147,8 @@ export default async function SubmissionsPage() {
                     <span>{entry.distance != null ? `${entry.distance.toFixed(1)} km` : "— km"}</span>
                     <span>{entry.elevation != null ? `${entry.elevation} m ↑` : "— m ↑"}</span>
                     <span>{entry.movingTime != null ? `${entry.movingTime} min` : "— moving"}</span>
-                    <span>{entry.photos.length} {entry.photos.length === 1 ? "photo" : "photos"}</span>
-                    {entry.stravaUrl ? <span style={{ color: "var(--signal)" }}>Strava attached</span> : null}
+                    <span>{plural(locale, entry.photos.length, t.submissions.photos)}</span>
+                    {entry.stravaUrl ? <span style={{ color: "var(--signal)" }}>{t.submissions.stravaAttached}</span> : null}
                   </div>
 
                   <div
@@ -157,14 +165,14 @@ export default async function SubmissionsPage() {
                     <p style={{ fontSize: 13, lineHeight: 1.55 }}>
                       <b>
                         {entry.status === "APPROVED"
-                          ? "Approved."
+                          ? t.submissions.approved
                           : declined
-                            ? "Sent back."
-                            : "Waiting on a reader."}
+                            ? t.submissions.sentBack
+                            : t.submissions.waiting}
                       </b>{" "}
                       {settled && entry.reviewedAt
-                        ? `Read ${WHEN.format(entry.reviewedAt)}.`
-                        : "Nobody has read it yet — everything is read in the order it was filed."}
+                        ? t.submissions.readOn(formatDate(locale, entry.reviewedAt))
+                        : t.submissions.unread}
                     </p>
                     {declined && entry.reviewNote ? (
                       <p
@@ -191,7 +199,9 @@ export default async function SubmissionsPage() {
                       gap: 12,
                     }}
                   >
-                    <span className="sq-kicker-sm">Filed {WHEN.format(entry.createdAt)}</span>
+                    <span className="sq-kicker-sm">
+                      {t.submissions.filed} {formatDate(locale, entry.createdAt)}
+                    </span>
                     <Link
                       href={
                         entry.status === "APPROVED"
@@ -201,10 +211,10 @@ export default async function SubmissionsPage() {
                       style={{ fontSize: 13, whiteSpace: "nowrap" }}
                     >
                       {entry.status === "APPROVED"
-                        ? "See the quest"
+                        ? t.submissions.seeQuest
                         : declined
-                          ? "Add to it and file again"
-                          : "Edit while it waits"}{" "}
+                          ? t.submissions.addAndRefile
+                          : t.submissions.editWhileWaiting}{" "}
                       →
                     </Link>
                   </div>

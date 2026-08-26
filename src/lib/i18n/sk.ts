@@ -464,6 +464,91 @@ export const sk: Messages = {
     },
   },
 
+  questsPage: {
+    kicker: "Všetko, čo kedy vyšlo",
+    title: "Databáza questov",
+    lede: "Každý quest, ktorý engine napísal, vrátane tých, ktoré nikdy neboli tvoje. Tvoje sú označené a proti čomukoľvek tu sa dá odovzdať dôkaz.",
+    count: (n) => `${n} questov`,
+    homeOnly: (country) =>
+      `Zobrazuje sa len ${country}. Explorer otvorí každé európske pohorie, Ultra zvyšok mapy.`,
+    yourCountry: "tvoja krajina",
+    find: "Hľadať",
+    findPlaceholder: "Región alebo východisko",
+    region: "Región",
+    everyRegion: "Každý región",
+    grade: "Stupeň",
+    anyGrade: "Ktorýkoľvek stupeň",
+    cadence: "Kadencia",
+    any: "Akákoľvek",
+    wasMonthly: "Bol mesačný",
+    wasWeekly: "Bol týždenný",
+    neverBooked: "Nikdy nezadaný",
+    written: "Napísaný",
+    anyMonth: "Ktorýkoľvek mesiac",
+    noMatch: "Tomu nič nezodpovedá",
+    noMatchBody:
+      "Uvoľni filtre — región a stupeň spolu zredukujú katalóg tisícok na nulu veľmi rýchlo.",
+    clearFilters: "Zrušiť filtre",
+    done: "HOTOVO",
+    yours: "TVOJE",
+    newer: "← Novšie",
+    older: "Staršie →",
+    page: (page, pages) => `${page} z ${pages}`,
+  },
+
+  leaderboard: {
+    title: "Rebríček",
+    cadence: "Kadencia rebríčka",
+    approvedOnly:
+      "Rebríček počíta len schválený dôkaz. Kým ho kontrolór nepustí ďalej, nie je čo radiť.",
+    empty: "V tomto rebríčku zatiaľ nikto nie je",
+    emptyWindow: "V tomto okne zatiaľ nič schválené",
+    emptyBody: "Dostane ťa doň schválený dôkaz.",
+    leading: "Tento vedieš.",
+  },
+
+  submissions: {
+    title: "Tvoje odovzdané",
+    filed: "Odovzdané",
+    summary: (filed, approved, waiting) =>
+      `${filed} odovzdaných · ${approved} schválených · ${waiting} čaká`,
+    inReview: "V kontrole",
+    approvedTag: "Schválené",
+    photos: { one: "# fotka", few: "# fotky", other: "# fotiek" },
+    stravaAttached: "Strava priložená",
+    readOn: (when) => `Prečítané ${when}.`,
+    retreat: "návrat",
+    approved: "Schválené.",
+    sentBack: "Vrátené.",
+    waiting: "Čaká na kontrolóra.",
+    unread: "Zatiaľ to nikto nečítal — všetko sa číta v poradí odovzdania.",
+    editWhileWaiting: "Upraviť, kým čaká",
+    addAndRefile: "Doplniť a odovzdať znova",
+    seeQuest: "Pozrieť quest",
+    empty: "Zatiaľ nič odovzdané",
+    emptyBody:
+      "Dôkaz je to, čo dá questu platnosť. Odovzdaj ho k mesačnému, týždennému alebo k čomukoľvek z databázy.",
+  },
+
+  people: {
+    title: "Ľudia a skupiny",
+    tabs: "Ľudia alebo skupiny",
+    directory: "Kto ďalší tam vonku je",
+    directoryLede:
+      "Každý, kto zverejnil svoju stránku. Nikto tu nie je bez toho, aby sa tak rozhodol, a nič tu nehovorí, či niekto iný má účet.",
+    nobodyYet: "Zatiaľ nikto nezverejnil stránku",
+    nobodyYetBody:
+      "Zverejnenie tej tvojej ťa sem dostane. Ukazuje, čo máš zapísané, a nič o tvojom účte.",
+    publishYours: "Zverejniť stránku",
+    editYours: "Upraviť stránku",
+    noGroup: "Nie si v žiadnej skupine",
+    noGroupBody:
+      "Založ jednu a pošli odkaz tým, s ktorými chodíš. Skupina je vlastný rebríček, na rovnakých bodoch ako všetko ostatné.",
+    groupsNote:
+      "Skupina je menší rebríček a stránka, kde sa nájdete. Kto v nej je, vidia len ľudia v nej a nikto iný.",
+    logged: (n) => `${n} zapísaných`,
+  },
+
   billing: {
     currentPlan: "Aktuálny plán",
     monthly: ", mesačne",
