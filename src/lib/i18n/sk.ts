@@ -1,0 +1,380 @@
+import type { Messages } from "@/lib/i18n";
+
+/**
+ * Slovenčina.
+ *
+ * Typed as `Messages`, so this file cannot compile while anything in `en.ts`
+ * is missing from it. That is the check — nothing else enforces completeness,
+ * and nothing else needs to.
+ *
+ * Two things to keep in mind when editing:
+ *
+ *   · Slovak has three plural forms, not two. One quest, dva/tri/štyri questy,
+ *     päť questov. Every `PluralForms` entry here fills in `few`, which
+ *     English leaves out because it has no such form.
+ *   · The interpolating entries are functions, so word order is yours. Do not
+ *     translate the English sentence — write the Slovak one, and put the value
+ *     where Slovak wants it.
+ */
+export const sk: Messages = {
+  common: {
+    save: "Uložiť",
+    saving: "Ukladá sa…",
+    saved: "Uložené",
+    cancel: "Zrušiť",
+    close: "Zavrieť",
+    back: "Späť",
+    open: "Otvoriť",
+    edit: "Upraviť",
+    remove: "Odstrániť",
+    none: "—",
+    yours: "Tvoje",
+    free: "Zadarmo",
+    perMonth: "/mes",
+    perYear: "/rok",
+    points: "bodov",
+    somethingWrong: "Nepodarilo sa. Skús to znova.",
+    ofTotal: (held, total) => `${held} z ${total}`,
+    quests: { one: "# quest", few: "# questy", other: "# questov" },
+    days: { one: "# deň", few: "# dni", other: "# dní" },
+    people: { one: "# človek", few: "# ľudia", other: "# ľudí" },
+    things: { one: "# vec", few: "# veci", other: "# vecí" },
+  },
+
+  nav: {
+    dashboard: "Prehľad",
+    monthly: "Mesačný",
+    quests: "Databáza questov",
+    leaderboard: "Rebríček",
+    stickers: "Nálepky",
+    submissions: "Odovzdané",
+    people: "Ľudia a skupiny",
+    settings: "Nastavenia",
+    signOut: "Odhlásiť sa",
+    menu: "Menu",
+    alongside: "Vedľa",
+  },
+
+  settings: {
+    heading: "Nastavenia",
+    kicker: "Tvoj účet",
+    groups: {
+      settings: "Nastavenia",
+      you: "Ty",
+      membership: "Členstvo",
+      account: "Účet",
+    },
+    items: {
+      general: "Všeobecné",
+      units: "Jednotky a jazyk",
+      profile: "Profil",
+      address: "Doručovacia adresa",
+      notifications: "Notifikácie",
+      billing: "Plán a platby",
+      invoices: "Faktúry",
+      cancel: "Pozastaviť alebo zrušiť",
+      password: "Heslo",
+      connected: "Prepojené aplikácie",
+      privacy: "Súkromie",
+    },
+    units: {
+      heading: "Jednotky a jazyk",
+      footer:
+        "Questy sú písané v metroch a kilometroch. Imperiálne jednotky sa prepočítajú až pri zobrazení; nič sa neukladá dvakrát.",
+      units: "Jednotky",
+      metric: "Metrické — km a metre",
+      imperial: "Imperiálne — míle a stopy",
+      language: "Jazyk",
+      languageHint: "Všetko, čo tu čítaš. Zadania questov zatiaľ zostávajú po anglicky.",
+    },
+  },
+
+  plans: {
+    free: {
+      name: "Zadarmo",
+      kicker: (quests) => `${quests} questy`,
+      description: "Tri skutočné questy, aby si zistil, či ti sedí, keď ti niekto povie, kam ísť.",
+      features: (quests, stickers) => [
+        `${quests} skutočné questy`,
+        "Tvoja vlastná krajina",
+        `Prvých ${stickers} nálepiek`,
+      ],
+      missing: ["Bez doručenia poštou", "Bez hľadania parťáka"],
+    },
+    explorer: {
+      name: "Explorer",
+      kicker: "Neobmedzené questy",
+      description:
+        "Neobmedzené questy kdekoľvek v Európe, v schránke ráno, ktoré si si vybral.",
+      features: (stickers) => [
+        "Neobmedzené questy",
+        "Kdekoľvek v Európe",
+        `${stickers} nálepiek na zbieranie`,
+        "Questy poštou",
+        "Prehodiť, preskočiť a pozastaviť",
+        "Hľadanie parťáka a rebríček",
+        "Tlačené hárky nálepiek, poštou",
+      ],
+      missing: ["Len Európa — nie celý svet"],
+      badge: "Najčastejší",
+    },
+    ultra: {
+      name: "Ultra Explorer",
+      kicker: "Celý svet, prednostne",
+      description: "Každé pohorie na mape a questy postavené na niečom konkrétnom.",
+      features: (stickers) => [
+        "Všetko z Explorera",
+        "Celý svet, každý kontinent",
+        `Všetkých ${stickers} nálepiek`,
+        "Questy na objednávku",
+        "Viacdňové a týždňové questy",
+        "Prednostná podpora, skutočné odpovede",
+        "Súkromné partie a pozvánky",
+      ],
+      missing: [],
+    },
+  },
+
+  capabilities: {
+    unlimited: {
+      title: "Neobmedzené questy",
+      detail: "Počítadlo je preč. Ďalší si vezmi hneď, ako jeden zapíšeš.",
+    },
+    europe: {
+      title: "Kdekoľvek v Európe",
+      detail: "Každé európske pohorie v katalógu, nielen tvoja krajina.",
+    },
+    worldwide: {
+      title: "Celý svet",
+      detail: "Každý kontinent v katalógu. Explorer končí v Európe.",
+    },
+    mail: {
+      title: "Questy poštou",
+      detail: "Jeden quest, ráno, ktoré si si vybral, už rozhodnutý.",
+    },
+    reroll: {
+      title: "Prehodiť, preskočiť a pozastaviť",
+      detail: "Obrátilo sa počasie? Prehoď ho. Nič sa ti nepočíta na ťarchu.",
+    },
+    matching: {
+      title: "Hľadanie parťáka",
+      detail: "Popýtaj sa o spoločnosť a rebríček sa otvorí.",
+    },
+    printedStickers: {
+      title: "Nálepky poštou",
+      detail: "Dve vyrezané nálepky idú spolu s kartou questu 2. každého mesiaca.",
+    },
+    customQuests: {
+      title: "Questy na objednávku",
+      detail: "Objednaj si quest postavený na ročnom období, pohorí alebo cieli.",
+    },
+    multiDay: {
+      title: "Viacdňové questy",
+      detail: "Z chaty na chatu, celé týždne, tie, na ktoré treba voľný piatok.",
+    },
+    priority: {
+      title: "Prednostná podpora",
+      detail: "Skutočné odpovede od ľudí, ktorí to postavili.",
+    },
+    crews: {
+      title: "Súkromné partie",
+      detail: "Pozvánky, uzavretý rebríček, skupinové questy s jednou zásielkou pre každého.",
+    },
+  },
+
+  envelope: {
+    posting: {
+      title: "Odchádza 2. v mesiaci",
+      detail:
+        "Karta questu a dve nálepky idú poštou 2. každého mesiaca. Adresa zmenená po 28. platí až pre ďalšiu obálku.",
+    },
+    not_included: {
+      title: "Len na obrazovke",
+      detail:
+        "Účty zadarmo si kartu questu čítajú tu, namiesto toho, aby ju dostali. Explorer a vyššie dostávajú tlačenú obálku.",
+    },
+    no_address: {
+      title: "E-mail namiesto pošty",
+      detail:
+        "Tvoj plán zahŕňa tlačenú obálku, ale nemáme adresu, kam ju poslať — takže karta questu a nálepky prídu e-mailom. Pridaj adresu a ďalšia obálka pôjde poštou.",
+    },
+  },
+
+  stickers: {
+    kicker: "Tlačené, lepiace, poslané",
+    heading: "Nálepky",
+    lede: "Nič tu nie je trofej na obrazovke. Každá je skutočná nálepka a v obálke idú nanajvýš dve spolu s mesačnou kartou questu — ostatné počkajú.",
+    earned: "Získané",
+    onYourPlan: "V tvojom pláne",
+    printedInAll: "Celkovo vytlačených",
+    posted: "Príde poštou",
+    onScreen: "Na obrazovke",
+    withdrawn: "Odobraté redakciou",
+    progress: (value, target) => `${value} / ${target}`,
+    beyondHeading: (count) => `${count} hárkov, na ktoré zatiaľ nevidíš`,
+    beyondBody: (plan, reachable, total) =>
+      `Plán ${plan} tlačí ${reachable} z ${total}. Ostatné sú vyrezané pre členov vyššie — čo sú, zostáva zapečatené, kým nie je aj plán.`,
+    seePlans: "Pozrieť plány",
+    addAddress: "Pridať adresu",
+  },
+
+  sheet: {
+    "first-light": { label: "Prvé svetlo", description: "Naozaj si šiel. Zapíš si prvý quest." },
+    "second-wind": { label: "Druhý dych", description: "Päť zapísaných. Ten prvý nebola náhoda." },
+    "into-the-trees": { label: "Medzi stromy", description: "Tri dni strávené pod korunami." },
+    "first-ridge": { label: "Prvý hrebeň", description: "Tri questy, v ktorých bol kopec." },
+    "twenty-five": { label: "Šesťdesiat", description: "Šesťdesiat kilometrov, dokopy." },
+    "thousand-up": {
+      label: "Dva a pol",
+      description: "Dva a pol tisíca metrov prevýšenia máš za sebou.",
+    },
+    "ten-logged": {
+      label: "Dvadsaťpäť zapísaných",
+      description: "Dvadsaťpäť questov, žiadne opakovanie.",
+    },
+    cartographer: { label: "Kartograf", description: "Osem rôznych regiónov." },
+    "gorge-rat": { label: "Potkan z tiesňavy", description: "Šesť questov s vodou." },
+    "long-hauler": {
+      label: "Dlhá trať",
+      description: "Dvestopäťdesiat kilometrov pod topánkami.",
+    },
+    "twenty-five-logged": {
+      label: "Šesťdesiat zapísaných",
+      description: "Šesťdesiat questov. Viac než celá sezóna.",
+    },
+    "fifty-logged": {
+      label: "Stodvadsať",
+      description: "Stodvadsať zapísaných questov.",
+    },
+    "hundred-logged": {
+      label: "Dvestopäťdesiat",
+      description: "Dvestopäťdesiat questov. Možno choď von menej.",
+    },
+    "two-hundred-logged": {
+      label: "Päťsto",
+      description: "Päťsto zapísaných. Došli nám slová.",
+    },
+    "five-thousand-up": {
+      label: "Dvanásťtisíc hore",
+      description: "Dvanásťtisíc metrov prevýšenia, dokopy.",
+    },
+    everest: {
+      label: "Od mora po vrchol",
+      description: "8 848 nastúpaných metrov. Výška tej najväčšej.",
+    },
+    "ten-thousand-up": {
+      label: "Dvadsaťpäťtisíc hore",
+      description: "Dvadsaťpäťtisíc metrov prevýšenia.",
+    },
+    "twenty-five-thousand-up": {
+      label: "Šesťdesiattisíc",
+      description: "Šesťdesiattisíc metrov hore. Takmer sedem Everestov.",
+    },
+    "two-fifty-km": { label: "Šesťsto", description: "Šesťsto prejdených kilometrov." },
+    "five-hundred-km": {
+      label: "Tisícdvesto",
+      description: "Tisícdvesto kilometrov. Dlhá krajina od okraja po okraj.",
+    },
+    "thousand-km": {
+      label: "Štyri číslice, dvakrát",
+      description: "Dva a pol tisíca zapísaných kilometrov.",
+    },
+    "ten-regions": { label: "Pätnásť regiónov", description: "Pätnásť rôznych regiónov." },
+    "twenty-regions": {
+      label: "Tridsať regiónov",
+      description: "Tridsať regiónov. Dochádza ti mapa.",
+    },
+    "border-crosser": { label: "Cez hranicu", description: "Quest v druhej krajine." },
+    "five-countries": { label: "Osem krajín", description: "Osem krajín v zázname." },
+    "peak-bagger": { label: "Zberač vrcholov", description: "Dvadsaťpäť questov s kopcom." },
+    "deep-woods": { label: "Hlboký les", description: "Dvadsaťpäť questov pod stromami." },
+    "lake-district": { label: "Kraj jazier", description: "Dvanásť questov s jazerom na trase." },
+    "waterfall-chaser": {
+      label: "Lovec vodopádov",
+      description: "Dvadsaťpäť questov s padajúcou vodou.",
+    },
+    "ruin-hunter": { label: "Lovec ruín", description: "Dvanásť hradov alebo zrúcanín." },
+    "every-grade": {
+      label: "Všetky štyri stupne",
+      description: "Ľahký, stredný, ťažký a expert — od každého aspoň raz.",
+    },
+    "four-seasons": {
+      label: "Štyri ročné obdobia",
+      description: "Quest v zime, na jar, v lete aj na jeseň.",
+    },
+    "twelve-months": {
+      label: "Každý mesiac",
+      description: "Šiel si vo všetkých dvanástich mesiacoch roka.",
+    },
+    unbroken: {
+      label: "Bez prerušenia",
+      description: "Osem týždňov po sebe a v každom niečo zapísané.",
+    },
+    "all-terrain": {
+      label: "Každý terén",
+      description: "Hora, les, jazero, vodopád a ruina. Každý druh zeme.",
+    },
+    "the-long-year": {
+      label: "Dlhý rok",
+      description: "Tisíc kilometrov v rámci jedného kalendárneho roka.",
+    },
+  },
+
+  nudge: {
+    address: {
+      title: "Kam má ísť obálka?",
+      body: "Tvoj plán zahŕňa tlačenú kartu questu a dve nálepky každý mesiac. Bez adresy ju nemáme kam poslať — karta by prišla e-mailom.",
+      action: "Pridať adresu",
+    },
+    notNow: "Teraz nie",
+  },
+
+  profile: {
+    yearHeading: "Rok, čo si tu bol",
+    nothingApproved: "Zatiaľ nič schválené",
+    walked: (count) => `${count} prejdených`,
+    less: "Menej",
+    more: "Viac",
+    yearSummary: (name, days, best) =>
+      `${days} dní tu za posledný rok, najrušnejší ${best}. Rok používateľa ${name}.`,
+    yearEmpty: (name) => `${name} tu za posledný rok nebol.`,
+    dayTooltip: (when, count) =>
+      `${when} — ${count === 0 ? "nič" : count === 1 ? "1 vec" : count < 5 ? `${count} veci` : `${count} vecí`}`,
+    about: "O mne",
+    elsewhere: "Inde",
+    earnedHeading: "Získané",
+    walkedHeading: (name) => `Čo ${name} prešiel`,
+    approvedOnly: "Len schválené",
+    nothingHere: "Zatiaľ nič schválené. Sem sa dostane len dôkaz, ktorý prešiel kontrolou.",
+    editYourPage: "Upraviť svoju stránku",
+    walkTogether: "Ísť spolu",
+    since: (when) => `Chodí od ${when}`,
+    logged: "Zapísaných",
+    kilometres: "Kilometrov",
+    metresUp: "Metrov hore",
+    regions: "Regiónov",
+    retreat: "návrat",
+    switches: {
+      stats: {
+        label: "Čo máš zapísané",
+        detail: "Štyri čísla — questy, kilometre, prevýšenie, regióny.",
+      },
+      country: {
+        label: "Tvoja krajina",
+        detail: "Krajina, z ktorej meriaš. Nikdy nie mesto, nikdy nie adresa.",
+      },
+      activities: {
+        label: "Čo si prešiel",
+        detail: "Len schválený dôkaz, s tvojím vlastným popisom každého dňa.",
+      },
+      stickers: {
+        label: "Nálepky",
+        detail: "Tie, ktoré si získal. Zamknuté sa čitateľovi nikdy nezobrazia.",
+      },
+      activityGrid: {
+        label: "Tvoj rok",
+        detail: "Mriežka dní, keď si tu bol. Ako často, nikdy nie čo si robil.",
+      },
+    },
+  },
+};

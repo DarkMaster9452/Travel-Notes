@@ -9,6 +9,7 @@ import { saveDisplayAction } from "@/app/(app)/settings/actions";
 import { Glyph } from "@/components/sq/icons";
 import { SqCheckoutButton } from "@/components/sq/plan-actions";
 import { useToast } from "@/components/sq/toast";
+import { LOCALES } from "@/lib/i18n";
 
 type Step = { key: string; label: string };
 
@@ -156,8 +157,11 @@ export function SqOnboarding({
                 <label className="sq-field">
                   <span className="sq-label">Language</span>
                   <select className="sq-select" value={language} onChange={(event) => setLanguage(event.target.value)}>
-                    <option value="en">English</option>
-                    <option value="sk">Slovenčina</option>
+                    {LOCALES.map((locale) => (
+                      <option key={locale.id} value={locale.id}>
+                        {locale.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>

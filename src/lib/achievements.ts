@@ -1,4 +1,6 @@
 import { STICKER_ALLOWANCE, type PlanId } from "@/lib/config";
+import { en } from "@/lib/i18n/en";
+import type { Messages } from "@/lib/i18n";
 import type { UserStats } from "@/lib/quest/service";
 
 /**
@@ -418,6 +420,12 @@ export function getAchievements(
   plan: PlanId = "ultra",
   /** Achievement ids an admin has taken back from this account. */
   revokedIds: readonly string[] = [],
+  /**
+   * The reader's language. Ids are frozen and the numbers live here, but the
+   * words come from the dictionary — keyed by the same id, so a sticker keeps
+   * its identity across all three languages and across a retune.
+   */
+  t: Messages = en,
 ): Achievement[] {
   const allowance = stickerAllowance(plan);
   const revokedSet = new Set(revokedIds);
@@ -433,18 +441,26 @@ export function getAchievements(
     const earned = !planLocked && !revoked && value >= definition.target;
     const unit = definition.unit ? ` ${definition.unit}` : "";
 
-    return {
-      id: definition.id,
+    const copy = t.sheet[definition.id as keyof Messages["sheet"]] ?? {
       label: definition.label,
       description: definition.description,
+    };
+
+    return {
+      id: definition.id,
+      label: copy.label,
+      description: copy.description,
       sticker: definition.sticker,
       progress: Math.min(1, definition.target === 0 ? 1 : value / definition.target),
       earned,
       progressLabel: revoked
-        ? "Withdrawn"
+        ? t.stickers.withdrawn
         : earned
-          ? "Earned"
-          : `${Math.min(value, definition.target)}${unit} / ${definition.target}${unit}`,
+          ? t.stickers.earned
+          : t.stickers.progress(
+              `${Math.min(value, definition.target)}${unit}`,
+              `${definition.target}${unit}`,
+            ),
       planLocked,
       requiredPlan: requiredPlanFor(index),
       revoked,

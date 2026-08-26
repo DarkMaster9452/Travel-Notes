@@ -52,6 +52,15 @@ export type SqShellProps = {
    * that never gets answered.
    */
   notice?: React.ReactNode;
+  /**
+   * What language the app is in.
+   *
+   * Set here rather than on `<html>` because the root layout wraps the
+   * marketing site as well, and that stays English. A `lang` on the app's own
+   * subtree is valid HTML, is what a screen reader actually needs, and leaves
+   * the landing page's own declaration honest.
+   */
+  lang?: string;
   children: React.ReactNode;
 };
 
@@ -63,6 +72,7 @@ export function SqShell({
   signOut,
   rail,
   notice,
+  lang,
   children,
 }: SqShellProps) {
   const pathname = usePathname();
@@ -78,7 +88,7 @@ export function SqShell({
   };
 
   return (
-    <div className="sq sq-shell" data-drawer={drawer ? "open" : "closed"}>
+    <div className="sq sq-shell" lang={lang} data-drawer={drawer ? "open" : "closed"}>
       <header className="sq-topbar">
         <Link href={nav[0]?.href ?? "/"} className="sq-brand" aria-label="Summit Quest">
           <LogoMark size={26} />

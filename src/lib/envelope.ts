@@ -3,6 +3,7 @@ import "server-only";
 import { getAchievements } from "@/lib/achievements";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
+import type { Messages } from "@/lib/i18n";
 import { getUserStats } from "@/lib/quest/service";
 
 /**
@@ -93,7 +94,20 @@ export async function getEnvelopeStatus(
   };
 }
 
-/** The one line each state is described by, everywhere it is described. */
+/**
+ * The one line each state is described by, everywhere it is described.
+ *
+ * `envelopeCopy(t, reason)` is the translated way in; this stays as the
+ * English fallback for anything that runs without a reader — the despatch job,
+ * a log line, a test.
+ */
+export function envelopeCopy(
+  t: Messages,
+  reason: EnvelopeStatus["reason"],
+): { title: string; detail: string } {
+  return t.envelope[reason];
+}
+
 export const ENVELOPE_COPY: Record<EnvelopeStatus["reason"], { title: string; detail: string }> = {
   posting: {
     title: "Posting on the 2nd",
