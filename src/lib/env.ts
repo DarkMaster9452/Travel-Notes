@@ -20,12 +20,20 @@ const serverSchema = z.object({
     .string()
     .min(32, "AUTH_SECRET must be at least 32 characters — generate with `openssl rand -hex 32`"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  STRIPE_SECRET_KEY: z.string().optional().default(""),
-  STRIPE_WEBHOOK_SECRET: z.string().optional().default(""),
-  STRIPE_PRICE_ID_EXPLORER_MONTHLY: z.string().optional().default(""),
-  STRIPE_PRICE_ID_EXPLORER_YEARLY: z.string().optional().default(""),
-  STRIPE_PRICE_ID_ULTRA_MONTHLY: z.string().optional().default(""),
-  STRIPE_PRICE_ID_ULTRA_YEARLY: z.string().optional().default(""),
+  /** Paddle server API key. Sandbox keys contain `_sdbx`. */
+  PADDLE_API_KEY: z.string().optional().default(""),
+  /** The secret Paddle signs webhook bodies with. Empty refuses every delivery. */
+  PADDLE_WEBHOOK_SECRET: z.string().optional().default(""),
+  /**
+   * Which Paddle to talk to. Sandbox unless something explicitly says
+   * otherwise — the expensive mistake here is billing a real card from a
+   * branch, not failing to bill a fake one.
+   */
+  PADDLE_ENV: z.enum(["sandbox", "production"]).optional().default("sandbox"),
+  PADDLE_PRICE_ID_EXPLORER_MONTHLY: z.string().optional().default(""),
+  PADDLE_PRICE_ID_EXPLORER_YEARLY: z.string().optional().default(""),
+  PADDLE_PRICE_ID_ULTRA_MONTHLY: z.string().optional().default(""),
+  PADDLE_PRICE_ID_ULTRA_YEARLY: z.string().optional().default(""),
   STRAVA_CLIENT_ID: z.string().optional().default(""),
   STRAVA_CLIENT_SECRET: z.string().optional().default(""),
   /** Vercel Blob, for proof photographs. Empty disables uploads with a message. */
@@ -35,8 +43,6 @@ const serverSchema = z.object({
   EMAIL_FROM: z.string().optional().default("Summit Quest <quests@summitquest.app>"),
   /** Bearer secret the scheduled routes require. Empty refuses every call. */
   CRON_SECRET: z.string().optional().default(""),
-  /** Hand every plan over for nothing. See `isDemoPlans`. */
-  DEMO_PLANS: z.string().optional().default(""),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -51,19 +57,19 @@ function load(): ServerEnv {
     DIRECT_URL: process.env.DIRECT_URL,
     AUTH_SECRET: process.env.AUTH_SECRET,
     NODE_ENV: process.env.NODE_ENV,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-    STRIPE_PRICE_ID_EXPLORER_MONTHLY: process.env.STRIPE_PRICE_ID_EXPLORER_MONTHLY,
-    STRIPE_PRICE_ID_EXPLORER_YEARLY: process.env.STRIPE_PRICE_ID_EXPLORER_YEARLY,
-    STRIPE_PRICE_ID_ULTRA_MONTHLY: process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY,
-    STRIPE_PRICE_ID_ULTRA_YEARLY: process.env.STRIPE_PRICE_ID_ULTRA_YEARLY,
+    PADDLE_API_KEY: process.env.PADDLE_API_KEY,
+    PADDLE_WEBHOOK_SECRET: process.env.PADDLE_WEBHOOK_SECRET,
+    PADDLE_ENV: process.env.PADDLE_ENV,
+    PADDLE_PRICE_ID_EXPLORER_MONTHLY: process.env.PADDLE_PRICE_ID_EXPLORER_MONTHLY,
+    PADDLE_PRICE_ID_EXPLORER_YEARLY: process.env.PADDLE_PRICE_ID_EXPLORER_YEARLY,
+    PADDLE_PRICE_ID_ULTRA_MONTHLY: process.env.PADDLE_PRICE_ID_ULTRA_MONTHLY,
+    PADDLE_PRICE_ID_ULTRA_YEARLY: process.env.PADDLE_PRICE_ID_ULTRA_YEARLY,
     STRAVA_CLIENT_ID: process.env.STRAVA_CLIENT_ID,
     STRAVA_CLIENT_SECRET: process.env.STRAVA_CLIENT_SECRET,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
     CRON_SECRET: process.env.CRON_SECRET,
-    DEMO_PLANS: process.env.DEMO_PLANS,
   });
 
   if (!parsed.success) {
@@ -86,45 +92,41 @@ export const env = new Proxy({} as ServerEnv, {
 });
 
 /**
- * Stripe is optional in development; the UI degrades instead of crashing.
+ * Paddle is optional in development; the UI degrades instead of crashing.
  * A function rather than a constant so it doesn't force validation at import.
+ *
+ * Selling needs three things and this checks all three, because two of them
+ * are not enough to open a checkout: the server key to read subscriptions
+ * back, the *client* token that Paddle.js is initialised with, and at least
+ * one price to sell. A deployment with a server key and no client token would
+ * render a buy button that cannot open anything.
  */
-export function isStripeEnabled(): boolean {
+export function isPaddleEnabled(): boolean {
   return (
-    (process.env.STRIPE_SECRET_KEY ?? "").length > 0 &&
-    (process.env.STRIPE_PRICE_ID_EXPLORER_MONTHLY ?? "").length > 0
+    (process.env.PADDLE_API_KEY ?? "").length > 0 &&
+    (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "").length > 0 &&
+    (process.env.PADDLE_PRICE_ID_EXPLORER_MONTHLY ?? "").length > 0
   );
+}
+
+/**
+ * Which Paddle this deployment talks to, for the places that must *say* so.
+ *
+ * Read straight from `process.env` rather than through the parsed object so
+ * it can be called from anywhere without forcing validation, and so a
+ * mistyped value reads as sandbox rather than as production.
+ */
+export function paddleEnvironment(): "sandbox" | "production" {
+  return process.env.PADDLE_ENV === "production" ? "production" : "sandbox";
 }
 
 /**
  * Ultra is optional on top of Explorer: a deployment can sell one tier without
  * the other, and the plan card says so instead of opening a checkout that
- * Stripe would reject.
+ * Paddle would reject.
  */
 export function isUltraEnabled(): boolean {
-  return isStripeEnabled() && (process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY ?? "").length > 0;
-}
-
-/**
- * Every plan, free, activated with a button.
- *
- * On by default wherever Stripe is not configured, which is the honest
- * reading of that state: a deployment that cannot take money and also will not
- * hand anything over is a deployment where nothing works. Set `DEMO_PLANS=0`
- * to turn it off anyway, or `DEMO_PLANS=1` to keep it on alongside a live
- * Stripe — useful while a launch is being demonstrated.
- *
- * What this does *not* do is change what a plan means. A demo activation
- * writes the same subscription row with the same plan and the same status, so
- * every capability check, every sticker allowance and every locked panel
- * behaves exactly as it will when the money is real. The only difference is
- * the `demo` flag, and the only thing that reads it is the revenue page.
- */
-export function isDemoPlans(): boolean {
-  const flag = (process.env.DEMO_PLANS ?? "").trim().toLowerCase();
-  if (flag === "0" || flag === "false" || flag === "off") return false;
-  if (flag.length > 0) return true;
-  return !isStripeEnabled();
+  return isPaddleEnabled() && (process.env.PADDLE_PRICE_ID_ULTRA_MONTHLY ?? "").length > 0;
 }
 
 export const appUrl =

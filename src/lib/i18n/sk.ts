@@ -409,11 +409,10 @@ export const sk: Messages = {
 
   unlock: {
     unlocked: "Odomknuté",
-    lede: "Je to zapnuté a počas dema zadarmo. Všetko nižšie sa otvorilo v momente, keď si stlačil tlačidlo.",
+    lede: "Je to zapnuté. Všetko nižšie sa otvorilo v momente, keď platba prešla.",
     envelopeNote:
       "Tlačená obálka je súčasťou. Kam ju poslať sa spýtame o deň či dva — nie teraz.",
     good: "Dobre",
-    unlocking: "Odomyká sa…",
   },
 
   monthly: {
@@ -696,7 +695,7 @@ export const sk: Messages = {
       noneBody:
         "Faktúra sa objaví po prvej úspešnej platbe. Plán zadarmo žiadnu nevytvorí.",
       notConfigured: "Platby tu nie sú nastavené",
-      notConfiguredBody: "Toto nasadenie nemá kľúče Stripe, takže nie je čo čítať.",
+      notConfiguredBody: "Toto nasadenie nemá kľúče Paddle, takže nie je čo čítať.",
       openPortal: "Otvoriť platobný portál",
     },
     connected: {
@@ -788,11 +787,8 @@ export const sk: Messages = {
     plansHeading: "Plány",
     cancelAnyTime: "Zrušiť kedykoľvek",
     notConfigured: "Platby tu nie sú nastavené",
-    demoFree: "Zadarmo počas dema",
     upgrade: "Prejsť vyššie",
     switch: "Prepnúť",
-    unlockIt: "Odomknúť",
-    switchToIt: "Prepnúť naň",
     envelopeHeading: "Kam ide obálka",
     editAddress: "Upraviť adresu →",
     addAddress: "Pridať adresu →",

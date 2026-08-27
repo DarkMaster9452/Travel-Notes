@@ -122,15 +122,22 @@ model Session {
 // Billing
 // ---------------------------------------------------------------------------
 
+/// The five states Paddle reports, plus one of our own.
+///
+/// `INCOMPLETE` is not a Paddle status. It marks the gap between "we have a
+/// customer record for this account" and "a subscription exists" — a state
+/// Paddle has no word for, because from its side nothing has happened yet.
+///
+/// `INCOMPLETE_EXPIRED` and `UNPAID` were Stripe's and are gone: nothing can
+/// produce them any more, and a status the system cannot reach is a status
+/// somebody will eventually write a branch for.
 enum SubscriptionStatus {
   ACTIVE
   TRIALING
   PAST_DUE
+  PAUSED
   CANCELED
   INCOMPLETE
-  INCOMPLETE_EXPIRED
-  UNPAID
-  PAUSED
 }
 
 enum Plan {
@@ -142,22 +149,14 @@ enum Plan {
 model Subscription {
   id                   String             @id @default(cuid())
   userId               String             @unique @map("user_id")
-  stripeCustomerId     String?            @unique @map("stripe_customer_id")
-  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
-  stripePriceId        String?            @map("stripe_price_id")
+  paddleCustomerId     String?            @unique @map("paddle_customer_id")
+  paddleSubscriptionId String?            @unique @map("paddle_subscription_id")
+  paddlePriceId        String?            @map("paddle_price_id")
   status               SubscriptionStatus @default(INCOMPLETE)
   plan                 Plan               @default(FREE)
   cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
   currentPeriodStart   DateTime?          @map("current_period_start")
   currentPeriodEnd     DateTime?          @map("current_period_end")
-
-  /// Activated without money changing hands.
-  ///
-  /// Entitlement treats a demo subscription exactly like a paid one — that is
-  /// the point of it — but the books must not. Revenue counts what was
-  /// charged, and a row with this set was never charged, so it is excluded
-  /// from the money and counted separately.
-  demo                 Boolean            @default(false)
 
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
@@ -1039,4 +1038,50 @@ model StaffInvite {
 
   @@index([expiresAt])
   @@map("staff_invites")
+}
+
+
+/// One line in the panel's systems log.
+///
+/// Two different things write here and they are deliberately the same shape:
+/// a *probe*, written when somebody loads the systems board and the app checks
+/// whether Postgres, Stripe, Resend or Blob answers; and a *run*, written by a
+/// scheduled route when it finishes. Both answer the same question — did this
+/// part of the product work, how long did it take, and what did it say — so a
+/// system's page can show one timeline instead of two.
+///
+/// Nothing here is a secret and nothing here is personal. `detail` is a line
+/// written for a human at the desk: counts, durations, the error's *message*.
+/// Never a key, never a token, never an email address.
+///
+/// Rows are cheap and this table is append-only, so it is swept rather than
+/// updated — `pruneSystemEvents` drops anything past the retention window, on
+/// the same schedule that writes to it.
+model SystemEvent {
+  id String @id @default(cuid())
+
+  /// Which system, matching an id in `lib/admin/systems`. A string rather than
+  /// an enum because the list of systems changes with the deployment's wiring,
+  /// and a migration to add a probe is a migration nobody would write.
+  system String
+
+  /// `ok`, `degraded`, `down` or `off`. The same four words the board paints.
+  status String
+
+  /// Round trip in milliseconds, where there was one to measure.
+  latencyMs Int? @map("latency_ms")
+
+  /// One line a human can read without a join.
+  detail String?
+
+  /// True when a scheduled route wrote this, false when a probe did. The
+  /// distinction matters on the log: a job that has not run is a real fault, a
+  /// probe that has not run just means nobody opened the page.
+  ran Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([system, createdAt])
+  @@index([createdAt])
+  @@map("system_events")
 }

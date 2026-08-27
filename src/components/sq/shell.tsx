@@ -54,6 +54,15 @@ export type SqShellProps = {
    */
   notice?: React.ReactNode;
   /**
+   * A small permanent readout at the foot of the rail.
+   *
+   * The panel puts the systems pulse here. It belongs to the furniture rather
+   * than to a page because "is anything broken" is worth knowing on whichever
+   * screen you happen to be on, and a status that only exists on the dashboard
+   * is a status nobody sees while they are working.
+   */
+  status?: React.ReactNode;
+  /**
    * What language the app is in.
    *
    * Set here rather than on `<html>` because the root layout wraps the
@@ -73,6 +82,7 @@ export function SqShell({
   signOut,
   rail,
   notice,
+  status,
   lang,
   children,
 }: SqShellProps) {
@@ -129,6 +139,8 @@ export function SqShell({
             <NavLink key={item.href} item={item} active={isActive(pathname, item)} />
           ))}
         </div>
+
+        {status}
 
         <div className="sq-account-block">
           <Link href={account.href} className="sq-account">

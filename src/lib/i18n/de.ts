@@ -409,11 +409,10 @@ export const de: Messages = {
 
   unlock: {
     unlocked: "Freigeschaltet",
-    lede: "Es ist an, und während der Demo kostenlos. Alles unten hat sich in dem Moment geöffnet, als du geklickt hast.",
+    lede: "Es ist an. Alles unten hat sich in dem Moment geöffnet, als die Zahlung durchging.",
     envelopeNote:
       "Der gedruckte Umschlag gehört dazu. Wohin er soll, fragen wir in einem Tag oder zwei — nicht jetzt.",
     good: "Gut",
-    unlocking: "Wird freigeschaltet…",
   },
 
   monthly: {
@@ -698,7 +697,7 @@ export const de: Messages = {
       noneBody:
         "Eine Rechnung erscheint, sobald die erste Zahlung durchgeht. Ein kostenloser Tarif erzeugt nie eine.",
       notConfigured: "Zahlungen sind hier nicht eingerichtet",
-      notConfiguredBody: "Diese Installation hat keine Stripe-Schlüssel, also gibt es nichts zu lesen.",
+      notConfiguredBody: "Diese Installation hat keine Paddle-Schlüssel, also gibt es nichts zu lesen.",
       openPortal: "Zahlungsportal öffnen",
     },
     connected: {
@@ -790,11 +789,8 @@ export const de: Messages = {
     plansHeading: "Die Tarife",
     cancelAnyTime: "Jederzeit kündbar",
     notConfigured: "Zahlungen sind hier nicht eingerichtet",
-    demoFree: "Kostenlos während der Demo",
     upgrade: "Upgrade",
     switch: "Wechseln",
-    unlockIt: "Freischalten",
-    switchToIt: "Dahin wechseln",
     envelopeHeading: "Wohin der Umschlag geht",
     editAddress: "Adresse bearbeiten →",
     addAddress: "Adresse hinzufügen →",

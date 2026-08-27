@@ -6,7 +6,7 @@ import { getPlanSplit, getRevenueSummary, getStatusSplit } from "@/lib/admin/sta
 import { requireRank } from "@/lib/auth/guards";
 import { formatPrice, PLANS } from "@/lib/config";
 import { db } from "@/lib/db";
-import { isStripeEnabled } from "@/lib/env";
+import { isPaddleEnabled } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Revenue · Admin" };
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", 
  * The shape of the book, not the books.
  *
  * Every figure here is list price: we store the plan but not the billing
- * interval, and Stripe is the authority on what anybody was actually charged
+ * interval, and Paddle is the authority on what anybody was actually charged
  * after discounts, proration and tax. That is said on the page rather than
  * left for somebody to discover when the numbers do not reconcile.
  */
@@ -47,11 +47,11 @@ export default async function AdminRevenuePage() {
       <PageHeader
         kicker="The money"
         title="Revenue"
-        lede="Recurring revenue at list price — before discounts, proration and tax. Stripe is the authority on what was charged."
+        lede="Recurring revenue at list price — before discounts, proration and tax. Paddle is the authority on what was charged."
         right={
-          isStripeEnabled() ? null : (
+          isPaddleEnabled() ? null : (
             <Tag tone="stamp" small>
-              Stripe not configured here
+              Paddle not configured here
             </Tag>
           )
         }
@@ -62,9 +62,7 @@ export default async function AdminRevenuePage() {
           label="Monthly, at list"
           value={formatPrice(revenue.monthlyCents)}
           note={
-            revenue.demo > 0
-              ? `${revenue.paying} paying · ${revenue.demo} demo, not counted`
-              : `${revenue.live} live subscriptions`
+            `${revenue.live} live subscriptions`
           }
           index={0}
         />
@@ -79,7 +77,7 @@ export default async function AdminRevenuePage() {
         <StatTile
           label="Payment retrying"
           count={revenue.pastDue}
-          note={revenue.pastDue > 0 ? "Access holds while Stripe retries" : undefined}
+          note={revenue.pastDue > 0 ? "Access holds while Paddle retries" : undefined}
           index={4}
         />
       </StatGrid>

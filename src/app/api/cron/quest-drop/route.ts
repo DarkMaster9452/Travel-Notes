@@ -1,7 +1,5 @@
-import { NextResponse } from "next/server";
-
 import { slotFor, slotLabel } from "@/lib/admin/schedule";
-import { cronAuthorised } from "@/lib/cron";
+import { runScheduled } from "@/lib/cron";
 import { db } from "@/lib/db";
 import { sendQuestDrop } from "@/lib/email";
 
@@ -20,45 +18,46 @@ export const dynamic = "force-dynamic";
  * exists would be announcing something we have not written yet.
  */
 export async function GET(request: Request) {
-  if (!cronAuthorised(request)) {
-    return NextResponse.json({ ok: false }, { status: 401 });
-  }
+  return runScheduled(request, "job.quest-drop", async () => {
+    const now = new Date();
+    const periods: ("WEEKLY" | "MONTHLY")[] = [];
+    if (now.getDate() === 1) periods.push("MONTHLY");
+    if (now.getDay() === 1) periods.push("WEEKLY");
 
-  const now = new Date();
-  const periods: ("WEEKLY" | "MONTHLY")[] = [];
-  if (now.getDate() === 1) periods.push("MONTHLY");
-  if (now.getDay() === 1) periods.push("WEEKLY");
-
-  if (periods.length === 0) {
-    return NextResponse.json({ ok: true, sent: 0, note: "no slot opens today" });
-  }
-
-  const recipients = await db.user.findMany({
-    where: { role: "USER" },
-    select: { id: true },
-  });
-
-  let sent = 0;
-
-  for (const period of periods) {
-    const slot = slotFor(period, now);
-    const booking = await db.questSchedule.findUnique({
-      where: { period_slotKey: { period, slotKey: slot.key } },
-      select: { quest: { select: { id: true, title: true, location: true, region: true } } },
-    });
-    if (!booking) continue;
-
-    for (const recipient of recipients) {
-      const result = await sendQuestDrop(recipient.id, {
-        title: booking.quest.title,
-        where: `${booking.quest.location} · ${booking.quest.region}`,
-        period,
-        label: slotLabel(slot),
-        questId: booking.quest.id,
-      });
-      if (result.sent) sent += 1;
+    // Most days this is the whole run, and it still writes a row: a job that
+    // only logged on the days it had work to do would be indistinguishable
+    // from one that had stopped firing altogether.
+    if (periods.length === 0) {
+      return { sent: 0, note: "no slot opens today" };
     }
-  }
 
-  return NextResponse.json({ ok: true, sent, periods });
+    const recipients = await db.user.findMany({
+      where: { role: "USER" },
+      select: { id: true },
+    });
+
+    let sent = 0;
+
+    for (const period of periods) {
+      const slot = slotFor(period, now);
+      const booking = await db.questSchedule.findUnique({
+        where: { period_slotKey: { period, slotKey: slot.key } },
+        select: { quest: { select: { id: true, title: true, location: true, region: true } } },
+      });
+      if (!booking) continue;
+
+      for (const recipient of recipients) {
+        const result = await sendQuestDrop(recipient.id, {
+          title: booking.quest.title,
+          where: `${booking.quest.location} · ${booking.quest.region}`,
+          period,
+          label: slotLabel(slot),
+          questId: booking.quest.id,
+        });
+        if (result.sent) sent += 1;
+      }
+    }
+
+    return { sent, periods };
+  });
 }

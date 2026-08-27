@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { SqCheckoutButton, SqPortalButton } from "@/components/sq/plan-actions";
-import { SqActivateButton } from "@/components/sq/unlock";
+import { SqCheckoutButton, SqCheckoutListener, SqPortalButton } from "@/components/sq/plan-actions";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { Glyph, LockGlyph } from "@/components/sq/icons";
@@ -19,7 +18,8 @@ import { getEntitlement } from "@/lib/entitlements";
 import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
 import { formatDate, formatMoney } from "@/lib/i18n/format";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { isDemoPlans, isStripeEnabled, isUltraEnabled } from "@/lib/env";
+import { isPaddleEnabled, isUltraEnabled } from "@/lib/env";
+import { intervalForPriceId } from "@/lib/paddle";
 
 export const metadata: Metadata = { title: "Plan & billing" };
 export const dynamic = "force-dynamic";
@@ -47,11 +47,15 @@ export default async function BillingSettingsPage() {
   const current = entitlement.definition;
   const currentCopy = planCopy(t, entitlement.plan);
   const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
-  const yearly = subscription?.stripePriceId?.includes("yearly") ?? false;
-  const demo = isDemoPlans();
+  const yearly = intervalForPriceId(subscription?.paddlePriceId) === "yearly";
 
   return (
     <>
+      {/* The overlay is opened by the buttons below but completing it is the
+          page's business, not any one button's: a purchase that finishes after
+          the button has re-rendered still has to be recorded. */}
+      <SqCheckoutListener />
+
       <section className="sq-card sq-pad">
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
@@ -88,7 +92,7 @@ export default async function BillingSettingsPage() {
             ) : null}
           </div>
 
-          {entitlement.isSubscribed && isStripeEnabled() ? (
+          {entitlement.isSubscribed && isPaddleEnabled() ? (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {!yearly ? (
                 <SqCheckoutButton
@@ -208,27 +212,16 @@ export default async function BillingSettingsPage() {
             {t.billing.plansHeading}
           </h2>
           <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-            {demo
-              ? t.billing.demoFree
-              : isStripeEnabled()
-                ? t.billing.cancelAnyTime
-                : t.billing.notConfigured}
+            {isPaddleEnabled() ? t.billing.cancelAnyTime : t.billing.notConfigured}
           </span>
         </div>
         <ul>
           {PLANS.map((plan) => {
             const isCurrent = plan.id === entitlement.plan;
             const buyable =
-              !demo &&
-              isStripeEnabled() &&
+              isPaddleEnabled() &&
               !isCurrent &&
               (plan.id === "explorer" || (plan.id === "ultra" && isUltraEnabled()));
-            // While plans are free, anything above free can simply be switched
-            // on. What somebody would *gain* is computed against what this
-            // account already holds, so the celebration lists what actually
-            // changed rather than reciting the plan's whole feature list.
-            const activatable = demo && !isCurrent && plan.id !== "free";
-            const gains = plan.capabilities.filter((capability) => !entitlement.can(capability));
             const copy = planCopy(t, plan.id);
 
             return (
@@ -265,32 +258,15 @@ export default async function BillingSettingsPage() {
 
                 <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span className="sq-mono" style={{ fontSize: 12, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
-                    {plan.price.monthly === 0 ? (
-                      t.common.free
-                    ) : demo ? (
-                      <>
-                        <s style={{ opacity: 0.55 }}>
-                          {formatMoney(locale, plan.price.monthly)}
-                          {t.common.perMonth}
-                        </s>{" "}
-                        {t.common.free}
-                      </>
-                    ) : (
-                      `${formatMoney(locale, plan.price.monthly)}${t.common.perMonth}`
-                    )}
+                    {plan.price.monthly === 0
+                      ? t.common.free
+                      : `${formatMoney(locale, plan.price.monthly)}${t.common.perMonth}`}
                   </span>
                   {buyable ? (
                     <SqCheckoutButton
                       plan={plan.id === "ultra" ? "ultra" : "explorer"}
                       interval="monthly"
                       label={plan.tier > entitlement.tier ? t.billing.upgrade : t.billing.switch}
-                      variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
-                    />
-                  ) : activatable ? (
-                    <SqActivateButton
-                      plan={plan.id === "ultra" ? "ultra" : "explorer"}
-                      label={plan.tier > entitlement.tier ? t.billing.unlockIt : t.billing.switchToIt}
-                      gains={[...gains]}
                       variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
                     />
                   ) : null}

@@ -68,6 +68,7 @@ export const PANEL_TABS: PanelTab[] = [
   { href: "/admin/users", label: "Users", what: "Accounts and what they hold", needs: "ADMIN", prefix: true },
   { href: "/admin/revenue", label: "Revenue", what: "Recurring revenue at list price", needs: "ADMIN" },
   { href: "/admin/database", label: "Database", what: "Read-only row counts and recent rows", needs: "ADMIN" },
+  { href: "/admin/systems", label: "Systems", what: "What is up, what is slow, and the logs", needs: "ADMIN", prefix: true },
   { href: "/admin/staff", label: "Staff settings", what: "The desk, the roles, the log", needs: "READER", prefix: true },
   { href: "/admin/access", label: "Panel access", what: "Who holds the keys", needs: "ADMIN" },
 ];
@@ -102,7 +103,7 @@ export const ROLE_MATRIX: Capability[] = [
   { label: "Write, edit and publish quests", needs: "WRITER" },
   { label: "Book a quest into a slot", needs: "WRITER" },
   { label: "Correct a name, an email or an allowance", needs: "ADMIN" },
-  { label: "See revenue and the database browser", needs: "ADMIN" },
+  { label: "See revenue, the database browser and the systems log", needs: "ADMIN" },
   { label: "Invite a reader or a writer", needs: "ADMIN" },
   { label: "Invite an admin", needs: "OWNER" },
   { label: "Take somebody's role away", needs: "OWNER" },
@@ -121,7 +122,7 @@ export const ROLE_NOTES: { role: StaffRole; what: string }[] = [
   },
   {
     role: "ADMIN",
-    what: "Everything a writer can, plus users, billing and the database browser.",
+    what: "Everything a writer can, plus users, billing, the database and the systems board.",
   },
   {
     role: "OWNER",

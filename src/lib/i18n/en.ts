@@ -376,11 +376,10 @@ export const en = {
   /* ---- unlocking a plan --------------------------------------------------- */
   unlock: {
     unlocked: "Unlocked",
-    lede: "It is on now, and it is free while we are in demo. Everything below opened the moment you pressed the button.",
+    lede: "It is on now. Everything below opened the moment the payment cleared.",
     envelopeNote:
       "The printed envelope is part of this. We will ask where to send it in a day or so — not now.",
     good: "Good",
-    unlocking: "Unlocking…",
   },
 
   /* ---- the monthly -------------------------------------------------------- */
@@ -673,7 +672,7 @@ export const en = {
       noneBody:
         "An invoice appears the first time a payment goes through. A free plan never produces one.",
       notConfigured: "Billing is not configured here",
-      notConfiguredBody: "This deployment has no Stripe keys, so there is nothing to read.",
+      notConfiguredBody: "This deployment has no Paddle keys, so there is nothing to read.",
       openPortal: "Open the billing portal",
     },
     connected: {
@@ -766,11 +765,8 @@ export const en = {
     plansHeading: "The plans",
     cancelAnyTime: "Cancel any time",
     notConfigured: "Billing not configured here",
-    demoFree: "Free while we are in demo",
     upgrade: "Upgrade",
     switch: "Switch",
-    unlockIt: "Unlock it",
-    switchToIt: "Switch to it",
     envelopeHeading: "Where the envelope goes",
     editAddress: "Edit address →",
     addAddress: "Add an address →",

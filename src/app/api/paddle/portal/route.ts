@@ -3,16 +3,15 @@ import { NextResponse } from "next/server";
 import { isStaffRole } from "@/lib/admin/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { appUrl } from "@/lib/env";
-import { getStripe } from "@/lib/stripe";
+import { getPaddle } from "@/lib/paddle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** POST /api/stripe/portal — manage or cancel an existing subscription. */
+/** POST /api/paddle/portal — manage or cancel an existing subscription. */
 export async function POST() {
-  const stripe = getStripe();
-  if (!stripe) {
+  const paddle = getPaddle();
+  if (!paddle) {
     return NextResponse.json(
       { ok: false, message: "Billing isn't configured on this deployment." },
       { status: 503 },
@@ -34,17 +33,21 @@ export async function POST() {
 
   const subscription = await db.subscription.findUnique({
     where: { userId: user.id },
-    select: { stripeCustomerId: true },
+    select: { paddleCustomerId: true, paddleSubscriptionId: true },
   });
 
-  if (!subscription?.stripeCustomerId) {
+  if (!subscription?.paddleCustomerId) {
     return NextResponse.json({ ok: false, message: "No billing account yet." }, { status: 404 });
   }
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: subscription.stripeCustomerId,
-    return_url: `${appUrl}/profile`,
-  });
+  // Naming the subscription gets the portal to include its cancel and
+  // update-payment links; without it the session opens on a bare overview.
+  // An account that has a customer record but no subscription yet is a normal
+  // state — it opens on the overview, which is the truthful page for it.
+  const session = await paddle.customerPortalSessions.create(
+    subscription.paddleCustomerId,
+    subscription.paddleSubscriptionId ? [subscription.paddleSubscriptionId] : [],
+  );
 
-  return NextResponse.json({ ok: true, url: session.url });
+  return NextResponse.json({ ok: true, url: session.urls.general.overview });
 }

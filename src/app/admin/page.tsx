@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SqColumnChart, SqSplitBar, SqStackedBars } from "@/components/sq/charts";
+import { SqSystemsLine } from "@/components/sq/systems";
 import { PageHeader, StatGrid, StatTile } from "@/components/sq/ui";
 import { getAdminNotices } from "@/lib/admin/notifications";
+import { getSystemsPulse } from "@/lib/admin/systems";
 import {
   getAdminOverview,
   getDifficultySplit,
@@ -33,11 +35,16 @@ const TONE_COLOUR: Record<string, string> = {
  * first, then the figures, then the shape of the month. Every figure is a live
  * count taken when the page loaded — nothing here is cached or rolled up, and
  * the page says so.
+ *
+ * Systems get one line above the queue and nothing more. The full board lives
+ * at `/admin/systems`, with a permanent pulse in the rail: the answer is
+ * almost always "everything is running", and ten tiles saying so pushed the
+ * work this page exists for below the fold.
  */
 export default async function AdminOverviewPage() {
   await requireAdmin();
 
-  const [overview, notices, queue, signups, quests, plans, grades, revenue] = await Promise.all([
+  const [overview, notices, queue, signups, quests, plans, grades, revenue, pulse] = await Promise.all([
     getAdminOverview(),
     getAdminNotices(),
     getReviewQueue(100),
@@ -46,6 +53,7 @@ export default async function AdminOverviewPage() {
     getPlanSplit(),
     getDifficultySplit(),
     getRevenueSummary(),
+    getSystemsPulse(),
   ]);
 
   const open = notices.filter((notice) => notice.tone !== "clear");
@@ -68,6 +76,8 @@ export default async function AdminOverviewPage() {
           </div>
         }
       />
+
+      <SqSystemsLine pulse={pulse} href="/admin/systems" />
 
       <section className="sq-card" style={{ overflow: "hidden" }}>
         <div className="sq-section-head sq-rule-head">
@@ -262,7 +272,7 @@ export default async function AdminOverviewPage() {
               {formatPrice(revenue.monthlyCents)}
             </b>
             <span className="sq-mono" style={{ fontSize: 12, paddingBottom: 5, color: "var(--ink-3)" }}>
-              list price · {revenue.paying} paying{revenue.demo > 0 ? `, ${revenue.demo} demo` : ""}
+              list price · {revenue.live} live
             </span>
           </div>
           <ul style={{ display: "flex", flexDirection: "column", fontSize: 13 }}>

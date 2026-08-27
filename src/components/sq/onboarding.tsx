@@ -202,7 +202,7 @@ export function SqOnboarding({
                     ) : null}
                   </div>
                 ) : (
-                  <p className="sq-hint">This deployment has no Stripe keys, so everybody is on Free.</p>
+                  <p className="sq-hint">This deployment has no Paddle keys, so everybody is on Free.</p>
                 )}
               </div>
               <Foot note={t.onboarding.changeLater} label={t.onboarding.skip} onNext={() => setStep(3)} />

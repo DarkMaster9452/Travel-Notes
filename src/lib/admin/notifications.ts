@@ -308,7 +308,7 @@ function billingNotices(pastDue: number): AdminNotice[] {
       tone: "warning",
       title: pastDue === 1 ? "A subscription is past due" : `${pastDue} subscriptions are past due`,
       detail:
-        "Stripe could not take the payment. The account keeps its plan while it retries, and loses it if the retries run out.",
+        "Paddle could not take the payment. The account keeps its plan while it retries, and loses it if the retries run out.",
       href: "/admin/revenue",
       action: "See billing",
       count: pastDue,

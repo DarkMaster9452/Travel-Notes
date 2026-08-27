@@ -27,14 +27,14 @@ export type Entitlement = {
   freeQuestAllowance: number;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: Date | null;
-  /** True while Stripe is retrying a failed payment: access holds, but say so. */
+  /** True while Paddle is retrying a failed payment: access holds, but say so. */
   inGrace: boolean;
   reason: "subscribed" | "free_quota" | "quota_exhausted";
   /** Does this plan include a given capability? */
   can: (capability: Capability) => boolean;
 };
 
-/** Statuses that grant access. `PAST_DUE` keeps access during Stripe's retries. */
+/** Statuses that grant access. `PAST_DUE` keeps access during Paddle's retries. */
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
 
 /**

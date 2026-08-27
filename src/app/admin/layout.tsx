@@ -1,9 +1,11 @@
 import { logoutAction } from "@/app/(auth)/actions";
 import { adminFootNav, adminNav } from "@/components/sq/nav";
 import { SqShell } from "@/components/sq/shell";
+import { SqSystemsPulse } from "@/components/sq/systems";
 import { SqToastProvider } from "@/components/sq/toast";
 import { initialsOf } from "@/components/sq/ui";
-import { ROLE_LABEL, tabsFor } from "@/lib/admin/access";
+import { atLeast, ROLE_LABEL, tabsFor } from "@/lib/admin/access";
+import { getSystemsPulse } from "@/lib/admin/systems";
 import { requireAdmin } from "@/lib/auth/guards";
 import { getDeskStatus } from "@/lib/admin/stats";
 
@@ -38,8 +40,15 @@ export default async function AdminLayout({
   const user = await requireAdmin();
 
   // The review badge is a number the desk needs before it has chosen where to
-  // go, so it belongs to the shell rather than to the page that owns it.
-  const desk = await getDeskStatus();
+  // go, so it belongs to the shell rather than to the page that owns it. The
+  // systems pulse is there for the same reason and read the same way — and
+  // only for the ranks that may open the board it links to, so a reader is not
+  // offered a door that would bounce them.
+  const watches = atLeast(user.role, "ADMIN");
+  const [desk, pulse] = await Promise.all([
+    getDeskStatus(),
+    watches ? getSystemsPulse() : Promise.resolve(null),
+  ]);
   const tabs = tabsFor(user.role);
 
   return (
@@ -57,6 +66,7 @@ export default async function AdminLayout({
         }}
         signOut={logoutAction}
         rail={rail}
+        status={pulse ? <SqSystemsPulse pulse={pulse} /> : null}
       >
         {children}
       </SqShell>

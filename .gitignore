@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...and this is that opt-in. `.env.example` holds no values — only the names
+# of every variable the app reads, with a note each. Without this negation the
+# `.env*` line above swallows it silently, which is exactly what happened the
+# first time it was written.
+!.env.example
 
 # vercel
 .vercel
