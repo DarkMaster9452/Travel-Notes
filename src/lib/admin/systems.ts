@@ -4,7 +4,7 @@ import { list } from "@vercel/blob";
 
 import { db } from "@/lib/db";
 import { emailEnabled } from "@/lib/email";
-import { isDemoPlans, isPaddleEnabled, paddleEnvironment } from "@/lib/env";
+import { isPaddleEnabled, paddleEnvironment } from "@/lib/env";
 import { getPaddle } from "@/lib/paddle";
 import { stravaEnabled } from "@/lib/strava";
 import { uploadsEnabled } from "@/lib/uploads";
@@ -313,9 +313,7 @@ async function probeBilling(): Promise<Reading> {
     return {
       status: "off",
       latencyMs: null,
-      detail: isDemoPlans()
-        ? "Paddle not wired up — plans are handed over free by demo activation"
-        : "Set PADDLE_API_KEY, NEXT_PUBLIC_PADDLE_CLIENT_TOKEN and a price id to sell",
+      detail: "Set PADDLE_API_KEY, NEXT_PUBLIC_PADDLE_CLIENT_TOKEN and a price id to sell",
     };
   }
 
@@ -341,12 +339,12 @@ async function probeBilling(): Promise<Reading> {
     };
   }
 
-  // Sandbox is the safe default and the right one nearly everywhere, but a
+  // Sandbox is the safe default and the right one while building, but a
   // deployment that is *meant* to be taking money and is quietly pointed at
   // sandbox takes no money at all and looks perfectly healthy while doing it.
   // Amber is the honest colour for that: working, and probably not what
   // somebody intended.
-  if (environment === "sandbox" && !isDemoPlans()) {
+  if (environment === "sandbox") {
     return {
       status: "degraded",
       latencyMs: ms,
@@ -912,12 +910,11 @@ async function factsForReview(): Promise<Fact[]> {
 }
 
 async function factsForBilling(): Promise<Fact[]> {
-  const [live, pastDue, paused, cancelling, demo] = await Promise.all([
+  const [live, pastDue, paused, cancelling] = await Promise.all([
     db.subscription.count({ where: { status: "ACTIVE" } }),
     db.subscription.count({ where: { status: "PAST_DUE" } }),
     db.subscription.count({ where: { status: "PAUSED" } }),
     db.subscription.count({ where: { cancelAtPeriodEnd: true } }),
-    db.subscription.count({ where: { demo: true } }),
   ]);
 
   const environment = paddleEnvironment();
@@ -927,16 +924,14 @@ async function factsForBilling(): Promise<Fact[]> {
       value: environment,
       // Not a fault, but the one setting on this page whose being wrong is
       // silent, so it is coloured rather than left as plain text.
-      tone: environment === "sandbox" && !isDemoPlans() ? "warn" : "plain",
+      tone: environment === "sandbox" ? "warn" : "plain",
     },
     { label: "API key", value: set(process.env.PADDLE_API_KEY) },
     { label: "Client token", value: set(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) },
     { label: "Webhook secret", value: set(process.env.PADDLE_WEBHOOK_SECRET) },
     { label: "Explorer price id", value: set(process.env.PADDLE_PRICE_ID_EXPLORER_MONTHLY) },
     { label: "Ultra price id", value: set(process.env.PADDLE_PRICE_ID_ULTRA_MONTHLY) },
-    { label: "Demo activation", value: isDemoPlans() ? "on" : "off" },
     { label: "Live subscriptions", value: live.toLocaleString("en-GB") },
-    { label: "Handed over free", value: demo.toLocaleString("en-GB") },
     { label: "Past due", value: pastDue.toLocaleString("en-GB"), tone: pastDue > 0 ? "warn" : "plain" },
     { label: "Paused", value: paused.toLocaleString("en-GB") },
     { label: "Cancelling at period end", value: cancelling.toLocaleString("en-GB") },

@@ -62,9 +62,7 @@ export default async function AdminRevenuePage() {
           label="Monthly, at list"
           value={formatPrice(revenue.monthlyCents)}
           note={
-            revenue.demo > 0
-              ? `${revenue.paying} paying · ${revenue.demo} demo, not counted`
-              : `${revenue.live} live subscriptions`
+            `${revenue.live} live subscriptions`
           }
           index={0}
         />

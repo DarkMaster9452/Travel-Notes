@@ -43,8 +43,6 @@ const serverSchema = z.object({
   EMAIL_FROM: z.string().optional().default("Summit Quest <quests@summitquest.app>"),
   /** Bearer secret the scheduled routes require. Empty refuses every call. */
   CRON_SECRET: z.string().optional().default(""),
-  /** Hand every plan over for nothing. See `isDemoPlans`. */
-  DEMO_PLANS: z.string().optional().default(""),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -72,7 +70,6 @@ function load(): ServerEnv {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
     CRON_SECRET: process.env.CRON_SECRET,
-    DEMO_PLANS: process.env.DEMO_PLANS,
   });
 
   if (!parsed.success) {
@@ -130,28 +127,6 @@ export function paddleEnvironment(): "sandbox" | "production" {
  */
 export function isUltraEnabled(): boolean {
   return isPaddleEnabled() && (process.env.PADDLE_PRICE_ID_ULTRA_MONTHLY ?? "").length > 0;
-}
-
-/**
- * Every plan, free, activated with a button.
- *
- * On by default wherever Paddle is not configured, which is the honest
- * reading of that state: a deployment that cannot take money and also will not
- * hand anything over is a deployment where nothing works. Set `DEMO_PLANS=0`
- * to turn it off anyway, or `DEMO_PLANS=1` to keep it on alongside a live
- * Paddle — useful while a launch is being demonstrated.
- *
- * What this does *not* do is change what a plan means. A demo activation
- * writes the same subscription row with the same plan and the same status, so
- * every capability check, every sticker allowance and every locked panel
- * behaves exactly as it will when the money is real. The only difference is
- * the `demo` flag, and the only thing that reads it is the revenue page.
- */
-export function isDemoPlans(): boolean {
-  const flag = (process.env.DEMO_PLANS ?? "").trim().toLowerCase();
-  if (flag === "0" || flag === "false" || flag === "off") return false;
-  if (flag.length > 0) return true;
-  return !isPaddleEnabled();
 }
 
 export const appUrl =

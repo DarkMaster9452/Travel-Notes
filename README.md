@@ -275,7 +275,6 @@ Everything that matters is decided on the server, from database state:
 | `RESEND_API_KEY` | no | Transactional email. Without it messages are logged rather than sent |
 | `EMAIL_FROM` | no | The From line. Defaults to `Summit Quest <quests@summitquest.app>` |
 | `CRON_SECRET` | no | Bearer token the scheduled routes require. **Empty refuses every call** — a job anybody can trigger is worse than one that never runs |
-| `DEMO_PLANS` | no | Hand every plan over for nothing, activated with a button instead of a checkout. Defaults **on** wherever Paddle is not configured; `0` turns it off anyway, `1` keeps it on alongside a live Paddle. A demo activation writes the same subscription row as a paid one and is marked `demo`, so entitlement behaves identically and revenue does not count it |
 
 Pricing, plan features, the free allowance and rate limits all live in
 `src/lib/config.ts` — nothing is hardcoded in a component.

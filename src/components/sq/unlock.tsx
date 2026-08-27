@@ -1,24 +1,22 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
 
-import { activatePlanAction } from "@/app/(app)/settings/plan-actions";
 import { Glyph } from "@/components/sq/icons";
 import { useT } from "@/components/sq/i18n";
-import { useToast } from "@/components/sq/toast";
 import { capabilityCopy, type Capability } from "@/lib/config";
 import { SHAPE_RADIUS, type StickerShape } from "@/lib/stickers";
 
 /**
- * Turning a plan on, and the moment afterwards.
+ * The moment after a plan is bought.
  *
- * The button and the celebration live in one component because the second is
- * the consequence of the first and splitting them would mean passing the news
- * through a query string. Nothing is asked for here: the postal address is
- * queued server-side as a nudge for the following day, so this screen stays a
- * celebration rather than becoming a form with a banner on top.
+ * Opened by the checkout listener when Paddle reports a completed purchase —
+ * it used to be opened by a free demo activation instead, which meant the one
+ * moment actually worth celebrating was the one that got nothing.
+ *
+ * Nothing is asked for here: the postal address is queued server-side as a
+ * nudge for the following day, so this screen stays a celebration rather than
+ * becoming a form with a banner on top.
  *
  * The whole thing is CSS. Under `prefers-reduced-motion` the house `--motion`
  * token is 0, which flattens the travel and the spin to nothing while leaving
@@ -39,61 +37,6 @@ const CONFETTI: { shape: StickerShape; ink: string }[] = [
 ];
 
 const SCRAPS = 22;
-
-export function SqActivateButton({
-  plan,
-  label,
-  gains,
-  variant = "primary",
-}: {
-  plan: "explorer" | "ultra";
-  label: string;
-  /** What this account does not have yet and would get. Drives the list. */
-  gains: Capability[];
-  variant?: "primary" | "ghost";
-}) {
-  const t = useT();
-  const toast = useToast();
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [unlocked, setUnlocked] = useState<{ name: string } | null>(null);
-
-  return (
-    <>
-      <button
-        type="button"
-        className={`sq-btn ${variant === "primary" ? "sq-btn-primary" : "sq-btn-ghost"}`}
-        disabled={pending}
-        onClick={() => {
-          start(async () => {
-            const result = await activatePlanAction(plan);
-            if (!result.ok) {
-              toast(result.message, "stamp");
-              return;
-            }
-            setUnlocked({ name: result.name });
-          });
-        }}
-      >
-        {pending ? t.unlock.unlocking : label}
-      </button>
-
-      {unlocked ? (
-        <SqUnlockCelebration
-          name={unlocked.name}
-          gains={gains}
-          onClose={() => {
-            setUnlocked(null);
-            // The page behind this was rendered for the old plan. Refreshing on
-            // the way out is what makes the locked panels open rather than
-            // needing a reload nobody would think to do.
-            router.refresh();
-          }}
-        />
-      ) : null}
-    </>
-  );
-}
 
 export function SqUnlockCelebration({
   name,

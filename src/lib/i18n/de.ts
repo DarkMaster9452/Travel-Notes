@@ -409,11 +409,10 @@ export const de: Messages = {
 
   unlock: {
     unlocked: "Freigeschaltet",
-    lede: "Es ist an, und während der Demo kostenlos. Alles unten hat sich in dem Moment geöffnet, als du geklickt hast.",
+    lede: "Es ist an. Alles unten hat sich in dem Moment geöffnet, als die Zahlung durchging.",
     envelopeNote:
       "Der gedruckte Umschlag gehört dazu. Wohin er soll, fragen wir in einem Tag oder zwei — nicht jetzt.",
     good: "Gut",
-    unlocking: "Wird freigeschaltet…",
   },
 
   monthly: {
@@ -790,11 +789,8 @@ export const de: Messages = {
     plansHeading: "Die Tarife",
     cancelAnyTime: "Jederzeit kündbar",
     notConfigured: "Zahlungen sind hier nicht eingerichtet",
-    demoFree: "Kostenlos während der Demo",
     upgrade: "Upgrade",
     switch: "Wechseln",
-    unlockIt: "Freischalten",
-    switchToIt: "Dahin wechseln",
     envelopeHeading: "Wohin der Umschlag geht",
     editAddress: "Adresse bearbeiten →",
     addAddress: "Adresse hinzufügen →",

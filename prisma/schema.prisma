@@ -158,15 +158,6 @@ model Subscription {
   currentPeriodStart   DateTime?          @map("current_period_start")
   currentPeriodEnd     DateTime?          @map("current_period_end")
 
-  /// Activated without money changing hands.
-  ///
-  /// Entitlement treats a demo subscription exactly like a paid one — that is
-  /// the point of it — but the books must not. Revenue counts what was
-  /// charged, and a row with this set was never charged, so it is excluded
-  /// from the money and counted separately. A demo row has no Paddle ids at
-  /// all, which is the other way to tell.
-  demo                 Boolean            @default(false)
-
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 

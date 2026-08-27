@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SqCheckoutButton, SqCheckoutListener, SqPortalButton } from "@/components/sq/plan-actions";
-import { SqActivateButton } from "@/components/sq/unlock";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { Glyph, LockGlyph } from "@/components/sq/icons";
@@ -19,7 +18,7 @@ import { getEntitlement } from "@/lib/entitlements";
 import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
 import { formatDate, formatMoney } from "@/lib/i18n/format";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { isDemoPlans, isPaddleEnabled, isUltraEnabled } from "@/lib/env";
+import { isPaddleEnabled, isUltraEnabled } from "@/lib/env";
 import { intervalForPriceId } from "@/lib/paddle";
 
 export const metadata: Metadata = { title: "Plan & billing" };
@@ -49,7 +48,6 @@ export default async function BillingSettingsPage() {
   const currentCopy = planCopy(t, entitlement.plan);
   const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
   const yearly = intervalForPriceId(subscription?.paddlePriceId) === "yearly";
-  const demo = isDemoPlans();
 
   return (
     <>
@@ -214,27 +212,16 @@ export default async function BillingSettingsPage() {
             {t.billing.plansHeading}
           </h2>
           <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-            {demo
-              ? t.billing.demoFree
-              : isPaddleEnabled()
-                ? t.billing.cancelAnyTime
-                : t.billing.notConfigured}
+            {isPaddleEnabled() ? t.billing.cancelAnyTime : t.billing.notConfigured}
           </span>
         </div>
         <ul>
           {PLANS.map((plan) => {
             const isCurrent = plan.id === entitlement.plan;
             const buyable =
-              !demo &&
               isPaddleEnabled() &&
               !isCurrent &&
               (plan.id === "explorer" || (plan.id === "ultra" && isUltraEnabled()));
-            // While plans are free, anything above free can simply be switched
-            // on. What somebody would *gain* is computed against what this
-            // account already holds, so the celebration lists what actually
-            // changed rather than reciting the plan's whole feature list.
-            const activatable = demo && !isCurrent && plan.id !== "free";
-            const gains = plan.capabilities.filter((capability) => !entitlement.can(capability));
             const copy = planCopy(t, plan.id);
 
             return (
@@ -271,32 +258,15 @@ export default async function BillingSettingsPage() {
 
                 <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span className="sq-mono" style={{ fontSize: 12, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
-                    {plan.price.monthly === 0 ? (
-                      t.common.free
-                    ) : demo ? (
-                      <>
-                        <s style={{ opacity: 0.55 }}>
-                          {formatMoney(locale, plan.price.monthly)}
-                          {t.common.perMonth}
-                        </s>{" "}
-                        {t.common.free}
-                      </>
-                    ) : (
-                      `${formatMoney(locale, plan.price.monthly)}${t.common.perMonth}`
-                    )}
+                    {plan.price.monthly === 0
+                      ? t.common.free
+                      : `${formatMoney(locale, plan.price.monthly)}${t.common.perMonth}`}
                   </span>
                   {buyable ? (
                     <SqCheckoutButton
                       plan={plan.id === "ultra" ? "ultra" : "explorer"}
                       interval="monthly"
                       label={plan.tier > entitlement.tier ? t.billing.upgrade : t.billing.switch}
-                      variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
-                    />
-                  ) : activatable ? (
-                    <SqActivateButton
-                      plan={plan.id === "ultra" ? "ultra" : "explorer"}
-                      label={plan.tier > entitlement.tier ? t.billing.unlockIt : t.billing.switchToIt}
-                      gains={[...gains]}
                       variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
                     />
                   ) : null}

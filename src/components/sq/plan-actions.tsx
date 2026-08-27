@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/components/sq/toast";
+import { SqUnlockCelebration } from "@/components/sq/unlock";
 import {
   completeCheckoutAction,
   startCheckoutAction,
 } from "@/app/(app)/settings/plan-actions";
+import type { Capability } from "@/lib/config";
 
 /**
  * Start a checkout, or open Paddle's own portal.
@@ -149,6 +151,7 @@ export function SqCheckoutButton({
 export function SqCheckoutListener() {
   const router = useRouter();
   const toast = useToast();
+  const [bought, setBought] = useState<{ name: string; gains: Capability[] } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,16 +165,21 @@ export function SqCheckoutListener() {
           const transactionId = event.data?.transaction_id;
           if (!transactionId) return;
 
-          void completeCheckoutAction(transactionId).then((synced) => {
+          void completeCheckoutAction(transactionId).then((result) => {
             if (cancelled) return;
-            toast(
-              synced
-                ? "That's you upgraded."
-                : "Payment taken — your plan will appear in a moment.",
-              synced ? "plain" : "stamp",
-            );
-            // Refresh either way. If the sync landed the page is already
-            // right; if it did not, the webhook may have got there first.
+
+            if (result.ok) {
+              // The celebration, not a toast. Somebody has just paid, and the
+              // page behind them is still rendered for the plan they had a
+              // moment ago — the refresh happens when they close it.
+              setBought({ name: result.name, gains: result.gains });
+              return;
+            }
+
+            // Paddle took the money but has not caught up, or the read failed.
+            // Saying so is better than a celebration that might be premature;
+            // the webhook will finish the job either way.
+            toast("Payment taken — your plan will appear in a moment.", "stamp");
             router.refresh();
           });
         },
@@ -183,7 +191,21 @@ export function SqCheckoutListener() {
     };
   }, [router, toast]);
 
-  return null;
+  if (!bought) return null;
+
+  return (
+    <SqUnlockCelebration
+      name={bought.name}
+      gains={bought.gains}
+      onClose={() => {
+        setBought(null);
+        // The page behind this was rendered for the old plan. Refreshing on
+        // the way out is what makes the locked panels open rather than needing
+        // a reload nobody would think to do.
+        router.refresh();
+      }}
+    />
+  );
 }
 
 export function SqPortalButton({ label = "Manage payment" }: { label?: string }) {
