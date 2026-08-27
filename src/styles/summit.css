@@ -2844,8 +2844,8 @@
   gap: 10px;
   padding: 16px 18px 14px;
   border: 1px solid var(--line-2);
-  border-radius: var(--r-md);
-  background: var(--paper);
+  border-radius: var(--radius-md);
+  background: var(--card);
   overflow: hidden;
   color: var(--color-text);
 }
@@ -2914,6 +2914,97 @@
 a.sq-system:hover {
   border-color: var(--status);
   box-shadow: var(--shadow-lift);
+}
+
+/* --- the pulse in the rail ------------------------------------------------ */
+
+/*
+ * The permanent readout at the foot of the panel's sidebar.
+ *
+ * Sized to be ignorable. It sits under the navigation and above the account
+ * block, where the eye passes it on the way to something else — which is
+ * exactly right for a line that reads "everything is running" nearly always
+ * and needs to catch you only when it does not.
+ */
+.sq-side-status {
+  --status: var(--moss);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+  color: var(--color-text);
+  /* Colour lives on the dot, not on the panel: a sidebar washed red would
+     compete with the page for attention on every screen, all day. */
+  border-left: 2px solid var(--status);
+}
+
+.sq-side-status:hover {
+  border-color: var(--status);
+  background: var(--card);
+}
+
+.sq-side-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sq-side-status-text > b {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sq-side-status-text > span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+/* --- the pulse on the dashboard ------------------------------------------- */
+
+.sq-system-line {
+  --status: var(--moss);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--status);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--color-text);
+}
+
+a.sq-system-line:hover {
+  border-color: var(--status);
+  box-shadow: var(--shadow-lift);
+}
+
+.sq-system-line-go {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+a.sq-system-line:hover .sq-system-line-go {
+  color: var(--color-accent-700);
+}
+
+@media (max-width: 640px) {
+  .sq-system-line {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
 }
 
 /*

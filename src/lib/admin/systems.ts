@@ -552,6 +552,56 @@ async function recordProbes(board: SystemReading[]): Promise<void> {
   });
 }
 
+export type SystemsPulse = {
+  status: SystemStatus;
+  up: number;
+  degraded: number;
+  down: number;
+  off: number;
+  total: number;
+};
+
+/**
+ * The whole board reduced to what fits in a sidebar.
+ *
+ * Reads `readSystems` rather than probing separately, so the strip in the rail
+ * and the board on its own page can never disagree — and because that call is
+ * memoised for fifteen seconds, having it on every panel screen costs one set
+ * of probes a quarter-minute rather than one per navigation.
+ *
+ * Worst-of, not an average: nine up and one down is an outage, and a rail that
+ * rounded that away would be worse than no rail at all. `off` is excluded from
+ * the verdict — an integration this deployment was never given a key for is not
+ * a fault.
+ */
+export async function getSystemsPulse(): Promise<SystemsPulse> {
+  return pulseOf(await readSystems());
+}
+
+/**
+ * The same reduction over a board already in hand.
+ *
+ * `/admin/systems` has the full readings and would otherwise round-trip
+ * `readSystems` a second time just to count them.
+ */
+export function pulseOf(board: SystemReading[]): SystemsPulse {
+  const counted: Record<SystemStatus, number> = { ok: 0, degraded: 0, down: 0, off: 0 };
+  for (const system of board) counted[system.status] += 1;
+
+  // Everything unwired is not "up" — it is a deployment with nothing hooked
+  // to it, and `worstOf` over an empty list would cheerfully say ok.
+  const judged = board.map((system) => system.status).filter((status) => status !== "off");
+
+  return {
+    status: judged.length === 0 ? "off" : worstOf(judged),
+    up: counted.ok,
+    degraded: counted.degraded,
+    down: counted.down,
+    off: counted.off,
+    total: board.length,
+  };
+}
+
 /**
  * What a scheduled route writes when it finishes, and the only thing that
  * makes the `job.*` entries mean anything.

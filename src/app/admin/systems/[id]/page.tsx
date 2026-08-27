@@ -245,7 +245,7 @@ export default async function AdminSystemPage({
             }}
           >
             {facts.map((fact) => (
-              <div key={fact.label} style={{ background: "var(--paper)", padding: "12px 14px" }}>
+              <div key={fact.label} style={{ background: "var(--card)", padding: "12px 14px" }}>
                 <dt className="sq-kicker-sm" style={{ fontSize: 9.5, letterSpacing: "0.08em", marginBottom: 5 }}>
                   {fact.label}
                 </dt>

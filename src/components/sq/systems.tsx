@@ -4,18 +4,17 @@ import { SqSpark, SqStatusRibbon } from "@/components/sq/charts";
 import {
   STATUS_COLOUR,
   STATUS_LABEL,
-  worstOf,
   type SystemReading,
-  type SystemStatus,
+  type SystemsPulse,
 } from "@/lib/admin/systems";
 
 /**
- * The board.
+ * The board, and the two one-liners that stand in for it.
  *
- * One tile per system, colour-signalled down its leading edge, each one a link
- * into that system's own page. Shared by the dashboard — which shows the board
- * and nothing else about it — and by `/admin/systems`, which shows it grouped
- * with the readings spelled out.
+ * `SqSystemTile` is the full thing and lives only on `/admin/systems`, where
+ * there is room for ten of them. The dashboard and the rail get a dot and a
+ * sentence instead — the question worth answering everywhere is "is anything
+ * broken", and that does not need a grid.
  *
  * Every tile carries its recent history as a smoothed curve where there is a
  * duration to draw, and a run of status blocks where there is not: "is it up"
@@ -69,36 +68,84 @@ export function SqSystemTile({ system }: { system: SystemReading }) {
 }
 
 /**
- * The one-line verdict over the whole board.
+ * The whole board in one sentence.
  *
  * Worst-of rather than an average: nine systems up and one down is not "90%
  * up", it is an outage, and a headline that rounded it away would be the
- * headline nobody trusts. `off` counts as neither — an unwired integration is
- * not a fault, so it never drags the summary red.
+ * headline nobody trusts.
  */
-export function SqSystemsSummary({ systems }: { systems: SystemReading[] }) {
-  const overall = worstOf(systems.map((system) => system.status));
-  const counted: Record<SystemStatus, number> = { ok: 0, degraded: 0, down: 0, off: 0 };
-  for (const system of systems) counted[system.status] += 1;
+function headlineFor(pulse: SystemsPulse): string {
+  if (pulse.status === "off") return "Nothing wired up";
+  if (pulse.down > 0) return `${pulse.down} system${pulse.down === 1 ? "" : "s"} down`;
+  if (pulse.degraded > 0) return `${pulse.degraded} degraded`;
+  return "Everything is running";
+}
 
-  const headline =
-    counted.down > 0
-      ? `${counted.down} system${counted.down === 1 ? "" : "s"} down`
-      : counted.degraded > 0
-        ? `${counted.degraded} degraded`
-        : "Everything is up";
-
+/**
+ * The strip at the foot of the panel's rail.
+ *
+ * This is the whole reason the board does not need to be on the dashboard: the
+ * one question worth having permanently on screen is "is anything broken", and
+ * that is a dot and four words. Everything else — which system, how slow, what
+ * the log says — is a click away and belongs on a page that has room for it.
+ *
+ * It sits in the rail rather than on a page so it is true on every panel
+ * screen, not only on the one somebody happens to have open.
+ */
+export function SqSystemsPulse({ pulse }: { pulse: SystemsPulse }) {
   return (
-    <span
-      style={{ display: "inline-flex", alignItems: "center", gap: 9, ["--status" as string]: STATUS_COLOUR[overall] }}
+    <Link
+      href="/admin/systems"
+      className="sq-side-status"
+      style={{ ["--status" as string]: STATUS_COLOUR[pulse.status] }}
     >
-      <span className="sq-status-dot" data-status={overall} />
-      <b style={{ fontSize: 13.5, fontWeight: 600 }}>{headline}</b>
-      <span className="sq-mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-        {counted.ok} up
-        {counted.off > 0 ? ` · ${counted.off} not wired up` : ""}
+      <span className="sq-status-dot" data-status={pulse.status} />
+      <span className="sq-side-status-text">
+        <b>{headlineFor(pulse)}</b>
+        <span>
+          {pulse.up}/{pulse.total} up
+          {pulse.off > 0 ? ` · ${pulse.off} off` : ""}
+        </span>
       </span>
-    </span>
+    </Link>
+  );
+}
+
+/**
+ * The dashboard's version: one row, no tiles.
+ *
+ * The overview is about the queue and the figures. Ten tiles of infrastructure
+ * at the top of it pushed all of that below the fold to answer a question that
+ * is almost always "yes" — so the dashboard states the answer and links on.
+ */
+export function SqSystemsLine({ pulse, href }: { pulse: SystemsPulse; href?: string }) {
+  const inside = (
+    <>
+      <span className="sq-status-dot" data-status={pulse.status} />
+      <b style={{ fontSize: 14, fontWeight: 600 }}>{headlineFor(pulse)}</b>
+      <span className="sq-mono" style={{ fontSize: 11.5, color: "var(--ink-3)", flex: 1 }}>
+        {pulse.up} of {pulse.total} up
+        {pulse.degraded > 0 ? ` · ${pulse.degraded} degraded` : ""}
+        {pulse.down > 0 ? ` · ${pulse.down} down` : ""}
+        {pulse.off > 0 ? ` · ${pulse.off} not wired up` : ""}
+      </span>
+      {href ? <span className="sq-system-line-go">Systems &rarr;</span> : null}
+    </>
+  );
+
+  const style = { ["--status" as string]: STATUS_COLOUR[pulse.status] };
+
+  // On the systems page itself there is nowhere to go, so it is a heading
+  // rather than a link — an arrow pointing at the page you are already on is
+  // the kind of small dishonesty that makes people stop trusting the arrows.
+  return href ? (
+    <Link href={href} className="sq-system-line" style={style}>
+      {inside}
+    </Link>
+  ) : (
+    <div className="sq-system-line" style={style}>
+      {inside}
+    </div>
   );
 }
 

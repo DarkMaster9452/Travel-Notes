@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { SqSystemsSummary, SqSystemTile } from "@/components/sq/systems";
+import { SqSystemsLine, SqSystemTile } from "@/components/sq/systems";
 import { PageHeader, Tag } from "@/components/sq/ui";
-import { GROUP_LABEL, readSystems, type SystemGroup } from "@/lib/admin/systems";
+import { GROUP_LABEL, pulseOf, readSystems, type SystemGroup } from "@/lib/admin/systems";
 import { requireRank } from "@/lib/auth/guards";
 
 export const metadata: Metadata = { title: "Systems · Admin" };
@@ -43,9 +43,7 @@ export default async function AdminSystemsPage() {
         right={<Tag small>{systems.length} systems</Tag>}
       />
 
-      <div className="sq-card sq-pad-sm" style={{ marginBottom: 16 }}>
-        <SqSystemsSummary systems={systems} />
-      </div>
+      <SqSystemsLine pulse={pulseOf(systems)} />
 
       {ORDER.map((group) => {
         const inGroup = systems.filter((system) => system.group === group);
