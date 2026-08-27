@@ -159,7 +159,7 @@ export const PLANS: PlanDefinition[] = [
     tier: 1,
     kicker: "Unlimited quests",
     description: "Unlimited quests anywhere in Europe, in your inbox on the morning you pick.",
-    price: { monthly: 499, yearly: 4990 },
+    price: { monthly: 499, yearly: 3999 },
     currency: "EUR",
     features: [
       "Unlimited quests",
@@ -180,7 +180,7 @@ export const PLANS: PlanDefinition[] = [
     tier: 2,
     kicker: "Worldwide, priority",
     description: "Every range on the map, and quests built around something specific.",
-    price: { monthly: 1299, yearly: 12990 },
+    price: { monthly: 1299, yearly: 9999 },
     currency: "EUR",
     features: [
       "Everything in Explorer",
