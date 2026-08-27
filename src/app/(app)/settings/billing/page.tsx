@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { SqCheckoutButton, SqPortalButton } from "@/components/sq/plan-actions";
+import { SqCheckoutButton, SqCheckoutListener, SqPortalButton } from "@/components/sq/plan-actions";
 import { SqActivateButton } from "@/components/sq/unlock";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
@@ -19,7 +19,8 @@ import { getEntitlement } from "@/lib/entitlements";
 import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
 import { formatDate, formatMoney } from "@/lib/i18n/format";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { isDemoPlans, isStripeEnabled, isUltraEnabled } from "@/lib/env";
+import { isDemoPlans, isPaddleEnabled, isUltraEnabled } from "@/lib/env";
+import { intervalForPriceId } from "@/lib/paddle";
 
 export const metadata: Metadata = { title: "Plan & billing" };
 export const dynamic = "force-dynamic";
@@ -47,11 +48,16 @@ export default async function BillingSettingsPage() {
   const current = entitlement.definition;
   const currentCopy = planCopy(t, entitlement.plan);
   const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
-  const yearly = subscription?.stripePriceId?.includes("yearly") ?? false;
+  const yearly = intervalForPriceId(subscription?.paddlePriceId) === "yearly";
   const demo = isDemoPlans();
 
   return (
     <>
+      {/* The overlay is opened by the buttons below but completing it is the
+          page's business, not any one button's: a purchase that finishes after
+          the button has re-rendered still has to be recorded. */}
+      <SqCheckoutListener />
+
       <section className="sq-card sq-pad">
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
@@ -88,7 +94,7 @@ export default async function BillingSettingsPage() {
             ) : null}
           </div>
 
-          {entitlement.isSubscribed && isStripeEnabled() ? (
+          {entitlement.isSubscribed && isPaddleEnabled() ? (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {!yearly ? (
                 <SqCheckoutButton
@@ -210,7 +216,7 @@ export default async function BillingSettingsPage() {
           <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
             {demo
               ? t.billing.demoFree
-              : isStripeEnabled()
+              : isPaddleEnabled()
                 ? t.billing.cancelAnyTime
                 : t.billing.notConfigured}
           </span>
@@ -220,7 +226,7 @@ export default async function BillingSettingsPage() {
             const isCurrent = plan.id === entitlement.plan;
             const buyable =
               !demo &&
-              isStripeEnabled() &&
+              isPaddleEnabled() &&
               !isCurrent &&
               (plan.id === "explorer" || (plan.id === "ultra" && isUltraEnabled()));
             // While plans are free, anything above free can simply be switched

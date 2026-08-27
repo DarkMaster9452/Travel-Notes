@@ -673,7 +673,7 @@ export const en = {
       noneBody:
         "An invoice appears the first time a payment goes through. A free plan never produces one.",
       notConfigured: "Billing is not configured here",
-      notConfiguredBody: "This deployment has no Stripe keys, so there is nothing to read.",
+      notConfiguredBody: "This deployment has no Paddle keys, so there is nothing to read.",
       openPortal: "Open the billing portal",
     },
     connected: {

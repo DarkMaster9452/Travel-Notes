@@ -127,7 +127,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                         : "—",
                   },
                   { k: "Cancelling", v: user.subscription.cancelAtPeriodEnd ? "At period end" : "No" },
-                  { k: "Stripe customer", v: user.subscription.stripeCustomerId ?? "—" },
+                  { k: "Paddle customer", v: user.subscription.paddleCustomerId ?? "—" },
                   { k: "Opened", v: DATE.format(user.subscription.createdAt) },
                 ].map((row) => (
                   <li key={row.k} style={rowStyle}>

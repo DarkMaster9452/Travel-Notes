@@ -10,7 +10,7 @@ import { requireClient, requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { isWithinRefundWindow } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
-import { getStripe } from "@/lib/stripe";
+import { getPaddle } from "@/lib/paddle";
 import { LOCATIONS } from "@/lib/quest/locations";
 import { getFeaturedQuest, materialiseFeatured } from "@/lib/quest/featured";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
@@ -482,9 +482,16 @@ export type CancelResult = {
  *  · After that — cancelled at the end of the period you have already paid
  *    for. Access holds until then; nothing is clawed back.
  *
- * Stripe is the payment authority but not the access authority: the
- * subscription row is updated either way, so a deployment without Stripe keys
+ * Paddle is the payment authority but not the access authority: the
+ * subscription row is updated either way, so a deployment without Paddle keys
  * still cancels properly instead of silently doing nothing.
+ *
+ * One honest difference from the old Stripe path. A Paddle refund is an
+ * *adjustment*, and adjustments are reviewed by Paddle rather than settling on
+ * the spot — so "refunded in full" here means the refund was accepted for
+ * processing, not that money has already moved. Access is withdrawn
+ * immediately regardless, which is the half we control and the half the
+ * guarantee actually promises.
  */
 export async function cancelPlanAction(): Promise<CancelResult> {
   const user = await requireClient();
@@ -498,7 +505,7 @@ export async function cancelPlanAction(): Promise<CancelResult> {
       currentPeriodStart: true,
       currentPeriodEnd: true,
       cancelAtPeriodEnd: true,
-      stripeSubscriptionId: true,
+      paddleSubscriptionId: true,
     },
   });
 
@@ -511,48 +518,51 @@ export async function cancelPlanAction(): Promise<CancelResult> {
 
   const withinGuarantee = isWithinRefundWindow(subscription.currentPeriodStart);
 
-  const stripe = getStripe();
-  if (stripe && subscription.stripeSubscriptionId) {
+  const paddle = getPaddle();
+  if (paddle && subscription.paddleSubscriptionId) {
     try {
       if (withinGuarantee) {
-        // Cancel now and refund the latest invoice. Refunding before
-        // cancelling would leave a paid-for subscription with no money
-        // behind it if the cancel then failed.
-        const live = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
-        const invoiceId =
-          typeof live.latest_invoice === "string" ? live.latest_invoice : live.latest_invoice?.id;
+        // Refund first, then cancel — the opposite order to the Stripe path,
+        // and for a reason. Paddle will not accept an adjustment against a
+        // subscription's transaction once the subscription is gone, so
+        // cancelling first would destroy the thing the refund is filed
+        // against. If the refund fails we return without cancelling, which
+        // leaves the member paid-up rather than cancelled and out of pocket.
+        const billed = await paddle.transactions
+          .list({
+            subscriptionId: [subscription.paddleSubscriptionId],
+            status: ["completed"],
+            orderBy: "billed_at[DESC]",
+            perPage: 1,
+          })
+          .next();
 
-        await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
-
-        if (invoiceId) {
-          // On this API version an invoice links to its money through
-          // `payments`, not a bare `payment_intent`, so it has to be expanded
-          // to find what to refund.
-          const invoice = await stripe.invoices.retrieve(invoiceId, { expand: ["payments"] });
-          const payment = invoice.payments?.data.find(
-            (entry) => entry.payment?.payment_intent || entry.payment?.charge,
-          );
-          const intent = payment?.payment.payment_intent;
-          const charge = payment?.payment.charge;
-
-          const paymentIntentId = typeof intent === "string" ? intent : intent?.id;
-          const chargeId = typeof charge === "string" ? charge : charge?.id;
-
-          if (paymentIntentId) {
-            await stripe.refunds.create({ payment_intent: paymentIntentId });
-          } else if (chargeId) {
-            await stripe.refunds.create({ charge: chargeId });
-          }
+        const latest = billed[0];
+        if (latest) {
+          await paddle.adjustments.create({
+            action: "refund",
+            type: "full",
+            transactionId: latest.id,
+            reason: "Cancelled inside the money-back guarantee",
+          });
         }
+
+        await paddle.subscriptions.cancel(subscription.paddleSubscriptionId, {
+          effectiveFrom: "immediately",
+        });
       } else {
-        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-          cancel_at_period_end: true,
+        // Paddle expresses "stop at the end of what was paid for" as the
+        // effective date of the cancellation itself, rather than as a flag on
+        // the subscription. Same outcome, and it is why `cancelAtPeriodEnd` in
+        // our row is now derived from a scheduled change rather than copied.
+        await paddle.subscriptions.cancel(subscription.paddleSubscriptionId, {
+          effectiveFrom: "next_billing_period",
         });
       }
     } catch {
       return {
         ok: false,
-        message: "Stripe wouldn't accept that just now. Nothing was changed — try again.",
+        message: "Paddle wouldn't accept that just now. Nothing was changed — try again.",
       };
     }
   }
@@ -564,7 +574,7 @@ export async function cancelPlanAction(): Promise<CancelResult> {
       : { cancelAtPeriodEnd: true },
   });
 
-  revalidatePath("/upgrade");
+  revalidatePath("/settings/billing");
   revalidatePath("/profile");
   revalidatePath("/dashboard");
   revalidatePath("/", "layout");
@@ -573,7 +583,7 @@ export async function cancelPlanAction(): Promise<CancelResult> {
     ok: true,
     refunded: withinGuarantee,
     message: withinGuarantee
-      ? "Cancelled and refunded in full."
+      ? "Cancelled. The refund has been filed with Paddle."
       : "Cancelled. You keep everything until the period ends.",
   };
 }

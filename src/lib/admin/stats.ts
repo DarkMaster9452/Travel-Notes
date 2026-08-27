@@ -186,7 +186,7 @@ export async function getPlanSplit() {
   }));
 }
 
-/** Subscription rows by Stripe status — the billing health check. */
+/** Subscription rows by billing status — the billing health check. */
 export async function getStatusSplit() {
   const rows = await db.subscription.groupBy({ by: ["status"], _count: { _all: true } });
   const count = (status: string) =>
@@ -273,7 +273,7 @@ export type RevenueSummary = Awaited<ReturnType<typeof getRevenueSummary>>;
  * Recurring revenue, at list price.
  *
  * Deliberately an estimate, and labelled as one wherever it is shown: we store
- * the plan but not the billing interval, and Stripe is the authority on what
+ * the plan but not the billing interval, and Paddle is the authority on what
  * anyone was actually charged after discounts, proration and tax. This is the
  * shape of the book, not the books.
  */
@@ -372,7 +372,7 @@ export async function getTableSummaries(): Promise<TableSummary[]> {
       name: "subscriptions",
       model: "Subscription",
       rows: subscriptions,
-      description: "Stripe state, one row per account",
+      description: "Billing state, one row per account",
     },
     {
       name: "user_preferences",
@@ -450,7 +450,7 @@ function stamp(date: Date | null | undefined): string {
 /**
  * The most recent rows of one table.
  *
- * Every column is chosen by hand. Password hashes, Stripe secrets and the raw
+ * Every column is chosen by hand. Password hashes, Paddle secrets and the raw
  * generation JSON are not projected — an admin needs to see that a row exists
  * and roughly what is in it, and nothing here needs the hash to do that.
  */
@@ -515,19 +515,19 @@ export async function getTableRows(table: TableName, take = 25): Promise<TableRo
           status: true,
           cancelAtPeriodEnd: true,
           currentPeriodEnd: true,
-          stripeCustomerId: true,
+          paddleCustomerId: true,
           user: { select: { email: true } },
         },
       });
       return {
-        columns: ["account", "plan", "status", "cancels", "period end", "stripe customer"],
+        columns: ["account", "plan", "status", "cancels", "period end", "paddle customer"],
         rows: rows.map((row) => [
           row.user.email,
           row.plan,
           row.status,
           row.cancelAtPeriodEnd ? "yes" : "no",
           stamp(row.currentPeriodEnd),
-          short(row.stripeCustomerId, 18),
+          short(row.paddleCustomerId, 18),
         ]),
       };
     }

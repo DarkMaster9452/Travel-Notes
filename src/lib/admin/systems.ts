@@ -4,9 +4,9 @@ import { list } from "@vercel/blob";
 
 import { db } from "@/lib/db";
 import { emailEnabled } from "@/lib/email";
-import { isDemoPlans, isStripeEnabled } from "@/lib/env";
+import { isDemoPlans, isPaddleEnabled, paddleEnvironment } from "@/lib/env";
+import { getPaddle } from "@/lib/paddle";
 import { stravaEnabled } from "@/lib/strava";
-import { getStripe } from "@/lib/stripe";
 import { uploadsEnabled } from "@/lib/uploads";
 
 /**
@@ -24,7 +24,7 @@ import { uploadsEnabled } from "@/lib/uploads";
  * reports `down` with the error's message rather than propagating. A systems
  * board that goes down with the system it is monitoring is not a monitor.
  *
- * **Not configured is not the same as broken.** A deployment with no Stripe
+ * **Not configured is not the same as broken.** A deployment with no Paddle
  * key is a normal, working deployment — development, a preview branch — and
  * painting it red would train the desk to ignore red. That state is `off`,
  * drawn in grey, and says what it would take to turn it on.
@@ -120,9 +120,9 @@ export const SYSTEMS: SystemDefinition[] = [
   {
     id: "billing",
     label: "Billing",
-    what: "Stripe: checkout, the portal, and the webhook that writes plans down.",
+    what: "Paddle: the overlay checkout, the portal, and the webhook that writes plans down.",
     group: "integration",
-    measures: "Round trip to the Stripe API",
+    measures: "Round trip to the Paddle API",
     probe: probeBilling,
   },
   {
@@ -309,34 +309,52 @@ async function probeReview(): Promise<Reading> {
 }
 
 async function probeBilling(): Promise<Reading> {
-  if (!isStripeEnabled()) {
+  if (!isPaddleEnabled()) {
     return {
       status: "off",
       latencyMs: null,
       detail: isDemoPlans()
-        ? "No Stripe key — plans are handed over free by demo activation"
-        : "No Stripe key. Set STRIPE_SECRET_KEY and a price id to sell",
+        ? "Paddle not wired up — plans are handed over free by demo activation"
+        : "Set PADDLE_API_KEY, NEXT_PUBLIC_PADDLE_CLIENT_TOKEN and a price id to sell",
     };
   }
 
-  const stripe = getStripe()!;
+  const paddle = getPaddle()!;
   const started = Date.now();
   // The cheapest authenticated call there is. It proves the key is live and
-  // accepted without touching a customer or writing anything.
-  await stripe.prices.list({ limit: 1 });
+  // accepted without touching a customer or writing anything. `list` returns a
+  // lazy collection, so `next()` is what actually performs the request —
+  // without it this would time nothing and prove nothing.
+  await paddle.prices.list({ perPage: 1 }).next();
   const ms = Date.now() - started;
 
-  // A past-due subscription is Stripe working correctly and a card failing,
+  const environment = paddleEnvironment();
+
+  // A past-due subscription is Paddle working correctly and a card failing,
   // but it is money not arriving, so the board says so.
   const pastDue = await db.subscription.count({ where: { status: "PAST_DUE" } });
   if (pastDue > 0) {
     return {
       status: "degraded",
       latencyMs: ms,
-      detail: `Key accepted · ${pastDue} subscription${pastDue === 1 ? "" : "s"} past due`,
+      detail: `Key accepted (${environment}) · ${pastDue} subscription${pastDue === 1 ? "" : "s"} past due`,
     };
   }
-  return bySpeed(ms, "Key accepted");
+
+  // Sandbox is the safe default and the right one nearly everywhere, but a
+  // deployment that is *meant* to be taking money and is quietly pointed at
+  // sandbox takes no money at all and looks perfectly healthy while doing it.
+  // Amber is the honest colour for that: working, and probably not what
+  // somebody intended.
+  if (environment === "sandbox" && !isDemoPlans()) {
+    return {
+      status: "degraded",
+      latencyMs: ms,
+      detail: "Key accepted, but pointed at sandbox — no real money can be taken",
+    };
+  }
+
+  return bySpeed(ms, `Key accepted (${environment})`);
 }
 
 async function probeEmail(): Promise<Reading> {
@@ -472,7 +490,7 @@ export type SparkPoint = { at: Date; value: number | null; status: SystemStatus 
  * How long a set of probes is reused before the next load re-runs them.
  *
  * Two loads of the panel in the same breath — clicking through to a page and
- * straight back — should not mean two rounds of calls to Stripe, Resend and
+ * straight back — should not mean two rounds of calls to Paddle, Resend and
  * the blob store, and should not write twenty rows into the log to say the
  * same thing twice. Fifteen seconds is short enough that the board is still
  * answering "now" and long enough to absorb ordinary navigation.
@@ -812,7 +830,7 @@ export type Fact = { label: string; value: string; tone?: "plain" | "warn" | "go
  * desk ("how many waiting, how old"), and a schema general enough to cover
  * both would say nothing useful about either.
  *
- * Configuration is reported as present or absent, never echoed. `STRIPE_SECRET_KEY`
+ * Configuration is reported as present or absent, never echoed. `PADDLE_API_KEY`
  * being set is worth knowing at the desk; its value is not, and this page is
  * one stolen session away from anybody who gets in.
  */
@@ -894,21 +912,33 @@ async function factsForReview(): Promise<Fact[]> {
 }
 
 async function factsForBilling(): Promise<Fact[]> {
-  const [live, pastDue, cancelling, demo] = await Promise.all([
+  const [live, pastDue, paused, cancelling, demo] = await Promise.all([
     db.subscription.count({ where: { status: "ACTIVE" } }),
     db.subscription.count({ where: { status: "PAST_DUE" } }),
+    db.subscription.count({ where: { status: "PAUSED" } }),
     db.subscription.count({ where: { cancelAtPeriodEnd: true } }),
     db.subscription.count({ where: { demo: true } }),
   ]);
+
+  const environment = paddleEnvironment();
   return [
-    { label: "Secret key", value: set(process.env.STRIPE_SECRET_KEY) },
-    { label: "Webhook secret", value: set(process.env.STRIPE_WEBHOOK_SECRET) },
-    { label: "Explorer price id", value: set(process.env.STRIPE_PRICE_ID_EXPLORER_MONTHLY) },
-    { label: "Ultra price id", value: set(process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY) },
+    {
+      label: "Environment",
+      value: environment,
+      // Not a fault, but the one setting on this page whose being wrong is
+      // silent, so it is coloured rather than left as plain text.
+      tone: environment === "sandbox" && !isDemoPlans() ? "warn" : "plain",
+    },
+    { label: "API key", value: set(process.env.PADDLE_API_KEY) },
+    { label: "Client token", value: set(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) },
+    { label: "Webhook secret", value: set(process.env.PADDLE_WEBHOOK_SECRET) },
+    { label: "Explorer price id", value: set(process.env.PADDLE_PRICE_ID_EXPLORER_MONTHLY) },
+    { label: "Ultra price id", value: set(process.env.PADDLE_PRICE_ID_ULTRA_MONTHLY) },
     { label: "Demo activation", value: isDemoPlans() ? "on" : "off" },
     { label: "Live subscriptions", value: live.toLocaleString("en-GB") },
     { label: "Handed over free", value: demo.toLocaleString("en-GB") },
     { label: "Past due", value: pastDue.toLocaleString("en-GB"), tone: pastDue > 0 ? "warn" : "plain" },
+    { label: "Paused", value: paused.toLocaleString("en-GB") },
     { label: "Cancelling at period end", value: cancelling.toLocaleString("en-GB") },
   ];
 }

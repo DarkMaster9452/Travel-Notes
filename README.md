@@ -5,7 +5,7 @@
 A production-shaped web app that generates personalised, randomised hiking and
 adventure quests — and never gives you the same one twice.
 
-Next.js 16 · TypeScript · Tailwind v4 · Prisma 7 · Postgres (Neon) · Stripe
+Next.js 16 · TypeScript · Tailwind v4 · Prisma 7 · Postgres (Neon) · Paddle
 
 ---
 
@@ -212,7 +212,7 @@ and the notice is gone on the next load.
 What it watches: the weekly and monthly slots that are live now and the ones
 opening within the horizon, the size *and the age* of the review queue, how many
 published quests there are to draw from, unpublished drafts, and subscriptions
-Stripe could not charge. The thresholds are policy rather than logic and live
+Paddle could not charge. The thresholds are policy rather than logic and live
 together in one `THRESHOLDS` object at the top of that module.
 
 They surface in two places, from one list: the bell in the panel chrome, and a
@@ -243,8 +243,13 @@ Everything that matters is decided on the server, from database state:
 - **Rate limiting** — Postgres-backed fixed windows (an in-memory limiter is
   bypassable across serverless instances): 12 generations/hour, 10 auth
   attempts/15 min, plus a 4-second lock that collapses double submissions.
-- **Stripe** — webhook signatures verified against the raw body before parsing;
-  subscription state is only ever written from data fetched *from* Stripe.
+- **Paddle** — webhook signatures verified against the raw body before parsing,
+  by `webhooks.unmarshal`, which will not return an event it could not
+  authenticate; its validator also rejects a stale timestamp, so a captured
+  body cannot be replayed. Subscription state is only ever written from data
+  fetched *from* Paddle. The overlay checkout hands the browser a transaction
+  id and nothing else, and that id is only ever used to *ask Paddle* what
+  happened — checked against the account presenting it before it counts.
 - **Input** — every mutation validates through Zod before touching the database;
   `?next=` redirects are restricted to relative paths.
 
@@ -257,17 +262,20 @@ Everything that matters is decided on the server, from database state:
 | `DATABASE_URL` | yes | Neon pooled connection |
 | `DIRECT_URL` | yes | Same host without `-pooler`. Migrations run over it: Neon's pooler multiplexes connections, which the schema engine's advisory locks don't tolerate |
 | `AUTH_SECRET` | yes | ≥ 32 chars |
-| `NEXT_PUBLIC_APP_URL` | yes | Used for Stripe redirect URLs |
-| `STRIPE_SECRET_KEY` | no | Without it, checkout is disabled and the paywall degrades gracefully instead of erroring |
-| `STRIPE_WEBHOOK_SECRET` | no | Required for the webhook to accept anything |
-| `STRIPE_PRICE_ID_EXPLORER_MONTHLY` / `_YEARLY` | no | Explorer plan prices |
-| `STRIPE_PRICE_ID_ULTRA_MONTHLY` / `_YEARLY` | no | Ultra plan prices. Without them Ultra is not offered |
+| `NEXT_PUBLIC_APP_URL` | yes | Absolute links in email and the portal return |
+| `PADDLE_API_KEY` | no | Server key. Without it, checkout is disabled and the paywall degrades gracefully instead of erroring |
+| `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | no | Client token Paddle.js is initialised with. Required as well as the server key — the overlay is opened in the browser, so a server key alone renders a buy button that cannot open anything |
+| `PADDLE_ENV` | no | `sandbox` (default) or `production`. Explicit rather than inferred from the key's shape: a rotated key must never be able to silently point a branch at real cards |
+| `NEXT_PUBLIC_PADDLE_ENV` | no | The same value for Paddle.js. Set both together |
+| `PADDLE_WEBHOOK_SECRET` | no | Required for the webhook to accept anything |
+| `PADDLE_PRICE_ID_EXPLORER_MONTHLY` / `_YEARLY` | no | Explorer plan prices |
+| `PADDLE_PRICE_ID_ULTRA_MONTHLY` / `_YEARLY` | no | Ultra plan prices. Without them Ultra is not offered |
 | `BLOB_READ_WRITE_TOKEN` | no | Vercel Blob, for proof photographs. Without it the upload route says so instead of failing silently |
 | `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET` | no | Connected apps. Without them the Strava row reads "not configured" |
 | `RESEND_API_KEY` | no | Transactional email. Without it messages are logged rather than sent |
 | `EMAIL_FROM` | no | The From line. Defaults to `Summit Quest <quests@summitquest.app>` |
 | `CRON_SECRET` | no | Bearer token the scheduled routes require. **Empty refuses every call** — a job anybody can trigger is worse than one that never runs |
-| `DEMO_PLANS` | no | Hand every plan over for nothing, activated with a button instead of a checkout. Defaults **on** wherever Stripe is not configured; `0` turns it off anyway, `1` keeps it on alongside a live Stripe. A demo activation writes the same subscription row as a paid one and is marked `demo`, so entitlement behaves identically and revenue does not count it |
+| `DEMO_PLANS` | no | Hand every plan over for nothing, activated with a button instead of a checkout. Defaults **on** wherever Paddle is not configured; `0` turns it off anyway, `1` keeps it on alongside a live Paddle. A demo activation writes the same subscription row as a paid one and is marked `demo`, so entitlement behaves identically and revenue does not count it |
 
 Pricing, plan features, the free allowance and rate limits all live in
 `src/lib/config.ts` — nothing is hardcoded in a component.
@@ -338,14 +346,29 @@ attacker permanent. Every write from the panel is stamped into `AdminAudit`
 (the command-line grant included, attributed to nobody, which is what it was);
 reads are not logged.
 
-### Stripe setup
+### Paddle setup
 
-1. Create a recurring price for the Explorer plan and put its id in
-   `STRIPE_PRICE_ID_EXPLORER_MONTHLY`.
-2. Point a webhook at `/api/stripe/webhook` subscribing to
-   `checkout.session.completed`, `customer.subscription.*`, `invoice.paid` and
-   `invoice.payment_failed`.
-3. Locally: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
+1. Create a product with a recurring price for the Explorer plan and put the
+   **price** id (`pri_…`, not the product id) in
+   `PADDLE_PRICE_ID_EXPLORER_MONTHLY`.
+2. Take a server API key into `PADDLE_API_KEY` and a client-side token into
+   `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`. Both are needed: the server reads
+   subscriptions back, and Paddle.js opens the checkout in the browser.
+3. Set `PADDLE_ENV` and `NEXT_PUBLIC_PADDLE_ENV` together — `sandbox` while
+   building, `production` when you mean it. Sandbox keys contain `_sdbx` and
+   sandbox client tokens are prefixed `test_`, but nothing in the app infers
+   the environment from them.
+4. Point a webhook at `/api/paddle/webhook` subscribing to `subscription.*`
+   and `transaction.payment_failed`, and put its signing secret in
+   `PADDLE_WEBHOOK_SECRET`.
+5. Add your domain (and `localhost` for development) to Paddle's approved
+   domains, or the overlay refuses to open.
+
+Unlike Stripe, Paddle has no server-created checkout session: the server
+decides *which* price this account may buy and hands only that to the browser,
+which opens the overlay. Nothing is granted until Paddle says money moved —
+through the webhook, or through the transaction read that runs the moment the
+overlay closes so the page does not tell a paying member they are still free.
 
 ---
 

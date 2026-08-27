@@ -213,7 +213,7 @@ const accountSchema = z.object({
  *
  * The plan is written as a real subscription row rather than a flag, so the
  * gating matrix keeps reading from one place — `getEntitlement` cannot tell the
- * difference between a plan an admin granted and one Stripe did, which is the
+ * difference between a plan an admin granted and one Paddle did, which is the
  * point: there is no second definition of "is this account paid".
  */
 export async function updateAccountAction(formData: FormData): Promise<AdminResult> {

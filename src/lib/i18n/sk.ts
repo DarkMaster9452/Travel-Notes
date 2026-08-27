@@ -696,7 +696,7 @@ export const sk: Messages = {
       noneBody:
         "Faktúra sa objaví po prvej úspešnej platbe. Plán zadarmo žiadnu nevytvorí.",
       notConfigured: "Platby tu nie sú nastavené",
-      notConfiguredBody: "Toto nasadenie nemá kľúče Stripe, takže nie je čo čítať.",
+      notConfiguredBody: "Toto nasadenie nemá kľúče Paddle, takže nie je čo čítať.",
       openPortal: "Otvoriť platobný portál",
     },
     connected: {

@@ -113,7 +113,7 @@ export default async function AdminUsersPage({
           label="Payment retrying"
           count={pastDue}
           countId="users-pastdue"
-          note={pastDue > 0 ? "Access holds while Stripe retries" : undefined}
+          note={pastDue > 0 ? "Access holds while Paddle retries" : undefined}
           index={3}
         />
       </StatGrid>
