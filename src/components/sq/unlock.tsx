@@ -36,7 +36,24 @@ const CONFETTI: { shape: StickerShape; ink: string }[] = [
   { shape: "blob", ink: "#e8622f" },
 ];
 
-const SCRAPS = 22;
+const SCRAPS = 26;
+
+/** How many pieces rain down the whole screen behind the card. */
+const FALLING = 44;
+
+/**
+ * A deterministic stand-in for randomness.
+ *
+ * Confetti wants to look scattered, but `Math.random()` in a render is two
+ * separate problems: the server and the client would disagree and React would
+ * throw a hydration mismatch, and the repo's purity rule rejects it outright.
+ * A cheap hash of the index gives a spread that looks unplanned and is
+ * identical everywhere, which is all "random" ever needed to mean here.
+ */
+function scatter(index: number, salt: number): number {
+  const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+}
 
 export function SqUnlockCelebration({
   name,
@@ -52,6 +69,34 @@ export function SqUnlockCelebration({
   return (
     <div className="sq-unlock" role="dialog" aria-modal="true" aria-label={`${name} unlocked`}>
       <div className="sq-unlock-scrim" onClick={onClose} />
+
+      {/* Confetti over the whole screen, not only inside the card. The burst
+          behind the seal says "this opened"; this says "this was worth
+          paying for", and the difference is mostly that it fills the room. */}
+      <div className="sq-unlock-fall" aria-hidden>
+        {Array.from({ length: FALLING }, (_, index) => {
+          const piece = CONFETTI[index % CONFETTI.length];
+          const size = 7 + Math.round(scatter(index, 3) * 8);
+          return (
+            <i
+              key={index}
+              style={
+                {
+                  "--x": `${Math.round(scatter(index, 1) * 100)}%`,
+                  "--drift": `${Math.round((scatter(index, 2) - 0.5) * 140)}px`,
+                  "--spin": `${scatter(index, 4) > 0.5 ? 1 : -1}turn`,
+                  "--fall-delay": `${Math.round(scatter(index, 5) * 900)}ms`,
+                  "--fall-time": `${2200 + Math.round(scatter(index, 6) * 1600)}ms`,
+                  width: size,
+                  height: piece.shape === "disc" ? size : Math.round(size * 1.35),
+                  borderRadius: SHAPE_RADIUS[piece.shape],
+                  background: piece.ink,
+                } as CSSProperties
+              }
+            />
+          );
+        })}
+      </div>
 
       <div className="sq-unlock-card">
         <div className="sq-unlock-burst" aria-hidden>

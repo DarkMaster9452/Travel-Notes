@@ -408,11 +408,11 @@ export const de: Messages = {
   },
 
   unlock: {
-    unlocked: "Freigeschaltet",
-    lede: "Es ist an. Alles unten hat sich in dem Moment geöffnet, als die Zahlung durchging.",
+    unlocked: "Du bist dabei",
+    lede: "Zahlung ist durch und alles unten ist offen. Sonst nichts zu tun — geh raus und lauf irgendwohin.",
     envelopeNote:
       "Der gedruckte Umschlag gehört dazu. Wohin er soll, fragen wir in einem Tag oder zwei — nicht jetzt.",
-    good: "Gut",
+    good: "Losziehen",
   },
 
   monthly: {

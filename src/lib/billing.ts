@@ -296,3 +296,75 @@ function formatTotal(transaction: Transaction): string {
     currency: transaction.currencyCode,
   }).format(minor / 100);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Reconciliation                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Ask Paddle what this account actually holds, and write it down.
+ *
+ * The safety net under both live paths. `syncFromTransaction` runs the moment
+ * the overlay closes and the webhook runs when Paddle gets around to it — but
+ * both can miss. A browser closed too fast, a webhook secret not yet
+ * configured, a delivery that failed every retry: in each case Paddle believes
+ * somebody is a subscriber and we do not, which is the worst way round to be
+ * wrong. It is exactly what happened when the checkout callback was attached
+ * too late to fire.
+ *
+ * Cheap enough to run on the billing screen because it starts from our own
+ * row and returns immediately in the normal case — an account that already has
+ * a subscription id has nothing to reconcile.
+ *
+ * The email lookup is the part that recovers a *first* purchase. Nothing links
+ * the account to Paddle until a subscription exists, so there is no id to
+ * search by; the address the checkout was opened with is the only handle, and
+ * it is ours rather than the browser's because it comes from the session.
+ *
+ * Returns true when it actually wrote something, so a caller can refresh.
+ */
+export async function reconcileSubscription(userId: string, email: string): Promise<boolean> {
+  const paddle = getPaddle();
+  if (!paddle) return false;
+
+  const existing = await db.subscription.findUnique({
+    where: { userId },
+    select: { paddleSubscriptionId: true, paddleCustomerId: true, status: true },
+  });
+
+  // Already tracking a live subscription — nothing to do, and this is the
+  // path nearly every page load takes.
+  if (existing?.paddleSubscriptionId && existing.status !== "INCOMPLETE") return false;
+
+  try {
+    let customerId = existing?.paddleCustomerId ?? null;
+
+    if (!customerId) {
+      const customers = await paddle.customers.list({ email: [email], perPage: 1 }).next();
+      customerId = customers[0]?.id ?? null;
+    }
+    if (!customerId) return false;
+
+    const subscriptions = await paddle.subscriptions
+      .list({ customerId: [customerId], perPage: 5 })
+      .next();
+
+    // Newest first, and only one that grants anything. A cancelled
+    // subscription found here is not news — the row already says free.
+    const live = subscriptions
+      .filter((entry) => ["active", "trialing", "past_due"].includes(entry.status))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+
+    if (!live) return false;
+
+    // `syncSubscription` finds the account through custom data, which a
+    // subscription bought before that was being set may not carry. Linking
+    // first means it can always fall back to the row.
+    await linkCustomer(userId, customerId);
+    await syncSubscription(live);
+    return true;
+  } catch (error) {
+    console.error("[billing] reconcile failed", error);
+    return false;
+  }
+}

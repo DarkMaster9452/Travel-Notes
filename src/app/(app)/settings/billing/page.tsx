@@ -14,6 +14,7 @@ import {
   PLANS,
 } from "@/lib/config";
 import { db } from "@/lib/db";
+import { reconcileSubscription } from "@/lib/billing";
 import { getEntitlement } from "@/lib/entitlements";
 import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
 import { formatDate, formatMoney } from "@/lib/i18n/format";
@@ -34,6 +35,12 @@ export const dynamic = "force-dynamic";
  */
 export default async function BillingSettingsPage() {
   const user = await requireClient();
+
+  // Before reading anything, make sure our idea of this account matches
+  // Paddle's. Normally a no-op that returns on the first query; when it is not,
+  // it is because a purchase went through and never reached us, and this is
+  // the screen where that would be most obvious and most upsetting.
+  await reconcileSubscription(user.id, user.email);
 
   const [entitlement, subscription, address, envelope, t, locale] = await Promise.all([
     getEntitlement(user.id),

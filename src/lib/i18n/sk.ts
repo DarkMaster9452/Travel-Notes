@@ -408,11 +408,11 @@ export const sk: Messages = {
   },
 
   unlock: {
-    unlocked: "Odomknuté",
-    lede: "Je to zapnuté. Všetko nižšie sa otvorilo v momente, keď platba prešla.",
+    unlocked: "Si vnútri",
+    lede: "Platba prešla a všetko nižšie je otvorené. Nič iné netreba — choď sa niekam prejsť.",
     envelopeNote:
       "Tlačená obálka je súčasťou. Kam ju poslať sa spýtame o deň či dva — nie teraz.",
-    good: "Dobre",
+    good: "Poď objavovať",
   },
 
   monthly: {
