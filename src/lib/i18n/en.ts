@@ -375,11 +375,11 @@ export const en = {
 
   /* ---- unlocking a plan --------------------------------------------------- */
   unlock: {
-    unlocked: "Unlocked",
-    lede: "It is on now. Everything below opened the moment the payment cleared.",
+    unlocked: "You're in",
+    lede: "Payment cleared and everything below is open. Nothing else to do — go and walk somewhere.",
     envelopeNote:
       "The printed envelope is part of this. We will ask where to send it in a day or so — not now.",
-    good: "Good",
+    good: "Start exploring",
   },
 
   /* ---- the monthly -------------------------------------------------------- */

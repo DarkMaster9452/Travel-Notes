@@ -1470,6 +1470,16 @@
     animation: none !important;
   }
 
+  /* Confetti and the sheen are movement and nothing else. A thing whose only
+     content is motion has nothing left when the motion is refused, so they are
+     removed rather than flattened — a static scatter of dots over the screen
+     would just be litter. */
+  .sq-unlock-fall,
+  .sq-unlock-burst,
+  .sq-unlock-card::after {
+    display: none !important;
+  }
+
   /* Without the draw animation the dash offset would leave the curve invisible. */
   .sq-spark-line {
     stroke-dashoffset: 0;
@@ -1642,8 +1652,7 @@
 }
 
 .sq-slot-card:hover {
-  transform: translateY(calc(-2px * var(--motion)))
-    rotate(calc(0.4deg * var(--dir, 1) * var(--motion)));
+  transform: translateY(calc(-2px * var(--motion)));
   border-color: var(--color-accent-300);
 }
 
@@ -1758,8 +1767,7 @@
 }
 
 .sq-quest-card:hover {
-  transform: translateY(calc(-2px * var(--motion)))
-    rotate(calc(0.32deg * var(--dir, 1) * var(--motion)));
+  transform: translateY(calc(-2px * var(--motion)));
   box-shadow: var(--shadow-lift);
 }
 
@@ -2418,6 +2426,7 @@
 
 .sq-unlock-card {
   position: relative;
+  z-index: 2;
   width: min(460px, 100%);
   max-height: calc(100vh - 40px);
   overflow-y: auto;
@@ -2426,8 +2435,42 @@
   border-radius: var(--radius-lg);
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: var(--shadow-lift);
+  /* A deeper shadow than a normal card, and a warm rim. The card should read
+     as something handed to you rather than as another panel on the page. */
+  box-shadow:
+    0 24px 60px -18px rgba(20, 37, 27, 0.5),
+    0 0 0 1px rgba(217, 161, 60, 0.35);
   animation: sq-unlock-in var(--dur-spring) var(--ease-settle) both;
+  overflow: hidden;
+}
+
+/*
+ * One slow pass of light across the card, once, after it has settled.
+ *
+ * The whole difference between "a modal appeared" and "something was awarded".
+ * It runs a single time — a repeating shine is a loading skeleton, and the
+ * moment it loops the card stops feeling like an object and starts feeling
+ * like a placeholder.
+ */
+.sq-unlock-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  animation: sq-sheen 1200ms var(--ease-move) 520ms both;
+}
+
+@keyframes sq-sheen {
+  to {
+    transform: translateX(120%);
+  }
 }
 
 @keyframes sq-unlock-in {
@@ -2437,8 +2480,51 @@
   }
 }
 
+/*
+ * The rain. Forty-odd pieces falling past the card, each on its own clock.
+ *
+ * Fixed to the viewport rather than to the card, and behind it, so the card
+ * stays completely legible while the room fills up around it. `overflow:
+ * hidden` on the layer is what keeps a drifting piece from adding a scrollbar
+ * to the page underneath.
+ */
+.sq-unlock-fall {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sq-unlock-fall > i {
+  position: absolute;
+  top: -6vh;
+  left: var(--x);
+  display: block;
+  opacity: 0;
+  animation: sq-confetti-fall var(--fall-time) linear var(--fall-delay) forwards;
+}
+
+@keyframes sq-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0turn);
+  }
+  8% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    /* 112vh rather than 100 so nothing is still visible when it fades. */
+    transform: translate3d(var(--drift), 112vh, 0) rotate(var(--spin));
+  }
+}
+
 /* The burst. Every scrap starts under the seal and is thrown outward along its
-   own bearing — one keyframe, twenty-two different `--angle`s. */
+   own bearing — one keyframe, twenty-six different `--angle`s. */
 .sq-unlock-burst {
   position: absolute;
   inset: 0;
@@ -2645,126 +2731,28 @@
 /* --- liveliness ----------------------------------------------------------- */
 
 /*
- * Everything answers the cursor.
+ * What answers the cursor, and how little.
  *
- * A page where only links move reads as a document. A page where every surface
- * leans a little under the pointer reads as a thing you are holding. The
- * mechanic is the sticker sheet's, generalised: each element in a run leans its
- * own way, and comes back level when you point at it.
+ * This layer used to tilt nearly every surface on the page. It was too much:
+ * a grid of cards that all lean as the pointer crosses them reads as the page
+ * coming loose, not as a thing you are holding. It has been cut back to two
+ * rules and one exception.
  *
- * Two rules keep it honest rather than annoying:
+ *   1. A surface you can actually click lifts a hair and warms its border. No
+ *      rotation. That is enough to say "this is a target" and nothing more.
+ *   2. A surface you cannot click does nothing at all. Decoration that moves
+ *      is decoration that lies about being interactive.
  *
- *   1. This layer never touches `cursor`. A lean is decoration and must not
- *      promise a destination — real controls keep `cursor: pointer` and get a
- *      visibly stronger response, and a card that merely tilts stays `default`.
- *      That is what stops "everything moves" from becoming "everything lies".
- *   2. Every distance goes through `--motion`, so the reduced-motion block
- *      above flattens the whole layer without one duplicate rule.
+ * The exception is the sticker sheet, which keeps its tilt — the stickers are
+ * meant to feel like paper scraps on a page, that was the point of them, and
+ * they are the one place the movement is the content rather than a garnish.
  *
- * `--dir` is set from `:nth-child()` rather than from an index variable,
- * because CSS has no modulo in `calc()` — the one place that tried to fake it
- * produced invalid CSS that browsers dropped on the floor for months.
+ * Every distance still goes through `--motion`, so the reduced-motion block
+ * flattens the whole layer without one duplicate rule.
  */
 
-/* Direction, by position in the run. Four steps of differing size so a row of
-   cards reads as hand-laid rather than as alternating left/right. */
-.sq :is(
-    .sq-card,
-    .sq-card-flat,
-    .sq-tinted,
-    .sq-slab,
-    .sq-rail-card,
-    .sq-stat,
-    .sq-figure-tile,
-    .sq-sticker,
-    .sq-proof-cell,
-    .sq-podium-col,
-    .sq-terrain > span,
-    .sq-tag,
-    .sq-quest-card,
-    .sq-slot-card
-  ):nth-child(4n + 1) {
-  --dir: -1;
-}
-
-.sq :is(
-    .sq-card,
-    .sq-card-flat,
-    .sq-tinted,
-    .sq-slab,
-    .sq-rail-card,
-    .sq-stat,
-    .sq-figure-tile,
-    .sq-sticker,
-    .sq-proof-cell,
-    .sq-podium-col,
-    .sq-terrain > span,
-    .sq-tag,
-    .sq-quest-card,
-    .sq-slot-card
-  ):nth-child(4n + 2) {
-  --dir: 1.4;
-}
-
-.sq :is(
-    .sq-card,
-    .sq-card-flat,
-    .sq-tinted,
-    .sq-slab,
-    .sq-rail-card,
-    .sq-stat,
-    .sq-figure-tile,
-    .sq-sticker,
-    .sq-proof-cell,
-    .sq-podium-col,
-    .sq-terrain > span,
-    .sq-tag,
-    .sq-quest-card,
-    .sq-slot-card
-  ):nth-child(4n + 3) {
-  --dir: -0.6;
-}
-
-.sq :is(
-    .sq-card,
-    .sq-card-flat,
-    .sq-tinted,
-    .sq-slab,
-    .sq-rail-card,
-    .sq-stat,
-    .sq-figure-tile,
-    .sq-sticker,
-    .sq-proof-cell,
-    .sq-podium-col,
-    .sq-terrain > span,
-    .sq-tag,
-    .sq-quest-card,
-    .sq-slot-card
-  ):nth-child(4n) {
-  --dir: 0.8;
-}
-
-/* Panels: a big surface leans a little and lifts. Any more and the page sways. */
-.sq :is(.sq-card, .sq-card-flat, .sq-tinted, .sq-slab, .sq-rail-card, .sq-empty) {
-  --lean: 0.32deg;
-  --lift: 2px;
-  transition:
-    transform var(--dur-lift) var(--ease-settle),
-    box-shadow var(--dur-lift) var(--ease-move),
-    border-color var(--dur-tint) var(--ease-move);
-}
-
-/* Small things: a chip or a tile can afford a real tilt, because it is small
-   enough that the movement reads as playful rather than as the page slipping. */
-.sq :is(.sq-stat, .sq-figure-tile, .sq-proof-cell, .sq-terrain > span, .sq-tag, .sq-avatar) {
-  --lean: 1.5deg;
-  --lift: 1px;
-  transition:
-    transform var(--dur-lift) var(--ease-settle),
-    box-shadow var(--dur-lift) var(--ease-move),
-    border-color var(--dur-tint) var(--ease-move);
-}
-
+/* Panels and tiles: a transition so the *colour* changes are not abrupt. No
+   transform here — only the interactive rule below moves anything. */
 .sq
   :is(
     .sq-card,
@@ -2772,28 +2760,43 @@
     .sq-tinted,
     .sq-slab,
     .sq-rail-card,
-    .sq-empty,
     .sq-stat,
     .sq-figure-tile,
     .sq-proof-cell,
-    .sq-terrain > span,
-    .sq-tag,
-    .sq-avatar
-  ):hover {
-  transform: translateY(calc(-1 * var(--lift, 2px) * var(--motion)))
-    rotate(calc(var(--lean, 0.32deg) * var(--dir, 1) * var(--motion)));
+    .sq-tag
+  ) {
+  transition:
+    transform var(--dur-lift) var(--ease-settle),
+    box-shadow var(--dur-lift) var(--ease-move),
+    border-color var(--dur-tint) var(--ease-move);
 }
 
-/* A panel that is genuinely a link earns the shadow as well as the lean, so
-   "this goes somewhere" still looks different from "this is alive". */
-.sq a:is(.sq-card, .sq-card-flat, .sq-tinted, .sq-rail-card):hover,
-.sq button:is(.sq-card, .sq-card-flat, .sq-tinted, .sq-rail-card):hover {
+/*
+ * The only things that move: anchors and buttons. `:is()` on the element rather
+ * than the class is what keeps this honest — a card that is genuinely a link
+ * lifts, and an identical-looking card that is just a container does not, with
+ * no extra class to remember at the call site.
+ */
+.sq
+  :is(a, button)
+  :is(.sq-card, .sq-card-flat, .sq-tinted, .sq-rail-card, .sq-stat, .sq-figure-tile):hover,
+.sq
+  a:is(.sq-card, .sq-card-flat, .sq-tinted, .sq-rail-card, .sq-stat, .sq-figure-tile):hover,
+.sq
+  button:is(
+    .sq-card,
+    .sq-card-flat,
+    .sq-tinted,
+    .sq-rail-card,
+    .sq-stat,
+    .sq-figure-tile
+  ):hover {
+  transform: translateY(calc(-2px * var(--motion)));
   box-shadow: var(--shadow-lift);
   border-color: var(--color-accent-300);
 }
 
-/* Rows read as one list, so they tint rather than tilt — a leaning table row
-   would break the alignment that makes a table worth having. */
+/* Rows read as one list, so they tint rather than move. */
 .sq :is(.sq-rail-line, .sq-rail-standing, .sq-desk-row) {
   transition: background var(--dur-tint) var(--ease-move);
 }
@@ -2806,8 +2809,7 @@
   background: rgba(238, 242, 231, 0.07);
 }
 
-/* Press. Only four selectors in the whole system had one; anything a person can
-   actually push should give way under the finger. */
+/* Press. Anything a person can actually push should give way under the finger. */
 .sq :is(.sq-switch, .sq-seg-opt, .sq-swatch, .sq-row, .sq-deck-card, button.sq-tag):active {
   transform: translateY(calc(1px * var(--motion)));
 }
@@ -2816,12 +2818,21 @@
   border-color: var(--color-accent-300);
 }
 
-/* The one place a tilt would be wrong: anything mid-throw in the review deck
-   owns its own transform, and a hover must not fight it. */
-.sq .sq-deck-fly-yes,
-.sq .sq-deck-fly-no,
-.sq .sq-deck-card:active {
-  --lean: 0deg;
+/*
+ * The sticker sheet keeps its lean, and keeps `--dir` from position so a run
+ * of them tips different ways. Nothing else on the site sets `--dir` any more.
+ */
+.sq .sq-sticker:nth-child(4n + 1) {
+  --dir: -1;
+}
+.sq .sq-sticker:nth-child(4n + 2) {
+  --dir: 1.4;
+}
+.sq .sq-sticker:nth-child(4n + 3) {
+  --dir: -0.6;
+}
+.sq .sq-sticker:nth-child(4n) {
+  --dir: 0.8;
 }
 
 /* --- the systems board ---------------------------------------------------- */

@@ -1,6 +1,6 @@
 "use client";
 
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
+import { initializePaddle, type Paddle, type PaddleEventData } from "@paddle/paddle-js";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,6 +33,32 @@ const CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
 const ENVIRONMENT = process.env.NEXT_PUBLIC_PADDLE_ENV === "production" ? "production" : "sandbox";
 
 /**
+ * Everyone listening for checkout events, and the one callback Paddle knows about.
+ *
+ * This indirection exists because of a bug that cost a real payment. The
+ * callback used to be attached *after* load, with `paddle.Update({
+ * eventCallback })` — but `eventCallback` is an initialisation option, and
+ * registering it afterwards did not take. `checkout.completed` was never
+ * delivered, so a paid-for subscription was never synced and the member stayed
+ * on the free plan with the button stuck on "Opening…".
+ *
+ * Now the callback is handed to `initializePaddle` and never changes; it fans
+ * events out to whoever has subscribed. Subscribing is synchronous, so a
+ * listener that mounts while the script is still downloading cannot miss the
+ * event either — the old code had that race too.
+ */
+type CheckoutListener = (event: PaddleEventData) => void;
+
+const listeners = new Set<CheckoutListener>();
+
+function subscribe(listener: CheckoutListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
  * Paddle.js, loaded once per page and shared.
  *
  * Module scope rather than a hook's state: the script is a singleton on the
@@ -47,6 +73,17 @@ function loadPaddle(): Promise<Paddle | undefined> {
   paddlePromise ??= initializePaddle({
     token: CLIENT_TOKEN,
     environment: ENVIRONMENT,
+    // Attached here and only here. See the note above `listeners`.
+    eventCallback: (event) => {
+      for (const listener of [...listeners]) {
+        try {
+          listener(event);
+        } catch {
+          // One listener throwing must not stop the rest — the sync is the
+          // one that matters and it must not be starved by a toast.
+        }
+      }
+    },
   }).catch(() => undefined);
   return paddlePromise;
 }
@@ -126,6 +163,11 @@ export function SqCheckoutButton({
             customData: intent.custom,
             settings: { displayMode: "overlay", showAddDiscounts: true },
           });
+
+          // The overlay is up and covering this button, so "Opening…" has
+          // stopped being true. Leaving it set is what left the button stuck
+          // on that word for good once somebody closed the overlay.
+          if (alive.current) setBusy(false);
         })().catch(() => {
           if (alive.current) setBusy(false);
           toast("Checkout would not open.", "stamp");
@@ -154,41 +196,32 @@ export function SqCheckoutListener() {
   const [bought, setBought] = useState<{ name: string; gains: Capability[] } | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    // The script has to be loading for any event to arrive, but subscribing
+    // does not wait on it: the callback is attached at initialisation, and
+    // this set is read at dispatch time.
+    void loadPaddle();
 
-    void loadPaddle().then((paddle) => {
-      if (!paddle || cancelled) return;
+    return subscribe((event) => {
+      if (event.name !== "checkout.completed") return;
+      const transactionId = event.data?.transaction_id;
+      if (!transactionId) return;
 
-      paddle.Update({
-        eventCallback: (event) => {
-          if (event.name !== "checkout.completed") return;
-          const transactionId = event.data?.transaction_id;
-          if (!transactionId) return;
+      void completeCheckoutAction(transactionId).then((result) => {
+        if (result.ok) {
+          // The celebration, not a toast. Somebody has just paid, and the
+          // page behind them is still rendered for the plan they had a
+          // moment ago — the refresh happens when they close it.
+          setBought({ name: result.name, gains: result.gains });
+          return;
+        }
 
-          void completeCheckoutAction(transactionId).then((result) => {
-            if (cancelled) return;
-
-            if (result.ok) {
-              // The celebration, not a toast. Somebody has just paid, and the
-              // page behind them is still rendered for the plan they had a
-              // moment ago — the refresh happens when they close it.
-              setBought({ name: result.name, gains: result.gains });
-              return;
-            }
-
-            // Paddle took the money but has not caught up, or the read failed.
-            // Saying so is better than a celebration that might be premature;
-            // the webhook will finish the job either way.
-            toast("Payment taken — your plan will appear in a moment.", "stamp");
-            router.refresh();
-          });
-        },
+        // Paddle took the money but has not caught up, or the read failed.
+        // Saying so is better than a celebration that might be premature;
+        // the webhook will finish the job either way.
+        toast("Payment taken — your plan will appear in a moment.", "stamp");
+        router.refresh();
       });
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [router, toast]);
 
   if (!bought) return null;
