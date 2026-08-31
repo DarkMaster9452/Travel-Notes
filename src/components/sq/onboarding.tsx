@@ -7,7 +7,7 @@ import { useActionState, useState, useTransition } from "react";
 import { updatePreferencesAction, type ProfileState } from "@/app/(app)/profile/actions";
 import { saveDisplayAction } from "@/app/(app)/settings/actions";
 import { Glyph } from "@/components/sq/icons";
-import { SqCheckoutButton } from "@/components/sq/plan-actions";
+import { SqCheckoutEmbed } from "@/components/sq/plan-actions";
 import { useT } from "@/components/sq/i18n";
 import { useToast } from "@/components/sq/toast";
 import { LOCALES } from "@/lib/i18n";
@@ -196,13 +196,13 @@ export function SqOnboarding({
                 </p>
                 {billingEnabled ? (
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <SqCheckoutButton plan="explorer" interval="monthly" label={t.onboarding.takeExplorer} />
+                    <SqCheckoutEmbed plan="explorer" interval="monthly" label={t.onboarding.takeExplorer} />
                     {ultraEnabled ? (
-                      <SqCheckoutButton plan="ultra" interval="monthly" label={t.onboarding.takeUltra} variant="ghost" />
+                      <SqCheckoutEmbed plan="ultra" interval="monthly" label={t.onboarding.takeUltra} variant="ghost" />
                     ) : null}
                   </div>
                 ) : (
-                  <p className="sq-hint">This deployment has no Paddle keys, so everybody is on Free.</p>
+                  <p className="sq-hint">This deployment has no Stripe keys, so everybody is on Free.</p>
                 )}
               </div>
               <Foot note={t.onboarding.changeLater} label={t.onboarding.skip} onNext={() => setStep(3)} />

@@ -20,20 +20,14 @@ const serverSchema = z.object({
     .string()
     .min(32, "AUTH_SECRET must be at least 32 characters — generate with `openssl rand -hex 32`"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  /** Paddle server API key. Sandbox keys contain `_sdbx`. */
-  PADDLE_API_KEY: z.string().optional().default(""),
-  /** The secret Paddle signs webhook bodies with. Empty refuses every delivery. */
-  PADDLE_WEBHOOK_SECRET: z.string().optional().default(""),
-  /**
-   * Which Paddle to talk to. Sandbox unless something explicitly says
-   * otherwise — the expensive mistake here is billing a real card from a
-   * branch, not failing to bill a fake one.
-   */
-  PADDLE_ENV: z.enum(["sandbox", "production"]).optional().default("sandbox"),
-  PADDLE_PRICE_ID_EXPLORER_MONTHLY: z.string().optional().default(""),
-  PADDLE_PRICE_ID_EXPLORER_YEARLY: z.string().optional().default(""),
-  PADDLE_PRICE_ID_ULTRA_MONTHLY: z.string().optional().default(""),
-  PADDLE_PRICE_ID_ULTRA_YEARLY: z.string().optional().default(""),
+  /** Stripe server API key. Test keys start with `sk_test_`. */
+  STRIPE_SECRET_KEY: z.string().optional().default(""),
+  /** The secret Stripe signs webhook bodies with. Empty refuses every delivery. */
+  STRIPE_WEBHOOK_SECRET: z.string().optional().default(""),
+  STRIPE_PRICE_ID_EXPLORER_MONTHLY: z.string().optional().default(""),
+  STRIPE_PRICE_ID_EXPLORER_YEARLY: z.string().optional().default(""),
+  STRIPE_PRICE_ID_ULTRA_MONTHLY: z.string().optional().default(""),
+  STRIPE_PRICE_ID_ULTRA_YEARLY: z.string().optional().default(""),
   STRAVA_CLIENT_ID: z.string().optional().default(""),
   STRAVA_CLIENT_SECRET: z.string().optional().default(""),
   /** Vercel Blob, for proof photographs. Empty disables uploads with a message. */
@@ -57,13 +51,12 @@ function load(): ServerEnv {
     DIRECT_URL: process.env.DIRECT_URL,
     AUTH_SECRET: process.env.AUTH_SECRET,
     NODE_ENV: process.env.NODE_ENV,
-    PADDLE_API_KEY: process.env.PADDLE_API_KEY,
-    PADDLE_WEBHOOK_SECRET: process.env.PADDLE_WEBHOOK_SECRET,
-    PADDLE_ENV: process.env.PADDLE_ENV,
-    PADDLE_PRICE_ID_EXPLORER_MONTHLY: process.env.PADDLE_PRICE_ID_EXPLORER_MONTHLY,
-    PADDLE_PRICE_ID_EXPLORER_YEARLY: process.env.PADDLE_PRICE_ID_EXPLORER_YEARLY,
-    PADDLE_PRICE_ID_ULTRA_MONTHLY: process.env.PADDLE_PRICE_ID_ULTRA_MONTHLY,
-    PADDLE_PRICE_ID_ULTRA_YEARLY: process.env.PADDLE_PRICE_ID_ULTRA_YEARLY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_PRICE_ID_EXPLORER_MONTHLY: process.env.STRIPE_PRICE_ID_EXPLORER_MONTHLY,
+    STRIPE_PRICE_ID_EXPLORER_YEARLY: process.env.STRIPE_PRICE_ID_EXPLORER_YEARLY,
+    STRIPE_PRICE_ID_ULTRA_MONTHLY: process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY,
+    STRIPE_PRICE_ID_ULTRA_YEARLY: process.env.STRIPE_PRICE_ID_ULTRA_YEARLY,
     STRAVA_CLIENT_ID: process.env.STRAVA_CLIENT_ID,
     STRAVA_CLIENT_SECRET: process.env.STRAVA_CLIENT_SECRET,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
@@ -92,41 +85,44 @@ export const env = new Proxy({} as ServerEnv, {
 });
 
 /**
- * Paddle is optional in development; the UI degrades instead of crashing.
+ * Stripe is optional in development; the UI degrades instead of crashing.
  * A function rather than a constant so it doesn't force validation at import.
  *
  * Selling needs three things and this checks all three, because two of them
- * are not enough to open a checkout: the server key to read subscriptions
- * back, the *client* token that Paddle.js is initialised with, and at least
- * one price to sell. A deployment with a server key and no client token would
- * render a buy button that cannot open anything.
+ * are not enough to open a checkout: the server key to create sessions and
+ * read subscriptions back, the *publishable* key Stripe.js is loaded with for
+ * the embedded checkout, and at least one price to sell. A deployment with a
+ * secret key and no publishable key would render a buy button whose embed
+ * could never mount.
  */
-export function isPaddleEnabled(): boolean {
+export function isStripeEnabled(): boolean {
   return (
-    (process.env.PADDLE_API_KEY ?? "").length > 0 &&
-    (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "").length > 0 &&
-    (process.env.PADDLE_PRICE_ID_EXPLORER_MONTHLY ?? "").length > 0
+    (process.env.STRIPE_SECRET_KEY ?? "").length > 0 &&
+    (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "").length > 0 &&
+    (process.env.STRIPE_PRICE_ID_EXPLORER_MONTHLY ?? "").length > 0
   );
 }
 
 /**
- * Which Paddle this deployment talks to, for the places that must *say* so.
+ * Test or live, for the places that must *say* so.
  *
- * Read straight from `process.env` rather than through the parsed object so
- * it can be called from anywhere without forcing validation, and so a
- * mistyped value reads as sandbox rather than as production.
+ * Unlike Paddle, Stripe has no separate environment flag — a deployment talks
+ * to test or live Stripe purely by which key it was given, `sk_test_…` or
+ * `sk_live_…`. Reading the prefix is the same thing Stripe's own dashboard
+ * does to tell you which mode you're in, so there is nothing to misconfigure
+ * independently of the key itself.
  */
-export function paddleEnvironment(): "sandbox" | "production" {
-  return process.env.PADDLE_ENV === "production" ? "production" : "sandbox";
+export function stripeMode(): "test" | "live" {
+  return process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ? "live" : "test";
 }
 
 /**
  * Ultra is optional on top of Explorer: a deployment can sell one tier without
  * the other, and the plan card says so instead of opening a checkout that
- * Paddle would reject.
+ * Stripe would reject.
  */
 export function isUltraEnabled(): boolean {
-  return isPaddleEnabled() && (process.env.PADDLE_PRICE_ID_ULTRA_MONTHLY ?? "").length > 0;
+  return isStripeEnabled() && (process.env.STRIPE_PRICE_ID_ULTRA_MONTHLY ?? "").length > 0;
 }
 
 export const appUrl =

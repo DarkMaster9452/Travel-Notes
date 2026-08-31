@@ -1,12 +1,14 @@
 import { logoutAction } from "@/app/(auth)/actions";
 import { SqI18nProvider } from "@/components/sq/i18n";
 import { SqNudge } from "@/components/sq/nudge";
+import { PlanSheetProvider } from "@/components/sq/plan-sheet";
 import { SqShell } from "@/components/sq/shell";
 import { memberFootNav, memberNav } from "@/components/sq/nav";
 import { SqToastProvider } from "@/components/sq/toast";
 import { initialsOf } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { isStripeEnabled, isUltraEnabled } from "@/lib/env";
 import { getEntitlement } from "@/lib/entitlements";
 import { getLocale } from "@/lib/i18n/server";
 import { getMessages } from "@/lib/i18n";
@@ -92,7 +94,9 @@ export default async function AppLayout({
             ) : null
           }
         >
-          {children}
+          <PlanSheetProvider billingEnabled={isStripeEnabled()} ultraEnabled={isUltraEnabled()}>
+            {children}
+          </PlanSheetProvider>
         </SqShell>
       </SqToastProvider>
     </SqI18nProvider>

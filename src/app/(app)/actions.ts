@@ -10,7 +10,7 @@ import { requireClient, requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { isWithinRefundWindow } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
-import { getPaddle } from "@/lib/paddle";
+import { getStripe } from "@/lib/stripe";
 import { LOCATIONS } from "@/lib/quest/locations";
 import { getFeaturedQuest, materialiseFeatured } from "@/lib/quest/featured";
 import { getUserStats, unlockQuestForUser } from "@/lib/quest/service";
@@ -482,16 +482,15 @@ export type CancelResult = {
  *  · After that — cancelled at the end of the period you have already paid
  *    for. Access holds until then; nothing is clawed back.
  *
- * Paddle is the payment authority but not the access authority: the
- * subscription row is updated either way, so a deployment without Paddle keys
+ * Stripe is the payment authority but not the access authority: the
+ * subscription row is updated either way, so a deployment without Stripe keys
  * still cancels properly instead of silently doing nothing.
  *
- * One honest difference from the old Stripe path. A Paddle refund is an
- * *adjustment*, and adjustments are reviewed by Paddle rather than settling on
- * the spot — so "refunded in full" here means the refund was accepted for
- * processing, not that money has already moved. Access is withdrawn
- * immediately regardless, which is the half we control and the half the
- * guarantee actually promises.
+ * The refund and the cancellation happen in that order on purpose: Stripe
+ * will not refund an invoice against a subscription it has already cancelled
+ * in some configurations, and if the refund fails this returns without
+ * cancelling, which leaves the member paid-up rather than cancelled and out
+ * of pocket.
  */
 export async function cancelPlanAction(): Promise<CancelResult> {
   const user = await requireClient();
@@ -505,7 +504,7 @@ export async function cancelPlanAction(): Promise<CancelResult> {
       currentPeriodStart: true,
       currentPeriodEnd: true,
       cancelAtPeriodEnd: true,
-      paddleSubscriptionId: true,
+      stripeSubscriptionId: true,
     },
   });
 
@@ -518,51 +517,44 @@ export async function cancelPlanAction(): Promise<CancelResult> {
 
   const withinGuarantee = isWithinRefundWindow(subscription.currentPeriodStart);
 
-  const paddle = getPaddle();
-  if (paddle && subscription.paddleSubscriptionId) {
+  const stripe = getStripe();
+  if (stripe && subscription.stripeSubscriptionId) {
     try {
       if (withinGuarantee) {
-        // Refund first, then cancel — the opposite order to the Stripe path,
-        // and for a reason. Paddle will not accept an adjustment against a
-        // subscription's transaction once the subscription is gone, so
-        // cancelling first would destroy the thing the refund is filed
-        // against. If the refund fails we return without cancelling, which
-        // leaves the member paid-up rather than cancelled and out of pocket.
-        const billed = await paddle.transactions
-          .list({
-            subscriptionId: [subscription.paddleSubscriptionId],
-            status: ["completed"],
-            orderBy: "billed_at[DESC]",
-            perPage: 1,
-          })
-          .next();
+        // The payment behind an invoice moved off the invoice itself and onto
+        // its own `payments` collection, which has to be asked for by name —
+        // it is not there by default the way a Paddle transaction's total was.
+        const billed = await stripe.invoices.list({
+          subscription: subscription.stripeSubscriptionId,
+          status: "paid",
+          limit: 1,
+          expand: ["data.payments"],
+        });
 
-        const latest = billed[0];
-        if (latest) {
-          await paddle.adjustments.create({
-            action: "refund",
-            type: "full",
-            transactionId: latest.id,
-            reason: "Cancelled inside the money-back guarantee",
+        const payment = billed.data[0]?.payments?.data[0]?.payment;
+        const paymentIntent =
+          payment?.type === "payment_intent" && payment.payment_intent
+            ? typeof payment.payment_intent === "string"
+              ? payment.payment_intent
+              : payment.payment_intent.id
+            : null;
+        if (paymentIntent) {
+          await stripe.refunds.create({
+            payment_intent: paymentIntent,
+            reason: "requested_by_customer",
           });
         }
 
-        await paddle.subscriptions.cancel(subscription.paddleSubscriptionId, {
-          effectiveFrom: "immediately",
-        });
+        await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
       } else {
-        // Paddle expresses "stop at the end of what was paid for" as the
-        // effective date of the cancellation itself, rather than as a flag on
-        // the subscription. Same outcome, and it is why `cancelAtPeriodEnd` in
-        // our row is now derived from a scheduled change rather than copied.
-        await paddle.subscriptions.cancel(subscription.paddleSubscriptionId, {
-          effectiveFrom: "next_billing_period",
+        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+          cancel_at_period_end: true,
         });
       }
     } catch {
       return {
         ok: false,
-        message: "Paddle wouldn't accept that just now. Nothing was changed — try again.",
+        message: "Stripe wouldn't accept that just now. Nothing was changed — try again.",
       };
     }
   }
@@ -583,7 +575,7 @@ export async function cancelPlanAction(): Promise<CancelResult> {
     ok: true,
     refunded: withinGuarantee,
     message: withinGuarantee
-      ? "Cancelled. The refund has been filed with Paddle."
+      ? "Cancelled. The refund has been filed with Stripe."
       : "Cancelled. You keep everything until the period ends.",
   };
 }
