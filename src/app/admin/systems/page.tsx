@@ -21,7 +21,7 @@ const GROUP_NOTE: Record<SystemGroup, string> = {
  * Every system, grouped by what kind of thing it is.
  *
  * The grouping is the point. A red integration and a red core service mean
- * very different things — one is Paddle having an afternoon, the other is the
+ * very different things — one is Stripe having an afternoon, the other is the
  * product being down — and a single flat list of ten tiles invites reading
  * them as equally serious.
  *
@@ -96,7 +96,7 @@ export default async function AdminSystemsPage() {
           </li>
           <li>
             <b>Not wired up</b> — this deployment has no key for it. Grey rather than red on purpose: a
-            board that cries wolf about a Paddle key nobody set is a board people stop reading.
+            board that cries wolf about a Stripe key nobody set is a board people stop reading.
           </li>
         </ul>
       </section>

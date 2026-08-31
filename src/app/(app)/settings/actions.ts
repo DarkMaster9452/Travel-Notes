@@ -10,7 +10,8 @@ import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { isPostable } from "@/lib/envelope";
 import { completeNudge } from "@/lib/nudges";
-import { getPaddle } from "@/lib/paddle";
+import { syncSubscription } from "@/lib/billing";
+import { getStripe } from "@/lib/stripe";
 
 export type SettingsResult = { ok: boolean; message?: string };
 
@@ -184,37 +185,32 @@ export async function changePasswordAction(formData: FormData): Promise<Settings
 /**
  * Pause billing for a month.
  *
- * Paddle's own pause rather than a flag of ours: a pause that only this app
+ * Stripe's own pause rather than a flag of ours: a pause that only this app
  * knew about would still be charged. Resuming clears it, and everything
  * already earned is untouched either way.
  *
- * It takes effect at the end of the period already paid for, not now — the
- * member bought this month, and pausing should not take it off them.
+ * `behavior: "void"` is the promise this makes: any invoice Stripe would
+ * otherwise generate while paused is voided rather than left to collect, so
+ * the member is not billed for a month they asked not to be charged for.
  */
 export async function pausePlanAction(months = 1): Promise<SettingsResult> {
   const user = await requireClient();
-  const paddle = getPaddle();
-  if (!paddle) return { ok: false, message: "Billing isn't configured on this deployment." };
+  const stripe = getStripe();
+  if (!stripe) return { ok: false, message: "Billing isn't configured on this deployment." };
 
   const subscription = await db.subscription.findUnique({
     where: { userId: user.id },
-    select: { paddleSubscriptionId: true },
+    select: { stripeSubscriptionId: true },
   });
-  if (!subscription?.paddleSubscriptionId) {
+  if (!subscription?.stripeSubscriptionId) {
     return { ok: false, message: "There is no live subscription to pause." };
   }
 
   const resumesAt = new Date();
   resumesAt.setMonth(resumesAt.getMonth() + Math.min(3, Math.max(1, months)));
 
-  // Pausing takes effect at the end of the period already paid for, not now:
-  // the member bought this month and pausing should not take it off them.
-  // `continue_existing_billing_period` is the matching promise on the way back
-  // in — they resume into what is left rather than being billed afresh.
-  await paddle.subscriptions.pause(subscription.paddleSubscriptionId, {
-    effectiveFrom: "next_billing_period",
-    resumeAt: resumesAt.toISOString(),
-    onResume: "continue_existing_billing_period",
+  await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    pause_collection: { behavior: "void", resumes_at: Math.floor(resumesAt.getTime() / 1000) },
   });
 
   await db.subscription.update({
@@ -229,21 +225,24 @@ export async function pausePlanAction(months = 1): Promise<SettingsResult> {
 
 export async function resumePlanAction(): Promise<SettingsResult> {
   const user = await requireClient();
-  const paddle = getPaddle();
-  if (!paddle) return { ok: false, message: "Billing isn't configured on this deployment." };
+  const stripe = getStripe();
+  if (!stripe) return { ok: false, message: "Billing isn't configured on this deployment." };
 
   const subscription = await db.subscription.findUnique({
     where: { userId: user.id },
-    select: { paddleSubscriptionId: true },
+    select: { stripeSubscriptionId: true },
   });
-  if (!subscription?.paddleSubscriptionId) {
+  if (!subscription?.stripeSubscriptionId) {
     return { ok: false, message: "There is nothing paused." };
   }
 
-  await paddle.subscriptions.resume(subscription.paddleSubscriptionId, {
-    effectiveFrom: "immediately",
+  // Cleared rather than hardcoded back to ACTIVE — Stripe is the authority on
+  // what status that actually leaves the subscription in, and `syncSubscription`
+  // is run against exactly the object this call hands back.
+  const updated = await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    pause_collection: null,
   });
-  await db.subscription.update({ where: { userId: user.id }, data: { status: "ACTIVE" } });
+  await syncSubscription(updated);
 
   revalidatePath("/settings/cancel");
   revalidatePath("/settings/billing");

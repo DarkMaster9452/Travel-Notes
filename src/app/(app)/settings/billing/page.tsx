@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { SqCheckoutButton, SqCheckoutListener, SqPortalButton } from "@/components/sq/plan-actions";
+import { SqCheckoutEmbed, SqPortalButton } from "@/components/sq/plan-actions";
 import { Tag } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { Glyph, LockGlyph } from "@/components/sq/icons";
@@ -19,8 +19,8 @@ import { getEntitlement } from "@/lib/entitlements";
 import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
 import { formatDate, formatMoney } from "@/lib/i18n/format";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { isPaddleEnabled, isUltraEnabled } from "@/lib/env";
-import { intervalForPriceId } from "@/lib/paddle";
+import { isStripeEnabled, isUltraEnabled } from "@/lib/env";
+import { intervalForPriceId } from "@/lib/stripe";
 
 export const metadata: Metadata = { title: "Plan & billing" };
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export default async function BillingSettingsPage() {
   const user = await requireClient();
 
   // Before reading anything, make sure our idea of this account matches
-  // Paddle's. Normally a no-op that returns on the first query; when it is not,
+  // Stripe's. Normally a no-op that returns on the first query; when it is not,
   // it is because a purchase went through and never reached us, and this is
   // the screen where that would be most obvious and most upsetting.
   await reconcileSubscription(user.id, user.email);
@@ -54,15 +54,10 @@ export default async function BillingSettingsPage() {
   const current = entitlement.definition;
   const currentCopy = planCopy(t, entitlement.plan);
   const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
-  const yearly = intervalForPriceId(subscription?.paddlePriceId) === "yearly";
+  const yearly = intervalForPriceId(subscription?.stripePriceId) === "yearly";
 
   return (
     <>
-      {/* The overlay is opened by the buttons below but completing it is the
-          page's business, not any one button's: a purchase that finishes after
-          the button has re-rendered still has to be recorded. */}
-      <SqCheckoutListener />
-
       <section className="sq-card sq-pad">
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
           <div>
@@ -99,10 +94,10 @@ export default async function BillingSettingsPage() {
             ) : null}
           </div>
 
-          {entitlement.isSubscribed && isPaddleEnabled() ? (
+          {entitlement.isSubscribed && isStripeEnabled() ? (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {!yearly ? (
-                <SqCheckoutButton
+                <SqCheckoutEmbed
                   plan={entitlement.plan === "ultra" ? "ultra" : "explorer"}
                   interval="yearly"
                   label={t.billing.switchToYearly}
@@ -205,7 +200,7 @@ export default async function BillingSettingsPage() {
                     {t.common.yours}
                   </span>
                 ) : from ? (
-                  <SqPaidChip plan={from} />
+                  <SqPaidChip plan={from} capability={capability} />
                 ) : null}
               </li>
             );
@@ -219,14 +214,14 @@ export default async function BillingSettingsPage() {
             {t.billing.plansHeading}
           </h2>
           <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-            {isPaddleEnabled() ? t.billing.cancelAnyTime : t.billing.notConfigured}
+            {isStripeEnabled() ? t.billing.cancelAnyTime : t.billing.notConfigured}
           </span>
         </div>
         <ul>
           {PLANS.map((plan) => {
             const isCurrent = plan.id === entitlement.plan;
             const buyable =
-              isPaddleEnabled() &&
+              isStripeEnabled() &&
               !isCurrent &&
               (plan.id === "explorer" || (plan.id === "ultra" && isUltraEnabled()));
             const copy = planCopy(t, plan.id);
@@ -270,7 +265,7 @@ export default async function BillingSettingsPage() {
                       : `${formatMoney(locale, plan.price.monthly)}${t.common.perMonth}`}
                   </span>
                   {buyable ? (
-                    <SqCheckoutButton
+                    <SqCheckoutEmbed
                       plan={plan.id === "ultra" ? "ultra" : "explorer"}
                       interval="monthly"
                       label={plan.tier > entitlement.tier ? t.billing.upgrade : t.billing.switch}

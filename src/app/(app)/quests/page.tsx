@@ -142,7 +142,7 @@ export default async function QuestDatabasePage({
         right={
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <Tag small>{t.questsPage.count(formatNumber(locale, total))}</Tag>
-            {reach === "home" ? <SqPaidChip plan="explorer" /> : null}
+            {reach === "home" ? <SqPaidChip plan="explorer" capability="europe" /> : null}
           </div>
         }
       />

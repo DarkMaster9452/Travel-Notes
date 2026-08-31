@@ -825,7 +825,7 @@ const PLANS: {
     ],
     cta: "Start with Explorer",
     ctaClass: "btn btn-signal",
-    note: "Billed via Paddle · cancel anytime · 7-day refund",
+    note: "Billed via Stripe · cancel anytime · 7-day refund",
     flag: "Most taken",
     feature: true,
   },
@@ -845,7 +845,7 @@ const PLANS: {
     ],
     cta: "Go Ultra",
     ctaClass: "btn btn-primary",
-    note: "Billed via Paddle · cancel anytime · 7-day refund",
+    note: "Billed via Stripe · cancel anytime · 7-day refund",
   },
 ];
 
