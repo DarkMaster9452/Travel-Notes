@@ -49,6 +49,14 @@
   --color-signal: #c4481b;
   --color-signal-2: #e8622f;
 
+  /* --- wax: the seal on the hero envelope, and nothing else ---
+     Brass rather than stamp ink, because it is a physical object on the page
+     and not a mark made on one. It exists at exactly one place in the product
+     and must never be reached for as an accent. */
+  --color-wax: #c8a15b;
+  --color-wax-deep: #96702f;
+  --color-wax-light: #e6cb95;
+
   /* --- rules --- */
   --color-line: rgba(20, 26, 22, 0.15);
   --color-line-2: rgba(20, 26, 22, 0.08);
@@ -137,6 +145,13 @@
   --line-2: var(--color-line-2);
   --forest: var(--color-forest);
   --forest-deep: var(--color-forest-deep);
+  --wax: var(--color-wax);
+  --wax-deep: var(--color-wax-deep);
+  --wax-light: var(--color-wax-light);
+
+  /* The nav's own height, written down once so anything that has to sit
+     under it — the hero's sticky stage — agrees with it. */
+  --nav-h: 70px;
 
   /* The two curves everything moves on. One for anything that settles into
      place, one for the few things that are allowed to overshoot — a sticker
