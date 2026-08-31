@@ -13,9 +13,8 @@ import { EASE_BACK, EASE_FIELD } from "@/lib/motion";
  * page should look like an assignment being issued, not like a marketing site
  * switching itself on. So this is a single anime.js timeline rather than a set
  * of independent entrances — the contour lines draw themselves in like a map
- * being surveyed, the headline arrives word by word, the figures tick into
- * place, and the quest card lands on top of all of it, last, like a document
- * put down on the desk.
+ * being surveyed, the headline arrives word by word, and the sealed envelope
+ * lands on top of all of it, last, like a document put down on the desk.
  *
  * It runs on mount rather than on scroll: the hero is above the fold, so a
  * scroll observer would fire for the whole block in a single beat.
@@ -37,11 +36,10 @@ export function HeroMotion() {
     const heading = hero.querySelector<HTMLElement>(".h1");
     const lede = pick(".lede");
     const actions = pick(".hero-actions > *");
-    const meta = pick(".hero-meta > div");
-    const card = hero.querySelector<HTMLElement>(".quest-card");
-    const cardParts = card
-      ? Array.from(card.querySelectorAll<HTMLElement>(".qc-head, .qc-body > *, .qc-foot"))
-      : [];
+    // The figure is animated as one block rather than piece by piece: the
+    // quest inside it is behind the envelope's front and cannot be seen, and
+    // the envelope's own parts are mid-fold at every frame the scroll owns.
+    const figure = hero.querySelector<HTMLElement>(".env-stage");
     const contours = hero.querySelector<SVGSVGElement>(".contours");
 
     // The headline is split into words so it can arrive as a sentence being
@@ -50,22 +48,21 @@ export function HeroMotion() {
     const split = heading ? splitText(heading, { words: true, chars: false }) : null;
     const words = (split?.words as HTMLElement[] | undefined) ?? [];
 
-    const staged: HTMLElement[] = [...eyebrow, ...lede, ...actions, ...meta, ...words];
-    if (card) staged.push(card);
+    const staged: HTMLElement[] = [...eyebrow, ...lede, ...actions, ...words];
+    if (figure) staged.push(figure);
 
     utils.set([...eyebrow, ...lede], { opacity: 0, translateY: 14 });
     utils.set(actions, { opacity: 0, translateY: 12 });
-    utils.set(meta, { opacity: 0, translateY: 10 });
     utils.set(words, { opacity: 0, translateY: 26 });
-    if (card) utils.set(card, { opacity: 0, translateY: 26, scale: 0.97, rotate: 0.6 });
-    if (cardParts.length) utils.set(cardParts, { opacity: 0, translateY: 8 });
+    if (figure) utils.set(figure, { opacity: 0, translateY: 26, scale: 0.97, rotate: 0.6 });
 
     const timeline = createTimeline({
       defaults: { ease: EASE_FIELD, duration: 620 },
       // Once the hero has been dealt, every element goes back to being styled
-      // by the stylesheet — including the quest card, which has a hover lift an
-      // inline transform would sit on top of forever.
-      onComplete: () => unstyle([...staged, ...cardParts]),
+      // by the stylesheet — including the figure, whose transform the scroll
+      // sequence owns from here and which an inline one would sit on top of
+      // forever.
+      onComplete: () => unstyle(staged),
     });
 
     // The survey lines first, drawn rather than faded, and slow enough that
@@ -83,12 +80,11 @@ export function HeroMotion() {
       .add(eyebrow, { opacity: [0, 1], translateY: [14, 0] }, 120)
       .add(words, { opacity: [0, 1], translateY: [26, 0], duration: 720, delay: stagger(34) }, 200)
       .add(lede, { opacity: [0, 1], translateY: [14, 0] }, 520)
-      .add(actions, { opacity: [0, 1], translateY: [12, 0], delay: stagger(70) }, 640)
-      .add(meta, { opacity: [0, 1], translateY: [10, 0], delay: stagger(55) }, 760);
+      .add(actions, { opacity: [0, 1], translateY: [12, 0], delay: stagger(70) }, 640);
 
-    if (card) {
+    if (figure) {
       timeline.add(
-        card,
+        figure,
         {
           opacity: [0, 1],
           translateY: [26, 0],
@@ -102,19 +98,12 @@ export function HeroMotion() {
         520,
       );
     }
-    if (cardParts.length) {
-      timeline.add(
-        cardParts,
-        { opacity: [0, 1], translateY: [8, 0], duration: 460, delay: stagger(45) },
-        820,
-      );
-    }
 
     return () => {
       timeline.revert();
       split?.revert();
       // Whatever the timeline was mid-way through, the hero ends up readable.
-      utils.set([...staged, ...cardParts], {
+      utils.set(staged, {
         opacity: 1,
         translateY: 0,
         scale: 1,
