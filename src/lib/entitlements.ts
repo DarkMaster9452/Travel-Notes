@@ -27,7 +27,7 @@ export type Entitlement = {
   freeQuestAllowance: number;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: Date | null;
-  /** True while Paddle is retrying a failed payment: access holds, but say so. */
+  /** True while Stripe is retrying a failed payment: access holds, but say so. */
   inGrace: boolean;
   reason: "subscribed" | "free_quota" | "quota_exhausted";
   /** Does this plan include a given capability? */

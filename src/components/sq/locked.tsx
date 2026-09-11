@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
 import { LockGlyph } from "@/components/sq/icons";
 import { useT } from "@/components/sq/i18n";
+import { usePlanSheet } from "@/components/sq/plan-sheet";
 import { capabilityCopy, planCopy, type Capability, type PlanId } from "@/lib/config";
 
 /**
@@ -36,6 +36,7 @@ export function SqLocked({
   style?: CSSProperties;
 }) {
   const t = useT();
+  const { openPlanSheet } = usePlanSheet();
   const copy = capabilityCopy(t, capability);
   const name = planCopy(t, plan).name;
 
@@ -56,9 +57,13 @@ export function SqLocked({
             <p className="sq-locked-detail">{copy.detail}</p>
           </>
         )}
-        <Link href="/settings/billing" className="sq-btn sq-btn-primary sq-btn-sm">
+        <button
+          type="button"
+          className="sq-btn sq-btn-primary sq-btn-sm"
+          onClick={() => openPlanSheet(capability, plan)}
+        >
           {compact ? t.locked.unlock : t.locked.unlockWith(name)}
-        </Link>
+        </button>
       </div>
     </div>
   );
@@ -69,14 +74,22 @@ export function SqLocked({
  *
  * No overlay and no dimming — just a mark that says this line is not yours
  * yet, for places where covering the row would cost more than it explains.
+ * Clickable for the same reason `SqLocked`'s button is: this is a locked
+ * feature too, and the plan sheet should open from wherever one is clicked.
  */
-export function SqPaidChip({ plan }: { plan: PlanId }) {
+export function SqPaidChip({ plan, capability }: { plan: PlanId; capability: Capability }) {
   const t = useT();
+  const { openPlanSheet } = usePlanSheet();
   const name = planCopy(t, plan).name;
   return (
-    <span className="sq-tag sq-tag-gold sq-tag-xs" title={t.locked.paidFeature(name)}>
+    <button
+      type="button"
+      className="sq-tag sq-tag-gold sq-tag-xs sq-tag-btn"
+      title={t.locked.paidFeature(name)}
+      onClick={() => openPlanSheet(capability, plan)}
+    >
       <LockGlyph size={10} />
       {name}
-    </span>
+    </button>
   );
 }

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { isStaffRole } from "@/lib/admin/access";
 import { requireClient } from "@/lib/auth/guards";
-import { syncFromTransaction } from "@/lib/billing";
+import { syncFromCheckoutSession } from "@/lib/billing";
 import {
   planById,
   planIdFromRecord,
@@ -13,30 +13,26 @@ import {
   type PlanId,
 } from "@/lib/config";
 import { db } from "@/lib/db";
+import { appUrl } from "@/lib/env";
 import { queueNudge } from "@/lib/nudges";
-import { priceIdFor } from "@/lib/paddle";
+import { getStripe, priceIdFor } from "@/lib/stripe";
 
 export type CheckoutIntent =
-  | { ok: true; priceId: string; customerId: string | null; email: string; custom: { userId: string; plan: string } }
+  | { ok: true; clientSecret: string; sessionId: string }
   | { ok: false; message: string };
 
 /**
- * Everything the browser needs to open a Paddle checkout, and nothing more.
- *
- * Paddle has no server-created checkout session: the overlay is opened by
- * Paddle.js in the browser, with a price id. That moves a decision the server
- * used to make — *which* price, and for whom — into the client, so this action
- * makes it on the server anyway and hands over only the answer. The browser
- * never picks a price id; it is told one.
+ * Everything the browser needs to mount an embedded Stripe checkout, and
+ * nothing more.
  *
  * The account checks are the same ones the old checkout route made, and they
  * are made here for the same reason: the panel never renders a buy button, and
  * this is what makes that true rather than merely tidy.
  *
- * Note what this deliberately does *not* do: grant anything. It returns
- * intent. Entitlement changes only when Paddle says money moved, through the
- * webhook or through `syncFromTransaction`, both of which read Paddle rather
- * than the browser.
+ * Note what this deliberately does *not* do: grant anything. It returns a
+ * session to render. Entitlement changes only when Stripe says money moved,
+ * through the webhook or through `syncFromCheckoutSession`, both of which
+ * read Stripe rather than the browser.
  */
 export async function startCheckoutAction(
   planId: string,
@@ -58,21 +54,41 @@ export async function startCheckoutAction(
     return { ok: false, message: "That plan isn't available right now." };
   }
 
-  // Reuse the customer Paddle already knows about, so a second purchase does
-  // not create a second customer record with the same email — Paddle would
+  const stripe = getStripe();
+  if (!stripe) {
+    return { ok: false, message: "Billing isn't configured on this deployment." };
+  }
+
+  // Reuse the customer Stripe already knows about, so a second purchase does
+  // not create a second customer record with the same email — Stripe would
   // accept it, and the account's history would then be split across two.
   const existing = await db.subscription.findUnique({
     where: { userId: user.id },
-    select: { paddleCustomerId: true },
+    select: { stripeCustomerId: true },
   });
 
-  return {
-    ok: true,
-    priceId,
-    customerId: existing?.paddleCustomerId ?? null,
-    email: user.email,
-    custom: { userId: user.id, plan: planId },
-  };
+  const metadata = { userId: user.id, plan: planId };
+
+  const session = await stripe.checkout.sessions.create({
+    ui_mode: "embedded_page",
+    mode: "subscription",
+    line_items: [{ price: priceId, quantity: 1 }],
+    customer: existing?.stripeCustomerId ?? undefined,
+    customer_email: existing?.stripeCustomerId ? undefined : user.email,
+    metadata,
+    // The session's own metadata is read by `syncFromCheckoutSession` right
+    // after payment; the subscription's metadata is what every later webhook
+    // event carries, since a `customer.subscription.*` event hands back the
+    // subscription object and never the checkout session that created it.
+    subscription_data: { metadata },
+    return_url: `${appUrl}/settings/billing?checkout={CHECKOUT_SESSION_ID}`,
+  });
+
+  if (!session.client_secret) {
+    return { ok: false, message: "Checkout would not open." };
+  }
+
+  return { ok: true, clientSecret: session.client_secret, sessionId: session.id };
 }
 
 /**
@@ -91,11 +107,12 @@ export type CheckoutResult =
 /**
  * Bring a completed checkout into our database before the webhook lands.
  *
- * The overlay closes the moment payment clears and hands back a transaction
- * id. That id is a claim, not proof — so it is taken to Paddle and checked
- * against the account asking, in `syncFromTransaction`. The webhook remains
- * the authority; this only stops the page from saying "free plan" to somebody
- * who has just paid.
+ * The embedded checkout's `onComplete` fires the moment payment clears and
+ * hands back nothing but the session id it was mounted with. That id is a
+ * claim, not proof — so it is taken to Stripe and checked against the account
+ * asking, in `syncFromCheckoutSession`. The webhook remains the authority;
+ * this only stops the page from saying "free plan" to somebody who has just
+ * paid.
  *
  * Two things ride on this beyond the sync, both of which used to belong to the
  * demo activation and would have been lost with it:
@@ -106,21 +123,19 @@ export type CheckoutResult =
  *     this, nobody who pays would ever be asked, so the envelope would have
  *     nowhere to go.
  *   · The plan's name and capabilities come back so the browser can show the
- *     unlock celebration. It used to fire only on a free demo activation,
- *     which meant the one moment worth celebrating — somebody actually paying
- *     — was the one that got nothing.
+ *     unlock celebration.
  *
- * Returns `{ ok: false }` when Paddle has not caught up yet, which is a real
+ * Returns `{ ok: false }` when Stripe has not caught up yet, which is a real
  * outcome rather than an error: the webhook will finish the job a moment later.
  */
-export async function completeCheckoutAction(transactionId: string): Promise<CheckoutResult> {
+export async function completeCheckoutAction(sessionId: string): Promise<CheckoutResult> {
   const user = await requireClient();
 
-  if (typeof transactionId !== "string" || !transactionId.startsWith("txn_")) {
+  if (typeof sessionId !== "string" || !sessionId.startsWith("cs_")) {
     return { ok: false };
   }
 
-  const synced = await syncFromTransaction(transactionId, user.id);
+  const synced = await syncFromCheckoutSession(sessionId, user.id);
   if (!synced) return { ok: false };
 
   // Read back what the sync actually wrote rather than trusting what checkout

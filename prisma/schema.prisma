@@ -122,15 +122,16 @@ model Session {
 // Billing
 // ---------------------------------------------------------------------------
 
-/// The five states Paddle reports, plus one of our own.
+/// Four of Stripe's subscription statuses, plus two of our own.
 ///
-/// `INCOMPLETE` is not a Paddle status. It marks the gap between "we have a
-/// customer record for this account" and "a subscription exists" — a state
-/// Paddle has no word for, because from its side nothing has happened yet.
-///
-/// `INCOMPLETE_EXPIRED` and `UNPAID` were Stripe's and are gone: nothing can
-/// produce them any more, and a status the system cannot reach is a status
-/// somebody will eventually write a branch for.
+/// `INCOMPLETE` is not a Stripe status. It marks the gap between "we have a
+/// customer record for this account" and "a subscription exists", and it is
+/// also where an unrecognised Stripe status lands — denying access is the
+/// safe direction to be wrong in. `PAUSED` is not a Stripe status either:
+/// Stripe expresses a pause as a subscription's own `pause_collection` field
+/// staying set while `status` itself keeps reading `active` (see
+/// `mapStripeStatus` in `src/lib/stripe.ts`), and this is where that state is
+/// written down on our side.
 enum SubscriptionStatus {
   ACTIVE
   TRIALING
@@ -149,9 +150,9 @@ enum Plan {
 model Subscription {
   id                   String             @id @default(cuid())
   userId               String             @unique @map("user_id")
-  paddleCustomerId     String?            @unique @map("paddle_customer_id")
-  paddleSubscriptionId String?            @unique @map("paddle_subscription_id")
-  paddlePriceId        String?            @map("paddle_price_id")
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
   status               SubscriptionStatus @default(INCOMPLETE)
   plan                 Plan               @default(FREE)
   cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")

@@ -5,18 +5,18 @@ import { EmptyState } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
 import { getT } from "@/lib/i18n/server";
 import { listInvoices } from "@/lib/billing";
-import { isPaddleEnabled } from "@/lib/env";
+import { isStripeEnabled } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Invoices" };
 export const dynamic = "force-dynamic";
 
 const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-/** Paddle's record, read live. Nothing here is a copy kept on our side. */
+/** Stripe's record, read live. Nothing here is a copy kept on our side. */
 export default async function InvoicesSettingsPage() {
   const user = await requireClient();
   const t = await getT(user.id);
-  const invoices = isPaddleEnabled() ? await listInvoices(user.id) : [];
+  const invoices = isStripeEnabled() ? await listInvoices(user.id) : [];
 
   return (
     <section className="sq-card" style={{ overflow: "hidden" }}>
@@ -24,16 +24,16 @@ export default async function InvoicesSettingsPage() {
         <h2 className="sq-h2" style={{ fontSize: 19 }}>
           Invoices
         </h2>
-        {isPaddleEnabled() ? <SqPortalButton label={t.panes.invoices.openPortal} /> : null}
+        {isStripeEnabled() ? <SqPortalButton label={t.panes.invoices.openPortal} /> : null}
       </div>
 
       {invoices.length === 0 ? (
         <div style={{ padding: 26 }}>
           <EmptyState
             glyph="coin"
-            title={isPaddleEnabled() ? t.panes.invoices.none : t.panes.invoices.notConfigured}
+            title={isStripeEnabled() ? t.panes.invoices.none : t.panes.invoices.notConfigured}
             body={
-              isPaddleEnabled()
+              isStripeEnabled()
                 ? t.panes.invoices.noneBody
                 : t.panes.invoices.notConfiguredBody
             }

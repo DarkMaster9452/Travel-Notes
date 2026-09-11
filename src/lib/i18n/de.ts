@@ -697,7 +697,7 @@ export const de: Messages = {
       noneBody:
         "Eine Rechnung erscheint, sobald die erste Zahlung durchgeht. Ein kostenloser Tarif erzeugt nie eine.",
       notConfigured: "Zahlungen sind hier nicht eingerichtet",
-      notConfiguredBody: "Diese Installation hat keine Paddle-Schlüssel, also gibt es nichts zu lesen.",
+      notConfiguredBody: "Diese Installation hat keine Stripe-Schlüssel, also gibt es nichts zu lesen.",
       openPortal: "Zahlungsportal öffnen",
     },
     connected: {

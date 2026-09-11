@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
  * client with every column chosen by hand. There is no raw SQL box and no way
  * to reach a table that is not on the list, because a panel that can run
  * arbitrary statements is a breach waiting for one stolen session. No hashes,
- * no Paddle secrets, no generation JSON.
+ * no Stripe secrets, no generation JSON.
  */
 export default async function AdminDatabasePage({
   searchParams,
@@ -43,7 +43,7 @@ export default async function AdminDatabasePage({
       <PageHeader
         kicker="Underneath"
         title="Database"
-        lede="Read-only. Counts for every table, and the newest rows of one — no hashes, no Paddle secrets, no way to run a statement of your own."
+        lede="Read-only. Counts for every table, and the newest rows of one — no hashes, no Stripe secrets, no way to run a statement of your own."
         right={
           <Tag small>
             {total.toLocaleString("en-GB")} rows in {summaries.length} tables

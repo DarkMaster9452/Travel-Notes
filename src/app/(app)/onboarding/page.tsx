@@ -6,7 +6,7 @@ import { COUNTRIES } from "@/lib/geo";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { getStravaConnection, stravaEnabled } from "@/lib/strava";
-import { isPaddleEnabled, isUltraEnabled } from "@/lib/env";
+import { isStripeEnabled, isUltraEnabled } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Getting set up" };
 export const dynamic = "force-dynamic";
@@ -45,7 +45,7 @@ export default async function OnboardingPage() {
         plan: entitlement.plan,
         stravaConnected: connection !== null,
       }}
-      billingEnabled={isPaddleEnabled()}
+      billingEnabled={isStripeEnabled()}
       ultraEnabled={isUltraEnabled()}
       stravaEnabled={stravaEnabled()}
     />

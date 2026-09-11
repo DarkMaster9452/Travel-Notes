@@ -10,7 +10,7 @@ import { SHAPE_RADIUS, type StickerShape } from "@/lib/stickers";
 /**
  * The moment after a plan is bought.
  *
- * Opened by the checkout listener when Paddle reports a completed purchase —
+ * Opened when Stripe reports a completed purchase —
  * it used to be opened by a free demo activation instead, which meant the one
  * moment actually worth celebrating was the one that got nothing.
  *
