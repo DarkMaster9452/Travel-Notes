@@ -106,7 +106,7 @@ export default async function ReviewRail() {
               key={card.id}
               label={
                 <span style={{ display: "block", minWidth: 0 }}>
-                  <b style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>
+                  <b style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--lg-text)" }}>
                     {card.title}
                   </b>
                   <span className="sq-mono" style={{ fontSize: 10, color: "var(--ink-3)" }}>

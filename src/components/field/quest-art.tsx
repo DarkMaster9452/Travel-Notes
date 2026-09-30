@@ -1,4 +1,3 @@
-import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { ART_H, ART_W, crestPath, questArt, ridgePath } from "@/lib/quest/art";
@@ -34,7 +33,6 @@ export function QuestArt({
   className?: string;
 }) {
   const art = questArt(seed, tags);
-  const gradientId = React.useId();
 
   return (
     <svg
@@ -45,16 +43,8 @@ export function QuestArt({
       aria-hidden="true"
       focusable="false"
     >
-      <defs>
-        {/* The sky. Two stops of the same ink so the band has a horizon
-            without introducing a second colour into the palette. */}
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.16" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-
-      <rect x="0" y="0" width={ART_W} height={ART_H} fill={`url(#${gradientId})`} />
+      {/* The sky: one flat wash of the same ink. No gradients (design/DESIGN-SYSTEM.md §1.4). */}
+      <rect x="0" y="0" width={ART_W} height={ART_H} fill="currentColor" fillOpacity="0.08" />
 
       {art.crescent ? (
         // A moon is a disc with a bite out of it — drawn as two circles with

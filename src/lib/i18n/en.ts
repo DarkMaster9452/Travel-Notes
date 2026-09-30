@@ -591,6 +591,37 @@ export const en = {
     closeMenu: "Close menu",
   },
 
+  /* ---- Trail design system: marks, difficulty, cards ------------------- */
+  trail: {
+    marks: {
+      RED: "Red",
+      BLUE: "Blue",
+      GREEN: "Green",
+      YELLOW: "Yellow",
+      EDUCATIONAL: "Nature trail",
+    },
+    tabQuests: "Quests",
+    noMarks: "Trail marks not added yet",
+    difficulty: { EASY: "Easy-going", MODERATE: "Moderate", HARD: "Hard", EXPERT: "Expert" },
+    distance: "distance",
+    ascent: "ascent",
+    time: "time",
+    start: "start",
+    weekly: "Weekly",
+    monthly: "Monthly quest",
+    endsIn: "Ends in",
+    join: "Take the monthly quest",
+    routeDetail: "Route details",
+    fileProof: "File your proof",
+    detail: "Details",
+    notStarted: "Not started yet",
+    noMonthly: "This month's quest opens soon",
+    noMonthlyBody: "The monthly quest drops on the 1st at 06:00. Until then, pick anything from the database.",
+    tags: { waterfall: "waterfall", lake: "lake", river: "river", viewpoint: "viewpoint", summit: "summit", cave: "cave", castle: "castle", ruins: "ruins", hidden: "hidden spot", sunrise: "sunrise", sunset: "sunset", wildlife: "wildlife", old_growth: "old forest", chapel: "chapel" } as Record<string, string>,
+    days: "d",
+    hours: "h",
+  },
+
   /* ---- filing proof ------------------------------------------------------- */
   proof: {
     readerLooksFor: "What a reader looks for",

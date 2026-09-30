@@ -220,13 +220,10 @@ export type SqSparkPoint = { value: number | null; colour?: string };
  * breaks rather than interpolating across it: a straight run through a gap
  * would be the chart inventing readings.
  *
- * `id` must be unique on the page — the gradient is referenced by `url(#…)`,
- * and two charts sharing an id would both paint with the first one's colour.
- * It is a required prop rather than a generated one because this renders on
- * the server, where `useId` is not available.
+ * The wash under the line is one flat fill at low opacity — no gradients
+ * (design/DESIGN-SYSTEM.md §1.4). `id` is kept for callers that key charts.
  */
 export function SqSpark({
-  id,
   points,
   colour = "var(--moss)",
   height = 44,
@@ -298,12 +295,6 @@ export function SqSpark({
       role="img"
       aria-label={`${points.filter((point) => point.value !== null).length} readings, most recent ${Math.round(values[values.length - 1])}`}
     >
-      <defs>
-        <linearGradient id={`spark-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={colour} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={colour} stopOpacity="0" />
-        </linearGradient>
-      </defs>
 
       {runs.map((segment, index) => {
         const line = smoothPath(segment);
@@ -312,7 +303,8 @@ export function SqSpark({
             {fill && segment.length > 1 ? (
               <path
                 d={`${line} L ${round(segment[segment.length - 1].x)} ${height - pad} L ${round(segment[0].x)} ${height - pad} Z`}
-                fill={`url(#spark-${id})`}
+                fill={colour}
+                fillOpacity={0.14}
               />
             ) : null}
             <path

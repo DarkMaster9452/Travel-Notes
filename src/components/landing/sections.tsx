@@ -123,7 +123,7 @@ export function WeeklySection() {
         <div className="shared">
           <article className="shot">
             <Image
-              src="https://images.unsplash.com/photo-1551632811-561732d1e306?w=900&q=70&auto=format&fit=crop"
+              src="https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=900&q=70&auto=format&fit=crop"
               alt="Hiker on a mountain ridge at sunrise"
               width={900}
               height={210}

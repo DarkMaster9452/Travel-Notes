@@ -158,7 +158,7 @@ export default async function SubmissionsPage() {
                       background: declined
                         ? "var(--signal-wash)"
                         : entry.status === "APPROVED"
-                          ? "var(--color-accent-100)"
+                          ? "var(--lg-green-100)"
                           : "var(--paper-2)",
                     }}
                   >

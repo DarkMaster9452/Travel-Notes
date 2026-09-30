@@ -210,7 +210,7 @@ export function SlabFigures({
           </b>
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--lg-mono)",
               fontSize: 8.5,
               letterSpacing: "0.06em",
               textTransform: "uppercase",

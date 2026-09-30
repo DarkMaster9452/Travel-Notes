@@ -358,7 +358,7 @@ function Figure({ label, value, tint }: { label: string; value: string; tint?: s
           fontWeight: 600,
           fontSize: 24,
           lineHeight: 1,
-          color: tint ?? "var(--color-text)",
+          color: tint ?? "var(--lg-text)",
         }}
       >
         {value}
@@ -370,7 +370,7 @@ function Figure({ label, value, tint }: { label: string; value: string; tint?: s
 function toneInk(tone: Fact["tone"]): string {
   if (tone === "warn") return "var(--signal)";
   if (tone === "good") return "var(--moss)";
-  return "var(--color-text)";
+  return "var(--lg-text)";
 }
 
 function isWindow(value: string | undefined): value is WindowKey {

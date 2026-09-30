@@ -118,7 +118,7 @@ export default async function TrailheadPage({ params }: { params: Promise<{ slug
                   alignItems: "center",
                   padding: "13px 22px",
                   borderTop: "1px solid var(--line-2)",
-                  color: "var(--color-text)",
+                  color: "var(--lg-text)",
                 }}
               >
                 <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)", whiteSpace: "nowrap" }}>

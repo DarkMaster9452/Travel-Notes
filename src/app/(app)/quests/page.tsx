@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MonthlyHero, QuestCard, toTrailQuest } from "@/components/domain/trail";
 import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
 import { LockGlyph } from "@/components/sq/icons";
 import { SqPaidChip } from "@/components/sq/locked";
@@ -11,6 +12,8 @@ import { getEntitlement } from "@/lib/entitlements";
 import { formatNumber, tagFor } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n";
 import { getLocale, getT } from "@/lib/i18n/server";
+import { getOpenSlots } from "@/lib/quest/upcoming";
+import { glanceFeaturedSlot } from "@/lib/quest/slot";
 import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Quest database" };
@@ -47,10 +50,13 @@ export default async function QuestDatabasePage({
   const month = params.month ?? "all";
   const search = (params.q ?? "").trim();
 
-  const [entitlement, t, locale] = await Promise.all([
+  const now = new Date();
+  const [entitlement, t, locale, monthly, openSlots] = await Promise.all([
     getEntitlement(user.id),
     getT(user.id),
     getLocale(user.id),
+    glanceFeaturedSlot(user.id, "month", now),
+    getOpenSlots(now),
   ]);
 
   // Range is a capability: free stops at the country somebody measures from,
@@ -104,6 +110,11 @@ export default async function QuestDatabasePage({
         difficulty: true,
         distance: true,
         elevationGain: true,
+        duration: true,
+        coverImage: true,
+        trailMarks: true,
+        features: true,
+        travelTime: true,
         schedules: { select: { period: true }, take: 1 },
       },
     }),
@@ -146,6 +157,21 @@ export default async function QuestDatabasePage({
           </div>
         }
       />
+
+      {/* The monthly quest sits above the catalogue, never inside it (§6.4). */}
+      {monthly.featured && !monthly.closed ? (
+        <div style={{ marginBottom: 24 }}>
+          <MonthlyHero
+            quest={toTrailQuest(monthly.featured.summary, t)}
+            t={t}
+            locale={locale}
+            monthLabel={openSlots.find((slot) => slot.period === "MONTHLY")?.label ?? ""}
+            closesAt={monthly.closesAt}
+            lede={monthly.featured.summary.subtitle}
+            primary={{ label: t.trail.join, href: "/monthly" }}
+          />
+        </div>
+      ) : null}
 
       {reach === "home" ? (
         <p
@@ -212,9 +238,9 @@ export default async function QuestDatabasePage({
         />
       </SqFilterBar>
 
-      <section className="sq-card" style={{ overflow: "hidden" }}>
+      <section>
         {quests.length === 0 ? (
-          <div style={{ padding: 26 }}>
+          <div className="sq-card" style={{ padding: 26 }}>
             <EmptyState
               glyph="search"
               title={t.questsPage.noMatch}
@@ -227,64 +253,32 @@ export default async function QuestDatabasePage({
             />
           </div>
         ) : (
-          <ul className="sq-stagger">
+          <div className="trail-qgrid sq-stagger">
             {quests.map((quest, index) => {
               const status = held.get(quest.id);
-              const hard = quest.difficulty === "HARD" || quest.difficulty === "EXPERT";
               return (
-                <li key={quest.id} style={{ ["--i" as string]: index }}>
-                  <Link
+                <div key={quest.id} style={{ display: "contents", ["--i" as string]: index }}>
+                  <QuestCard
+                    quest={toTrailQuest(quest, t)}
+                    t={t}
+                    locale={locale}
                     href={`/quests/${quest.id}`}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "auto minmax(0,1fr) auto auto auto",
-                      gap: 14,
-                      alignItems: "center",
-                      padding: "13px 22px",
-                      borderTop: index === 0 ? "0" : "1px solid var(--line-2)",
-                      color: "var(--color-text)",
-                      background: status !== undefined ? "var(--paper-2)" : "transparent",
-                    }}
-                  >
-                    <span
-                      className="sq-mono"
-                      style={{ fontSize: 10.5, letterSpacing: "0.06em", whiteSpace: "nowrap", color: "var(--ink-3)" }}
-                    >
-                      {quest.number ? `№ ${String(quest.number).padStart(4, "0")}` : "—"}
-                    </span>
-                    <span style={{ minWidth: 0 }}>
-                      <b style={{ display: "block", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16 }}>
-                        {quest.title}
-                      </b>
-                      <span
-                        className="sq-mono"
-                        style={{ fontSize: 10.5, letterSpacing: "0.05em", color: "var(--ink-3)" }}
-                      >
-                        {quest.location} · {quest.region}
-                      </span>
-                    </span>
-                    <span className="sq-mono" style={{ fontSize: 11, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
-                      {quest.distance.toFixed(1)} km · {quest.elevationGain} m
-                    </span>
-                    <Tag tone={hard ? "stamp" : "green"} small>
-                      {quest.difficulty}
-                    </Tag>
-                    <span
-                      className="sq-mono"
-                      style={{
-                        fontSize: 10,
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        color: status ? "var(--moss)" : status === false ? "var(--signal)" : "transparent",
-                      }}
-                    >
-                      {status ? t.questsPage.done : status === false ? t.questsPage.yours : "—"}
-                    </span>
-                  </Link>
-                </li>
+                    period={quest.schedules[0]?.period === "WEEKLY" ? "WEEKLY" : null}
+                    foot={
+                      <>
+                        <span>
+                          {status ? t.questsPage.done : status === false ? t.questsPage.yours : t.trail.notStarted}
+                        </span>
+                        <span className="trail-btn" data-variant="secondary" data-size="sm">
+                          {t.trail.detail}
+                        </span>
+                      </>
+                    }
+                  />
+                </div>
               );
             })}
-          </ul>
+          </div>
         )}
       </section>
 

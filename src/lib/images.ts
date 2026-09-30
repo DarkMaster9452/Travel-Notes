@@ -111,7 +111,7 @@ export const IMAGES = {
   },
   nightSky: {
     key: "nightSky",
-    src: UNSPLASH("1470071459604-3b5ec3a7fe05"),
+    src: UNSPLASH("1419242902214-272b3f66ee7a"),
     alt: "Stars above a dark mountain silhouette",
     palette: ["#0b1018", "#1d2a3d", "#050709"],
   },

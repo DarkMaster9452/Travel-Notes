@@ -26,6 +26,8 @@ export type QuestSummary = {
   palette: readonly [string, string, string];
   features: string[];
   terrain: string[];
+  /** KST marks in walking order; empty until an editor adds them. */
+  trailMarks: string[];
   mood: string | null;
   objective: string;
   generatedAt: string | null;
@@ -63,6 +65,7 @@ export function toQuestSummary(
     palette: paletteForSrc(quest.coverImage),
     features: quest.features,
     terrain: quest.terrain,
+    trailMarks: quest.trailMarks,
     mood: quest.mood,
     objective: quest.objective,
     generatedAt: (extra?.generatedAt ?? quest.createdAt)?.toISOString() ?? null,

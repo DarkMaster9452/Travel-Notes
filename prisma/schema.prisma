@@ -284,6 +284,10 @@ model Quest {
   published     Boolean    @default(true)
   /// Free-text grouping shown in the panel — Hiking, Nature, Coastal, …
   category      String?
+  /// KST trail marks along the route, in walking order: RED, BLUE, GREEN,
+  /// YELLOW or EDUCATIONAL (see src/lib/trail-marks.ts). Empty until an
+  /// editor fills it in — never guessed, because people navigate by it.
+  trailMarks    String[]   @default([]) @map("trail_marks")
 
   /// Where to leave the car. Optional throughout: plenty of starts are a bus
   /// stop or a village square, and an empty parking panel is better than an

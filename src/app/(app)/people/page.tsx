@@ -133,7 +133,7 @@ export default async function PeoplePage({
                   key={group.id}
                   href={`/people/groups/${group.slug}`}
                   className="sq-card sq-lift sq-pad-sm"
-                  style={{ color: "var(--color-text)", display: "block" }}
+                  style={{ color: "var(--lg-text)", display: "block" }}
                 >
                   <div className="sq-section-head">
                     <h2 className="sq-h2" style={{ fontSize: 19 }}>
@@ -180,7 +180,7 @@ function PeopleGrid({ people, t }: { people: DirectoryEntry[]; t: Messages }) {
           className="sq-card sq-lift"
           style={{
             padding: 18,
-            color: "var(--color-text)",
+            color: "var(--lg-text)",
             // The accent is how somebody is recognisable in a grid of faces,
             // so it has to be on the card and not only on the page behind it.
             borderTop: `4px solid ${accent.ink}`,

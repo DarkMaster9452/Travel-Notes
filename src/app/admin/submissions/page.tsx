@@ -164,14 +164,14 @@ export default async function AdminSubmissionsPage({
                     <td style={{ paddingLeft: 22 }}>
                       <Link
                         href={`/admin/users/${row.user.id}`}
-                        style={{ display: "flex", alignItems: "center", gap: 9, color: "var(--color-text)" }}
+                        style={{ display: "flex", alignItems: "center", gap: 9, color: "var(--lg-text)" }}
                       >
                         <Avatar name={row.user.name} size={26} square />
                         <span>{row.user.name}</span>
                       </Link>
                     </td>
                     <td>
-                      <Link href={`/quests/${row.quest.id}`} style={{ color: "var(--color-text)" }}>
+                      <Link href={`/quests/${row.quest.id}`} style={{ color: "var(--lg-text)" }}>
                         {row.quest.title}
                       </Link>
                       <span className="sq-mono" style={{ display: "block", fontSize: 10, color: "var(--ink-3)" }}>

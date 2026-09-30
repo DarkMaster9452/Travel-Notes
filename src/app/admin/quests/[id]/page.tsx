@@ -79,6 +79,7 @@ export default async function EditQuestPage({ params }: { params: Promise<{ id: 
           parkingNote: quest.parkingNote ?? "",
           approachTime: quest.approachTime != null ? String(quest.approachTime) : "",
           transitNote: quest.transitNote ?? "",
+          trailMarks: quest.trailMarks.join(", "),
         }}
       />
 

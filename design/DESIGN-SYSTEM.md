@@ -297,7 +297,14 @@ Quest grid nikdy neobsahuje mesačný quest ako bežnú kartu, ten má vždy vla
 ## 7. Komponenty
 
 Zdieľané komponenty: **`src/components/ui/`** (primitívy) a **`src/components/domain/`**
-(quest, značka, obtiažnosť, sticker…). Varianty cez `cva`, triedy cez `cn()`,
+(quest, značka, obtiažnosť, sticker…). Hotové: `domain/trail.tsx` (`TrailMarks`,
+`DifficultyMeter`, `QuestCard`, `MonthlyHero`, `toTrailQuest`) a `domain/trail-photo.tsx`.
+Ich triedy sú v `src/styles/trail.css` (prefix `trail-`).
+
+**Legacy vrstva.** `src/styles/field-guide.css` a `summit.css` sú staré komponenty.
+Ich premenné (`--paper`, `--ink`, `--pine`, `--signal`, `--lg-*`…) sú v `globals.css`
+a `summit.css` napojené na Trail tokeny, takže celý web už nosí nový vzhľad.
+Nový kód ich nepoužíva. Pri prerábaní obrazovky ju prepíš na `trail-*` / tokeny. Varianty cez `cva`, triedy cez `cn()`,
 interaktívne primitívy na Radix, ikony **len `lucide-react`**.
 Stavy: default · hover · active · focus-visible · disabled · loading.
 
@@ -396,7 +403,9 @@ Tabs: podčiarknutie 2 px `primary`. Segmented: koľajnica `surface-sunken`, akt
 ### 7.13 Fotky
 - **Zdroj: Unsplash**, všetky cez `src/lib/images.ts`. Pred spustením nahradiť licencovanými.
 - **Nikdy dve rovnaké fotky** v produkte: každý quest, lokalita a sekcia landingu má vlastné Unsplash ID.
-  Pri pridávaní fotky skontroluj, že ID ešte v `images.ts` nie je. (Pozor: `1470071459604-3b5ec3a7fe05` je tam momentálne dvakrát — opraviť pri prestavbe.)
+  Pri pridávaní fotky skontroluj, že ID ešte v `src/` nie je (`grep -r <id> src`).
+  Otvorený dlh: 37 lokalít zdieľa 16 fotiek z `images.ts`, takže sa obálky questov
+  zatiaľ opakujú. Každá lokalita potrebuje vlastnú fotku.
 - Pomery: quest karta 4:3 · monthly hero 4:3 / 16:10 · detail 21:9 · avatar a nálepka 1:1.
 - Text **nikdy** cez fotku. Chipy na fotke majú plné pozadie `surface/90`.
 - Fallback pri chybe načítania: plná farba `surface-sunken` + ikona `Mountain` v `subtle`. Žiadny gradient.

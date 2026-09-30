@@ -132,7 +132,7 @@ export default async function AdminLocationsPage() {
                     alignItems: "center",
                     padding: "13px 22px",
                     borderTop: "1px solid var(--line-2)",
-                    color: "var(--color-text)",
+                    color: "var(--lg-text)",
                   }}
                 >
                   <span style={{ minWidth: 0 }}>

@@ -121,7 +121,7 @@ export default async function GroupPage({
                   <Avatar name={row.username} size={32} square />
                   <span style={{ minWidth: 0 }}>
                     {row.handle ? (
-                      <Link href={`/people/${row.handle}`} style={{ color: "var(--color-text)" }}>
+                      <Link href={`/people/${row.handle}`} style={{ color: "var(--lg-text)" }}>
                         <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{row.username}</b>
                       </Link>
                     ) : (
@@ -171,7 +171,7 @@ export default async function GroupPage({
                 <Avatar name={member.name} size={32} square />
                 <span style={{ flex: 1, minWidth: 0, fontSize: 13.5 }}>
                   {member.handle ? (
-                    <Link href={`/people/${member.handle}`} style={{ color: "var(--color-text)" }}>
+                    <Link href={`/people/${member.handle}`} style={{ color: "var(--lg-text)" }}>
                       {member.name}
                     </Link>
                   ) : (

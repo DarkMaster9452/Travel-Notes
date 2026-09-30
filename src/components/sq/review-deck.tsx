@@ -578,7 +578,7 @@ function DeckCardBody({ card }: { card: ReviewCardData }) {
           {card.flags.map((flag) => (
             <li
               key={flag}
-              style={{ fontSize: 11.5, lineHeight: 1.4, color: "var(--color-accent-2-700)" }}
+              style={{ fontSize: 11.5, lineHeight: 1.4, color: "var(--lg-warm-700)" }}
             >
               {flag}
             </li>

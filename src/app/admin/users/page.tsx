@@ -17,7 +17,7 @@ const JOINED = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short"
 
 const PLAN_TONE: Record<string, { bg: string; fg: string }> = {
   ULTRA: { bg: "var(--pine)", fg: "#f9faf3" },
-  EXPLORER: { bg: "var(--color-accent-100)", fg: "var(--color-accent-700)" },
+  EXPLORER: { bg: "var(--lg-green-100)", fg: "var(--lg-green-700)" },
   FREE: { bg: "var(--paper-2)", fg: "var(--ink-2)" },
 };
 
@@ -181,7 +181,7 @@ export default async function AdminUsersPage({
                         alignItems: "center",
                         padding: "13px 22px",
                         borderTop: "1px solid var(--line-2)",
-                        color: "var(--color-text)",
+                        color: "var(--lg-text)",
                       }}
                     >
                       <span style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>

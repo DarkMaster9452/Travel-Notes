@@ -26,13 +26,13 @@ export type AccentInk = {
 };
 
 export const ACCENT_INK: Record<ProfileAccent, AccentInk> = {
-  PINE: { label: "Pine", ink: "#1e3b2c", deep: "#1b3325", wash: "#dfe8dd", edge: "#c2d4c0" },
-  MOSS: { label: "Moss", ink: "#3a6047", deep: "#2c5540", wash: "#e2e9dd", edge: "#cbd8c4" },
-  STONE: { label: "Stone", ink: "#4c5460", deep: "#3a414c", wash: "#e2e5e8", edge: "#ccd2d8" },
-  WATER: { label: "Water", ink: "#26596f", deep: "#1d4557", wash: "#d9e8ee", edge: "#b8d5e0" },
-  CLAY: { label: "Clay", ink: "#96502c", deep: "#743c20", wash: "#f5e3d7", edge: "#e6c9b3" },
-  DUSK: { label: "Dusk", ink: "#544576", deep: "#40355c", wash: "#e5e0ef", edge: "#cfc6e2" },
-  SIGNAL: { label: "Signal", ink: "#a53c16", deep: "#8a3212", wash: "#fbe7de", edge: "#f2cdb9" },
+  PINE: { label: "Pine", ink: "#0f6639", deep: "#1d4a33", wash: "#e3f4e8", edge: "#c6ead2" },
+  MOSS: { label: "Moss", ink: "#4a6a2a", deep: "#3a5520", wash: "#eef3e4", edge: "#d6e2c2" },
+  STONE: { label: "Stone", ink: "#4a5a4f", deep: "#33423a", wash: "#e9f0e4", edge: "#d5e0cf" },
+  WATER: { label: "Water", ink: "#0b5e96", deep: "#0a4a76", wash: "#e1f2fd", edge: "#bfe2fa" },
+  CLAY: { label: "Clay", ink: "#a63a12", deep: "#80300f", wash: "#ffe9df", edge: "#ffc2a8" },
+  DUSK: { label: "Dusk", ink: "#5b3fb0", deep: "#47318a", wash: "#eee8fc", edge: "#d6cbf7" },
+  SIGNAL: { label: "Signal", ink: "#b0245c", deep: "#8c1c49", wash: "#fde6ef", edge: "#f8c3d8" },
 };
 
 export const ACCENT_KEYS = Object.keys(ACCENT_INK) as ProfileAccent[];
@@ -45,16 +45,16 @@ export function accentInk(accent: ProfileAccent | null | undefined): AccentInk {
  * The four inks the figures are printed in.
  *
  * Fixed rather than derived from the profile's accent: four shades of one hue
- * is a gradient, and a gradient does not help anybody tell kilometres from
+ * is a ramp, and a ramp does not help anybody tell kilometres from
  * metres at a glance. These are a set of highlighter pens — always the same
  * four, always in the same order, so the second time somebody reads a profile
  * they already know which colour means what.
  */
 export const FIGURE_INKS = [
-  { ink: "#2c5540", wash: "#e2e9dd", edge: "#cbd8c4" },
-  { ink: "#26596f", wash: "#d9e8ee", edge: "#b8d5e0" },
-  { ink: "#a53c16", wash: "#fbe7de", edge: "#f2cdb9" },
-  { ink: "#8a6414", wash: "#f6ecd4", edge: "#e8d7a8" },
+  { ink: "#0f6639", wash: "#e3f4e8", edge: "#c6ead2" },
+  { ink: "#0b5e96", wash: "#e1f2fd", edge: "#bfe2fa" },
+  { ink: "#5b3fb0", wash: "#eee8fc", edge: "#d6cbf7" },
+  { ink: "#0b6e65", wash: "#dcf5f2", edge: "#b5ebe4" },
 ] as const;
 
 /**

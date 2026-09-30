@@ -133,16 +133,16 @@
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--moss-2);
-  box-shadow: 0 10px 26px -10px rgba(30, 59, 44, 0.6);
+  box-shadow: 0 10px 26px -10px color-mix(in srgb, var(--sq-brand) 60%, transparent);
 }
 .btn-signal {
   background: var(--pine);
   color: #f2f4ea;
-  box-shadow: 0 10px 26px -12px rgba(30, 59, 44, 0.75);
+  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--sq-brand) 75%, transparent);
 }
 .btn-signal:hover:not(:disabled) {
   background: var(--pine-2);
-  box-shadow: 0 14px 32px -12px rgba(30, 59, 44, 0.9);
+  box-shadow: 0 14px 32px -12px color-mix(in srgb, var(--sq-brand) 90%, transparent);
 }
 .btn-ghost {
   border: 1px solid var(--line);
@@ -155,13 +155,13 @@
 }
 /* Destructive actions — reject, block, delete. Stamp ink, used sparingly. */
 .btn-danger {
-  border: 1px solid rgba(196, 72, 27, 0.4);
+  border: 1px solid color-mix(in srgb, var(--sq-danger) 40%, transparent);
   color: var(--signal);
-  background: rgba(196, 72, 27, 0.07);
+  background: color-mix(in srgb, var(--sq-danger) 7%, transparent);
 }
 .btn-danger:hover:not(:disabled) {
   border-color: var(--signal);
-  background: rgba(196, 72, 27, 0.13);
+  background: color-mix(in srgb, var(--sq-danger) 13%, transparent);
 }
 .btn-sm {
   padding: 10px 18px;
@@ -268,7 +268,7 @@
   gap: 12px;
   padding: 15px 20px;
   border-bottom: 1px dashed var(--line);
-  background: rgba(21, 24, 26, 0.02);
+  background: color-mix(in srgb, var(--sq-text) 2%, transparent);
 }
 .qc-id {
   font-family: var(--mono);
@@ -362,8 +362,8 @@
   margin-top: 16px;
   padding: 13px 15px;
   border-radius: 10px;
-  background: rgba(196, 72, 27, 0.07);
-  border: 1px dashed rgba(196, 72, 27, 0.35);
+  background: color-mix(in srgb, var(--sq-danger) 7%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--sq-danger) 35%, transparent);
   display: flex;
   gap: 11px;
   align-items: flex-start;
@@ -402,7 +402,7 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 13px 15px;
-  background: rgba(33, 64, 47, 0.05);
+  background: color-mix(in srgb, var(--sq-primary) 5%, transparent);
 }
 .qc-party > b {
   font-family: var(--mono);
@@ -482,7 +482,7 @@
   gap: 12px;
   padding: 15px 20px;
   border-bottom: 1px dashed var(--line);
-  background: rgba(21, 24, 26, 0.02);
+  background: color-mix(in srgb, var(--sq-text) 2%, transparent);
 }
 
 .field {
@@ -559,7 +559,7 @@
 }
 .input:focus {
   border-color: var(--moss-2);
-  box-shadow: 0 0 0 3px rgba(58, 96, 71, 0.16);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sq-primary) 16%, transparent);
   outline: none;
 }
 .input::placeholder {
@@ -706,7 +706,7 @@ textarea.input {
   position: sticky;
   top: 0;
   z-index: 60;
-  background: rgba(239, 240, 229, 0.82);
+  background: color-mix(in srgb, var(--sq-bg) 82%, transparent);
   backdrop-filter: blur(14px) saturate(1.3);
   border-bottom: 1px solid transparent;
   transition:
@@ -715,7 +715,7 @@ textarea.input {
 }
 .nav.stuck {
   border-bottom-color: var(--line);
-  background: rgba(239, 240, 229, 0.95);
+  background: color-mix(in srgb, var(--sq-bg) 95%, transparent);
 }
 .nav-in {
   display: flex;
@@ -763,7 +763,7 @@ textarea.input {
 }
 .nav-links a:hover {
   color: var(--ink);
-  background: rgba(21, 24, 26, 0.05);
+  background: color-mix(in srgb, var(--sq-text) 5%, transparent);
 }
 .nav-cta {
   display: flex;
@@ -861,7 +861,7 @@ textarea.input {
   z-index: 0;
   pointer-events: none;
   opacity: 0.35;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M34 0H0v34' fill='none' stroke='rgba(20,26,22,.16)' stroke-width='1'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M34 0H0v34' fill='none' stroke='color-mix(in srgb, var(--sq-text) 16%, transparent)' stroke-width='1'/%3E%3C/svg%3E");
   background-size: 34px 34px;
 }
 .demo-grid {
@@ -959,7 +959,7 @@ textarea.input {
   color: #f7f2e7;
 }
 .cta-section .lede {
-  color: rgba(237, 231, 218, 0.72);
+  color: color-mix(in srgb, #ffffff 72%, transparent);
 }
 /* The contour lines are drawn for paper. On the forest they need to be the
    light in the dark rather than the shading on the light. */
@@ -985,12 +985,12 @@ textarea.input {
 }
 .cta-section .btn-ghost {
   color: #ede7da;
-  border-color: rgba(237, 231, 218, 0.34);
+  border-color: color-mix(in srgb, #ffffff 34%, transparent);
   background: transparent;
 }
 .cta-section .btn-ghost:hover {
-  border-color: rgba(237, 231, 218, 0.6);
-  background: rgba(237, 231, 218, 0.08);
+  border-color: color-mix(in srgb, #ffffff 60%, transparent);
+  background: color-mix(in srgb, #ffffff 8%, transparent);
 }
 
 /* --------------------------- 08 weekly + chat ---------------------------- */
@@ -1029,7 +1029,7 @@ textarea.input {
   height: 210px;
   /* One flat scrim rather than a graded one. It costs a little contrast at the
      top of the photo and buys a consistent rule: no gradients anywhere. */
-  background: rgba(12, 22, 16, 0.56);
+  background: color-mix(in srgb, var(--sq-text) 56%, transparent);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1114,7 +1114,7 @@ textarea.input {
   gap: 10px;
   padding: 13px 16px;
   border-bottom: 1px solid var(--line);
-  background: rgba(20, 26, 22, 0.02);
+  background: color-mix(in srgb, var(--sq-text) 2%, transparent);
 }
 .chat-head .av {
   width: 30px;
@@ -1189,8 +1189,8 @@ textarea.input {
 .msg.pin {
   align-self: stretch;
   max-width: 100%;
-  background: rgba(58, 96, 71, 0.1);
-  border: 1px dashed rgba(58, 96, 71, 0.4);
+  background: color-mix(in srgb, var(--sq-primary) 10%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--sq-primary) 40%, transparent);
   color: var(--ink-2);
   font-family: var(--mono);
   font-size: 12px;
@@ -1432,12 +1432,12 @@ textarea.input {
   text-transform: uppercase;
   padding: 5px 11px;
   border-radius: var(--radius-pill);
-  background: rgba(58, 96, 71, 0.12);
+  background: color-mix(in srgb, var(--sq-primary) 12%, transparent);
   color: var(--moss-2);
   align-self: flex-start;
 }
 .post .spots.last {
-  background: rgba(196, 72, 27, 0.12);
+  background: color-mix(in srgb, var(--sq-danger) 12%, transparent);
   color: var(--signal);
 }
 .post .btn {
@@ -1522,7 +1522,7 @@ textarea.input {
   margin-top: 14px;
   padding: 13px 15px;
   border-left: 2px solid var(--moss-2);
-  background: rgba(58, 96, 71, 0.07);
+  background: color-mix(in srgb, var(--sq-primary) 7%, transparent);
   font-size: 14.5px;
   color: var(--ink-2);
   line-height: 1.5;
@@ -1533,7 +1533,7 @@ textarea.input {
   gap: 12px;
   padding: 14px 20px;
   border-top: 1px dashed var(--line);
-  background: rgba(58, 96, 71, 0.08);
+  background: color-mix(in srgb, var(--sq-primary) 8%, transparent);
 }
 .verdict svg {
   flex: 0 0 20px;
@@ -1564,7 +1564,7 @@ textarea.input {
   opacity: 0.85;
 }
 .verdict.warm {
-  background: rgba(196, 72, 27, 0.08);
+  background: color-mix(in srgb, var(--sq-danger) 8%, transparent);
 }
 .verdict.warm svg {
   color: var(--signal);
@@ -1644,7 +1644,7 @@ textarea.input {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: rgba(10, 14, 12, 0.52);
+  background: color-mix(in srgb, var(--sq-text) 52%, transparent);
 }
 .terrain b {
   font-family: var(--serif);
@@ -1717,7 +1717,7 @@ textarea.input {
   text-align: center;
   background: var(--pine);
   color: #eef2e7;
-  box-shadow: 0 4px 10px -4px rgba(20, 40, 28, 0.55);
+  box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--sq-text) 55%, transparent);
   border: 3px solid var(--card);
   outline: 1px solid var(--line-2);
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
@@ -1865,13 +1865,7 @@ textarea.input {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(
-    100deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.55) 50%,
-    transparent 65%
-  );
-  background-size: 280% 100%;
+  display: none;
   animation: sticker-shine 900ms ease-out 420ms backwards;
   opacity: 0;
 }
@@ -2181,7 +2175,7 @@ textarea.input {
 .plan.feature .btn-signal {
   background: var(--signal);
   color: #fff;
-  box-shadow: 0 10px 26px -12px rgba(196, 72, 27, 0.8);
+  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--sq-danger) 80%, transparent);
 }
 .plan.feature .btn-signal:hover {
   background: var(--signal-2);
@@ -2335,7 +2329,7 @@ textarea.input {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(20, 37, 27, 0.55);
+  background: color-mix(in srgb, var(--sq-text) 55%, transparent);
   backdrop-filter: blur(6px);
   overflow-y: auto;
 }
@@ -2372,7 +2366,7 @@ textarea.input {
   color: var(--ink-3);
 }
 .modal-x:hover {
-  background: rgba(20, 26, 22, 0.06);
+  background: color-mix(in srgb, var(--sq-text) 6%, transparent);
   color: var(--ink);
 }
 .modal-form {
@@ -2587,7 +2581,7 @@ textarea.input {
   white-space: nowrap;
 }
 .app-side-nav a:hover {
-  background: rgba(21, 24, 26, 0.05);
+  background: color-mix(in srgb, var(--sq-text) 5%, transparent);
   color: var(--ink);
 }
 .app-side-nav a[aria-current="page"] {
@@ -2752,7 +2746,7 @@ textarea.input {
     color 0.16s;
 }
 .app-side-settings:hover {
-  background: rgba(21, 24, 26, 0.06);
+  background: color-mix(in srgb, var(--sq-text) 6%, transparent);
   color: var(--ink);
 }
 .app-side-settings svg {
@@ -2770,7 +2764,7 @@ textarea.input {
   transition: background 0.16s;
 }
 .app-side-account:hover {
-  background: rgba(21, 24, 26, 0.05);
+  background: color-mix(in srgb, var(--sq-text) 5%, transparent);
 }
 .admin-side .app-side-account:hover {
   background: rgba(238, 242, 231, 0.09);
@@ -2813,7 +2807,7 @@ textarea.input {
   gap: 12px;
   height: 60px;
   padding: 0 16px;
-  background: rgba(239, 240, 229, 0.92);
+  background: color-mix(in srgb, var(--sq-bg) 92%, transparent);
   backdrop-filter: blur(14px) saturate(1.3);
   border-bottom: 1px solid var(--line);
 }
@@ -2840,7 +2834,7 @@ textarea.input {
   position: fixed;
   inset: 0;
   z-index: 65;
-  background: rgba(20, 37, 27, 0.5);
+  background: color-mix(in srgb, var(--sq-text) 50%, transparent);
   backdrop-filter: blur(3px);
   cursor: default;
 }
@@ -2953,7 +2947,7 @@ textarea.input {
 /* Photo scrim, so white type stays legible over an image. Flat, like every
    other overlay here. */
 .scrim {
-  background: rgba(20, 26, 22, 0.58);
+  background: color-mix(in srgb, var(--sq-text) 58%, transparent);
 }
 
 /* Grain on a positioned ancestor, rather than over the whole viewport. */
@@ -3288,7 +3282,7 @@ textarea.input {
     padding-left 0.2s var(--ease-field);
 }
 .admin-row:hover {
-  background: rgba(20, 26, 22, 0.03);
+  background: color-mix(in srgb, var(--sq-text) 3%, transparent);
   padding-left: 26px;
 }
 
@@ -3366,7 +3360,7 @@ a.plan-mark:hover {
 /* A panel that belongs to a member is edged, not recoloured. */
 .member-panel {
   border-color: var(--moss-2);
-  box-shadow: 0 0 0 1px rgba(58, 96, 71, 0.18);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sq-primary) 18%, transparent);
 }
 [data-plan="ultra"] .member-panel {
   border-color: var(--pine);
@@ -3448,7 +3442,7 @@ a.plan-mark:hover {
   top: 4px;
   width: 4px;
   height: 7px;
-  border: solid #f9faf3;
+  border: solid var(--sq-surface);
   border-width: 0 1.8px 1.8px 0;
   transform: rotate(42deg);
 }
@@ -3468,7 +3462,7 @@ a.plan-mark:hover {
   text-transform: uppercase;
   padding: 5px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(58, 96, 71, 0.1);
+  background: color-mix(in srgb, var(--sq-primary) 10%, transparent);
   color: var(--moss);
 }
 
@@ -3878,7 +3872,7 @@ a.plan-mark:hover {
   transition: background 0.16s;
 }
 .data-table tbody tr:hover {
-  background: rgba(20, 26, 22, 0.04);
+  background: color-mix(in srgb, var(--sq-text) 4%, transparent);
 }
 .data-table td {
   color: var(--ink-2);
@@ -3914,7 +3908,7 @@ a.plan-mark:hover {
 .rank-track {
   height: 12px;
   border-radius: 4px;
-  background: rgba(20, 26, 22, 0.06);
+  background: color-mix(in srgb, var(--sq-text) 6%, transparent);
   overflow: hidden;
 }
 .rank-track i {
@@ -4040,11 +4034,11 @@ a.plan-mark:hover {
    the rule are drawn in, and the wash the row sits on. */
 .notice-critical {
   --notice-ink: var(--signal);
-  --notice-wash: rgba(196, 72, 27, 0.07);
+  --notice-wash: color-mix(in srgb, var(--sq-danger) 7%, transparent);
 }
 .notice-warning {
   --notice-ink: var(--signal);
-  --notice-wash: rgba(196, 72, 27, 0.035);
+  --notice-wash: color-mix(in srgb, var(--sq-danger) 3.5%, transparent);
 }
 .notice-info {
   --notice-ink: var(--moss-2);
@@ -4294,7 +4288,7 @@ a.plan-mark:hover {
 .admin-filters nav a:hover,
 .table-picker a:hover {
   color: var(--ink);
-  background: rgba(20, 26, 22, 0.05);
+  background: color-mix(in srgb, var(--sq-text) 5%, transparent);
   transform: translateY(-1px);
 }
 .admin-filters nav a[aria-current="page"],
@@ -4337,7 +4331,7 @@ a.plan-mark:hover {
   border-bottom: 0;
 }
 .schema-list li:hover {
-  background: rgba(20, 26, 22, 0.03);
+  background: color-mix(in srgb, var(--sq-text) 3%, transparent);
 }
 .schema-list b {
   font-family: var(--mono);
@@ -4613,15 +4607,15 @@ a.plan-mark:hover {
   color: var(--signal);
 }
 .review-card .proof-row .off {
-  background: rgba(196, 72, 27, 0.06);
+  background: color-mix(in srgb, var(--sq-danger) 6%, transparent);
 }
 
 .review-flags {
   margin-top: 14px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px dashed rgba(196, 72, 27, 0.35);
-  background: rgba(196, 72, 27, 0.06);
+  border: 1px dashed color-mix(in srgb, var(--sq-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--sq-danger) 6%, transparent);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -4742,7 +4736,7 @@ a.plan-mark:hover {
   border-bottom: 0;
 }
 .admin-table tbody tr:hover td {
-  background: rgba(20, 26, 22, 0.02);
+  background: color-mix(in srgb, var(--sq-text) 2%, transparent);
 }
 .admin-table b {
   color: var(--ink);
@@ -4761,7 +4755,7 @@ a.plan-mark:hover {
 }
 @keyframes rowFlag {
   0% {
-    background: rgba(58, 96, 71, 0.16);
+    background: color-mix(in srgb, var(--sq-primary) 16%, transparent);
   }
   100% {
     background: transparent;
@@ -5040,10 +5034,9 @@ a.plan-mark:hover {
 }
 select.input {
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%),
-    linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
-  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
-  background-size: 5px 5px, 5px 5px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e6e62' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: calc(100% - 12px) 50%;
+  background-size: 16px 16px;
   background-repeat: no-repeat;
   padding-right: 36px;
 }
@@ -5073,7 +5066,7 @@ select.input {
 }
 .quick-actions a:hover,
 .quick-actions button:hover {
-  background: rgba(20, 26, 22, 0.04);
+  background: color-mix(in srgb, var(--sq-text) 4%, transparent);
   transform: translateX(3px);
 }
 .quick-actions .qa-icon {
@@ -5120,10 +5113,10 @@ select.input {
   transition: background 0.16s;
 }
 .review-queue-item:hover {
-  background: rgba(20, 26, 22, 0.05);
+  background: color-mix(in srgb, var(--sq-text) 5%, transparent);
 }
 .review-queue-item.current {
-  background: rgba(58, 96, 71, 0.1);
+  background: color-mix(in srgb, var(--sq-primary) 10%, transparent);
 }
 .review-queue-who {
   min-width: 0;
@@ -5346,7 +5339,7 @@ select.input {
   overflow: hidden;
   padding: 22px 24px 24px;
   border-radius: var(--radius-card);
-  background: linear-gradient(135deg, var(--forest) 0%, var(--forest-deep) 100%);
+  background: var(--forest);
   color: var(--color-forest-ink);
   box-shadow: var(--shadow-field-lg);
   transition:
@@ -5879,7 +5872,7 @@ select.input {
 }
 /* Stamp ink, because this is a flag rather than a fact. */
 .sub-figure.flagged {
-  border-color: rgba(196, 72, 27, 0.45);
+  border-color: color-mix(in srgb, var(--sq-danger) 45%, transparent);
 }
 .sub-figure.flagged dd,
 .sub-figure.flagged dd em {
@@ -5948,8 +5941,8 @@ select.input {
   gap: 10px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(196, 72, 27, 0.4);
-  background: rgba(196, 72, 27, 0.06);
+  border: 1px solid color-mix(in srgb, var(--sq-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--sq-danger) 6%, transparent);
 }
 .sub-confirm p {
   margin: 0;
@@ -6209,8 +6202,6 @@ select.input {
 .quest-art.quest-art-mark {
   height: 132px;
   opacity: 0.9;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
 }
 .quest-card.has-art {
   position: relative;
@@ -7171,7 +7162,7 @@ select.input {
   transform: none;
   outline-width: 2px;
   outline-color: var(--line);
-  box-shadow: 0 10px 22px -10px rgba(20, 32, 24, 0.4);
+  box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--sq-text) 40%, transparent);
 }
 .podium-place .sticker b {
   display: none;
@@ -7179,7 +7170,7 @@ select.input {
 .podium-place.is-1 .sticker {
   width: 94px;
   outline-color: var(--signal-2);
-  box-shadow: 0 14px 30px -10px rgba(196, 72, 27, 0.45);
+  box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--sq-danger) 45%, transparent);
 }
 .podium-name {
   font-family: var(--serif);
@@ -7950,8 +7941,8 @@ select.input {
    ------------------------------------------------------------------------- */
 
 [data-surface="admin"] {
-  --sans: var(--font-geist), var(--font-inter), system-ui, sans-serif;
-  --mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: var(--font-inter), system-ui, sans-serif;
+  --mono: var(--font-inter), system-ui, sans-serif;
   font-family: var(--sans);
   /* Figures never shift sideways as digits change. */
   font-feature-settings: "tnum" 1, "cv01" 1;
@@ -8148,7 +8139,7 @@ a.desk-status:hover {
 }
 .desk-status.is-late .desk-status-dot {
   background: var(--signal);
-  box-shadow: 0 0 0 3px rgba(196, 72, 27, 0.25);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sq-danger) 25%, transparent);
 }
 .desk-status-note {
   margin-top: 3px;
@@ -8566,7 +8557,7 @@ a.desk-status:hover {
   white-space: nowrap;
 }
 .queue-wait.is-aging {
-  border-color: rgba(232, 98, 47, 0.4);
+  border-color: color-mix(in srgb, var(--sq-accent) 40%, transparent);
   color: var(--signal-2);
 }
 /* Filled, not outlined — the same filled-vs-outlined split the notice tones
@@ -8652,7 +8643,7 @@ a.desk-status:hover {
   color: var(--ink);
   font-weight: 600;
   box-shadow:
-    0 1px 2px rgba(20, 32, 24, 0.08),
+    0 1px 2px color-mix(in srgb, var(--sq-text) 8%, transparent),
     inset 0 0 0 1px color-mix(in oklab, var(--ink) 12%, transparent);
 }
 

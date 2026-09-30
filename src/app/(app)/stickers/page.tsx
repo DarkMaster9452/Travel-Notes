@@ -156,7 +156,7 @@ export default async function StickersPage() {
                     fontSize: 14,
                     fontWeight: 600,
                     lineHeight: 1.25,
-                    color: entry.earned ? "var(--color-text)" : "var(--ink-2)",
+                    color: entry.earned ? "var(--lg-text)" : "var(--ink-2)",
                   }}
                 >
                   {entry.label}

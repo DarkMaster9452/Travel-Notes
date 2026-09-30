@@ -33,6 +33,8 @@ export type QuestDraft = {
   parkingNote: string;
   approachTime: string;
   transitNote: string;
+  /** "red, blue" — KST marks in walking order. */
+  trailMarks: string;
 };
 
 export const EMPTY_QUEST: QuestDraft = {
@@ -60,6 +62,7 @@ export const EMPTY_QUEST: QuestDraft = {
   parkingNote: "",
   approachTime: "",
   transitNote: "",
+  trailMarks: "",
 };
 
 /**
@@ -124,6 +127,15 @@ export function SqQuestEditor({ draft }: { draft: QuestDraft }) {
             textarea
           />
           <Field label="Category" name="category" defaultValue={draft.category} error={errors?.category} />
+        </Panel>
+
+        <Panel title="Trail marks">
+          <Field
+            label="Marks in walking order (red, blue, green, yellow, educational)"
+            name="trailMarks"
+            defaultValue={draft.trailMarks}
+            error={errors?.trailMarks}
+          />
         </Panel>
 
         <Panel title="Getting there">

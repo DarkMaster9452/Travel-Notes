@@ -71,6 +71,16 @@ export type SqShellProps = {
    * the landing page's own declaration honest.
    */
   lang?: string;
+  /** Where the logo goes. Defaults to the first nav item. */
+  home?: string;
+  /** The account's stored palette; written as `data-theme` on the shell. */
+  theme?: "light" | "dark" | "system";
+  /**
+   * The phone tab bar (below `lg`): four destinations plus "Menu", with the
+   * `feature` item raised in the middle. The member app has one; the panel
+   * does not.
+   */
+  tabs?: SqNavItem[];
   children: React.ReactNode;
 };
 
@@ -84,6 +94,9 @@ export function SqShell({
   notice,
   status,
   lang,
+  home,
+  theme = "system",
+  tabs,
   children,
 }: SqShellProps) {
   const pathname = usePathname();
@@ -100,9 +113,15 @@ export function SqShell({
   };
 
   return (
-    <div className="sq sq-shell" lang={lang} data-drawer={drawer ? "open" : "closed"}>
+    <div
+      className="sq sq-shell"
+      lang={lang}
+      data-theme={theme}
+      data-tabs={tabs ? "1" : "0"}
+      data-drawer={drawer ? "open" : "closed"}
+    >
       <header className="sq-topbar">
-        <Link href={nav[0]?.href ?? "/"} className="sq-brand" aria-label={t.shell.brand}>
+        <Link href={home ?? nav[0]?.href ?? "/"} className="sq-brand" aria-label={t.shell.brand}>
           <LogoMark size={26} />
           <span>{t.shell.brand}</span>
         </Link>
@@ -117,7 +136,7 @@ export function SqShell({
       </header>
 
       <aside className="sq-side">
-        <Link href={nav[0]?.href ?? "/"} className="sq-brand" aria-label={t.shell.brand}>
+        <Link href={home ?? nav[0]?.href ?? "/"} className="sq-brand" aria-label={t.shell.brand}>
           <LogoMark />
           <span>
             Summit
@@ -189,6 +208,36 @@ export function SqShell({
         {children}
       </main>
 
+      {tabs ? (
+        <nav className="trail-tabbar" aria-label={t.nav.menu}>
+          {tabs.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="trail-tab"
+              data-feature={item.feature ? "1" : "0"}
+              aria-current={isActive(pathname, item) ? "page" : undefined}
+            >
+              <span className="trail-tab-icon" aria-hidden="true">
+                <TabIcon href={item.href} />
+              </span>
+              <span className="trail-tab-label">{item.label}</span>
+            </Link>
+          ))}
+          <button
+            type="button"
+            className="trail-tab"
+            aria-expanded={drawer}
+            onClick={() => setDrawer((open) => !open)}
+          >
+            <span className="trail-tab-icon" aria-hidden="true">
+              <TabIcon href="#menu" />
+            </span>
+            <span className="trail-tab-label">{t.nav.menu}</span>
+          </button>
+        </nav>
+      ) : null}
+
       {/* Always rendered, often empty. Whether it takes a column is decided in
           CSS by whether it actually has anything in it, so a route with no
           rail needs no flag — it simply renders nothing into the slot. */}
@@ -204,8 +253,16 @@ function NavLink({ item, active }: { item: SqNavItem; active: boolean }) {
   const pulse = useBadgePulse(badge);
 
   return (
-    <Link href={item.href} className="sq-nav-item" aria-current={active ? "page" : undefined}>
-      <span>{item.label}</span>
+    <Link
+      href={item.href}
+      className="sq-nav-item"
+      data-feature={item.feature ? "1" : "0"}
+      aria-current={active ? "page" : undefined}
+    >
+      <span>
+        {item.feature ? <span className="trail-feature-dot" aria-hidden="true" /> : null}
+        {item.label}
+      </span>
       {badge ? (
         <span className="sq-nav-badge" data-pulse={pulse ? "1" : "0"}>
           {badge}
@@ -234,4 +291,51 @@ function useBadgePulse(value: number | null): boolean {
   }, [value]);
 
   return pulse;
+}
+
+/** Tab bar glyphs, drawn to the lucide grid (24, stroke 2). */
+function TabIcon({ href }: { href: string }) {
+  const common = {
+    width: 22,
+    height: 22,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  switch (href) {
+    case "/monthly":
+      return (
+        <svg {...common} fill="currentColor" stroke="none">
+          <path d="M2.5 20 9.5 7l4 7 2-3.2L21.5 20z" />
+        </svg>
+      );
+    case "/dashboard":
+      return (
+        <svg {...common}>
+          <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
+        </svg>
+      );
+    case "/quests":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="m15.5 8.5-2 5-5 2 2-5z" />
+        </svg>
+      );
+    case "/leaderboard":
+      return (
+        <svg {...common}>
+          <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      );
+  }
 }
