@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
+// Self-hosted from npm: `next/font/google` fails to resolve Bricolage's font
+// files under Turbopack, so the variable face ships with the bundle instead.
+import "@fontsource-variable/bricolage-grotesque";
 
 import { ToastProvider } from "@/components/field/toast";
 import { PressFeedback } from "@/components/motion/interactions";
@@ -12,13 +15,6 @@ import "./globals.css";
  *   Inter                UI and body, everywhere, the admin panel included
  *   JetBrains Mono       codes only — slot keys, ids, logs
  */
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-bricolage",
-  weight: ["600", "700", "800"],
-  display: "swap",
-});
-
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
   variable: "--font-inter",
@@ -62,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${bricolage.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-dvh">
         {/* Press feedback is mounted once, for the whole product: the landing

@@ -41,7 +41,7 @@
   --color-ink-3: var(--sq-text-subtle);
   --color-line: var(--sq-border);
   --color-line-2: var(--sq-border-soft);
-  --font-serif: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root,
@@ -95,7 +95,7 @@
   --r-sm: 0.75rem;
 
   --sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --serif: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --serif: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
   /* Legacy "mono" labels (eyebrows, meta, stats) are overlines in Trail:
      Inter, uppercase. Real codes use the `font-mono` utility. */
   --mono: var(--font-inter), ui-sans-serif, system-ui, sans-serif;

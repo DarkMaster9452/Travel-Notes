@@ -18,6 +18,7 @@
     "staff:grant": "tsx scripts/grant-role.ts"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@paddle/paddle-js": "^1.6.5",
     "@paddle/paddle-node-sdk": "^3.10.0",
     "@prisma/adapter-pg": "^7.9.1",
