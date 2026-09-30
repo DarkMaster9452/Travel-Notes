@@ -1,0 +1,334 @@
+/* ==========================================================================
+   Summit Quest — Trail design system · tokens
+   Single source of truth for every colour, radius, space, shadow, font,
+   motion and z-index value in the product. Rules: design/DESIGN-SYSTEM.md
+
+   Tailwind v4: import this file from src/app/globals.css
+   (`@import "../../design/tokens.css";`) and use the generated utilities
+   (bg-surface, text-muted, rounded-card, shadow-2, …). Components never
+   contain raw hex values or arbitrary pixel values.
+
+   Theme: `data-theme="light" | "dark" | "system"` on <html>
+   (maps to the Theme enum SYSTEM / LIGHT / DARK).
+   ========================================================================== */
+
+@theme {
+  /* ---- Raw palette (do NOT use directly in components; use semantic) --- */
+
+  /* Stone — neutrals, slightly green-warm */
+  --color-stone-0: #ffffff;
+  --color-stone-25: #fafaf7;
+  --color-stone-50: #f6f6f2;
+  --color-stone-100: #ecede6;
+  --color-stone-200: #d9dbd1;
+  --color-stone-300: #bcbfb3;
+  --color-stone-400: #969a8d;
+  --color-stone-500: #666b5f;
+  --color-stone-600: #555a4f;
+  --color-stone-700: #3f443b;
+  --color-stone-800: #2a2e27;
+  --color-stone-850: #232720;
+  --color-stone-900: #1b1e19;
+  --color-stone-950: #111310;
+
+  /* Pine — brand primary */
+  --color-pine-50: #eef6f0;
+  --color-pine-100: #d5eadb;
+  --color-pine-200: #abd4b8;
+  --color-pine-300: #8ccba5;
+  --color-pine-400: #5fb182;
+  --color-pine-500: #2f7f52;
+  --color-pine-600: #236842;
+  --color-pine-700: #1c5335;
+  --color-pine-800: #16402a;
+  --color-pine-900: #0f2d1e;
+  --color-pine-950: #0b2016;
+
+  /* Blaze — accent (trail-marker orange). Scarce by rule. */
+  --color-blaze-50: #fff4ec;
+  --color-blaze-100: #ffe3cf;
+  --color-blaze-200: #ffc49c;
+  --color-blaze-300: #ff9f63;
+  --color-blaze-400: #fb7e36;
+  --color-blaze-500: #ec6317;
+  --color-blaze-600: #c94e0e;
+  --color-blaze-700: #a03d0e;
+  --color-blaze-800: #7d3211;
+  --color-blaze-900: #5e2610;
+
+  /* Difficulty — trail blaze colours (EASY/MODERATE/HARD/EXPERT) */
+  --color-diff-easy: #2e7d32;
+  --color-diff-moderate: #1f5fbf;
+  --color-diff-hard: #c8102e;
+  --color-diff-expert: #1b1e19;
+
+  /* Medals */
+  --color-medal-gold: #c9a227;
+  --color-medal-silver: #9aa3ad;
+  --color-medal-bronze: #b0703c;
+
+  /* Chart categorical (admin + stats). Order is fixed. */
+  --color-chart-1: #2f7f52;
+  --color-chart-2: #ec6317;
+  --color-chart-3: #1f5fbf;
+  --color-chart-4: #7a5bb0;
+  --color-chart-5: #b07a1f;
+  --color-chart-6: #3a8f9a;
+
+  /* ---- Semantic colours (the only ones components use) ------------------ */
+  --color-bg: var(--sq-bg);
+  --color-surface: var(--sq-surface);
+  --color-surface-sunken: var(--sq-surface-sunken);
+  --color-surface-raised: var(--sq-surface-raised);
+  --color-surface-inverse: var(--sq-surface-inverse);
+  --color-border: var(--sq-border);
+  --color-border-strong: var(--sq-border-strong);
+
+  --color-text: var(--sq-text);
+  --color-muted: var(--sq-text-muted);
+  --color-subtle: var(--sq-text-subtle);
+  --color-inverse: var(--sq-text-inverse);
+
+  --color-primary: var(--sq-primary);
+  --color-primary-hover: var(--sq-primary-hover);
+  --color-primary-fg: var(--sq-primary-fg);
+  --color-primary-soft: var(--sq-primary-soft);
+  --color-primary-soft-fg: var(--sq-primary-soft-fg);
+
+  --color-accent: var(--sq-accent);
+  --color-accent-hover: var(--sq-accent-hover);
+  --color-accent-fg: var(--sq-accent-fg);
+  --color-accent-soft: var(--sq-accent-soft);
+  --color-accent-soft-fg: var(--sq-accent-soft-fg);
+
+  --color-success: var(--sq-success);
+  --color-success-soft: var(--sq-success-soft);
+  --color-warning: var(--sq-warning);
+  --color-warning-soft: var(--sq-warning-soft);
+  --color-danger: var(--sq-danger);
+  --color-danger-hover: var(--sq-danger-hover);
+  --color-danger-soft: var(--sq-danger-soft);
+  --color-info: var(--sq-info);
+  --color-info-soft: var(--sq-info-soft);
+
+  --color-ring: var(--sq-ring);
+  --color-overlay: var(--sq-overlay);
+
+  /* ---- Typography ------------------------------------------------------- */
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --text-display-xl: clamp(2.5rem, 1.6rem + 3.6vw, 4rem);
+  --text-display-xl--line-height: 1.05;
+  --text-display-xl--letter-spacing: -0.03em;
+  --text-display: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.025em;
+  --text-h1: 2rem;
+  --text-h1--line-height: 2.375rem;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.875rem;
+  --text-h2--letter-spacing: -0.015em;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.75rem;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h4: 1.0625rem;
+  --text-h4--line-height: 1.5rem;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.75rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.25rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.125rem;
+  --text-overline: 0.75rem;
+  --text-overline--line-height: 1rem;
+  --text-overline--letter-spacing: 0.06em;
+
+  /* ---- Spacing: 4 px base. Tailwind's p-1 = 4px, p-6 = 24px ... ---------- */
+  --spacing: 0.25rem;
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --radius-xs: 0.25rem;    /*  4 — checkbox, tiny marks, progress track */
+  --radius-control: 0.625rem; /* 10 — buttons, inputs, selects, tabs, menu items */
+  --radius-card: 1rem;     /* 16 — cards, panels, tables, images in cards */
+  --radius-dialog: 1.5rem; /* 24 — modals, sheets, hero panels, feature blocks */
+  --radius-pill: 9999px;   /* chips, badges, avatars, toggles */
+
+  /* ---- Elevation -------------------------------------------------------- */
+  --shadow-1: 0 1px 2px rgb(17 19 16 / 0.06), 0 2px 8px rgb(17 19 16 / 0.06);
+  --shadow-2: 0 4px 12px rgb(17 19 16 / 0.08), 0 12px 32px rgb(17 19 16 / 0.10);
+  --shadow-3: 0 12px 24px rgb(17 19 16 / 0.12), 0 32px 64px rgb(17 19 16 / 0.18);
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* ---- Breakpoints (Tailwind defaults, restated so nobody changes them) -- */
+  --breakpoint-sm: 40rem;   /*  640 */
+  --breakpoint-md: 48rem;   /*  768 */
+  --breakpoint-lg: 64rem;   /* 1024 */
+  --breakpoint-xl: 80rem;   /* 1280 */
+  --breakpoint-2xl: 96rem;  /* 1536 */
+}
+
+/* ---- Layout constants (plain vars, used by shells and containers) ------- */
+:root {
+  --sq-container-marketing: 75rem; /* 1200 */
+  --sq-container-app: 70rem;       /* 1120 */
+  --sq-container-admin: 90rem;     /* 1440 */
+  --sq-container-prose: 40rem;     /*  640 */
+  --sq-sidebar-app: 15.5rem;       /*  248 */
+  --sq-sidebar-admin: 14.5rem;     /*  232 */
+  --sq-rail: 20rem;                /*  320 */
+  --sq-topbar: 4rem;               /*   64 */
+  --sq-topbar-admin: 3.5rem;       /*   56 */
+  --sq-tabbar: 4rem;               /*   64 mobile bottom tabs */
+
+  --sq-z-base: 0;
+  --sq-z-sticky: 10;
+  --sq-z-nav: 20;
+  --sq-z-dropdown: 30;
+  --sq-z-overlay: 40;
+  --sq-z-modal: 50;
+  --sq-z-toast: 60;
+  --sq-z-tooltip: 70;
+}
+
+/* ---- Light theme (default) ---------------------------------------------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --sq-bg: #f6f6f2;
+  --sq-surface: #ffffff;
+  --sq-surface-sunken: #ecede6;
+  --sq-surface-raised: #ffffff;
+  --sq-surface-inverse: #1b1e19;
+  --sq-border: #d9dbd1;
+  --sq-border-strong: #bcbfb3;
+
+  --sq-text: #1b1e19;
+  --sq-text-muted: #555a4f;
+  --sq-text-subtle: #666b5f;
+  --sq-text-inverse: #f6f6f2;
+
+  --sq-primary: #236842;
+  --sq-primary-hover: #1c5335;
+  --sq-primary-fg: #ffffff;
+  --sq-primary-soft: #eef6f0;
+  --sq-primary-soft-fg: #1c5335;
+
+  --sq-accent: #c94e0e;
+  --sq-accent-hover: #a03d0e;
+  --sq-accent-fg: #ffffff;
+  --sq-accent-soft: #fff4ec;
+  --sq-accent-soft-fg: #a03d0e;
+
+  --sq-success: #1e7a3c;
+  --sq-success-soft: #e8f5ea;
+  --sq-warning: #8a5a00;
+  --sq-warning-soft: #fff6e0;
+  --sq-danger: #b42318;
+  --sq-danger-hover: #912018;
+  --sq-danger-soft: #fdecea;
+  --sq-info: #1d5aa6;
+  --sq-info-soft: #e8f0fa;
+
+  --sq-ring: #2f7f52;
+  --sq-overlay: rgb(17 19 16 / 0.55);
+}
+
+/* ---- Dark theme --------------------------------------------------------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --sq-bg: #111310;
+  --sq-surface: #1b1e19;
+  --sq-surface-sunken: #0c0e0b;
+  --sq-surface-raised: #232720;
+  --sq-surface-inverse: #f6f6f2;
+  --sq-border: #2f342c;
+  --sq-border-strong: #454b41;
+
+  --sq-text: #eef0ea;
+  --sq-text-muted: #a9aea1;
+  --sq-text-subtle: #868b7e;
+  --sq-text-inverse: #1b1e19;
+
+  --sq-primary: #5fb182;
+  --sq-primary-hover: #8ccba5;
+  --sq-primary-fg: #0b2016;
+  --sq-primary-soft: #16402a;
+  --sq-primary-soft-fg: #abd4b8;
+
+  --sq-accent: #fb7e36;
+  --sq-accent-hover: #ff9f63;
+  --sq-accent-fg: #111310;
+  --sq-accent-soft: #5e2610;
+  --sq-accent-soft-fg: #ffc49c;
+
+  --sq-success: #6fcf8a;
+  --sq-success-soft: #173a22;
+  --sq-warning: #f2c35b;
+  --sq-warning-soft: #3d2e0c;
+  --sq-danger: #f2877d;
+  --sq-danger-hover: #f7a79f;
+  --sq-danger-soft: #45191a;
+  --sq-info: #7fb2f0;
+  --sq-info-soft: #152c4a;
+
+  --sq-ring: #8ccba5;
+  --sq-overlay: rgb(0 0 0 / 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    color-scheme: dark;
+    --sq-bg: #111310;
+    --sq-surface: #1b1e19;
+    --sq-surface-sunken: #0c0e0b;
+    --sq-surface-raised: #232720;
+    --sq-surface-inverse: #f6f6f2;
+    --sq-border: #2f342c;
+    --sq-border-strong: #454b41;
+    --sq-text: #eef0ea;
+    --sq-text-muted: #a9aea1;
+    --sq-text-subtle: #868b7e;
+    --sq-text-inverse: #1b1e19;
+    --sq-primary: #5fb182;
+    --sq-primary-hover: #8ccba5;
+    --sq-primary-fg: #0b2016;
+    --sq-primary-soft: #16402a;
+    --sq-primary-soft-fg: #abd4b8;
+    --sq-accent: #fb7e36;
+    --sq-accent-hover: #ff9f63;
+    --sq-accent-fg: #111310;
+    --sq-accent-soft: #5e2610;
+    --sq-accent-soft-fg: #ffc49c;
+    --sq-success: #6fcf8a;
+    --sq-success-soft: #173a22;
+    --sq-warning: #f2c35b;
+    --sq-warning-soft: #3d2e0c;
+    --sq-danger: #f2877d;
+    --sq-danger-hover: #f7a79f;
+    --sq-danger-soft: #45191a;
+    --sq-info: #7fb2f0;
+    --sq-info-soft: #152c4a;
+    --sq-ring: #8ccba5;
+    --sq-overlay: rgb(0 0 0 / 0.65);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}
