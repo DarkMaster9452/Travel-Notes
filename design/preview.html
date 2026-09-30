@@ -1,157 +1,205 @@
 <title>Summit Quest Trail System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap&subset=latin-ext">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap&subset=latin-ext">
 <style>
-/* Layout: tokens from design/tokens.css, one long reference sheet, 1120 container */
+/* Layout: tokens mirror design/tokens.css. Monthly hero first, then the system, then the quest grid. No gradients anywhere. */
 :root{
-  --bg:#f6f6f2;--surface:#fff;--sunken:#ecede6;--raised:#fff;--inverse:#1b1e19;
-  --border:#d9dbd1;--border-strong:#bcbfb3;
-  --text:#1b1e19;--muted:#555a4f;--subtle:#666b5f;--text-inverse:#f6f6f2;
-  --primary:#236842;--primary-hover:#1c5335;--primary-fg:#fff;--primary-soft:#eef6f0;--primary-soft-fg:#1c5335;
-  --accent:#c94e0e;--accent-hover:#a03d0e;--accent-fg:#fff;--accent-soft:#fff4ec;--accent-soft-fg:#a03d0e;
-  --success:#1e7a3c;--success-soft:#e8f5ea;--warning:#8a5a00;--warning-soft:#fff6e0;
-  --danger:#b42318;--danger-soft:#fdecea;--info:#1d5aa6;--info-soft:#e8f0fa;--ring:#2f7f52;
-  --easy:#2e7d32;--moderate:#1f5fbf;--hard:#c8102e;--expert:#1b1e19;--blaze-white:#fff;
-  --shadow-1:0 1px 2px rgb(17 19 16/.06),0 2px 8px rgb(17 19 16/.06);
-  --shadow-2:0 4px 12px rgb(17 19 16/.08),0 12px 32px rgb(17 19 16/.10);
-  --r-xs:4px;--r-control:10px;--r-card:16px;--r-dialog:24px;
+  --bg:#f4f8f1;--surface:#fff;--sunken:#e9f0e4;--raised:#fff;--inverse:#16241c;
+  --border:#d5e0cf;--border-strong:#b3c2ab;
+  --text:#16241c;--muted:#4a5a4f;--subtle:#5e6e62;--text-inverse:#f4f8f1;
+  --primary:#157a47;--primary-hover:#0f6639;--primary-fg:#fff;--primary-soft:#e3f4e8;--primary-soft-fg:#0f6639;
+  --accent:#ff6a3d;--accent-hover:#f2572a;--accent-fg:#1a1208;--accent-soft:#ffe9df;--accent-soft-fg:#a63a12;
+  --feature:#ffd35c;--feature-fg:#16241c;
+  --success:#157a47;--success-soft:#e3f4e8;--warning:#7a5200;--warning-soft:#fff3c9;
+  --danger:#c0262d;--danger-soft:#fdeaea;--info:#0b5e96;--info-soft:#e1f2fd;--ring:#22a360;
+  --sky:#4fb3f6;--sky-soft:#e1f2fd;--sky-fg:#0b5e96;--berry:#f0508c;--berry-soft:#fde6ef;--berry-fg:#b0245c;
+  --lake:#1fb5a6;--lake-soft:#dcf5f2;--lake-fg:#0b6e65;--lilac:#9b7bea;--lilac-soft:#eee8fc;--lilac-fg:#5b3fb0;
+  --sun-soft:#fff3c9;--sun-fg:#7a5200;
+  --d-easy:#2fb36b;--d-mod:#f5b82e;--d-hard:#ff7a3d;--d-exp:#e0457b;
+  --m-red:#d52b1e;--m-blue:#0063b1;--m-green:#00913f;--m-yellow:#ffd500;--m-white:#fff;
+  --shadow-1:0 1px 2px rgb(22 36 28/.06),0 4px 12px rgb(22 36 28/.06);
+  --r-xs:4px;--r-control:12px;--r-card:20px;--r-dialog:28px;
   --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
   --f-sans:"Inter",ui-sans-serif,system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#111310;--surface:#1b1e19;--sunken:#0c0e0b;--raised:#232720;--inverse:#f6f6f2;
-  --border:#2f342c;--border-strong:#454b41;--text:#eef0ea;--muted:#a9aea1;--subtle:#868b7e;--text-inverse:#1b1e19;
-  --primary:#5fb182;--primary-hover:#8ccba5;--primary-fg:#0b2016;--primary-soft:#16402a;--primary-soft-fg:#abd4b8;
-  --accent:#fb7e36;--accent-hover:#ff9f63;--accent-fg:#111310;--accent-soft:#5e2610;--accent-soft-fg:#ffc49c;
-  --success:#6fcf8a;--success-soft:#173a22;--warning:#f2c35b;--warning-soft:#3d2e0c;
-  --danger:#f2877d;--danger-soft:#45191a;--info:#7fb2f0;--info-soft:#152c4a;--ring:#8ccba5;--expert:#eef0ea;--blaze-white:#1b1e19;
+  --bg:#1f2a26;--surface:#27352f;--sunken:#1a2420;--raised:#2f3f38;--inverse:#f4f8f1;
+  --border:#3a4b43;--border-strong:#4e6258;--text:#f1f6ef;--muted:#b9c7bd;--subtle:#98a89d;--text-inverse:#16241c;
+  --primary:#5fd394;--primary-hover:#8fe0b0;--primary-fg:#0c2417;--primary-soft:#1d4a33;--primary-soft-fg:#b6ecc9;
+  --accent:#ff7d52;--accent-hover:#ff9a72;--accent-soft:#5a2a17;--accent-soft-fg:#ffc2a8;
+  --success:#6fdb9c;--success-soft:#1d4a33;--warning:#ffd76b;--warning-soft:#4a3a12;
+  --danger:#ff9a95;--danger-soft:#4d2224;--info:#8fcaf7;--info-soft:#173b57;--ring:#8fe0b0;
+  --sky-soft:#173b57;--sky-fg:#8fcaf7;--berry-soft:#4d1f33;--berry-fg:#ffa3c4;--lake-soft:#123f3a;--lake-fg:#7ce3d7;
+  --lilac-soft:#35285e;--lilac-fg:#cbb9fb;--sun-soft:#4a3a12;--sun-fg:#ffd76b;
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#111310;--surface:#1b1e19;--sunken:#0c0e0b;--raised:#232720;--inverse:#f6f6f2;
-  --border:#2f342c;--border-strong:#454b41;--text:#eef0ea;--muted:#a9aea1;--subtle:#868b7e;--text-inverse:#1b1e19;
-  --primary:#5fb182;--primary-hover:#8ccba5;--primary-fg:#0b2016;--primary-soft:#16402a;--primary-soft-fg:#abd4b8;
-  --accent:#fb7e36;--accent-hover:#ff9f63;--accent-fg:#111310;--accent-soft:#5e2610;--accent-soft-fg:#ffc49c;
-  --success:#6fcf8a;--success-soft:#173a22;--warning:#f2c35b;--warning-soft:#3d2e0c;
-  --danger:#f2877d;--danger-soft:#45191a;--info:#7fb2f0;--info-soft:#152c4a;--ring:#8ccba5;--expert:#eef0ea;--blaze-white:#1b1e19;
+  --bg:#1f2a26;--surface:#27352f;--sunken:#1a2420;--raised:#2f3f38;--inverse:#f4f8f1;
+  --border:#3a4b43;--border-strong:#4e6258;--text:#f1f6ef;--muted:#b9c7bd;--subtle:#98a89d;--text-inverse:#16241c;
+  --primary:#5fd394;--primary-hover:#8fe0b0;--primary-fg:#0c2417;--primary-soft:#1d4a33;--primary-soft-fg:#b6ecc9;
+  --accent:#ff7d52;--accent-hover:#ff9a72;--accent-soft:#5a2a17;--accent-soft-fg:#ffc2a8;
+  --success:#6fdb9c;--success-soft:#1d4a33;--warning:#ffd76b;--warning-soft:#4a3a12;
+  --danger:#ff9a95;--danger-soft:#4d2224;--info:#8fcaf7;--info-soft:#173b57;--ring:#8fe0b0;
+  --sky-soft:#173b57;--sky-fg:#8fcaf7;--berry-soft:#4d1f33;--berry-fg:#ffa3c4;--lake-soft:#123f3a;--lake-fg:#7ce3d7;
+  --lilac-soft:#35285e;--lilac-fg:#cbb9fb;--sun-soft:#4a3a12;--sun-fg:#ffd76b;
   color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font:400 16px/24px var(--f-sans);padding-inline:16px;padding-block:0 96px}
 .wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:64px}
-header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);margin-inline:-16px;padding:12px 16px}
-header.top .in{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo{display:flex;align-items:center;gap:10px;font:700 18px/1 var(--f-display)}
-.hero{padding-top:48px;display:flex;flex-direction:column;gap:16px;max-width:720px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--border);margin-inline:-16px;padding:12px 16px}
+header.top .in{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font:800 19px/1 var(--f-display)}
+.logo-dot{width:28px;height:28px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:var(--accent-fg)}
+.logo-dot svg{width:16px;height:16px}
 .overline{font:600 12px/16px var(--f-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--subtle)}
 h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0}
-.dxl{font-weight:700;font-size:clamp(2.5rem,1.6rem + 3.6vw,4rem);line-height:1.05;letter-spacing:-.03em}
-h2{font-weight:600;font-size:24px;line-height:30px;letter-spacing:-.015em}
+h2{font-weight:700;font-size:24px;line-height:30px;letter-spacing:-.015em}
 h3{font:600 20px/28px var(--f-sans);margin:0}
-h4{font:600 17px/24px var(--f-sans);margin:0}
+h4{font:600 18px/24px var(--f-sans);margin:0;text-wrap:balance}
 p{margin:0}
-.lead{font-size:18px;line-height:28px;color:var(--muted);max-width:640px}
 .muted{color:var(--muted)} .subtle{color:var(--subtle)} .sm{font-size:14px;line-height:20px} .cap{font-size:13px;line-height:18px}
 .mono{font-family:var(--f-mono);font-size:13px}
 section{display:flex;flex-direction:column;gap:24px}
 .sec-head{display:flex;flex-direction:column;gap:6px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:24px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:20px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .grid{display:grid;gap:16px}
 @media (min-width:1024px){.grid{gap:24px}}
-.g-auto{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-.g-3{grid-template-columns:1fr}
-@media (min-width:768px){.g-3{grid-template-columns:repeat(2,1fr)}}
-@media (min-width:1024px){.g-3{grid-template-columns:repeat(3,1fr)}}
-.g-2{grid-template-columns:1fr}
-@media (min-width:1024px){.g-2{grid-template-columns:1fr 1fr}}
-/* palette */
-.ramp{display:grid;grid-template-columns:repeat(auto-fit,minmax(56px,1fr));border-radius:var(--r-control);overflow:hidden;border:1px solid var(--border)}
-.ramp div{height:56px;display:flex;align-items:flex-end;padding:6px;font:500 11px/1 var(--f-mono)}
-.tok{display:flex;align-items:center;gap:12px}
-.sw{width:40px;height:40px;border-radius:var(--r-control);border:1px solid var(--border);flex:none}
-.tok b{display:block;font:500 14px/20px var(--f-sans)}
-.tok span{font:400 12px/16px var(--f-mono);color:var(--subtle)}
-/* type */
-.type-row{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:baseline;padding-block:12px;border-top:1px solid var(--border)}
-.type-row:first-child{border-top:0}
-@media (max-width:560px){.type-row{grid-template-columns:1fr;gap:4px}}
+.g-2{grid-template-columns:1fr} @media (min-width:1024px){.g-2{grid-template-columns:1fr 1fr}}
+.g-3{grid-template-columns:1fr} @media (min-width:768px){.g-3{grid-template-columns:repeat(2,1fr)}} @media (min-width:1024px){.g-3{grid-template-columns:repeat(3,1fr)}}
+
+/* photos: flat fallback, never a gradient */
+.ph{position:relative;background:var(--sunken);overflow:hidden;max-width:100%}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ph .fb{position:absolute;inset:0;display:grid;place-items:center;color:var(--subtle)}
+.ph .fb svg{width:32px;height:32px}
+
+/* trail marks */
+.marks{display:inline-flex;align-items:center;gap:6px;flex:none}
+.mk{display:inline-grid;grid-template-columns:1fr;grid-template-rows:1fr 1fr 1fr;width:24px;height:16px;border-radius:var(--r-xs);overflow:hidden;box-shadow:0 0 0 1px var(--border-strong);flex:none}
+.mk i{background:var(--m-white)} .mk i:nth-child(2){background:var(--c)}
+.mk-edu{width:16px;height:16px;border-radius:var(--r-xs);box-shadow:0 0 0 1px var(--border-strong);background:var(--m-white);position:relative;overflow:hidden;flex:none}
+.mk-edu::after{content:"";position:absolute;left:-4px;top:6px;width:24px;height:4px;background:var(--m-green);transform:rotate(-45deg)}
+.arrow{color:var(--subtle);font-size:12px}
+.markline{display:flex;align-items:center;gap:8px;font:500 14px/20px var(--f-sans);min-width:0}
+
+/* difficulty meter */
+.dm{display:inline-flex;align-items:center;gap:8px;font:500 14px/20px var(--f-sans)}
+.peaks{display:inline-flex;gap:2px}
+.peaks svg{width:14px;height:12px}
+.peaks .on{fill:var(--c);stroke:var(--c)}
+.peaks .off{fill:none;stroke:var(--border-strong)}
+
 /* buttons */
-.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--r-control);font:600 14px/1 var(--f-sans);border:1px solid transparent;cursor:pointer;transition:background .12s cubic-bezier(.2,0,0,1),transform .12s}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--r-control);font:600 14px/1 var(--f-sans);border:1px solid transparent;cursor:pointer;transition:background .12s cubic-bezier(.2,0,0,1),transform .12s;text-decoration:none}
 .btn:active{transform:scale(.98)}
-.btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ring)}
+.btn:focus-visible,.chip:focus-visible,.toggle button:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ring)}
 .btn svg{width:16px;height:16px}
 .b-primary{background:var(--primary);color:var(--primary-fg)} .b-primary:hover{background:var(--primary-hover)}
-.b-accent{background:var(--accent);color:var(--accent-fg)} .b-accent:hover{background:var(--accent-hover)}
+.b-monthly{background:var(--accent);color:var(--accent-fg)} .b-monthly:hover{background:var(--accent-hover)}
 .b-secondary{background:var(--surface);color:var(--text);border-color:var(--border-strong)} .b-secondary:hover{background:var(--sunken)}
 .b-ghost{background:transparent;color:var(--text)} .b-ghost:hover{background:var(--sunken)}
 .b-danger{background:var(--danger);color:var(--surface)}
 .b-sm{height:32px;padding:0 12px} .b-lg{height:48px;padding:0 20px;font-size:16px}
-/* badges */
-.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font:500 13px/1 var(--f-sans)}
+.b-onfeature{background:transparent;color:var(--feature-fg);border-color:var(--feature-fg)} .b-onfeature:hover{background:rgb(22 36 28/.08)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font:500 13px/1 var(--f-sans);white-space:nowrap}
 .pill svg{width:14px;height:14px}
 .p-ok{background:var(--success-soft);color:var(--success)} .p-warn{background:var(--warning-soft);color:var(--warning)}
 .p-bad{background:var(--danger-soft);color:var(--danger)} .p-info{background:var(--info-soft);color:var(--info)}
-.p-pri{background:var(--primary-soft);color:var(--primary-soft-fg)} .p-acc{background:var(--accent-soft);color:var(--accent-soft-fg)}
-.p-neu{background:var(--sunken);color:var(--muted)}
-/* difficulty blaze */
-.blaze{display:inline-grid;grid-template-rows:1fr 1fr 1fr;width:12px;height:20px;border-radius:var(--r-xs);overflow:hidden;box-shadow:0 0 0 1px var(--border-strong);flex:none}
-.blaze i{background:var(--blaze-white)} .blaze i:nth-child(2){background:var(--c)}
-.diff{display:inline-flex;align-items:center;gap:8px;font:500 14px/20px var(--f-sans)}
-/* radius / spacing */
+.p-pri{background:var(--primary-soft);color:var(--primary-soft-fg)} .p-neu{background:var(--sunken);color:var(--muted)}
+.p-month{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.p-week{background:var(--sky-soft);color:var(--sky-fg)}
+.t-sky{background:var(--sky-soft);color:var(--sky-fg)} .t-berry{background:var(--berry-soft);color:var(--berry-fg)}
+.t-lake{background:var(--lake-soft);color:var(--lake-fg)} .t-lilac{background:var(--lilac-soft);color:var(--lilac-fg)}
+.p-onphoto{background:var(--surface);color:var(--text);box-shadow:var(--shadow-1)}
+
+/* MONTHLY HERO */
+.monthly{background:var(--feature);color:var(--feature-fg);border-radius:var(--r-dialog);padding:24px;display:grid;gap:24px;grid-template-columns:1fr;margin-top:32px}
+@media (min-width:1024px){.monthly{grid-template-columns:7fr 5fr;padding:40px;gap:40px;align-items:center}}
+.monthly .ph{aspect-ratio:4/3;border-radius:var(--r-card)}
+.m-body{display:flex;flex-direction:column;gap:16px;min-width:0}
+.m-title{font:800 clamp(2rem,1.5rem + 2vw,2.75rem)/1.08 var(--f-display);letter-spacing:-.025em}
+.m-body .mk{box-shadow:0 0 0 1px rgb(22 36 28/.35)}
+.m-body .peaks .off{stroke:rgb(22 36 28/.35)}
+.m-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media (min-width:560px){.m-stats{grid-template-columns:repeat(4,1fr)}}
+.m-stat{background:rgb(255 255 255/.55);border-radius:var(--r-control);padding:10px 12px}
+.m-stat b{display:block;font:700 18px/24px var(--f-sans);font-variant-numeric:tabular-nums}
+.m-stat span{font:400 13px/18px var(--f-sans)}
+.count{display:flex;gap:8px;align-items:baseline;font:500 14px/20px var(--f-sans)}
+.count b{font:700 20px/1 var(--f-display);font-variant-numeric:tabular-nums}
+
+/* QUEST CARD */
+.qgrid{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:768px){.qgrid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1024px){.qgrid{grid-template-columns:repeat(3,1fr);gap:24px}}
+.qcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);display:grid;grid-template-rows:auto auto auto auto auto auto auto 1fr auto;min-width:0;transition:box-shadow .12s,border-color .12s;color:inherit;text-decoration:none}
+@supports (grid-template-rows:subgrid){
+  .qgrid{grid-auto-rows:auto}
+  .qcard{grid-row:span 9;grid-template-rows:subgrid;row-gap:0}
+}
+.qcard:hover{border-color:var(--border-strong);box-shadow:var(--shadow-1)}
+.qcard:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ring)}
+.q-photo{padding:8px}
+.q-photo .ph{aspect-ratio:4/3;border-radius:var(--r-control)}
+.q-photo .tl{position:absolute;left:10px;top:10px;display:flex;gap:6px}
+.q-photo .tr{position:absolute;right:10px;top:10px;width:32px;height:32px;border-radius:50%;background:var(--surface);display:grid;place-items:center;box-shadow:var(--shadow-1);color:var(--text)}
+.q-photo .tr svg{width:16px;height:16px}
+.q-pad{padding-inline:16px}
+.q-marks{padding-top:8px}
+.q-title{padding-top:6px}
+.q-where{padding-top:2px;color:var(--muted);font-size:13px;line-height:18px}
+.q-stats{padding-top:12px}
+.q-stats .in{display:grid;grid-template-columns:repeat(3,1fr);background:var(--sunken);border-radius:var(--r-control)}
+.q-stats .in div{padding:8px 10px;min-width:0}
+.q-stats .in div+div{border-left:1px solid var(--border)}
+.q-stats b{display:block;font:600 16px/22px var(--f-sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.q-stats span{font-size:13px;line-height:18px;color:var(--muted)}
+.q-diff{padding-top:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.q-travel{display:inline-flex;align-items:center;gap:6px;font-size:13px;line-height:18px;color:var(--muted);font-variant-numeric:tabular-nums}
+.q-travel svg{width:16px;height:16px}
+.q-tags{padding-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-content:start}
+.q-foot{margin-top:16px;padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px}
+
+/* system bits */
+.ramp{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));border-radius:var(--r-control);overflow:hidden;border:1px solid var(--border)}
+.ramp div{height:56px;display:flex;align-items:flex-end;padding:6px;font:500 11px/1.2 var(--f-mono)}
+.type-row{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:baseline;padding-block:10px;border-top:1px solid var(--border)}
+.type-row:first-child{border-top:0}
+@media (max-width:560px){.type-row{grid-template-columns:1fr;gap:4px}}
 .rad{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .rad div{width:72px;height:56px;background:var(--primary-soft);border:1px solid var(--primary)}
 .sp{display:flex;align-items:center;gap:12px;font:400 13px/18px var(--f-mono);color:var(--muted)}
-.sp i{display:block;height:12px;background:var(--accent);border-radius:2px}
-/* quest card */
-.qcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .12s,border-color .12s}
-.qcard:hover{border-color:var(--border-strong);box-shadow:var(--shadow-1)}
-.qmedia{aspect-ratio:16/9;max-width:100%;position:relative}
-.qmedia canvas{width:100%;height:100%;display:block}
-.qmedia .pill{position:absolute;left:12px;top:12px}
-.qbody{padding:20px;display:flex;flex-direction:column;gap:8px;flex:1}
-.meta{display:flex;flex-wrap:wrap;gap:16px;font:400 14px/20px var(--f-sans);color:var(--muted);font-variant-numeric:tabular-nums}
-.meta span{display:inline-flex;align-items:center;gap:6px}
-.meta svg{width:16px;height:16px}
-.qfoot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px}
-/* form */
-.field{display:flex;flex-direction:column;gap:6px}
-.field label{font:500 14px/20px var(--f-sans)}
-.input{height:40px;border-radius:var(--r-control);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);padding:0 12px;font:400 16px var(--f-sans);width:100%}
-.input:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 30%,transparent)}
-.input.err{border-color:var(--danger)}
+.sp i{display:block;height:12px;background:var(--primary);border-radius:2px}
+.legend{display:grid;gap:12px}
+.legend .l{display:flex;align-items:center;gap:12px;font-size:14px;line-height:20px}
+.legend .l .k{width:120px;flex:none;display:flex;align-items:center;gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font:500 14px var(--f-sans);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--primary-soft);color:var(--primary-soft-fg);border-color:var(--primary)}
-/* shell mock */
-.shell{display:grid;grid-template-columns:1fr;border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;background:var(--bg);min-height:320px}
-@media (min-width:768px){.shell{grid-template-columns:200px 1fr}}
-.side{background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:4px}
-.shell.admin{position:relative}
-.shell.admin::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--accent)}
-.shell.admin .side{background:var(--sunken)}
-.nav{display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:var(--r-control);font:500 14px var(--f-sans);color:var(--muted)}
-.nav.on{background:var(--primary-soft);color:var(--primary-soft-fg);font-weight:600}
-.cnt{background:var(--accent);color:var(--accent-fg);border-radius:999px;font:600 12px/18px var(--f-sans);padding:0 7px;font-variant-numeric:tabular-nums}
-.main{padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media (min-width:1024px){.stats{grid-template-columns:repeat(4,1fr)}}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:14px}
-.stat b{display:block;font:700 26px/1.1 var(--f-display);font-variant-numeric:tabular-nums;margin-top:4px}
-.tbl{width:100%;border-collapse:collapse;font-size:14px;line-height:20px}
-.tblwrap{border:1px solid var(--border);border-radius:var(--r-card);overflow-x:auto;background:var(--surface)}
-.tbl th{background:var(--sunken);text-align:left;font:600 12px/16px var(--f-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 12px}
-.tbl td{padding:10px 12px;border-top:1px solid var(--border);white-space:nowrap}
-.tbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font:500 14px/20px var(--f-sans)}
+.input{height:40px;border-radius:var(--r-control);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);padding:0 12px;font:400 16px var(--f-sans);width:100%}
+.input:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px var(--primary-soft)}
 .toggle{display:inline-flex;background:var(--sunken);border-radius:var(--r-control);padding:3px;gap:2px}
-.toggle button{height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--muted);font:500 13px var(--f-sans);cursor:pointer}
+.toggle button{height:30px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:500 13px var(--f-sans);cursor:pointer}
 .toggle button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:var(--shadow-1)}
-.do{display:grid;gap:8px;font-size:14px;line-height:20px}
+/* phone tab bar mock */
+.phone{max-width:360px;border:1px solid var(--border);border-radius:var(--r-dialog);background:var(--bg);overflow:hidden}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--border);padding:8px 4px 10px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;font:500 11px/14px var(--f-sans);color:var(--muted)}
+.tab svg{width:20px;height:20px}
+.tab.on{color:var(--primary)}
+.tab.m .ring{width:44px;height:44px;margin-top:-22px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;box-shadow:0 0 0 4px var(--surface)}
+.do ul{padding:0;margin:0;display:grid;gap:8px;font-size:14px;line-height:20px}
 .do li{list-style:none;display:flex;gap:8px}
-.do ul{padding:0;margin:0;display:grid;gap:8px}
+.note{background:var(--info-soft);color:var(--info);border-radius:var(--r-card);padding:12px 16px;font-size:14px;line-height:20px}
 </style>
 
 <header class="top"><div class="in">
-  <div class="logo"><span class="blaze" style="--c:var(--accent)"><i></i><i></i><i></i></span>Summit Quest</div>
+  <div class="logo"><span class="logo-dot"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20 10 7l4 7 2-3 5 9z"/></svg></span>Summit Quest</div>
   <div class="toggle" role="group" aria-label="Téma">
     <button id="t-system" aria-pressed="true" data-t="">Systém</button>
     <button id="t-light" aria-pressed="false" data-t="light">Svetlá</button>
@@ -160,185 +208,157 @@ section{display:flex;flex-direction:column;gap:24px}
 </div></header>
 
 <div class="wrap">
-  <div class="hero">
-    <span class="overline">Dizajnový systém · Trail</span>
-    <h1 class="dxl">Jeden vzhľad pre landing, appku aj admin.</h1>
-    <p class="lead">Náhľad pravidiel z <span class="mono">design/DESIGN-SYSTEM.md</span>. Kamenné neutrály, zelená Pine ako značka, oranžová Blaze ako vzácny akcent a farby turistických značiek pre obtiažnosť.</p>
-  </div>
+
+  <!-- MONTHLY HERO: the product's centre -->
+  <article class="monthly" aria-labelledby="m-title">
+    <div class="ph">
+      <div class="fb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg></div>
+      <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80" alt="Hrebene hôr v rannom opare" onerror="this.remove()">
+    </div>
+    <div class="m-body">
+      <div class="row" style="gap:8px"><span class="pill p-month">Mesačný quest · Október</span><span class="pill p-onphoto">Nálepka č. 10</span></div>
+      <h1 class="m-title" id="m-title">Hrebeňom Nízkych Tatier z Tále na Chopok</h1>
+      <p>Celý hrebeň od Tále po Chopok za jeden deň. Zostup lanovkou alebo po modrej cez Kosodrevinu.</p>
+      <div class="row" style="gap:16px">
+        <span class="markline"><span class="marks"><span class="mk" style="--c:var(--m-red)"><i></i><i></i><i></i></span><span class="arrow">→</span><span class="mk" style="--c:var(--m-blue)"><i></i><i></i><i></i></span></span>Červená → Modrá</span>
+        <span class="dm"><span class="peaks" style="--c:var(--d-hard)"><svg viewBox="0 0 14 12"><path class="on" d="M7 1 13 11H1z"/></svg><svg viewBox="0 0 14 12"><path class="on" d="M7 1 13 11H1z"/></svg><svg viewBox="0 0 14 12"><path class="on" d="M7 1 13 11H1z"/></svg><svg viewBox="0 0 14 12"><path class="off" d="M7 1 13 11H1z"/></svg></span>Náročná</span>
+      </div>
+      <div class="m-stats">
+        <div class="m-stat"><b>18,6 km</b><span>dĺžka</span></div>
+        <div class="m-stat"><b>1 240 m</b><span>stúpanie</span></div>
+        <div class="m-stat"><b>7 h 20</b><span>čas</span></div>
+        <div class="m-stat"><b>412</b><span>účastníkov</span></div>
+      </div>
+      <div class="count">Končí o <b>12 d 07 h</b></div>
+      <div class="row">
+        <a class="btn b-monthly b-lg" href="#quests" id="m-cta">Pridaj sa k mesačnému questu</a>
+        <a class="btn b-onfeature b-lg" href="#quests" id="m-detail">Detail trasy</a>
+      </div>
+    </div>
+  </article>
+
+  <p class="note">Toto je náhľad pravidiel z <span class="mono">design/DESIGN-SYSTEM.md</span>. Fotky sú z Unsplash. Ak sa tu nenačítajú, zobrazí sa plná farba s ikonou hory, čo je zároveň pravidlo pre fallback v appke.</p>
+
+  <section id="quests">
+    <div class="sec-head"><span class="overline">7.4 · Quest karta</span><h2>Týždenné a ďalšie questy</h2><p class="muted sm">Pod fotkou vždy 6 riadkov v pevnom poradí: značka, názov, kde, 3 čísla, obtiažnosť s dopravou, tagy.</p></div>
+    <div class="qgrid" id="qgrid"></div>
+  </section>
 
   <section>
-    <div class="sec-head"><span class="overline">1 · Farby</span><h2>Paleta</h2></div>
+    <div class="sec-head"><span class="overline">1.5 · Značka a obtiažnosť</span><h2>Dve rôzne veci, dva rôzne tvary</h2></div>
+    <div class="grid g-2">
+      <div class="card legend">
+        <h3>Turistická značka (KST)</h3>
+        <div class="l"><span class="k"><span class="mk" style="--c:var(--m-red)"><i></i><i></i><i></i></span>Červená</span><span class="muted">hlavné hrebeňové trasy</span></div>
+        <div class="l"><span class="k"><span class="mk" style="--c:var(--m-blue)"><i></i><i></i><i></i></span>Modrá</span><span class="muted">významné trasy</span></div>
+        <div class="l"><span class="k"><span class="mk" style="--c:var(--m-green)"><i></i><i></i><i></i></span>Zelená</span><span class="muted">spojovacie trasy</span></div>
+        <div class="l"><span class="k"><span class="mk" style="--c:var(--m-yellow)"><i></i><i></i><i></i></span>Žltá</span><span class="muted">krátke a miestne trasy</span></div>
+        <div class="l"><span class="k"><span class="mk-edu"></span>Náučný</span><span class="muted">náučný chodník</span></div>
+      </div>
+      <div class="card legend">
+        <h3>Obtiažnosť: merač vrcholov</h3>
+        <div class="l" id="d-legend"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="overline">1 · Farby</span><h2>Svetlé, sviežie, hravé</h2></div>
     <div class="grid" style="gap:12px">
-      <div class="ramp" aria-label="Stone">
-        <div style="background:#f6f6f2;color:#555a4f">50</div><div style="background:#ecede6;color:#555a4f">100</div><div style="background:#d9dbd1;color:#3f443b">200</div><div style="background:#bcbfb3;color:#2a2e27">300</div><div style="background:#969a8d;color:#1b1e19">400</div><div style="background:#666b5f;color:#fff">500</div><div style="background:#555a4f;color:#fff">600</div><div style="background:#3f443b;color:#fff">700</div><div style="background:#2a2e27;color:#fff">800</div><div style="background:#1b1e19;color:#fff">900</div>
-      </div>
-      <div class="ramp" aria-label="Pine">
-        <div style="background:#eef6f0;color:#1c5335">50</div><div style="background:#d5eadb;color:#1c5335">100</div><div style="background:#abd4b8;color:#16402a">200</div><div style="background:#8ccba5;color:#0f2d1e">300</div><div style="background:#5fb182;color:#0b2016">400</div><div style="background:#2f7f52;color:#fff">500</div><div style="background:#236842;color:#fff">600</div><div style="background:#1c5335;color:#fff">700</div><div style="background:#16402a;color:#fff">800</div><div style="background:#0f2d1e;color:#fff">900</div>
-      </div>
-      <div class="ramp" aria-label="Blaze">
-        <div style="background:#fff4ec;color:#a03d0e">50</div><div style="background:#ffe3cf;color:#a03d0e">100</div><div style="background:#ffc49c;color:#7d3211">200</div><div style="background:#ff9f63;color:#5e2610">300</div><div style="background:#fb7e36;color:#111310">400</div><div style="background:#ec6317;color:#1b1e19">500</div><div style="background:#c94e0e;color:#fff">600</div><div style="background:#a03d0e;color:#fff">700</div><div style="background:#7d3211;color:#fff">800</div><div style="background:#5e2610;color:#fff">900</div>
-      </div>
+      <div class="ramp"><div style="background:#f4f8f1;color:#4a5a4f">bg</div><div style="background:#e9f0e4;color:#4a5a4f">sunken</div><div style="background:#d5e0cf;color:#33423a">border</div><div style="background:#b3c2ab;color:#16241c">strong</div><div style="background:#5e6e62;color:#fff">subtle</div><div style="background:#4a5a4f;color:#fff">muted</div><div style="background:#16241c;color:#fff">text</div></div>
+      <div class="ramp"><div style="background:#e3f4e8;color:#0f6639">meadow 50</div><div style="background:#8fe0b0;color:#0c2417">300</div><div style="background:#22a360;color:#0c2417">500</div><div style="background:#157a47;color:#fff">600 primary</div><div style="background:#0f6639;color:#fff">700</div></div>
+      <div class="ramp"><div style="background:#ffd35c;color:#16241c">sun · feature</div><div style="background:#ff6a3d;color:#1a1208">sunset · monthly</div><div style="background:#4fb3f6;color:#16241c">sky · týždenný</div><div style="background:#f0508c;color:#16241c">berry</div><div style="background:#1fb5a6;color:#16241c">lake</div><div style="background:#9b7bea;color:#16241c">lilac</div></div>
     </div>
-    <div class="grid g-auto" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
-      <div class="tok"><div class="sw" style="background:var(--bg)"></div><div><b>bg</b><span>pozadie stránky</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--surface)"></div><div><b>surface</b><span>karty, panely</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--sunken)"></div><div><b>surface-sunken</b><span>vnorené, skeleton</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--text)"></div><div><b>text / muted / subtle</b><span>3 úrovne textu</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--primary)"></div><div><b>primary</b><span>hlavná akcia</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--accent)"></div><div><b>accent</b><span>max 1× na obrazovku</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--success)"></div><div><b>success</b><span>schválené</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--warning)"></div><div><b>warning</b><span>čaká</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--danger)"></div><div><b>danger</b><span>zamietnuté, mazanie</span></div></div>
-      <div class="tok"><div class="sw" style="background:var(--info)"></div><div><b>info</b><span>tipy, oznamy</span></div></div>
-    </div>
-    <div class="card" style="display:flex;flex-direction:column;gap:12px">
-      <h3>Obtiažnosť = turistická značka</h3>
-      <div class="row" style="gap:24px">
-        <span class="diff"><span class="blaze" style="--c:var(--easy)"><i></i><i></i><i></i></span>Ľahká</span>
-        <span class="diff"><span class="blaze" style="--c:var(--moderate)"><i></i><i></i><i></i></span>Stredná</span>
-        <span class="diff"><span class="blaze" style="--c:var(--hard)"><i></i><i></i><i></i></span>Náročná</span>
-        <span class="diff"><span class="blaze" style="--c:var(--expert)"><i></i><i></i><i></i></span>Expert</span>
-      </div>
+    <div class="card row" style="gap:8px">
+      <span class="pill p-month">Mesačný</span><span class="pill p-week">Týždenný</span>
+      <span class="pill p-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Čaká na review</span>
+      <span class="pill p-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 5 5 9-10"/></svg>Schválené</span>
+      <span class="pill p-bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>Zamietnuté</span>
+      <span class="pill t-sky">vodopád</span><span class="pill t-lilac">hrad</span><span class="pill t-lake">vyhliadka</span><span class="pill t-berry">lúky</span>
+      <span class="pill p-pri">Explorer</span><span class="pill p-neu">Free</span>
     </div>
   </section>
 
   <section>
-    <div class="sec-head"><span class="overline">2 · Typografia</span><h2>Bricolage Grotesque, Inter, JetBrains Mono</h2></div>
+    <div class="sec-head"><span class="overline">2 · 3 · 4 · Písmo, medzery, zaoblenia</span><h2>Bricolage Grotesque a Inter</h2></div>
     <div class="card">
-      <div class="type-row"><span class="mono subtle">display-xl</span><span style="font:700 clamp(2rem,1.4rem + 2.4vw,3rem)/1.05 var(--f-display);letter-spacing:-.03em">Tvoj ďalší quest</span></div>
-      <div class="type-row"><span class="mono subtle">h1 · 32</span><span style="font:700 32px/38px var(--f-display);letter-spacing:-.02em">Mesačná výzva: Kráľova hoľa</span></div>
-      <div class="type-row"><span class="mono subtle">h2 · 24</span><span style="font:600 24px/30px var(--f-display)">Rebríček tohto týždňa</span></div>
-      <div class="type-row"><span class="mono subtle">h3 · 20</span><h3>Nastavenia profilu</h3></div>
-      <div class="type-row"><span class="mono subtle">h4 · 17</span><h4>Východ slnka nad Chopkom</h4></div>
-      <div class="type-row"><span class="mono subtle">body · 16</span><p>Vyrazíš z Tále, hrebeňom prejdeš na Chopok a späť zídeš cez Kosodrevinu.</p></div>
-      <div class="type-row"><span class="mono subtle">body-sm · 14</span><p class="sm muted">Dôkaz odošli do 7 dní od dokončenia questu.</p></div>
-      <div class="type-row"><span class="mono subtle">caption · 13</span><p class="cap subtle">Pred 2 hodinami · Nízke Tatry</p></div>
-      <div class="type-row"><span class="mono subtle">overline · 12</span><span class="overline">Týždenný quest</span></div>
-      <div class="type-row"><span class="mono subtle">mono</span><span class="mono">2026-W40 · 2026-10</span></div>
+      <div class="type-row"><span class="mono subtle">display</span><span style="font:800 clamp(1.75rem,1.3rem + 2vw,2.5rem)/1.08 var(--f-display);letter-spacing:-.025em">Tvoj októbrový quest</span></div>
+      <div class="type-row"><span class="mono subtle">h1 · 32</span><span style="font:700 32px/38px var(--f-display);letter-spacing:-.02em">Rebríček mesiaca</span></div>
+      <div class="type-row"><span class="mono subtle">h2 · 24</span><span style="font:700 24px/30px var(--f-display)">Týždenné questy</span></div>
+      <div class="type-row"><span class="mono subtle">h4 · 18</span><h4>Vodopády Suchej Belej</h4></div>
+      <div class="type-row"><span class="mono subtle">body · 16</span><p>Z Podlesku hore roklinou po rebríkoch, späť po zelenej cez Kláštorisko.</p></div>
+      <div class="type-row"><span class="mono subtle">caption · 13</span><p class="cap muted">Slovenský raj · štart Podlesok</p></div>
     </div>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="overline">3 · 4 · Medzery a zaoblenia</span><h2>Stupnica 4 px, päť rádiusov</h2></div>
     <div class="grid g-2">
       <div class="card" style="display:flex;flex-direction:column;gap:8px">
-        <div class="sp"><i style="width:4px"></i>4 · ikona v texte</div>
         <div class="sp"><i style="width:8px"></i>8 · ikona ↔ text</div>
         <div class="sp"><i style="width:12px"></i>12 · položky v karte</div>
-        <div class="sp"><i style="width:16px"></i>16 · gap gridu (mobil, admin)</div>
-        <div class="sp"><i style="width:20px"></i>20 · polia formulára</div>
-        <div class="sp"><i style="width:24px"></i>24 · padding karty, gap gridu</div>
-        <div class="sp"><i style="width:32px"></i>32 · bloky (mobil)</div>
-        <div class="sp"><i style="width:48px"></i>48 · bloky (desktop)</div>
-        <div class="sp"><i style="width:64px"></i>64 · sekcie landingu (mobil)</div>
+        <div class="sp"><i style="width:20px"></i>20 · padding karty, polia</div>
+        <div class="sp"><i style="width:24px"></i>24 · gap gridu</div>
+        <div class="sp"><i style="width:48px"></i>48 · bloky v appke</div>
         <div class="sp"><i style="width:96px"></i>96 · sekcie landingu</div>
       </div>
       <div class="card row" style="gap:20px;align-items:flex-start">
         <div class="rad"><div style="border-radius:4px"></div><span class="cap">xs · 4</span></div>
-        <div class="rad"><div style="border-radius:10px"></div><span class="cap">control · 10</span></div>
-        <div class="rad"><div style="border-radius:16px"></div><span class="cap">card · 16</span></div>
-        <div class="rad"><div style="border-radius:24px"></div><span class="cap">dialog · 24</span></div>
+        <div class="rad"><div style="border-radius:12px"></div><span class="cap">control · 12</span></div>
+        <div class="rad"><div style="border-radius:20px"></div><span class="cap">card · 20</span></div>
+        <div class="rad"><div style="border-radius:28px"></div><span class="cap">dialog · 28</span></div>
         <div class="rad"><div style="border-radius:999px"></div><span class="cap">pill</span></div>
       </div>
     </div>
   </section>
 
   <section>
-    <div class="sec-head"><span class="overline">7 · Komponenty</span><h2>Tlačidlá, stavy, formulár</h2></div>
+    <div class="sec-head"><span class="overline">7.1 · 7.2 · Tlačidlá a formulár</span><h2>Oranžová patrí len mesačnému questu</h2></div>
     <div class="grid g-2">
-      <div class="card" style="display:flex;flex-direction:column;gap:20px">
-        <div class="row">
-          <button class="btn b-accent b-lg" id="b1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/></svg>Vygeneruj quest</button>
-        </div>
-        <div class="row">
-          <button class="btn b-primary" id="b2">Odoslať dôkaz</button>
-          <button class="btn b-secondary" id="b3">Uložiť</button>
-          <button class="btn b-ghost" id="b4">Zrušiť</button>
-          <button class="btn b-danger" id="b5">Zmazať quest</button>
-        </div>
-        <div class="row">
-          <button class="btn b-primary b-sm" id="b6">sm · 32</button>
-          <button class="btn b-secondary" id="b7">md · 40</button>
-          <button class="btn b-secondary b-lg" id="b8">lg · 48</button>
-        </div>
-        <div class="row" style="gap:8px">
-          <span class="pill p-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Čaká na review</span>
-          <span class="pill p-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 5 5 9-10"/></svg>Schválené</span>
-          <span class="pill p-bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>Zamietnuté</span>
-          <span class="pill p-acc">Týždenný</span>
-          <span class="pill p-pri">Explorer</span>
-          <span class="pill p-info">Admin</span>
-          <span class="pill p-neu">Free</span>
-        </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:16px">
+        <div class="row"><button class="btn b-monthly" id="b0">Pridaj sa k mesačnému</button><span class="cap muted">len mesačný quest</span></div>
+        <div class="row"><button class="btn b-primary" id="b1">Odoslať dôkaz</button><button class="btn b-secondary" id="b2">Uložiť</button><button class="btn b-ghost" id="b3">Zrušiť</button><button class="btn b-danger" id="b4">Zmazať quest</button></div>
+        <div class="row"><button class="btn b-primary b-sm" id="b5">sm · 32</button><button class="btn b-secondary" id="b6">md · 40</button><button class="btn b-secondary b-lg" id="b7">lg · 48</button></div>
       </div>
       <form class="card" style="display:flex;flex-direction:column;gap:20px" onsubmit="event.preventDefault()">
         <div class="field"><label for="f-name">Zobrazované meno</label><input class="input" id="f-name" value="Martina K."><span class="cap subtle">Uvidia ho ostatní v rebríčku.</span></div>
-        <div class="field"><label for="f-mail">E-mail</label><input class="input err" id="f-mail" value="martina@"><span class="cap" style="color:var(--danger)">Doplň doménu, napríklad martina@gmail.com.</span></div>
-        <div class="field"><span style="font:500 14px/20px var(--f-sans)">Obtiažnosť</span>
-          <div class="chips" role="group" aria-label="Obtiažnosť">
-            <button type="button" class="chip" id="c1" aria-pressed="false">Ľahká</button>
-            <button type="button" class="chip" id="c2" aria-pressed="true">Stredná</button>
-            <button type="button" class="chip" id="c3" aria-pressed="false">Náročná</button>
-            <button type="button" class="chip" id="c4" aria-pressed="false">Prekvap ma</button>
+        <div class="field"><span style="font:500 14px/20px var(--f-sans)">Koľko máš času?</span>
+          <div class="chips" role="group" aria-label="Čas">
+            <button type="button" class="chip" id="c1" aria-pressed="false">1–2 h</button>
+            <button type="button" class="chip" id="c2" aria-pressed="true">2–4 h</button>
+            <button type="button" class="chip" id="c3" aria-pressed="false">4–6 h</button>
+            <button type="button" class="chip" id="c4" aria-pressed="false">Celý deň</button>
           </div></div>
       </form>
     </div>
   </section>
 
   <section>
-    <div class="sec-head"><span class="overline">7.4 · Quest karta</span><h2>Card grid: 1 · 2 · 3 stĺpce</h2></div>
-    <div class="grid g-3" id="qgrid"></div>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="overline">6.5 · Shelly</span><h2>Appka a admin: rovnaké komponenty, iná hustota</h2></div>
-    <div class="shell">
-      <nav class="side" aria-label="Appka">
-        <div class="nav on">Prehľad</div><div class="nav">Mesačný</div><div class="nav">Questy</div><div class="nav">Rebríček</div><div class="nav">Nálepky</div><div class="nav">Dôkazy <span class="cnt">2</span></div><div class="nav">Ľudia</div>
+    <div class="sec-head"><span class="overline">6.5 · Mobil</span><h2>Mesačný quest je v strede tab baru</h2></div>
+    <div class="phone">
+      <div style="height:120px;display:grid;place-items:center" class="cap subtle">obsah stránky</div>
+      <nav class="tabbar" aria-label="Ukážka tab baru">
+        <span class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7v9H3z"/></svg>Prehľad</span>
+        <span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m15 9-2 4-4 2 2-4z"/></svg>Questy</span>
+        <span class="tab m"><span class="ring"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20 10 7l4 7 2-3 5 9z"/></svg></span>Mesačný</span>
+        <span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/></svg>Rebríček</span>
+        <span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>Viac</span>
       </nav>
-      <div class="main">
-        <h1 style="font:700 28px/34px var(--f-display)">Ahoj, Martina</h1>
-        <div class="stats">
-          <div class="stat"><span class="overline">Questy</span><b>14</b></div>
-          <div class="stat"><span class="overline">Kilometre</span><b>186,4</b></div>
-          <div class="stat"><span class="overline">Prevýšenie</span><b>9 820 m</b></div>
-          <div class="stat"><span class="overline">Nálepky</span><b>6</b></div>
-        </div>
-      </div>
-    </div>
-    <div class="shell admin">
-      <nav class="side" aria-label="Admin">
-        <div class="nav">Dashboard</div><div class="nav on">Review <span class="cnt">7</span></div><div class="nav">Submissions</div><div class="nav">Quests</div><div class="nav">Schedule</div><div class="nav">Users</div>
-      </nav>
-      <div class="main">
-        <div class="row" style="justify-content:space-between"><h1 style="font:700 24px/30px var(--f-display)">Review</h1><span class="pill p-info">Admin</span></div>
-        <div class="tblwrap"><table class="tbl">
-          <thead><tr><th>Člen</th><th>Quest</th><th>Slot</th><th style="text-align:right">km</th><th>Stav</th></tr></thead>
-          <tbody>
-            <tr><td>Peter H.</td><td>Hrebeňom na Chopok</td><td class="mono">2026-W40</td><td class="n">12,4</td><td><span class="pill p-warn">Čaká</span></td></tr>
-            <tr><td>Jana M.</td><td>Vodopády Slovenského raja</td><td class="mono">2026-10</td><td class="n">8,1</td><td><span class="pill p-warn">Čaká</span></td></tr>
-            <tr><td>Tomáš R.</td><td>Svitanie na Sitne</td><td class="mono">—</td><td class="n">5,6</td><td><span class="pill p-ok">Schválené</span></td></tr>
-          </tbody></table></div>
-      </div>
     </div>
   </section>
 
   <section>
     <div class="sec-head"><span class="overline">11 · Pravidlá v skratke</span><h2>Čo platí vždy</h2></div>
     <div class="grid g-2">
-      <div class="card do"><h3>Áno</h3><ul>
-        <li>✓ Len sémantické tokeny (<span class="mono">bg-surface</span>, <span class="mono">text-muted</span>)</li>
-        <li>✓ Jedno primárne tlačidlo na blok, jeden accent na obrazovku</li>
-        <li>✓ Karta = okraj bez tieňa; tieň len pre plávajúce prvky</li>
+      <div class="card do"><h3 style="margin-bottom:12px">Áno</h3><ul>
+        <li>✓ Mesačný quest je vždy prvý a najväčší</li>
+        <li>✓ Pri každom queste značka, obtiažnosť, dĺžka, stúpanie, čas</li>
+        <li>✓ Plné farby, svetlé pozadie, hravé doplnky na tagy</li>
+        <li>✓ Každá fotka je iná (Unsplash cez images.ts)</li>
         <li>✓ Stav = ikona + text + farba</li>
-        <li>✓ Layout znesie o 40 % dlhší nemecký text</li>
       </ul></div>
-      <div class="card do"><h3>Nie</h3><ul>
+      <div class="card do"><h3 style="margin-bottom:12px">Nie</h3><ul>
+        <li>✕ Gradienty kdekoľvek, aj cez fotku</li>
+        <li>✕ Text položený na fotke</li>
+        <li>✕ Oranžová alebo žltá mimo mesačného questu</li>
+        <li>✕ Farby značiek alebo obtiažnosti na čokoľvek iné</li>
         <li>✕ Hex, <span class="mono">gray-500</span>, <span class="mono">p-[13px]</span>, <span class="mono">rounded-2xl</span></li>
-        <li>✕ Farby obtiažnosti na čokoľvek iné</li>
-        <li>✕ Oslavné animácie mimo schválení a odmien</li>
-        <li>✕ Vlastný <span class="mono">dark:</span> s farbou mimo tokenov</li>
-        <li>✕ Nový komponent, keď existuje rovnaký vzor</li>
       </ul></div>
     </div>
   </section>
@@ -351,37 +371,50 @@ section{display:flex;flex-direction:column;gap:24px}
     b.addEventListener('click',function(){
       document.querySelectorAll('.toggle button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
       if(b.dataset.t) root.setAttribute('data-theme',b.dataset.t); else root.removeAttribute('data-theme');
-      drawAll();
     });
   });
   document.querySelectorAll('.chip').forEach(function(c){
     c.addEventListener('click',function(){document.querySelectorAll('.chip').forEach(function(x){x.setAttribute('aria-pressed',x===c?'true':'false')})});
   });
+
+  var D={EASY:['Pohodová',1,'--d-easy'],MODERATE:['Stredná',2,'--d-mod'],HARD:['Náročná',3,'--d-hard'],EXPERT:['Expert',4,'--d-exp']};
+  function peaks(k){var d=D[k],s='<span class="peaks" style="--c:var('+d[2]+')">';for(var i=0;i<4;i++)s+='<svg viewBox="0 0 14 12" aria-hidden="true"><path class="'+(i<d[1]?'on':'off')+'" d="M7 1 13 11H1z"/></svg>';return s+'</span>';}
+  function meter(k){return '<span class="dm">'+peaks(k)+D[k][0]+'</span>';}
+  var leg=document.getElementById('d-legend');
+  leg.outerHTML=Object.keys(D).map(function(k){return '<div class="l"><span class="k">'+peaks(k)+'</span><span>'+D[k][0]+'</span></div>'}).join('');
+
+  var MK={red:['--m-red','Červená'],blue:['--m-blue','Modrá'],green:['--m-green','Zelená'],yellow:['--m-yellow','Žltá'],edu:[null,'Náučný']};
+  function mk(c){return c==='edu'?'<span class="mk-edu" aria-hidden="true"></span>':'<span class="mk" aria-hidden="true" style="--c:var('+MK[c][0]+')"><i></i><i></i><i></i></span>';}
+  function marks(list){return '<span class="markline"><span class="marks">'+list.map(mk).join('<span class="arrow" aria-hidden="true">→</span>')+'</span>'+list.map(function(c){return MK[c][1]}).join(' → ')+'</span>';}
+
+  var U=function(id){return 'https://images.unsplash.com/photo-'+id+'?auto=format&fit=crop&w=800&q=80'};
+  var car='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 16h14M6 16l1.5-5h9L18 16M7 16v2M17 16v2"/></svg>';
+  var bus='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="14" height="13" rx="2"/><path d="M5 11h14M8 17v2M16 17v2"/></svg>';
+  var heart='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>';
   var quests=[
-    {t:'Hrebeňom z Tále na Chopok',r:'Nízke Tatry',d:'Stredná',c:'--moderate',km:'12,4 km',up:'820 m',time:'4 h 30',tag:'Týždenný',st:['p-warn','Čaká na review'],sky:['#f3c79a','#9cc3d9'],hills:['#6f8f7a','#3f5e4a','#23392c']},
-    {t:'Vodopády Suchej Belej',r:'Slovenský raj',d:'Ľahká',c:'--easy',km:'8,1 km',up:'410 m',time:'3 h',st:['p-ok','Schválené'],sky:['#cfe3e8','#e9f1e2'],hills:['#8aab8c','#577d5c','#2f4d34']},
-    {t:'Svitanie na Kriváni',r:'Vysoké Tatry',d:'Náročná',c:'--hard',km:'15,8 km',up:'1 390 m',time:'7 h 15',tag:'Mesačný',st:['p-neu','Nezačatý'],sky:['#f6b48a','#6d7fa8'],hills:['#6b6f86','#454a60','#262a3b']}
+    {img:'1551632811-561732d1e306',alt:'Turista na značenom chodníku nad hranicou lesa',t:'Vodopády Suchej Belej',r:'Slovenský raj',s:'Podlesok',m:['green','yellow'],d:'MODERATE',km:'8,1 km',up:'410 m',time:'3 h 10',tr:[car,'1 h 25'],tags:[['t-sky','vodopád'],['t-lake','rokliny']],week:true,foot:['p-warn','Čaká na review']},
+    {img:'1501785888041-af3ef285b470',alt:'Údolie pri západe slnka',t:'Západ slnka na Sitne',r:'Štiavnické vrchy',s:'Počúvadlo',m:['red'],d:'EASY',km:'5,6 km',up:'330 m',time:'2 h',tr:[bus,'2 h 05'],tags:[['t-lake','vyhliadka'],['t-lilac','hrad']],foot:['p-ok','Splnené']},
+    {img:'1506905925346-21bda4d32df4',alt:'Horské pleso pod štítmi',t:'Popradské pleso a Symbolický cintorín',r:'Vysoké Tatry',s:'Štrbské Pleso',m:['red','yellow'],d:'MODERATE',km:'11,2 km',up:'560 m',time:'4 h',tr:[bus,'1 h 40'],tags:[['t-sky','pleso']]},
+    {img:'1533105079780-92b9be482077',alt:'Kamenná zrúcanina hradu na zalesnenom kopci',t:'Hrad Strečno a Starhrad cez Váh',r:'Malá Fatra',s:'Strečno',m:['blue','edu'],d:'EASY',km:'7,4 km',up:'290 m',time:'2 h 40',tr:[car,'2 h 30'],tags:[['t-lilac','hrad'],['t-sky','rieka']]},
+    {img:'1441974231531-c6227db76b6e',alt:'Slnko preráža cez hustý zelený les',t:'Prielom Hornádu po reťaziach',r:'Slovenský raj',s:'Čingov',m:['blue'],d:'HARD',km:'14,3 km',up:'480 m',time:'5 h 30',tr:[car,'1 h 30'],tags:[['t-sky','rokliny']]},
+    {img:'1483728642387-6c3bdd6c93e5',alt:'Zasnežený hrebeň pod bledou oblohou',t:'Kriváň na východ slnka',r:'Vysoké Tatry',s:'Štrbské Pleso',m:['green','red','blue'],d:'EXPERT',km:'16,8 km',up:'1 390 m',time:'7 h 45',tr:[car,'1 h 50'],tags:[['t-lake','štít'],['t-berry','svitanie']]}
   ];
   var g=document.getElementById('qgrid');
-  var ic={km:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>',up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m3 20 6-10 4 6 3-4 5 8z"/></svg>',time:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'};
   quests.forEach(function(q,i){
-    var a=document.createElement('article');a.className='qcard';
-    a.innerHTML='<div class="qmedia"><canvas id="cv'+i+'" width="640" height="360" aria-hidden="true"></canvas>'+(q.tag?'<span class="pill p-acc">'+q.tag+'</span>':'')+'</div>'+
-      '<div class="qbody"><span class="diff cap muted"><span class="blaze" style="--c:var('+q.c+')"><i></i><i></i><i></i></span>'+q.d+' · '+q.r+'</span><h4>'+q.t+'</h4>'+
-      '<div class="meta"><span>'+ic.km+q.km+'</span><span>'+ic.up+q.up+'</span><span>'+ic.time+q.time+'</span></div></div>'+
-      '<div class="qfoot"><span class="pill '+q.st[0]+'">'+q.st[1]+'</span><button class="btn b-ghost b-sm" id="qb'+i+'">Detail</button></div>';
+    var a=document.createElement('a');a.className='qcard';a.href='#quests';a.id='q'+i;
+    a.innerHTML=
+      '<div class="q-photo"><div class="ph"><div class="fb" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg></div>'+
+        '<img loading="lazy" src="'+U(q.img)+'" alt="'+q.alt+'" onerror="this.remove()">'+
+        '<div class="tl">'+(q.week?'<span class="pill p-week">Týždenný</span>':'')+'</div><span class="tr" aria-label="Uložiť">'+heart+'</span></div></div>'+
+      '<div class="q-pad q-marks">'+marks(q.m)+'</div>'+
+      '<div class="q-pad q-title"><h4>'+q.t+'</h4></div>'+
+      '<div class="q-pad q-where">'+q.r+' · štart '+q.s+'</div>'+
+      '<div class="q-pad q-stats"><div class="in"><div><b>'+q.km+'</b><span>dĺžka</span></div><div><b>'+q.up+'</b><span>stúpanie</span></div><div><b>'+q.time+'</b><span>čas</span></div></div></div>'+
+      '<div class="q-pad q-diff">'+meter(q.d)+'<span class="q-travel">'+q.tr[0]+q.tr[1]+'</span></div>'+
+      '<div class="q-pad q-tags">'+q.tags.map(function(t){return '<span class="pill '+t[0]+'">'+t[1]+'</span>'}).join('')+'</div>'+
+      '<div></div>'+
+      '<div class="q-foot">'+(q.foot?'<span class="pill '+q.foot[0]+'">'+q.foot[1]+'</span>':'<span class="cap subtle">Zatiaľ nezačatý</span>')+'<span class="btn b-secondary b-sm">Detail</span></div>';
     g.appendChild(a);
   });
-  function drawAll(){quests.forEach(function(q,i){
-    var cv=document.getElementById('cv'+i),x=cv.getContext('2d'),w=cv.width,h=cv.height;
-    var gr=x.createLinearGradient(0,0,0,h);gr.addColorStop(0,q.sky[1]);gr.addColorStop(1,q.sky[0]);x.fillStyle=gr;x.fillRect(0,0,w,h);
-    var seed=i*97+13;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647}
-    q.hills.forEach(function(col,k){
-      x.fillStyle=col;x.beginPath();x.moveTo(0,h);var base=h*(0.45+k*0.17),y=base;
-      for(var px=0;px<=w;px+=16){y+=(rnd()-0.5)*28*(3-k);y=Math.max(h*0.25,Math.min(h*0.95,y*0.9+base*0.1));x.lineTo(px,y)}
-      x.lineTo(w,h);x.closePath();x.fill();
-    });
-  })}
-  drawAll();
 })();
 </script>

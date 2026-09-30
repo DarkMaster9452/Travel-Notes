@@ -15,65 +15,85 @@
 @theme {
   /* ---- Raw palette (do NOT use directly in components; use semantic) --- */
 
-  /* Stone — neutrals, slightly green-warm */
-  --color-stone-0: #ffffff;
-  --color-stone-25: #fafaf7;
-  --color-stone-50: #f6f6f2;
-  --color-stone-100: #ecede6;
-  --color-stone-200: #d9dbd1;
-  --color-stone-300: #bcbfb3;
-  --color-stone-400: #969a8d;
-  --color-stone-500: #666b5f;
-  --color-stone-600: #555a4f;
-  --color-stone-700: #3f443b;
-  --color-stone-800: #2a2e27;
-  --color-stone-850: #232720;
-  --color-stone-900: #1b1e19;
-  --color-stone-950: #111310;
+  /* Moss — neutrals with a fresh green bias */
+  --color-moss-0: #ffffff;
+  --color-moss-50: #f4f8f1;
+  --color-moss-100: #e9f0e4;
+  --color-moss-200: #d5e0cf;
+  --color-moss-300: #b3c2ab;
+  --color-moss-400: #8a9a8e;
+  --color-moss-500: #5e6e62;
+  --color-moss-600: #4a5a4f;
+  --color-moss-700: #33423a;
+  --color-moss-800: #27352f;
+  --color-moss-900: #1f2a26;
+  --color-moss-950: #16241c;
 
-  /* Pine — brand primary */
-  --color-pine-50: #eef6f0;
-  --color-pine-100: #d5eadb;
-  --color-pine-200: #abd4b8;
-  --color-pine-300: #8ccba5;
-  --color-pine-400: #5fb182;
-  --color-pine-500: #2f7f52;
-  --color-pine-600: #236842;
-  --color-pine-700: #1c5335;
-  --color-pine-800: #16402a;
-  --color-pine-900: #0f2d1e;
-  --color-pine-950: #0b2016;
+  /* Meadow — brand primary */
+  --color-meadow-50: #e3f4e8;
+  --color-meadow-100: #c6ead2;
+  --color-meadow-200: #b6ecc9;
+  --color-meadow-300: #8fe0b0;
+  --color-meadow-400: #5fd394;
+  --color-meadow-500: #22a360;
+  --color-meadow-600: #157a47;
+  --color-meadow-700: #0f6639;
+  --color-meadow-800: #1d4a33;
+  --color-meadow-900: #0c2417;
 
-  /* Blaze — accent (trail-marker orange). Scarce by rule. */
-  --color-blaze-50: #fff4ec;
-  --color-blaze-100: #ffe3cf;
-  --color-blaze-200: #ffc49c;
-  --color-blaze-300: #ff9f63;
-  --color-blaze-400: #fb7e36;
-  --color-blaze-500: #ec6317;
-  --color-blaze-600: #c94e0e;
-  --color-blaze-700: #a03d0e;
-  --color-blaze-800: #7d3211;
-  --color-blaze-900: #5e2610;
+  /* Sunset — accent = the MONTHLY quest. Scarce by rule. Dark text on it. */
+  --color-sunset-50: #ffe9df;
+  --color-sunset-100: #ffc2a8;
+  --color-sunset-300: #ff9a72;
+  --color-sunset-400: #ff7d52;
+  --color-sunset-500: #ff6a3d;
+  --color-sunset-600: #f2572a;
+  --color-sunset-700: #a63a12;
+  --color-sunset-900: #5a2a17;
 
-  /* Difficulty — trail blaze colours (EASY/MODERATE/HARD/EXPERT) */
-  --color-diff-easy: #2e7d32;
-  --color-diff-moderate: #1f5fbf;
-  --color-diff-hard: #c8102e;
-  --color-diff-expert: #1b1e19;
+  /* Playful supporting colours: tags, stickers, illustrations, the monthly
+     feature block. Each has a full tone (fills) and fg/soft pair (chips). */
+  --color-sun: #ffd35c;
+  --color-sun-soft: #fff3c9;
+  --color-sun-fg: #7a5200;
+  --color-sky: #4fb3f6;
+  --color-sky-soft: #e1f2fd;
+  --color-sky-fg: #0b5e96;
+  --color-berry: #f0508c;
+  --color-berry-soft: #fde6ef;
+  --color-berry-fg: #b0245c;
+  --color-lake: #1fb5a6;
+  --color-lake-soft: #dcf5f2;
+  --color-lake-fg: #0b6e65;
+  --color-lilac: #9b7bea;
+  --color-lilac-soft: #eee8fc;
+  --color-lilac-fg: #5b3fb0;
+
+  /* Difficulty — peak meter (EASY/MODERATE/HARD/EXPERT). NOT trail marks. */
+  --color-diff-easy: #2fb36b;
+  --color-diff-moderate: #f5b82e;
+  --color-diff-hard: #ff7a3d;
+  --color-diff-expert: #e0457b;
+
+  /* Trail marks — official KST colours, always on a white stripe. */
+  --color-mark-red: #d52b1e;
+  --color-mark-blue: #0063b1;
+  --color-mark-green: #00913f;
+  --color-mark-yellow: #ffd500;
+  --color-mark-white: #ffffff;
 
   /* Medals */
-  --color-medal-gold: #c9a227;
-  --color-medal-silver: #9aa3ad;
-  --color-medal-bronze: #b0703c;
+  --color-medal-gold: #e8b92e;
+  --color-medal-silver: #a7b1bb;
+  --color-medal-bronze: #c7824a;
 
   /* Chart categorical (admin + stats). Order is fixed. */
-  --color-chart-1: #2f7f52;
-  --color-chart-2: #ec6317;
-  --color-chart-3: #1f5fbf;
-  --color-chart-4: #7a5bb0;
-  --color-chart-5: #b07a1f;
-  --color-chart-6: #3a8f9a;
+  --color-chart-1: #22a360;
+  --color-chart-2: #ff6a3d;
+  --color-chart-3: #4fb3f6;
+  --color-chart-4: #9b7bea;
+  --color-chart-5: #f5b82e;
+  --color-chart-6: #f0508c;
 
   /* ---- Semantic colours (the only ones components use) ------------------ */
   --color-bg: var(--sq-bg);
@@ -100,6 +120,10 @@
   --color-accent-fg: var(--sq-accent-fg);
   --color-accent-soft: var(--sq-accent-soft);
   --color-accent-soft-fg: var(--sq-accent-soft-fg);
+
+  /* The monthly feature block (flat sun-yellow panel, dark text) */
+  --color-feature: var(--sq-feature);
+  --color-feature-fg: var(--sq-feature-fg);
 
   --color-success: var(--sq-success);
   --color-success-soft: var(--sq-success-soft);
@@ -153,15 +177,15 @@
 
   /* ---- Radius ----------------------------------------------------------- */
   --radius-xs: 0.25rem;    /*  4 — checkbox, tiny marks, progress track */
-  --radius-control: 0.625rem; /* 10 — buttons, inputs, selects, tabs, menu items */
-  --radius-card: 1rem;     /* 16 — cards, panels, tables, images in cards */
-  --radius-dialog: 1.5rem; /* 24 — modals, sheets, hero panels, feature blocks */
+  --radius-control: 0.75rem; /* 12 — buttons, inputs, selects, tabs, menu items */
+  --radius-card: 1.25rem;  /* 20 — cards, panels, tables, images in cards */
+  --radius-dialog: 1.75rem; /* 28 — modals, sheets, hero panels, feature blocks */
   --radius-pill: 9999px;   /* chips, badges, avatars, toggles */
 
   /* ---- Elevation -------------------------------------------------------- */
-  --shadow-1: 0 1px 2px rgb(17 19 16 / 0.06), 0 2px 8px rgb(17 19 16 / 0.06);
-  --shadow-2: 0 4px 12px rgb(17 19 16 / 0.08), 0 12px 32px rgb(17 19 16 / 0.10);
-  --shadow-3: 0 12px 24px rgb(17 19 16 / 0.12), 0 32px 64px rgb(17 19 16 / 0.18);
+  --shadow-1: 0 1px 2px rgb(22 36 28 / 0.06), 0 4px 12px rgb(22 36 28 / 0.06);
+  --shadow-2: 0 4px 12px rgb(22 36 28 / 0.08), 0 12px 32px rgb(22 36 28 / 0.10);
+  --shadow-3: 0 12px 24px rgb(22 36 28 / 0.12), 0 32px 64px rgb(22 36 28 / 0.16);
 
   /* ---- Motion ----------------------------------------------------------- */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -206,122 +230,136 @@
 :root,
 [data-theme="light"] {
   color-scheme: light;
-  --sq-bg: #f6f6f2;
+  --sq-bg: #f4f8f1;
   --sq-surface: #ffffff;
-  --sq-surface-sunken: #ecede6;
+  --sq-surface-sunken: #e9f0e4;
   --sq-surface-raised: #ffffff;
-  --sq-surface-inverse: #1b1e19;
-  --sq-border: #d9dbd1;
-  --sq-border-strong: #bcbfb3;
+  --sq-surface-inverse: #16241c;
+  --sq-border: #d5e0cf;
+  --sq-border-strong: #b3c2ab;
 
-  --sq-text: #1b1e19;
-  --sq-text-muted: #555a4f;
-  --sq-text-subtle: #666b5f;
-  --sq-text-inverse: #f6f6f2;
+  --sq-text: #16241c;
+  --sq-text-muted: #4a5a4f;
+  --sq-text-subtle: #5e6e62;
+  --sq-text-inverse: #f4f8f1;
 
-  --sq-primary: #236842;
-  --sq-primary-hover: #1c5335;
+  --sq-primary: #157a47;
+  --sq-primary-hover: #0f6639;
   --sq-primary-fg: #ffffff;
-  --sq-primary-soft: #eef6f0;
-  --sq-primary-soft-fg: #1c5335;
+  --sq-primary-soft: #e3f4e8;
+  --sq-primary-soft-fg: #0f6639;
 
-  --sq-accent: #c94e0e;
-  --sq-accent-hover: #a03d0e;
-  --sq-accent-fg: #ffffff;
-  --sq-accent-soft: #fff4ec;
-  --sq-accent-soft-fg: #a03d0e;
+  --sq-accent: #ff6a3d;
+  --sq-accent-hover: #f2572a;
+  --sq-accent-fg: #1a1208;
+  --sq-accent-soft: #ffe9df;
+  --sq-accent-soft-fg: #a63a12;
 
-  --sq-success: #1e7a3c;
-  --sq-success-soft: #e8f5ea;
-  --sq-warning: #8a5a00;
-  --sq-warning-soft: #fff6e0;
-  --sq-danger: #b42318;
-  --sq-danger-hover: #912018;
-  --sq-danger-soft: #fdecea;
-  --sq-info: #1d5aa6;
-  --sq-info-soft: #e8f0fa;
+  --sq-feature: #ffd35c;
+  --sq-feature-fg: #16241c;
 
-  --sq-ring: #2f7f52;
-  --sq-overlay: rgb(17 19 16 / 0.55);
+  --sq-success: #157a47;
+  --sq-success-soft: #e3f4e8;
+  --sq-warning: #7a5200;
+  --sq-warning-soft: #fff3c9;
+  --sq-danger: #c0262d;
+  --sq-danger-hover: #9f1d23;
+  --sq-danger-soft: #fdeaea;
+  --sq-info: #0b5e96;
+  --sq-info-soft: #e1f2fd;
+
+  --sq-ring: #22a360;
+  --sq-overlay: rgb(22 36 28 / 0.45);
 }
 
-/* ---- Dark theme --------------------------------------------------------- */
+/* ---- Dark theme: soft "evening in the valley", never near-black ------- */
 [data-theme="dark"] {
   color-scheme: dark;
-  --sq-bg: #111310;
-  --sq-surface: #1b1e19;
-  --sq-surface-sunken: #0c0e0b;
-  --sq-surface-raised: #232720;
-  --sq-surface-inverse: #f6f6f2;
-  --sq-border: #2f342c;
-  --sq-border-strong: #454b41;
+  --sq-bg: #1f2a26;
+  --sq-surface: #27352f;
+  --sq-surface-sunken: #1a2420;
+  --sq-surface-raised: #2f3f38;
+  --sq-surface-inverse: #f4f8f1;
+  --sq-border: #3a4b43;
+  --sq-border-strong: #4e6258;
 
-  --sq-text: #eef0ea;
-  --sq-text-muted: #a9aea1;
-  --sq-text-subtle: #868b7e;
-  --sq-text-inverse: #1b1e19;
+  --sq-text: #f1f6ef;
+  --sq-text-muted: #b9c7bd;
+  --sq-text-subtle: #98a89d;
+  --sq-text-inverse: #16241c;
 
-  --sq-primary: #5fb182;
-  --sq-primary-hover: #8ccba5;
-  --sq-primary-fg: #0b2016;
-  --sq-primary-soft: #16402a;
-  --sq-primary-soft-fg: #abd4b8;
+  --sq-primary: #5fd394;
+  --sq-primary-hover: #8fe0b0;
+  --sq-primary-fg: #0c2417;
+  --sq-primary-soft: #1d4a33;
+  --sq-primary-soft-fg: #b6ecc9;
 
-  --sq-accent: #fb7e36;
-  --sq-accent-hover: #ff9f63;
-  --sq-accent-fg: #111310;
-  --sq-accent-soft: #5e2610;
-  --sq-accent-soft-fg: #ffc49c;
+  --sq-accent: #ff7d52;
+  --sq-accent-hover: #ff9a72;
+  --sq-accent-fg: #1a1208;
+  --sq-accent-soft: #5a2a17;
+  --sq-accent-soft-fg: #ffc2a8;
 
-  --sq-success: #6fcf8a;
-  --sq-success-soft: #173a22;
-  --sq-warning: #f2c35b;
-  --sq-warning-soft: #3d2e0c;
-  --sq-danger: #f2877d;
-  --sq-danger-hover: #f7a79f;
-  --sq-danger-soft: #45191a;
-  --sq-info: #7fb2f0;
-  --sq-info-soft: #152c4a;
+  --sq-feature: #ffd35c;
+  --sq-feature-fg: #16241c;
 
-  --sq-ring: #8ccba5;
-  --sq-overlay: rgb(0 0 0 / 0.65);
+  --sq-success: #6fdb9c;
+  --sq-success-soft: #1d4a33;
+  --sq-warning: #ffd76b;
+  --sq-warning-soft: #4a3a12;
+  --sq-danger: #ff9a95;
+  --sq-danger-hover: #ffb8b4;
+  --sq-danger-soft: #4d2224;
+  --sq-info: #8fcaf7;
+  --sq-info-soft: #173b57;
+
+  --sq-ring: #8fe0b0;
+  --sq-overlay: rgb(10 16 13 / 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
   [data-theme="system"] {
     color-scheme: dark;
-    --sq-bg: #111310;
-    --sq-surface: #1b1e19;
-    --sq-surface-sunken: #0c0e0b;
-    --sq-surface-raised: #232720;
-    --sq-surface-inverse: #f6f6f2;
-    --sq-border: #2f342c;
-    --sq-border-strong: #454b41;
-    --sq-text: #eef0ea;
-    --sq-text-muted: #a9aea1;
-    --sq-text-subtle: #868b7e;
-    --sq-text-inverse: #1b1e19;
-    --sq-primary: #5fb182;
-    --sq-primary-hover: #8ccba5;
-    --sq-primary-fg: #0b2016;
-    --sq-primary-soft: #16402a;
-    --sq-primary-soft-fg: #abd4b8;
-    --sq-accent: #fb7e36;
-    --sq-accent-hover: #ff9f63;
-    --sq-accent-fg: #111310;
-    --sq-accent-soft: #5e2610;
-    --sq-accent-soft-fg: #ffc49c;
-    --sq-success: #6fcf8a;
-    --sq-success-soft: #173a22;
-    --sq-warning: #f2c35b;
-    --sq-warning-soft: #3d2e0c;
-    --sq-danger: #f2877d;
-    --sq-danger-hover: #f7a79f;
-    --sq-danger-soft: #45191a;
-    --sq-info: #7fb2f0;
-    --sq-info-soft: #152c4a;
-    --sq-ring: #8ccba5;
-    --sq-overlay: rgb(0 0 0 / 0.65);
+    --sq-bg: #1f2a26;
+    --sq-surface: #27352f;
+    --sq-surface-sunken: #1a2420;
+    --sq-surface-raised: #2f3f38;
+    --sq-surface-inverse: #f4f8f1;
+    --sq-border: #3a4b43;
+    --sq-border-strong: #4e6258;
+
+    --sq-text: #f1f6ef;
+    --sq-text-muted: #b9c7bd;
+    --sq-text-subtle: #98a89d;
+    --sq-text-inverse: #16241c;
+
+    --sq-primary: #5fd394;
+    --sq-primary-hover: #8fe0b0;
+    --sq-primary-fg: #0c2417;
+    --sq-primary-soft: #1d4a33;
+    --sq-primary-soft-fg: #b6ecc9;
+
+    --sq-accent: #ff7d52;
+    --sq-accent-hover: #ff9a72;
+    --sq-accent-fg: #1a1208;
+    --sq-accent-soft: #5a2a17;
+    --sq-accent-soft-fg: #ffc2a8;
+
+    --sq-feature: #ffd35c;
+    --sq-feature-fg: #16241c;
+
+    --sq-success: #6fdb9c;
+    --sq-success-soft: #1d4a33;
+    --sq-warning: #ffd76b;
+    --sq-warning-soft: #4a3a12;
+    --sq-danger: #ff9a95;
+    --sq-danger-hover: #ffb8b4;
+    --sq-danger-soft: #4d2224;
+    --sq-info: #8fcaf7;
+    --sq-info-soft: #173b57;
+
+    --sq-ring: #8fe0b0;
+    --sq-overlay: rgb(10 16 13 / 0.55);
   }
 }
 
