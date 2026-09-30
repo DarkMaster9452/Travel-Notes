@@ -1,0 +1,736 @@
+/* ===========================================================================
+   TRAIL — the design system's own component classes.
+
+   Rules: design/DESIGN-SYSTEM.md. Values: design/tokens.css. Everything here
+   reads semantic tokens only (`--sq-*`, `--color-*`, `--radius-*`,
+   `--shadow-*`). Loaded after the legacy stylesheets, so where a Trail rule
+   restates a legacy one, Trail wins.
+
+   Sections: legacy alignment · nav + tab bar · trail marks · difficulty ·
+   quest card · monthly hero · photo
+   =========================================================================== */
+
+/* --- legacy alignment ----------------------------------------------------- */
+/* Buttons are `rounded-control`, flat, no coloured glow (§7.1). */
+.btn,
+.sq-btn {
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+.btn-primary,
+.btn-signal,
+.btn-primary:hover:not(:disabled),
+.btn-signal:hover:not(:disabled) {
+  box-shadow: none;
+}
+.btn-primary:hover:not(:disabled),
+.btn-signal:hover:not(:disabled) {
+  background: var(--sq-brand-hover);
+}
+.btn-danger {
+  color: var(--sq-danger);
+}
+.btn-danger:hover:not(:disabled) {
+  border-color: var(--sq-danger);
+}
+.sq-btn-primary:hover {
+  background: var(--sq-brand-hover);
+}
+
+/* The monthly quest's own button: Sunset, dark text (§7.1 `monthly`). */
+.btn-monthly,
+.sq-btn-monthly {
+  background: var(--sq-accent);
+  color: var(--sq-accent-fg);
+  border-color: transparent;
+}
+.btn-monthly:hover:not(:disabled),
+.sq-btn-monthly:hover {
+  background: var(--sq-accent-hover);
+  color: var(--sq-accent-fg);
+}
+
+/* --- nav + tab bar -------------------------------------------------------- */
+.trail-feature-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--sq-accent);
+  vertical-align: 1px;
+}
+
+.sq-nav-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--sq-brand);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-tabbar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sq-shell[data-tabs="1"] .trail-tabbar {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    min-height: var(--sq-tabbar);
+    padding: 6px 4px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--sq-surface);
+    border-top: 1px solid var(--sq-border);
+  }
+
+  .sq-shell[data-tabs="1"] .sq-main,
+  .sq-shell[data-tabs="1"] .sq-rail {
+    padding-bottom: calc(var(--sq-tabbar) + 40px);
+  }
+
+  /* The top bar's own "Menu" button is redundant once the tab bar has one. */
+  .sq-shell[data-tabs="1"] .sq-topbar > button {
+    display: none;
+  }
+}
+
+.trail-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 4px 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--sq-text-muted);
+  font: 500 11px/14px var(--font-sans);
+  text-align: center;
+  cursor: pointer;
+}
+.trail-tab[aria-current="page"] {
+  color: var(--sq-primary);
+  font-weight: 600;
+}
+.trail-tab-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+.trail-tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trail-tab[data-feature="1"] .trail-tab-icon {
+  width: 48px;
+  height: 48px;
+  margin-top: -26px;
+  border-radius: var(--radius-pill);
+  background: var(--sq-accent);
+  color: var(--sq-accent-fg);
+  box-shadow: 0 0 0 4px var(--sq-surface);
+}
+.trail-tab[data-feature="1"][aria-current="page"] {
+  color: var(--sq-text);
+}
+
+/* --- trail marks (§1.5) ----------------------------------------------------- */
+.trail-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font: 500 14px/20px var(--font-sans);
+  color: var(--sq-text);
+}
+.trail-marks-set {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.trail-marks-arrow {
+  color: var(--sq-text-subtle);
+  font-size: 12px;
+}
+.trail-marks-more {
+  color: var(--sq-text-subtle);
+  font-size: 12px;
+}
+.trail-marks-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trail-marks-empty {
+  color: var(--sq-text-subtle);
+}
+.trail-mark {
+  display: inline-grid;
+  grid-template-rows: 1fr 1fr 1fr;
+  width: 24px;
+  height: 16px;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+  box-shadow: 0 0 0 1px var(--sq-border-strong);
+  background: var(--color-mark-white);
+}
+.trail-mark > i:nth-child(2) {
+  background: var(--mark);
+}
+.trail-mark[data-kind="EDUCATIONAL"] {
+  display: inline-block;
+  position: relative;
+  width: 16px;
+}
+.trail-mark[data-kind="EDUCATIONAL"]::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 6px;
+  width: 24px;
+  height: 4px;
+  background: var(--color-mark-green);
+  transform: rotate(-45deg);
+}
+
+/* --- difficulty meter (§1.5) ----------------------------------------------- */
+.trail-diff {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 14px/20px var(--font-sans);
+  color: var(--sq-text);
+  white-space: nowrap;
+}
+.trail-diff-peaks {
+  display: inline-flex;
+  gap: 2px;
+}
+.trail-diff-peaks svg {
+  width: 14px;
+  height: 12px;
+}
+.trail-diff-peaks .on {
+  fill: var(--peak);
+  stroke: var(--peak);
+}
+.trail-diff-peaks .off {
+  fill: none;
+  stroke: var(--sq-border-strong);
+}
+
+/* --- photo (§7.13) ---------------------------------------------------------- */
+.trail-photo {
+  position: relative;
+  overflow: hidden;
+  max-width: 100%;
+  background: var(--sq-surface-sunken);
+  color: var(--sq-text-subtle);
+}
+.trail-photo > img {
+  /* Hide alt text while a failing image is being swapped for the fallback. */
+  color: transparent;
+  font-size: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.trail-photo-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* --- chips on a photo, badges ----------------------------------------------- */
+.trail-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  font: 500 13px/1 var(--font-sans);
+  white-space: nowrap;
+}
+.trail-pill[data-tone="monthly"] {
+  background: var(--sq-accent);
+  color: var(--sq-accent-fg);
+  font-weight: 600;
+}
+.trail-pill[data-tone="weekly"] {
+  background: var(--color-sky-soft);
+  color: var(--color-sky-fg);
+}
+.trail-pill[data-tone="photo"] {
+  background: var(--sq-surface);
+  color: var(--sq-text);
+  box-shadow: var(--shadow-1);
+}
+.trail-pill[data-tone="neutral"] {
+  background: var(--sq-surface-sunken);
+  color: var(--sq-text-muted);
+}
+.trail-pill[data-tone="sky"] {
+  background: var(--color-sky-soft);
+  color: var(--color-sky-fg);
+}
+.trail-pill[data-tone="lake"] {
+  background: var(--color-lake-soft);
+  color: var(--color-lake-fg);
+}
+.trail-pill[data-tone="lilac"] {
+  background: var(--color-lilac-soft);
+  color: var(--color-lilac-fg);
+}
+.trail-pill[data-tone="berry"] {
+  background: var(--color-berry-soft);
+  color: var(--color-berry-fg);
+}
+.trail-pill[data-tone="sun"] {
+  background: var(--color-sun-soft);
+  color: var(--color-sun-fg);
+}
+
+/* --- quest card (§7.4) ------------------------------------------------------ */
+.trail-qgrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 768px) {
+  .trail-qgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .trail-qgrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+/* Inside the app's narrower main column three cards are too tight. */
+.sq-main .trail-qgrid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.trail-qcard {
+  display: grid;
+  grid-template-rows: auto auto auto auto auto auto auto 1fr auto;
+  min-width: 0;
+  background: var(--sq-surface);
+  border: 1px solid var(--sq-border);
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+@supports (grid-template-rows: subgrid) {
+  .trail-qcard {
+    grid-row: span 9;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
+}
+a.trail-qcard:hover {
+  border-color: var(--sq-border-strong);
+  box-shadow: var(--shadow-1);
+}
+.trail-qcard-photo {
+  padding: 8px;
+}
+.trail-qcard-photo .trail-photo {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-control);
+}
+.trail-qcard-tags-top {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  display: flex;
+  gap: 6px;
+}
+.trail-qcard-pad {
+  padding-inline: 16px;
+}
+.trail-qcard-marks {
+  padding-top: 8px;
+}
+.trail-qcard-title {
+  padding-top: 6px;
+  font: 600 18px/24px var(--font-sans);
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-wrap: balance;
+}
+.trail-qcard-where {
+  padding-top: 2px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--sq-text-muted);
+}
+.trail-qcard-stats {
+  padding-top: 12px;
+}
+.trail-stats3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: var(--sq-surface-sunken);
+  border-radius: var(--radius-control);
+}
+.trail-stats3 > div {
+  min-width: 0;
+  padding: 8px 10px;
+}
+.trail-stats3 > div + div {
+  border-left: 1px solid var(--sq-border);
+}
+.trail-stats3 b {
+  display: block;
+  font: 600 16px/22px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.trail-stats3 span {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--sq-text-muted);
+}
+.trail-qcard-diff {
+  padding-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.trail-qcard-travel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--sq-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.trail-qcard-tags {
+  padding-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-content: start;
+}
+.trail-qcard-foot {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--sq-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--sq-text-subtle);
+}
+
+/* --- monthly hero (§7.5) ---------------------------------------------------- */
+.trail-monthly {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px;
+  border-radius: var(--radius-dialog);
+  background: var(--sq-feature);
+  color: var(--sq-feature-fg);
+}
+@media (min-width: 1024px) {
+  .trail-monthly {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: center;
+    gap: 40px;
+    padding: 40px;
+  }
+  .sq-main .trail-monthly {
+    gap: 32px;
+    padding: 32px;
+  }
+}
+.trail-monthly .trail-photo {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--sq-feature-fg) 10%, transparent);
+  color: color-mix(in srgb, var(--sq-feature-fg) 55%, transparent);
+}
+.trail-monthly-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.trail-monthly-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.trail-monthly-title {
+  margin: 0;
+  font: 800 clamp(2rem, 1.5rem + 2vw, 2.75rem) / 1.08 var(--font-display);
+  letter-spacing: -0.025em;
+  color: var(--sq-feature-fg);
+  text-wrap: balance;
+}
+.trail-monthly-lede {
+  font-size: 16px;
+  line-height: 24px;
+  max-width: 60ch;
+}
+.trail-monthly-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+/* On the Sun panel the marks' outline and empty peaks darken to stay visible. */
+.trail-monthly .trail-mark {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sq-feature-fg) 35%, transparent);
+}
+.trail-monthly .trail-diff-peaks .off {
+  stroke: color-mix(in srgb, var(--sq-feature-fg) 35%, transparent);
+}
+.trail-monthly .trail-marks,
+.trail-monthly .trail-diff,
+.trail-monthly .trail-marks-arrow,
+.trail-monthly .trail-marks-empty {
+  color: var(--sq-feature-fg);
+}
+.trail-monthly-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 560px) {
+  .trail-monthly-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+/* Beside the photo (≥ lg) the body is five columns wide: two per row. */
+@media (min-width: 1024px) {
+  .trail-monthly-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.trail-monthly-stats > div {
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, #ffffff 55%, transparent);
+  min-width: 0;
+}
+.trail-monthly-stats b {
+  display: block;
+  font: 700 18px/24px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: break-word;
+}
+.trail-monthly-stats span {
+  font-size: 13px;
+  line-height: 18px;
+}
+.trail-monthly-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 500 14px/20px var(--font-sans);
+}
+.trail-monthly-count b {
+  font: 700 20px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.trail-monthly-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.trail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font: 600 14px/1 var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+.trail-btn:active {
+  transform: scale(0.98);
+}
+.trail-btn[data-size="lg"] {
+  height: 48px;
+  padding: 0 20px;
+  font-size: 16px;
+}
+.trail-btn[data-variant="monthly"] {
+  background: var(--sq-accent);
+  color: var(--sq-accent-fg);
+}
+.trail-btn[data-variant="monthly"]:hover {
+  background: var(--sq-accent-hover);
+}
+.trail-btn[data-variant="on-feature"] {
+  background: transparent;
+  color: var(--sq-feature-fg);
+  border-color: var(--sq-feature-fg);
+}
+.trail-btn[data-variant="on-feature"]:hover {
+  background: color-mix(in srgb, var(--sq-feature-fg) 8%, transparent);
+}
+.trail-btn[data-variant="primary"] {
+  background: var(--sq-primary);
+  color: var(--sq-primary-fg);
+}
+.trail-btn[data-variant="primary"]:hover {
+  background: var(--sq-primary-hover);
+}
+.trail-btn[data-variant="secondary"] {
+  background: var(--sq-surface);
+  color: var(--sq-text);
+  border-color: var(--sq-border-strong);
+}
+.trail-btn[data-variant="secondary"]:hover {
+  background: var(--sq-surface-sunken);
+}
+.trail-btn[data-size="sm"] {
+  height: 32px;
+  padding: 0 12px;
+}
+
+/* --- landing hero (§6.5, §12) ---------------------------------------------- */
+.trail-hero {
+  padding-block: 32px 64px;
+}
+@media (min-width: 1024px) {
+  .trail-hero {
+    padding-block: 48px 96px;
+  }
+}
+.trail-hero-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.trail-hero-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 760px;
+}
+.trail-hero-eyebrow {
+  font: 600 12px/16px var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sq-text-subtle);
+}
+.trail-hero-title {
+  margin: 0;
+  font: 800 var(--text-display-xl) / 1.05 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--sq-text);
+  text-wrap: balance;
+}
+.trail-hero-lede {
+  max-width: 640px;
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--sq-text-muted);
+}
+
+/* --- landing: closing band + footer (§6.5) ---------------------------------- */
+/* The one colour band on the page is the Sun feature panel, dark text. */
+.cta-section {
+  background: var(--sq-feature);
+  color: var(--sq-feature-fg);
+  border-top: 0;
+}
+.cta-section .eyebrow,
+.cta-section .h2,
+.cta-section .lede {
+  color: var(--sq-feature-fg);
+}
+.cta-section .contours {
+  display: none;
+}
+.cta-section .btn-signal {
+  background: var(--sq-accent);
+  color: var(--sq-accent-fg);
+  box-shadow: none;
+}
+.cta-section .btn-signal:hover:not(:disabled) {
+  background: var(--sq-accent-hover);
+  box-shadow: none;
+}
+.cta-section .btn-ghost,
+.cta-section .btn-ghost:hover {
+  color: var(--sq-feature-fg);
+  border-color: var(--sq-feature-fg);
+  background: transparent;
+}
+
+/* The footer is a quiet sunken surface, not a dark slab. */
+.site-footer,
+.site-footer .foot-blurb,
+.site-footer .foot-bot {
+  background: var(--sq-surface-sunken);
+  color: var(--sq-text-muted);
+}
+.site-footer .logo {
+  color: var(--sq-text);
+}
+.site-footer .logo .mark path {
+  stroke: var(--sq-primary);
+}
+.foot-grid h4 {
+  color: var(--sq-text-subtle);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.foot-grid a:hover {
+  color: var(--sq-text);
+}
+.foot-bot {
+  border-top-color: var(--sq-border);
+  font-family: var(--font-sans);
+}
+
+/* Decorative contour lines are not part of Trail. */
+.contours,
+.paper-grain {
+  display: none;
+}

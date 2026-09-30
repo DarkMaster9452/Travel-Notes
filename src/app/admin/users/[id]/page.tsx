@@ -210,7 +210,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
                 }}
               >
                 <span style={{ minWidth: 0 }}>
-                  <Link href={`/quests/${entry.quest.id}`} style={{ color: "var(--color-text)" }}>
+                  <Link href={`/quests/${entry.quest.id}`} style={{ color: "var(--lg-text)" }}>
                     <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{entry.quest.title}</b>
                   </Link>
                   <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>

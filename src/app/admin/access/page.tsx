@@ -119,7 +119,7 @@ export default async function PanelAccessPage() {
                 <tr key={tab.href}>
                   <td style={{ paddingLeft: 22 }}>
                     {canOpen(me.role, tab) ? (
-                      <Link href={tab.href} style={{ color: "var(--color-text)", fontWeight: 600 }}>
+                      <Link href={tab.href} style={{ color: "var(--lg-text)", fontWeight: 600 }}>
                         {tab.label}
                       </Link>
                     ) : (

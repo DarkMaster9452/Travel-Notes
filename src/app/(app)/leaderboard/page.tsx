@@ -262,7 +262,7 @@ export default async function LeaderboardPage({
                   <Avatar name={row.username} size={32} square />
                   <span style={{ minWidth: 0 }}>
                     {row.handle ? (
-                      <Link href={`/people/${row.handle}`} style={{ color: "var(--color-text)" }}>
+                      <Link href={`/people/${row.handle}`} style={{ color: "var(--lg-text)" }}>
                         <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{row.username}</b>
                       </Link>
                     ) : (

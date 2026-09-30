@@ -91,7 +91,7 @@ export default async function AdminRevenuePage() {
             parts={plans.map((plan, index) => ({
               label: plan.label,
               value: plan.value,
-              colour: ["var(--color-accent-300)", "var(--moss)", "var(--pine)"][index] ?? "var(--sage)",
+              colour: ["var(--lg-green-300)", "var(--moss)", "var(--pine)"][index] ?? "var(--sage)",
             }))}
           />
         </article>
@@ -111,7 +111,7 @@ export default async function AdminRevenuePage() {
                     ? "var(--sage)"
                     : status.key === "past_due"
                       ? "var(--signal)"
-                      : "var(--color-neutral-400)",
+                      : "var(--lg-n-400)",
             }))}
           />
         </article>

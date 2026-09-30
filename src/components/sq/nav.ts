@@ -17,17 +17,30 @@ export type SqNavItem = {
   note?: string | null;
   /** Match the item as active for deeper routes too (`/quests/abc`). */
   prefix?: boolean;
+  /** The monthly quest: carries the Sunset dot (design/DESIGN-SYSTEM.md §6.5). */
+  feature?: boolean;
 };
 
 export function memberNav(pendingSubmissions: number, t: Messages): SqNavItem[] {
   return [
+    // The monthly quest leads: the product turns around it.
+    { href: "/monthly", label: t.nav.monthly, feature: true },
     { href: "/dashboard", label: t.nav.dashboard },
-    { href: "/monthly", label: t.nav.monthly },
     { href: "/quests", label: t.nav.quests, prefix: true },
     { href: "/leaderboard", label: t.nav.leaderboard },
     { href: "/stickers", label: t.nav.stickers },
     { href: "/submissions", label: t.nav.submissions, badge: pendingSubmissions || null },
     { href: "/people", label: t.nav.people, prefix: true },
+  ];
+}
+
+/** The phone tab bar: the monthly quest sits raised in the middle. */
+export function memberTabs(t: Messages): SqNavItem[] {
+  return [
+    { href: "/dashboard", label: t.nav.dashboard },
+    { href: "/quests", label: t.trail.tabQuests, prefix: true },
+    { href: "/monthly", label: t.nav.monthly, feature: true },
+    { href: "/leaderboard", label: t.nav.leaderboard },
   ];
 }
 

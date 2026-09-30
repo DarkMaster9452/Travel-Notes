@@ -126,7 +126,7 @@ export default async function AdminQuestsPage({
                 <span>{entry.label}</span>
                 <Bar
                   pct={(entry.value / gradeMax) * 100}
-                  fill={["var(--color-accent-300)", "var(--color-accent-400)", "var(--moss)", "var(--pine)"][index]}
+                  fill={["var(--lg-green-300)", "var(--lg-green-400)", "var(--moss)", "var(--pine)"][index]}
                 />
                 <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12, textAlign: "right" }}>
                   {entry.value}
@@ -231,7 +231,7 @@ export default async function AdminQuestsPage({
                     alignItems: "center",
                     padding: "13px 22px",
                     borderTop: "1px solid var(--line-2)",
-                    color: "var(--color-text)",
+                    color: "var(--lg-text)",
                   }}
                 >
                   <span className="sq-mono" style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}>

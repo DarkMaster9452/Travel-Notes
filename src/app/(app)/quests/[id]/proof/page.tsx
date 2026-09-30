@@ -127,7 +127,7 @@ export default async function FileProofPage({ params }: { params: Promise<{ id: 
             fontSize: 13,
             fontStyle: "italic",
             lineHeight: 1.6,
-            color: "var(--color-accent-2-700)",
+            color: "var(--lg-warm-700)",
           }}
         >
           {existing.reviewNote}

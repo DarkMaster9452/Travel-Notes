@@ -35,6 +35,7 @@ function generateFallback(): QuestSummary[] {
     palette: paletteForSrc(quest.coverImage),
     features: quest.features,
     terrain: quest.terrain,
+    trailMarks: [],
     mood: quest.mood,
     objective: quest.objective,
     generatedAt: null,

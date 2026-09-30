@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MonthlyHero, toTrailQuest } from "@/components/domain/trail";
 import { SqCountdown } from "@/components/sq/countdown";
 import { SqMap, type MapPoint } from "@/components/sq/map";
-import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
+import { EmptyState, PageHeader } from "@/components/sq/ui";
 import { slotFor, slotLabel } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
@@ -105,31 +106,33 @@ export default async function MonthlyPage() {
 
   return (
     <>
-      <header className="sq-head">
-        <div className="sq-head-row">
-          <div style={{ minWidth: 0 }}>
-            <span className="sq-kicker" style={{ display: "block", marginBottom: 10, color: "var(--signal)" }}>
-              The big one · {slotLabel(slot)}
-            </span>
-            <h1 className="sq-h1" style={{ fontSize: 40, maxWidth: "22ch", marginBottom: 10 }}>
-              {quest.title}
-            </h1>
-            <p style={{ fontSize: 15, color: "var(--ink-2)" }}>
-              {quest.location} · {quest.region} · {title(quest.difficulty)}
-              {quest.number ? ` · Quest № ${String(quest.number).padStart(4, "0")}` : ""}
-            </p>
-          </div>
-          <Tag tone={state.closed ? "plain" : "stamp"} small>
-            {state.closed ? (
-              t.questCard.windowShut
-            ) : (
-              <>
-                {t.questCard.closesIn} <SqCountdown to={state.closesAt.toISOString()} />
-              </>
-            )}
-          </Tag>
-        </div>
-      </header>
+      <div style={{ marginBottom: 24 }}>
+        <MonthlyHero
+          quest={toTrailQuest(quest, t)}
+          t={t}
+          locale={locale}
+          headingLevel={1}
+          monthLabel={slotLabel(slot)}
+          closesAt={state.closed ? null : state.closesAt}
+          lede={quest.subtitle}
+          primary={
+            state.closed || filedAlready
+              ? null
+              : { label: t.trail.fileProof, href: `/quests/${quest.id}/proof` }
+          }
+          status={
+            state.closed ? (
+              <span className="trail-pill" data-tone="photo" style={{ height: 40, padding: "0 16px" }}>
+                {t.questCard.windowShut}
+              </span>
+            ) : filedAlready ? (
+              <span className="trail-pill" data-tone="photo" style={{ height: 40, padding: "0 16px" }}>
+                {state.proof.status === "APPROVED" ? t.questCard.readByHuman : t.questCard.waiting}
+              </span>
+            ) : undefined
+          }
+        />
+      </div>
 
       {/* One grid, two columns that grow together.
 

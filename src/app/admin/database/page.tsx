@@ -88,7 +88,7 @@ export default async function AdminDatabasePage({
                         padding: "11px 20px",
                         borderTop: "1px solid var(--line-2)",
                         background: active ? "var(--paper-2)" : "transparent",
-                        color: "var(--color-text)",
+                        color: "var(--lg-text)",
                         borderLeft: `2px solid ${active ? "var(--signal)" : "transparent"}`,
                       }}
                     >

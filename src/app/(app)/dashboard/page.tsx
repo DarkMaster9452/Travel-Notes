@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import { LockGlyph } from "@/components/sq/icons";
 import { SqSticker } from "@/components/sq/sticker";
-import { SqQuestCard, type QuestCardData } from "@/components/sq/quest-card";
+import { MonthlyHero, QuestCard, toTrailQuest } from "@/components/domain/trail";
+import type { QuestCardData } from "@/components/sq/quest-card";
 import { PageHeader, QuietLink, Stat, Tag } from "@/components/sq/ui";
 import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
@@ -159,7 +160,77 @@ export default async function DashboardPage() {
         }
       />
 
-      <section className="sq-card-flat">
+      {/* The monthly quest leads the page (design/DESIGN-SYSTEM.md §0, §6.4). */}
+      <div style={{ marginBottom: 24 }}>
+        {monthly.featured && !monthly.closed ? (
+          <MonthlyHero
+            quest={toTrailQuest(monthly.featured.summary, t)}
+            t={t}
+            locale={locale}
+            monthLabel={openSlots.find((slot) => slot.period === "MONTHLY")?.label ?? ""}
+            closesAt={monthly.closesAt}
+            lede={monthly.featured.summary.subtitle}
+            primary={{
+              label: monthly.status === "REJECTED" ? t.questCard.fileAgain : t.trail.fileProof,
+              href: `/quests/${monthly.featured.summary.id}/proof`,
+            }}
+            secondary={{ label: t.trail.routeDetail, href: "/monthly" }}
+            status={
+              monthly.status === "PENDING" || monthly.status === "APPROVED" ? (
+                <span className="trail-pill" data-tone="photo" style={{ height: 40, padding: "0 16px" }}>
+                  {monthly.status === "PENDING" ? t.questCard.waiting : t.questCard.readByHuman}
+                </span>
+              ) : undefined
+            }
+          />
+        ) : (
+          <section className="trail-monthly" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+            <div className="trail-monthly-body">
+              <span className="trail-pill" data-tone="monthly" style={{ alignSelf: "flex-start" }}>
+                {t.trail.monthly}
+              </span>
+              <h2 className="trail-monthly-title">{t.trail.noMonthly}</h2>
+              <p className="trail-monthly-lede">{t.trail.noMonthlyBody}</p>
+              <div className="trail-monthly-actions">
+                <Link className="trail-btn" data-variant="on-feature" href="/quests">
+                  {t.dashboard.openDatabase}
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+
+      <section className="sq-grid sq-grid-fit-md" style={{ alignItems: "start" }}>
+        {weekly.featured && !weekly.closed ? (
+          <div className="trail-qgrid" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+            <QuestCard
+              quest={toTrailQuest(weekly.featured.summary, t)}
+              t={t}
+              locale={locale}
+              period="WEEKLY"
+              href={`/quests/${weekly.featured.summary.id}`}
+              foot={
+                <>
+                  <span>
+                    {weekly.status === "PENDING"
+                      ? t.questCard.waiting
+                      : weekly.status === "APPROVED"
+                        ? t.questCard.readByHuman
+                        : weekly.status === "REJECTED"
+                          ? t.questCard.sentBack
+                          : t.trail.notStarted}
+                  </span>
+                  <span className="trail-btn" data-variant="secondary" data-size="sm">
+                    {t.trail.detail}
+                  </span>
+                </>
+              }
+            />
+          </div>
+        ) : null}
+
+        <section className="sq-card-flat">
         <div className="sq-section-head sq-rule-head">
           <h2 className="sq-h2">{t.dashboard.coming}</h2>
           <span className="sq-meta">{t.dashboard.comingNote}</span>
@@ -175,8 +246,8 @@ export default async function DashboardPage() {
               style={{
                 borderRadius: 8,
                 padding: "14px 16px",
-                background: slot.title ? "var(--color-accent-100)" : "var(--paper-2)",
-                border: `1px solid ${slot.title ? "var(--color-accent-200)" : "var(--line-2)"}`,
+                background: slot.period === "MONTHLY" ? "var(--sq-accent-soft)" : "var(--color-sky-soft)",
+                color: slot.period === "MONTHLY" ? "var(--sq-accent-soft-fg)" : "var(--color-sky-fg)",
               }}
             >
               <p className="sq-kicker-sm" style={{ marginBottom: 8 }}>
@@ -231,25 +302,7 @@ export default async function DashboardPage() {
         </ul>
       </section>
 
-      {cards.length > 0 ? (
-        <section className="sq-grid sq-grid-fit sq-stagger" style={{ marginTop: 18 }}>
-          {cards.map((card, index) => (
-            <SqQuestCard key={card.id} quest={card} index={index} t={t} locale={locale} />
-          ))}
-        </section>
-      ) : (
-        <section className="sq-card sq-pad" style={{ marginTop: 18 }}>
-          <h2 className="sq-h2" style={{ fontSize: 20, marginBottom: 8 }}>
-            {t.dashboard.nothingOpenHeading}
-          </h2>
-          <p style={{ fontSize: 13.5, color: "var(--ink-2)" }}>
-            {t.dashboard.nothingOpenBody}
-          </p>
-          <Link href="/quests" className="sq-btn sq-btn-ghost sq-btn-sm" style={{ marginTop: 16 }}>
-            {t.dashboard.openDatabase}
-          </Link>
-        </section>
-      )}
+      </section>
 
       <section
         className="sq-grid sq-grid-fit-md"

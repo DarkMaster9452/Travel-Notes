@@ -2,7 +2,7 @@ import { logoutAction } from "@/app/(auth)/actions";
 import { SqI18nProvider } from "@/components/sq/i18n";
 import { SqNudge } from "@/components/sq/nudge";
 import { SqShell } from "@/components/sq/shell";
-import { memberFootNav, memberNav } from "@/components/sq/nav";
+import { memberFootNav, memberNav, memberTabs } from "@/components/sq/nav";
 import { SqToastProvider } from "@/components/sq/toast";
 import { initialsOf } from "@/components/sq/ui";
 import { requireClient } from "@/lib/auth/guards";
@@ -69,6 +69,9 @@ export default async function AppLayout({
         <SqShell
           flag={region ? `${planName} · ${region}` : planName}
           nav={memberNav(pending, t)}
+          home="/dashboard"
+          theme={user.theme === "DARK" ? "dark" : user.theme === "LIGHT" ? "light" : "system"}
+          tabs={memberTabs(t)}
           footNav={memberFootNav(planName, t)}
           lang={locale}
           account={{

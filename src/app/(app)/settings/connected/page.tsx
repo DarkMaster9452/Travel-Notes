@@ -57,7 +57,7 @@ export default async function ConnectedAppsPage({
           style={{
             padding: "12px 24px",
             background: "var(--signal-wash)",
-            color: "var(--color-accent-2-700)",
+            color: "var(--lg-warm-700)",
             fontSize: 13,
           }}
         >

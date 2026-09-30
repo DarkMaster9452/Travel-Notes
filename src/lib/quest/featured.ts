@@ -141,6 +141,8 @@ function toSummary(quest: GeneratedQuest, id: string): QuestSummary {
     palette: paletteForSrc(quest.coverImage),
     features: quest.features,
     terrain: quest.terrain,
+    // Nobody has walked a generated route to read its marks.
+    trailMarks: [],
     mood: quest.mood,
     objective: quest.objective,
     generatedAt: null,

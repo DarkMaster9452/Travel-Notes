@@ -93,7 +93,7 @@ export function SqQuestCard({
             className="sq-tag sq-tag-xs"
             style={
               quest.status === "APPROVED"
-                ? { background: "var(--color-accent-100)", color: "var(--color-accent-700)" }
+                ? { background: "var(--lg-green-100)", color: "var(--lg-green-700)" }
                 : { background: "var(--signal-wash)", color: "var(--signal)" }
             }
           >

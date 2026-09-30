@@ -95,7 +95,7 @@ export function SqSettingsNav() {
                     borderRadius: 6,
                     fontSize: 13.5,
                     background: active ? "var(--paper-2)" : "transparent",
-                    color: active ? "var(--color-text)" : "var(--ink-2)",
+                    color: active ? "var(--lg-text)" : "var(--ink-2)",
                     borderLeft: `2px solid ${active ? "var(--signal)" : "transparent"}`,
                     transition: "background var(--dur-tint) var(--ease-move)",
                   }}

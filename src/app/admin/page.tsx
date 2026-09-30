@@ -240,7 +240,7 @@ export default async function AdminOverviewPage() {
             parts={plans.map((plan, index) => ({
               label: plan.label,
               value: plan.value,
-              colour: ["var(--color-accent-300)", "var(--moss)", "var(--pine)"][index] ?? "var(--sage)",
+              colour: ["var(--lg-green-300)", "var(--moss)", "var(--pine)"][index] ?? "var(--sage)",
             }))}
           />
         </article>
@@ -253,7 +253,7 @@ export default async function AdminOverviewPage() {
             columns={grades.map((grade, index) => ({
               label: grade.label,
               value: grade.value,
-              colour: ["var(--color-accent-300)", "var(--color-accent-400)", "var(--moss)", "var(--pine)"][index],
+              colour: ["var(--lg-green-300)", "var(--lg-green-400)", "var(--moss)", "var(--pine)"][index],
             }))}
           />
         </article>

@@ -16,6 +16,7 @@ import { recordAudit } from "@/lib/admin/audit";
 import { sendStaffInvite, sendVerdict } from "@/lib/email";
 import { scoreEntry } from "@/lib/leaderboard";
 import { db } from "@/lib/db";
+import { parseTrailMarks } from "@/lib/trail-marks";
 import { slugify } from "@/lib/utils";
 import { slotFromKey } from "@/lib/admin/schedule";
 
@@ -462,6 +463,16 @@ const questSchema = z.object({
   parkingNote: z.string().trim().max(300).optional().or(z.literal("")),
   approachTime: z.coerce.number().int().min(0).max(600).optional().or(z.literal("")),
   transitNote: z.string().trim().max(300).optional().or(z.literal("")),
+
+  // KST marks in walking order, typed as "red, blue". Empty is allowed and
+  // honest; an unknown word is an error rather than silently dropped.
+  trailMarks: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .or(z.literal(""))
+    .refine((value) => !value || parseTrailMarks(value) !== null, "Use red, blue, green, yellow or educational."),
 });
 
 /** An empty form field is "not set", not zero. */
@@ -532,6 +543,7 @@ export async function createQuestAction(
       parkingNote: q.parkingNote || null,
       approachTime: optionalNumber(q.approachTime),
       transitNote: q.transitNote || null,
+      trailMarks: q.trailMarks ? (parseTrailMarks(q.trailMarks) ?? []) : [],
       signature,
       isShowcase: true,
       published: q.published ?? true,
@@ -607,6 +619,7 @@ export async function updateQuestAction(
       parkingNote: q.parkingNote || null,
       approachTime: optionalNumber(q.approachTime),
       transitNote: q.transitNote || null,
+      trailMarks: q.trailMarks ? (parseTrailMarks(q.trailMarks) ?? []) : [],
       signature,
     },
   });

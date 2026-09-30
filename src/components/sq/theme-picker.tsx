@@ -7,8 +7,8 @@ import { useToast } from "@/components/sq/toast";
 
 const OPTIONS = [
   { value: "SYSTEM", label: "Follow the device" },
-  { value: "LIGHT", label: "Paper" },
-  { value: "DARK", label: "Forest" },
+  { value: "LIGHT", label: "Light" },
+  { value: "DARK", label: "Evening" },
 ] as const;
 
 /** Three choices, saved the moment one is pressed. */
@@ -34,6 +34,10 @@ export function ThemePicker({
           data-on={value === option.value ? "1" : "0"}
           onClick={() => {
             setValue(option.value);
+            // Repaint now; the server stamps the same value on the next load.
+            document
+              .querySelector(".sq-shell")
+              ?.setAttribute("data-theme", option.value.toLowerCase());
             start(() => {
               void save(option.value).then((result) => {
                 if (!result.ok) toast("That palette would not save.", "stamp");

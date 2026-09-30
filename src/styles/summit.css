@@ -19,71 +19,73 @@
 /* --- tokens -------------------------------------------------------------- */
 
 .sq {
-  --color-bg: #eff0e5;
-  --color-surface: #e3e8d7;
-  --color-text: #141a16;
-  --color-divider: rgba(20, 26, 22, 0.15);
+  /* Legacy names, pointed at the Trail tokens (design/tokens.css). */
+  --lg-bg: var(--sq-bg);
+  --lg-surface: var(--sq-surface-sunken);
+  --lg-text: var(--sq-text);
+  --lg-divider: var(--sq-border);
 
-  --color-neutral-100: #f9faf3;
-  --color-neutral-200: #eff0e5;
-  --color-neutral-300: #d5dcc5;
-  --color-neutral-400: #b9c2a8;
-  --color-neutral-500: #848a78;
-  --color-neutral-600: #6c7365;
-  --color-neutral-700: #47544b;
-  --color-neutral-800: #2a332c;
-  --color-neutral-900: #141a16;
+  --lg-n-100: var(--sq-surface);
+  --lg-n-200: var(--sq-bg);
+  --lg-n-300: var(--sq-border);
+  --lg-n-400: var(--sq-border-strong);
+  --lg-n-500: var(--sq-text-subtle);
+  --lg-n-600: var(--sq-text-subtle);
+  --lg-n-700: var(--sq-text-muted);
+  --lg-n-800: var(--sq-text);
+  --lg-n-900: var(--sq-text);
 
-  --color-accent: #2c5540;
-  --color-accent-100: #e2e9dd;
-  --color-accent-200: #cbd8c4;
-  --color-accent-300: #a8bfa5;
-  --color-accent-400: #7e9a80;
-  --color-accent-500: #3a6047;
-  --color-accent-600: #2c5540;
-  --color-accent-700: #21402f;
-  --color-accent-800: #1b3325;
-  --color-accent-900: #14251b;
+  --lg-green: var(--sq-primary);
+  --lg-green-100: var(--sq-primary-soft);
+  --lg-green-200: var(--color-meadow-100);
+  --lg-green-300: var(--color-meadow-300);
+  --lg-green-400: var(--color-meadow-500);
+  --lg-green-500: var(--sq-primary);
+  --lg-green-600: var(--sq-primary);
+  --lg-green-700: var(--sq-primary-soft-fg);
+  --lg-green-800: var(--sq-brand-hover);
+  --lg-green-900: var(--color-meadow-900);
 
-  --color-accent-2: #c4481b;
-  --color-accent-2-100: #fbe7de;
-  --color-accent-2-200: #f6cdb9;
-  --color-accent-2-300: #eda98a;
-  --color-accent-2-400: #e8622f;
-  --color-accent-2-500: #c4481b;
-  --color-accent-2-600: #a53c16;
-  --color-accent-2-700: #8a3212;
-  --color-accent-2-800: #6b270e;
-  --color-accent-2-900: #4a1b0a;
+  --lg-warm: var(--sq-accent-soft-fg);
+  --lg-warm-100: var(--sq-accent-soft);
+  --lg-warm-200: var(--color-sunset-100);
+  --lg-warm-300: var(--color-sunset-300);
+  --lg-warm-400: var(--sq-accent);
+  --lg-warm-500: var(--sq-accent-soft-fg);
+  --lg-warm-600: var(--sq-accent-soft-fg);
+  --lg-warm-700: var(--sq-accent-soft-fg);
+  --lg-warm-800: var(--color-sunset-700);
+  --lg-warm-900: var(--color-sunset-900);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: var(--radius-xs);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-card);
 
-  --font-heading: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
-  --font-body: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-heading: var(--font-display);
+  --font-body: var(--font-sans);
+  /* Legacy mono labels read as Inter overlines (design/DESIGN-SYSTEM.md §2). */
+  --lg-mono: var(--font-inter), system-ui, sans-serif;
 
-  --paper-2: #e3e8d7;
-  --paper-3: #d5dcc5;
-  --card: #f9faf3;
-  --ink-2: #47544b;
-  --ink-3: #848a78;
-  --line: rgba(20, 26, 22, 0.15);
-  --line-2: rgba(20, 26, 22, 0.08);
-  --pine: #1e3b2c;
-  --moss: #3a6047;
-  --sage: #7e9a80;
-  --forest: #1b3325;
-  --forest-ink: #eef2e7;
-  --forest-ink-2: #93a893;
-  --forest-ink-3: #b6c4b0;
-  --signal: #c4481b;
-  --signal-2: #e8622f;
-  --signal-wash: #fbe7de;
-  --gold: #d9a13c;
-  --shadow-sm: 0 1px 2px rgba(20, 32, 24, 0.04), 0 8px 24px -14px rgba(20, 40, 28, 0.18);
-  --shadow-lift: 0 2px 6px rgba(20, 32, 24, 0.06), 0 18px 40px -20px rgba(20, 40, 28, 0.28);
+  --paper-2: var(--sq-surface-sunken);
+  --paper-3: var(--sq-border);
+  --card: var(--sq-surface);
+  --ink-2: var(--sq-text-muted);
+  --ink-3: var(--sq-text-subtle);
+  --line: var(--sq-border);
+  --line-2: var(--sq-border-soft);
+  --pine: var(--sq-brand);
+  --moss: var(--sq-primary);
+  --sage: var(--sq-border-strong);
+  --forest: var(--sq-brand);
+  --forest-ink: #ffffff;
+  --forest-ink-2: var(--color-meadow-100);
+  --forest-ink-3: var(--color-meadow-50);
+  --signal: var(--sq-accent-soft-fg);
+  --signal-2: var(--sq-accent);
+  --signal-wash: var(--sq-accent-soft);
+  --gold: var(--color-medal-gold);
+  --shadow-sm: var(--shadow-1);
+  --shadow-lift: var(--shadow-2);
 
   /* House curves. `--ease-settle` for anything that comes to rest, `--ease-move`
      for anything that only travels. Nothing in the system runs past 500ms. */
@@ -98,8 +100,8 @@
      rule keep its fade and drop its travel rather than needing a duplicate. */
   --motion: 1;
 
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--lg-bg);
+  color: var(--lg-text);
   font-family: var(--font-body);
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
@@ -137,13 +139,13 @@
    dark-green fill. Matching only classless anchors keeps prose links green and
    leaves every component's own colour alone. */
 .sq a:not([class]) {
-  color: var(--color-accent-700);
+  color: var(--lg-green-700);
   text-decoration: none;
   transition: color var(--dur-tint) var(--ease-move);
 }
 
 .sq a:not([class]):hover {
-  color: var(--color-accent-800);
+  color: var(--lg-green-800);
 }
 
 /* Underline is reset for every anchor; colour deliberately is not, so a
@@ -158,7 +160,7 @@
 }
 
 .sq :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--lg-green);
   outline-offset: 2px;
   border-radius: 3px;
 }
@@ -210,11 +212,8 @@
 }
 
 @keyframes sq-shimmer {
-  from {
-    background-position: -420px 0;
-  }
-  to {
-    background-position: 420px 0;
+  50% {
+    opacity: 0.55;
   }
 }
 
@@ -230,10 +229,10 @@
 
 @keyframes sq-ring-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(217, 161, 60, 0.7);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-medal-gold) 70%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 14px rgba(217, 161, 60, 0);
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--color-medal-gold) 0%, transparent);
   }
 }
 
@@ -283,7 +282,7 @@
   display: grid;
   grid-template-columns: 246px minmax(0, 1fr);
   min-height: 100vh;
-  background: var(--color-bg);
+  background: var(--lg-bg);
 }
 
 .sq-main {
@@ -401,7 +400,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-brand span {
@@ -412,7 +411,7 @@
 }
 
 .sq-side-flag {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -453,7 +452,7 @@
 
 .sq-nav-item:hover {
   background: var(--paper-2);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-nav-item:active {
@@ -461,12 +460,13 @@
 }
 
 .sq-nav-item[aria-current="page"] {
-  background: #e3e8d7;
-  color: #141a16;
+  background: var(--sq-primary-soft);
+  color: var(--sq-primary-soft-fg);
+  font-weight: 600;
 }
 
 .sq-nav-badge {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10.5px;
   color: var(--signal);
 }
@@ -476,7 +476,7 @@
 }
 
 .sq-nav-note {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10px;
   color: var(--ink-3);
 }
@@ -488,13 +488,13 @@
   padding: 10px;
   border-radius: 8px;
   background: var(--paper-2);
-  color: var(--color-text);
+  color: var(--lg-text);
   transition: background var(--dur-tint) var(--ease-move);
 }
 
 .sq-account:hover {
   background: var(--paper-3);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-account:active {
@@ -509,7 +509,7 @@
   background: var(--sage);
   display: grid;
   place-items: center;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 11px;
   color: #14251b;
   overflow: hidden;
@@ -536,7 +536,7 @@
 /* --- type ----------------------------------------------------------------- */
 
 .sq-kicker {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -544,7 +544,7 @@
 }
 
 .sq-kicker-sm {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -575,7 +575,7 @@
 }
 
 .sq-mono {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
 }
 
 /* --- page header ---------------------------------------------------------- */
@@ -616,7 +616,7 @@
 }
 
 .sq-stat span {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -741,7 +741,7 @@
   padding: 10px 16px;
   cursor: pointer;
   background: transparent;
-  color: var(--color-text);
+  color: var(--lg-text);
   transition: background var(--dur-tint) var(--ease-move), color var(--dur-tint) var(--ease-move),
     border-color var(--dur-tint) var(--ease-move), transform var(--dur-tint) var(--ease-move);
 }
@@ -751,34 +751,34 @@
 }
 
 .sq-btn-primary {
-  background: var(--color-accent-600);
-  color: #f9faf3;
+  background: var(--lg-green-600);
+  color: var(--sq-surface);
 }
 
 .sq-btn-primary:hover {
-  background: var(--color-accent-700);
-  color: #f9faf3;
+  background: var(--lg-green-700);
+  color: var(--sq-surface);
 }
 
 .sq-btn-ghost {
   background: var(--paper-2);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-btn-ghost:hover {
   background: var(--paper-3);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-btn-outline {
   border-color: var(--line);
   background: var(--card);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-btn-outline:hover {
   background: var(--paper-2);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-btn-stamp {
@@ -787,8 +787,8 @@
 }
 
 .sq-btn-stamp:hover {
-  background: var(--color-accent-2-200);
-  color: var(--color-accent-2-600);
+  background: var(--lg-warm-200);
+  color: var(--lg-warm-600);
 }
 
 .sq-btn-block {
@@ -805,7 +805,7 @@
   align-items: center;
   gap: 5px;
   border-radius: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10.5px;
   letter-spacing: 0.04em;
   padding: 3px 8px;
@@ -820,12 +820,12 @@
 }
 
 .sq-tag-green {
-  background: var(--color-accent-100);
-  color: var(--color-accent-700);
+  background: var(--lg-green-100);
+  color: var(--lg-green-700);
 }
 
 .sq-tag-gold {
-  background: rgba(217, 161, 60, 0.2);
+  background: color-mix(in srgb, var(--color-medal-gold) 20%, transparent);
   color: #7c5a17;
 }
 
@@ -848,7 +848,7 @@
 .sq-seg-opt {
   border: 0;
   cursor: pointer;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 11px;
   letter-spacing: 0.04em;
   padding: 6px 13px;
@@ -860,13 +860,13 @@
 
 .sq-seg-opt:hover {
   background: var(--paper-3);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-seg-opt[aria-pressed="true"],
 .sq-seg-opt[data-on="1"] {
   background: var(--pine);
-  color: #f9faf3;
+  color: var(--sq-surface);
 }
 
 /* Native controls, restyled to the tokens. */
@@ -878,7 +878,7 @@
 
 .sq-field > label,
 .sq-label {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9.5px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -892,7 +892,7 @@
   box-sizing: border-box;
   font-family: var(--font-body);
   font-size: 13.5px;
-  color: var(--color-text);
+  color: var(--lg-text);
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -909,7 +909,7 @@
 .sq-input:hover,
 .sq-select:hover,
 .sq-textarea:hover {
-  border-color: var(--color-accent-300);
+  border-color: var(--lg-green-300);
 }
 
 .sq-input::placeholder,
@@ -951,7 +951,7 @@
   border: 0;
   border-radius: 6px;
   cursor: pointer;
-  background: var(--color-neutral-400);
+  background: var(--lg-n-400);
   transition: background var(--dur-tint) var(--ease-move);
 }
 
@@ -964,7 +964,7 @@
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  background: #f9faf3;
+  background: var(--sq-surface);
   transition: transform var(--dur-enter) var(--ease-settle);
 }
 
@@ -1026,7 +1026,7 @@
 }
 
 .sq-table-num {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -1059,7 +1059,7 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 12px;
   color: #14251b;
   background: var(--sage);
@@ -1129,7 +1129,7 @@
 .sq-deck-stamp {
   position: absolute;
   top: 16px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 13px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1192,7 +1192,7 @@
 .sq-proof-cell span {
   display: block;
   margin-top: 3px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 8.5px;
   letter-spacing: 0.05em;
   color: var(--ink-3);
@@ -1237,8 +1237,8 @@
 }
 
 .sq-map .leaflet-control-attribution {
-  background: rgba(249, 250, 243, 0.82);
-  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--sq-surface) 82%, transparent);
+  font-family: var(--lg-mono);
   font-size: 9px;
   color: var(--ink-3);
 }
@@ -1264,13 +1264,7 @@
 }
 
 .sq-skel {
-  background: linear-gradient(
-    90deg,
-    var(--paper-2) 0%,
-    var(--color-neutral-100) 45%,
-    var(--paper-2) 90%
-  );
-  background-size: 420px 100%;
+  background: var(--paper-2);
   border-radius: var(--radius-sm);
   animation: sq-shimmer 1.6s linear infinite;
 }
@@ -1311,7 +1305,7 @@
 .sq-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(20, 26, 22, 0.42);
+  background: color-mix(in srgb, var(--sq-text) 42%, transparent);
   z-index: 70;
   animation: sq-fade-in 180ms var(--ease-move) both;
   display: grid;
@@ -1365,7 +1359,7 @@
   place-items: center;
   text-align: center;
   box-sizing: border-box;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9px;
   line-height: 1.2;
   /* The die-cut, the ink and the glyph all arrive inline from `lib/stickers` —
@@ -1594,7 +1588,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   padding: 7px 11px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1653,7 +1647,7 @@
 
 .sq-slot-card:hover {
   transform: translateY(calc(-2px * var(--motion)));
-  border-color: var(--color-accent-300);
+  border-color: var(--lg-green-300);
 }
 
 /* The one slot anybody is actually walking. */
@@ -1711,11 +1705,7 @@
   gap: 9px;
   padding: 20px;
   text-align: center;
-  background: linear-gradient(
-    180deg,
-    rgba(239, 240, 229, 0.72) 0%,
-    rgba(239, 240, 229, 0.94) 55%
-  );
+  background: color-mix(in srgb, var(--sq-bg) 90%, transparent);
 }
 
 .sq-locked[data-compact="1"] .sq-locked-over {
@@ -1730,9 +1720,9 @@
   gap: 6px;
   padding: 4px 9px;
   border-radius: 4px;
-  background: rgba(217, 161, 60, 0.22);
+  background: color-mix(in srgb, var(--color-medal-gold) 22%, transparent);
   color: #7c5a17;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9.5px;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -1811,8 +1801,8 @@
   gap: 6px;
   padding: 4px 9px;
   border-radius: 999px;
-  background: rgba(249, 250, 243, 0.92);
-  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--sq-surface) 92%, transparent);
+  font-family: var(--lg-mono);
   font-size: 8.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1851,7 +1841,7 @@
 }
 
 .sq-quest-facts dt {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1904,8 +1894,8 @@
 }
 
 .sq-rail-card[data-tone="tinted"] {
-  background: var(--color-accent-100);
-  border-color: var(--color-accent-200);
+  background: var(--lg-green-100);
+  border-color: var(--lg-warm00);
 }
 
 .sq-rail-card[data-tone="dark"] {
@@ -1934,7 +1924,7 @@
 }
 
 .sq-rail-title {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9.5px;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -1968,7 +1958,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9.5px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -2009,7 +1999,7 @@
 }
 
 .sq-rail-standing[data-me="1"] {
-  background: var(--color-accent-100);
+  background: var(--lg-green-100);
   font-weight: 600;
 }
 
@@ -2064,17 +2054,6 @@
   min-height: 148px;
   padding: 22px 26px 8px;
   background-color: var(--band, var(--forest));
-  background-image:
-    repeating-radial-gradient(
-      circle at 82% 128%,
-      rgba(255, 255, 255, 0.11) 0 1.5px,
-      transparent 1.5px 27px
-    ),
-    repeating-radial-gradient(
-      circle at 8% -34%,
-      rgba(255, 255, 255, 0.07) 0 1.5px,
-      transparent 1.5px 35px
-    );
   color: var(--forest-ink);
   overflow: hidden;
 }
@@ -2138,7 +2117,7 @@
 .sq-figure-tile span {
   display: block;
   margin-top: 7px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9px;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -2186,7 +2165,7 @@
 .sq-terrain > span {
   border-radius: 999px;
   padding: 3px 9px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9px;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -2222,7 +2201,7 @@
 }
 
 .sq-year-months span {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 8.5px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2245,7 +2224,7 @@
 }
 
 .sq-year-days span {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 8px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -2324,7 +2303,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2373,7 +2352,7 @@
 }
 
 .sq-swatch b {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 9.5px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -2386,16 +2365,16 @@
 }
 
 .sq-swatch:has(input:checked) {
-  border-color: var(--color-accent-600);
-  box-shadow: inset 0 0 0 1px var(--color-accent-600);
+  border-color: var(--lg-green-600);
+  box-shadow: inset 0 0 0 1px var(--lg-green-600);
 }
 
 .sq-swatch:has(input:checked) b {
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 .sq-swatch:has(input:focus-visible) {
-  outline: 2px solid var(--color-accent-600);
+  outline: 2px solid var(--lg-green-600);
   outline-offset: 2px;
 }
 
@@ -2413,7 +2392,7 @@
 .sq-unlock-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(20, 37, 27, 0.62);
+  background: color-mix(in srgb, var(--sq-text) 62%, transparent);
   backdrop-filter: blur(3px);
   animation: sq-fade var(--dur-enter) var(--ease-move) both;
 }
@@ -2438,8 +2417,8 @@
   /* A deeper shadow than a normal card, and a warm rim. The card should read
      as something handed to you rather than as another panel on the page. */
   box-shadow:
-    0 24px 60px -18px rgba(20, 37, 27, 0.5),
-    0 0 0 1px rgba(217, 161, 60, 0.35);
+    0 24px 60px -18px color-mix(in srgb, var(--sq-text) 50%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-medal-gold) 35%, transparent);
   animation: sq-unlock-in var(--dur-spring) var(--ease-settle) both;
   overflow: hidden;
 }
@@ -2457,14 +2436,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    100deg,
-    transparent 38%,
-    rgba(255, 255, 255, 0.5) 50%,
-    transparent 62%
-  );
-  transform: translateX(-120%);
-  animation: sq-sheen 1200ms var(--ease-move) 520ms both;
+  display: none;
 }
 
 @keyframes sq-sheen {
@@ -2563,7 +2535,7 @@
   display: inline-grid;
   place-items: center;
   margin-bottom: 16px;
-  color: var(--color-accent-600);
+  color: var(--lg-green-600);
 }
 
 .sq-unlock-ring {
@@ -2642,11 +2614,11 @@
   margin-top: 16px;
   padding: 11px 14px;
   border-radius: var(--radius-sm);
-  background: var(--color-accent-100);
-  border: 1px solid var(--color-accent-200);
+  background: var(--lg-green-100);
+  border: 1px solid var(--lg-warm00);
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--color-accent-800);
+  color: var(--lg-green-800);
   text-align: left;
   animation: sq-rise var(--dur-enter) var(--ease-move) 700ms both;
 }
@@ -2675,8 +2647,8 @@
   padding: 13px 16px;
   margin-bottom: 18px;
   border-radius: var(--radius-md);
-  background: var(--color-accent-100);
-  border: 1px solid var(--color-accent-200);
+  background: var(--lg-green-100);
+  border: 1px solid var(--lg-warm00);
   animation: sq-rise var(--dur-enter) var(--ease-move) both;
 }
 
@@ -2687,8 +2659,8 @@
   display: grid;
   place-items: center;
   background: var(--card);
-  border: 1px solid var(--color-accent-200);
-  color: var(--color-accent-700);
+  border: 1px solid var(--lg-warm00);
+  color: var(--lg-green-700);
 }
 
 .sq-nudge-body {
@@ -2793,7 +2765,7 @@
   ):hover {
   transform: translateY(calc(-2px * var(--motion)));
   box-shadow: var(--shadow-lift);
-  border-color: var(--color-accent-300);
+  border-color: var(--lg-green-300);
 }
 
 /* Rows read as one list, so they tint rather than move. */
@@ -2815,7 +2787,7 @@
 }
 
 .sq :is(.sq-switch, .sq-swatch):hover {
-  border-color: var(--color-accent-300);
+  border-color: var(--lg-green-300);
 }
 
 /*
@@ -2858,7 +2830,7 @@
   border-radius: var(--radius-md);
   background: var(--card);
   overflow: hidden;
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 /*
@@ -2890,7 +2862,7 @@
 }
 
 .sq-system-state {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2916,7 +2888,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10.5px;
   color: var(--ink-3);
 }
@@ -2946,7 +2918,7 @@ a.sq-system:hover {
   border: 1px solid var(--line-2);
   border-radius: var(--radius-sm);
   background: var(--paper-2);
-  color: var(--color-text);
+  color: var(--lg-text);
   /* Colour lives on the dot, not on the panel: a sidebar washed red would
      compete with the page for attention on every screen, all day. */
   border-left: 2px solid var(--status);
@@ -2974,7 +2946,7 @@ a.sq-system:hover {
 }
 
 .sq-side-status-text > span {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 10px;
   color: var(--ink-3);
 }
@@ -2992,7 +2964,7 @@ a.sq-system:hover {
   border-left: 3px solid var(--status);
   border-radius: var(--radius-md);
   background: var(--card);
-  color: var(--color-text);
+  color: var(--lg-text);
 }
 
 a.sq-system-line:hover {
@@ -3001,14 +2973,14 @@ a.sq-system-line:hover {
 }
 
 .sq-system-line-go {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 11px;
   color: var(--ink-3);
   white-space: nowrap;
 }
 
 a.sq-system-line:hover .sq-system-line-go {
-  color: var(--color-accent-700);
+  color: var(--lg-green-700);
 }
 
 @media (max-width: 640px) {
@@ -3024,8 +2996,8 @@ a.sq-system-line:hover .sq-system-line-go {
  * can follow warms to the accent.
  */
 .sq a.sq-tag:hover {
-  background: var(--color-accent-100);
-  color: var(--color-accent-700);
+  background: var(--lg-green-100);
+  color: var(--lg-green-700);
 }
 
 /* --- the dot -------------------------------------------------------------- */
@@ -3097,7 +3069,7 @@ a.sq-system-line:hover .sq-system-line-go {
 }
 
 .sq-log-detail {
-  font-family: var(--font-mono);
+  font-family: var(--lg-mono);
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--ink-2);

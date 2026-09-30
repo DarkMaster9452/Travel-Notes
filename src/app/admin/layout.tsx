@@ -56,6 +56,7 @@ export default async function AdminLayout({
       <SqShell
         flag={`Staff panel · ${ROLE_LABEL[user.role].toLowerCase()}`}
         nav={adminNav(tabs, desk.pending)}
+        theme={user.theme === "DARK" ? "dark" : user.theme === "LIGHT" ? "light" : "system"}
         footNav={adminFootNav(tabs)}
         account={{
           href: "/admin/staff",
