@@ -1,5 +1,39 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/**
+ * `tailwind-merge` only knows Tailwind's own scale names. The Trail tokens
+ * (design/tokens.css) add their own, and without being told about them it
+ * reads `text-body` as a text *colour* and drops it against `text-primary-fg`,
+ * or the other way round. Every custom name is registered here, so a later
+ * class replaces an earlier one only when they really set the same thing.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    theme: {
+      text: ["display-xl", "display", "h1", "h2", "h3", "h4", "body-lg", "body", "body-sm", "caption", "overline"],
+      radius: ["xs", "control", "card", "dialog", "pill"],
+      shadow: ["1", "2", "3"],
+      ease: ["standard", "enter", "exit"],
+      animate: ["fade-in", "rise-in", "pop-in"],
+      container: [
+        "marketing",
+        "app",
+        "admin",
+        "text",
+        "form",
+        "narrow",
+        "dialog-sm",
+        "dialog-md",
+        "dialog-lg",
+      ],
+    },
+    classGroups: {
+      duration: [{ duration: ["fast", "base", "slow"] }],
+      z: [{ z: ["sticky", "nav", "dropdown", "overlay", "modal", "toast", "tooltip"] }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

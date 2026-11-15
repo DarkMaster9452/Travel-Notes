@@ -3,14 +3,18 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { signupAction } from "@/app/(auth)/actions";
-import { AuthForm } from "@/components/auth/auth-form";
+import { AuthForm } from "@/components/marketing/auth-form";
+import { homeFor } from "@/lib/auth/guards";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Create your account" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).auth.signup.submit };
+}
 
 export default async function SignupPage() {
   const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect(homeFor(user));
 
   return (
     <Suspense fallback={null}>

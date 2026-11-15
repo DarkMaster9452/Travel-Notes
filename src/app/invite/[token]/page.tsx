@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LogoMark } from "@/components/sq/icons";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { LogoMark } from "@/components/ui/logo";
+import { type } from "@/components/ui/typography";
 import { ROLE_LABEL } from "@/lib/admin/access";
 import { claimInvite } from "@/lib/admin/invites";
 import { recordAudit } from "@/lib/admin/audit";
@@ -61,25 +63,16 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const problem = REASONS[result.reason] ?? REASONS.unknown;
 
   return (
-    <main
-      className="sq"
-      style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "40px 20px" }}
-    >
-      <div className="sq-card sq-pad" style={{ maxWidth: 460, textAlign: "center" }}>
-        <span style={{ display: "inline-block", marginBottom: 18 }}>
-          <LogoMark size={34} />
-        </span>
-        <h1 style={{ fontSize: 26, lineHeight: 1.15, marginBottom: 12 }}>{problem.title}</h1>
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ink-2)", marginBottom: 22 }}>
-          {problem.body}
-        </p>
-        <p className="sq-kicker-sm" style={{ marginBottom: 18 }}>
-          Signed in as {user.email}
-        </p>
-        <Link href="/dashboard" className="sq-btn sq-btn-ghost sq-btn-sm">
+    <main className="grid min-h-dvh place-items-center px-4 py-10">
+      <Card pad="lg" className="flex w-full max-w-dialog-sm flex-col items-center gap-4 text-center">
+        <LogoMark className="size-12" />
+        <h1 className={type.h2}>{problem.title}</h1>
+        <p className="text-body-sm text-muted">{problem.body}</p>
+        <p className="text-caption text-subtle">Signed in as {user.email}</p>
+        <ButtonLink href="/dashboard" variant="secondary">
           Back to the product
-        </Link>
-      </div>
+        </ButtonLink>
+      </Card>
     </main>
   );
 }

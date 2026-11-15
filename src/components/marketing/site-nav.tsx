@@ -67,7 +67,7 @@ export function SiteNav({
     >
       <Container className="flex h-16 items-center gap-2">
         <Link href="/" aria-label={t.ui.home} className="mr-auto rounded-control no-underline lg:mr-4">
-          <Logo />
+          <Logo className="text-h4 sm:text-h3" />
         </Link>
 
         {links.length > 0 ? (
@@ -87,7 +87,9 @@ export function SiteNav({
           </nav>
         ) : null}
 
-        <LocaleSwitcher />
+        {/* On a phone the bar holds the logo, one action and the menu; the
+            language moves into the menu so nothing is squeezed. */}
+        <LocaleSwitcher className={links.length > 0 ? "hidden sm:inline-flex" : undefined} />
         {auth ? account : null}
 
         {links.length > 0 ? (
@@ -130,6 +132,9 @@ export function SiteNav({
                 </li>
               ) : null}
             </ul>
+            <div className="mt-2 border-t border-border pt-2 sm:hidden">
+              <LocaleSwitcher />
+            </div>
           </Container>
         </nav>
       ) : null}

@@ -1,28 +1,34 @@
-import Link from "next/link";
+import { ButtonLink } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { LogoMark } from "@/components/ui/logo";
+import { Overline, type } from "@/components/ui/typography";
+import { homeFor } from "@/lib/auth/guards";
+import { getCurrentUser } from "@/lib/auth/session";
+import { getT } from "@/lib/i18n/server";
 
-import { Contours, Eyebrow } from "@/components/field";
+/** The 404 for anything outside the app and the panel, which have their own. */
+export default async function NotFound() {
+  const [t, user] = await Promise.all([getT(), getCurrentUser()]);
+  const home = user ? homeFor(user) : null;
 
-export default function NotFound() {
   return (
-    <main className="relative flex min-h-dvh flex-col justify-center overflow-hidden bg-paper text-ink">
-      <div className="paper-grain" aria-hidden="true" />
-      <Contours />
-      <div className="wrap">
-        <Eyebrow tone="warm">404</Eyebrow>
-        <h1 className="h2 mt-4 max-w-[18ch]">This one isn&apos;t on the map.</h1>
-        <p className="lede mt-5 max-w-[46ch]">
-          The page you were looking for doesn&apos;t exist — or it belongs to someone else&apos;s
-          adventure.
-        </p>
-        <div className="hero-actions">
-          <Link href="/dashboard" className="btn btn-signal btn-lg">
-            Go to your quests
-          </Link>
-          <Link href="/" className="btn btn-ghost btn-lg">
-            Back to the start
-          </Link>
+    <main className="grid min-h-dvh place-items-center py-16">
+      <Container size="narrow" className="flex flex-col items-start gap-4">
+        <LogoMark className="size-12" />
+        <Overline>{t.notFound.code}</Overline>
+        <h1 className={type.display}>{t.notFound.title}</h1>
+        <p className="text-body-lg text-muted">{t.notFound.body}</p>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+          {home ? (
+            <ButtonLink href={home} size="lg">
+              {home === "/admin" ? t.landing.nav.openPanel : t.notFound.toQuests}
+            </ButtonLink>
+          ) : null}
+          <ButtonLink href="/" variant={home ? "secondary" : "primary"} size="lg">
+            {t.notFound.toStart}
+          </ButtonLink>
         </div>
-      </div>
+      </Container>
     </main>
   );
 }
