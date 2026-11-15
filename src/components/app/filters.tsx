@@ -32,7 +32,7 @@ export function ParamSelect({
   const [pending, start] = useTransition();
 
   return (
-    <Field label={label} htmlFor={id} className={cn("min-w-40 flex-1", className)}>
+    <Field label={label} htmlFor={id} className={className}>
       <Select
         id={id}
         value={value}
@@ -69,7 +69,7 @@ export function ParamSearch({
   return (
     <form
       role="search"
-      className={cn("min-w-56 flex-1", className)}
+      className={className}
       onSubmit={(event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
@@ -89,11 +89,17 @@ export function ParamSearch({
   );
 }
 
-/** The bar those controls sit in, above a list. */
+/**
+ * The bar those controls sit in, above a list. A grid that follows the width
+ * of its own column: one control per row on a phone, up to five across, and
+ * never so narrow that an option's label is cut off.
+ */
 export function FilterBar({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("flex flex-wrap items-end gap-4 rounded-card bg-surface-sunken p-4", className)}>
-      {children}
+    <div className={cn("@container rounded-card bg-surface-sunken p-4", className)}>
+      <div className="grid grid-cols-1 items-end gap-4 @md:grid-cols-2 @3xl:grid-cols-3 @6xl:grid-cols-5">
+        {children}
+      </div>
     </div>
   );
 }

@@ -155,3 +155,37 @@ export function DataList({
     </dl>
   );
 }
+
+/**
+ * Detail 8 / 4 (§6.4): the main column and a side column of a third. It
+ * splits once the column it sits in is wide enough (a container query), so it
+ * stacks on a phone and beside a rail alike. `asideFirst` puts the side column
+ * on top when stacked, for a screen whose one action lives there.
+ */
+export function DetailGrid({
+  children,
+  aside,
+  asideFirst,
+  className,
+}: {
+  children: ReactNode;
+  aside: ReactNode;
+  asideFirst?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("@container", className)}>
+      <div className="grid gap-4 @4xl:grid-cols-12 @4xl:items-start @4xl:gap-6">
+        <div className="flex min-w-0 flex-col gap-4 @4xl:col-span-8 @4xl:gap-6">{children}</div>
+        <aside
+          className={cn(
+            "flex min-w-0 flex-col gap-4 @4xl:col-span-4 @4xl:gap-6",
+            asideFirst && "order-first @4xl:order-none",
+          )}
+        >
+          {aside}
+        </aside>
+      </div>
+    </div>
+  );
+}

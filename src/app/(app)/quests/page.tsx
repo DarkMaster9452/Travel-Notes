@@ -1,22 +1,29 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+import { ArrowLeft, ArrowRight, Check, Lock, SearchX } from "lucide-react";
 
-import { MonthlyHero, QuestCard, toTrailQuest } from "@/components/domain/trail";
-import { SqFilterBar, SqParamSearch, SqParamSelect } from "@/components/sq/controls";
-import { LockGlyph } from "@/components/sq/icons";
-import { SqPaidChip } from "@/components/sq/locked";
-import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
+import { FilterBar, ParamSearch, ParamSelect } from "@/components/app/filters";
+import { PaidChip } from "@/components/app/locked";
+import { MonthlyHero, QuestCard, QuestGrid, toTrailQuest } from "@/components/domain/trail";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert, EmptyState } from "@/components/ui/feedback";
+import { PageHeader, PageStack } from "@/components/ui/page";
+import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import { formatNumber, tagFor } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n";
-import { getLocale, getT } from "@/lib/i18n/server";
-import { getOpenSlots } from "@/lib/quest/upcoming";
+import { formatNumber, tagFor } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
+import { slotTitle } from "@/lib/quest/labels";
 import { glanceFeaturedSlot } from "@/lib/quest/slot";
-import type { Prisma } from "@prisma/client";
+import { TRAIL_MARKS, isTrailMark } from "@/lib/trail-marks";
 
-export const metadata: Metadata = { title: "Quest database" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.nav.quests };
+}
 export const dynamic = "force-dynamic";
 
 const GRADES = ["EASY", "MODERATE", "HARD", "EXPERT"] as const;
@@ -27,9 +34,10 @@ const PAGE_SIZE = 40;
  *
  * A member can file proof against anything published here, not only against
  * what was issued to them — somebody who walked a route on Saturday should be
- * able to log it on Sunday. So the table's job is to be findable: region,
- * grade, cadence and month, all in the URL so a filtered view can be sent to
- * somebody else and survive the back button.
+ * able to log it on Sunday. So the page's job is to be findable: region,
+ * difficulty, trail mark and cadence (design/DESIGN-SYSTEM.md §12), all in the
+ * URL so a filtered view can be sent to somebody else and survive the back
+ * button. `month` is still honoured in the URL, though it has no control.
  *
  * Rows this account holds are marked rather than filtered to the top. Where a
  * quest sits in the list is a fact about the catalogue; whether it is yours is
@@ -38,7 +46,15 @@ const PAGE_SIZE = 40;
 export default async function QuestDatabasePage({
   searchParams,
 }: {
-  searchParams: Promise<{ region?: string; grade?: string; cadence?: string; month?: string; q?: string; page?: string }>;
+  searchParams: Promise<{
+    region?: string;
+    grade?: string;
+    mark?: string;
+    cadence?: string;
+    month?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const user = await requireClient();
   const params = await searchParams;
@@ -48,16 +64,16 @@ export default async function QuestDatabasePage({
   const region = params.region ?? "all";
   const cadence = params.cadence ?? "all";
   const month = params.month ?? "all";
+  const mark = params.mark && isTrailMark(params.mark) ? params.mark : "all";
   const search = (params.q ?? "").trim();
 
   const now = new Date();
-  const [entitlement, t, locale, monthly, openSlots] = await Promise.all([
+  const [entitlement, reader, monthly] = await Promise.all([
     getEntitlement(user.id),
-    getT(user.id),
-    getLocale(user.id),
+    getReader(user.id),
     glanceFeaturedSlot(user.id, "month", now),
-    getOpenSlots(now),
   ]);
+  const { t, locale, units } = reader;
 
   // Range is a capability: free stops at the country somebody measures from,
   // Explorer opens Europe, Ultra opens the map. The filter still lists every
@@ -77,6 +93,7 @@ export default async function QuestDatabasePage({
   if (reach === "home" && home?.homeLocation) where.country = home.homeLocation;
   if (grade !== "all") where.difficulty = grade as (typeof GRADES)[number];
   if (region !== "all") where.region = region;
+  if (mark !== "all") where.trailMarks = { has: mark };
   if (search) {
     where.OR = [
       { title: { contains: search, mode: "insensitive" } },
@@ -94,7 +111,7 @@ export default async function QuestDatabasePage({
     where.createdAt = { gte: from, lt: to };
   }
 
-  const [total, quests, regions, mine, months] = await Promise.all([
+  const [total, quests, regions, mine] = await Promise.all([
     db.quest.count({ where }),
     db.quest.findMany({
       where,
@@ -129,180 +146,156 @@ export default async function QuestDatabasePage({
       where: { userId: user.id },
       select: { questId: true, completed: true },
     }),
-    db.quest.findMany({
-      where: { published: true },
-      orderBy: { createdAt: "desc" },
-      select: { createdAt: true },
-      take: 400,
-    }),
   ]);
 
   const held = new Map(mine.map((row) => [row.questId, row.completed]));
-  const monthOptions = uniqueMonths(
-    months.map((row) => row.createdAt),
-    locale,
-  );
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <>
-      <PageHeader
-        kicker={t.questsPage.kicker}
-        title={t.questsPage.title}
-        lede={t.questsPage.lede}
-        right={
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <Tag small>{t.questsPage.count(formatNumber(locale, total))}</Tag>
-            {reach === "home" ? <SqPaidChip plan="explorer" /> : null}
-          </div>
-        }
-      />
+    <PageStack>
+      <div>
+        <PageHeader
+          title={t.questsPage.title}
+          lede={t.questsPage.lede}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge>{t.questsPage.count(formatNumber(locale, total))}</Badge>
+              {reach === "home" ? <PaidChip plan="explorer" /> : null}
+            </div>
+          }
+        />
 
-      {/* The monthly quest sits above the catalogue, never inside it (§6.4). */}
-      {monthly.featured && !monthly.closed ? (
-        <div style={{ marginBottom: 24 }}>
+        {/* The monthly quest sits above the catalogue, never inside it (§6.4). */}
+        {monthly.featured && !monthly.closed ? (
           <MonthlyHero
             quest={toTrailQuest(monthly.featured.summary, t)}
             t={t}
             locale={locale}
-            monthLabel={openSlots.find((slot) => slot.period === "MONTHLY")?.label ?? ""}
+            units={units}
+            monthLabel={slotTitle(slotFor("MONTHLY", now), locale, t)}
             closesAt={monthly.closesAt}
             lede={monthly.featured.summary.subtitle}
             primary={{ label: t.trail.join, href: "/monthly" }}
           />
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
-      {reach === "home" ? (
-        <p
-          className="sq-tinted"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "12px 18px",
-            marginBottom: 16,
-            fontSize: 13,
-            lineHeight: 1.5,
-            color: "var(--ink-2)",
-          }}
-        >
-          <span style={{ color: "var(--ink-3)" }}>
-            <LockGlyph size={14} />
-          </span>
-          {t.questsPage.homeOnly(home?.homeLocation ?? t.questsPage.yourCountry)}
-        </p>
-      ) : null}
+      <div className="flex flex-col gap-4">
+        {reach === "home" ? (
+          <Alert tone="info">{t.questsPage.homeOnly(home?.homeLocation ?? t.questsPage.yourCountry)}</Alert>
+        ) : null}
 
-      <SqFilterBar>
-        <SqParamSearch
-          name="q"
-          value={search}
-          label={t.questsPage.find}
-          placeholder={t.questsPage.findPlaceholder}
-        />
-        <SqParamSelect
-          name="region"
-          value={region}
-          label={t.questsPage.region}
-          options={[
-            { value: "all", label: t.questsPage.everyRegion },
-            ...regions.map((row) => ({ value: row.region, label: row.region })),
-          ]}
-        />
-        <SqParamSelect
-          name="grade"
-          value={grade ?? "all"}
-          label={t.questsPage.grade}
-          options={[
-            { value: "all", label: t.questsPage.anyGrade },
-            ...GRADES.map((value) => ({ value, label: title(value) })),
-          ]}
-        />
-        <SqParamSelect
-          name="cadence"
-          value={cadence}
-          label={t.questsPage.cadence}
-          options={[
-            { value: "all", label: t.questsPage.any },
-            { value: "MONTHLY", label: t.questsPage.wasMonthly },
-            { value: "WEEKLY", label: t.questsPage.wasWeekly },
-            { value: "none", label: t.questsPage.neverBooked },
-          ]}
-        />
-        <SqParamSelect
-          name="month"
-          value={month}
-          label={t.questsPage.written}
-          options={[{ value: "all", label: t.questsPage.anyMonth }, ...monthOptions]}
-        />
-      </SqFilterBar>
+        <FilterBar>
+          <ParamSearch name="q" value={search} label={t.questsPage.find} placeholder={t.questsPage.findPlaceholder} />
+          <ParamSelect
+            name="region"
+            value={region}
+            label={t.questsPage.region}
+            options={[
+              { value: "all", label: t.questsPage.everyRegion },
+              ...regions.map((row) => ({ value: row.region, label: row.region })),
+            ]}
+          />
+          <ParamSelect
+            name="grade"
+            value={grade ?? "all"}
+            label={t.questsPage.grade}
+            options={[
+              { value: "all", label: t.questsPage.anyGrade },
+              ...GRADES.map((value) => ({ value, label: t.trail.difficulty[value] })),
+            ]}
+          />
+          <ParamSelect
+            name="mark"
+            value={mark}
+            label={t.app.quest.mark}
+            options={[
+              { value: "all", label: t.app.quest.anyMark },
+              ...TRAIL_MARKS.map((value) => ({ value, label: t.trail.marks[value] })),
+            ]}
+          />
+          <ParamSelect
+            name="cadence"
+            value={cadence}
+            label={t.questsPage.cadence}
+            options={[
+              { value: "all", label: t.questsPage.any },
+              { value: "MONTHLY", label: t.questsPage.wasMonthly },
+              { value: "WEEKLY", label: t.questsPage.wasWeekly },
+              { value: "none", label: t.questsPage.neverBooked },
+            ]}
+          />
+        </FilterBar>
 
-      <section>
         {quests.length === 0 ? (
-          <div className="sq-card" style={{ padding: 26 }}>
+          <Card>
             <EmptyState
-              glyph="search"
+              icon={SearchX}
               title={t.questsPage.noMatch}
-              body={t.questsPage.noMatchBody}
               action={
-                <Link href="/quests" className="sq-btn sq-btn-ghost sq-btn-sm">
+                <ButtonLink href="/quests" variant="secondary">
                   {t.questsPage.clearFilters}
-                </Link>
+                </ButtonLink>
               }
-            />
-          </div>
+            >
+              {t.questsPage.noMatchBody}
+            </EmptyState>
+          </Card>
         ) : (
-          <div className="trail-qgrid sq-stagger">
-            {quests.map((quest, index) => {
+          <QuestGrid>
+            {quests.map((quest) => {
               const status = held.get(quest.id);
               return (
-                <div key={quest.id} style={{ display: "contents", ["--i" as string]: index }}>
-                  <QuestCard
-                    quest={toTrailQuest(quest, t)}
-                    t={t}
-                    locale={locale}
-                    href={`/quests/${quest.id}`}
-                    period={quest.schedules[0]?.period === "WEEKLY" ? "WEEKLY" : null}
-                    foot={
-                      <>
-                        <span>
-                          {status ? t.questsPage.done : status === false ? t.questsPage.yours : t.trail.notStarted}
-                        </span>
-                        <span className="trail-btn" data-variant="secondary" data-size="sm">
-                          {t.trail.detail}
-                        </span>
-                      </>
-                    }
-                  />
-                </div>
+                <QuestCard
+                  key={quest.id}
+                  quest={toTrailQuest(quest, t)}
+                  t={t}
+                  locale={locale}
+                  units={units}
+                  href={`/quests/${quest.id}`}
+                  period={quest.schedules[0]?.period === "WEEKLY" ? "WEEKLY" : null}
+                  foot={
+                    <>
+                      {status ? (
+                        <Badge tone="success" icon={Check}>
+                          {t.app.quest.done}
+                        </Badge>
+                      ) : status === false ? (
+                        <Badge tone="primary">{t.app.quest.yours}</Badge>
+                      ) : (
+                        <span>{t.trail.notStarted}</span>
+                      )}
+                      <span className="inline-flex items-center gap-1 font-medium text-text">
+                        {t.trail.detail}
+                        <ArrowRight className="size-4" aria-hidden="true" />
+                      </span>
+                    </>
+                  }
+                />
               );
             })}
-          </div>
+          </QuestGrid>
         )}
-      </section>
 
-      {pages > 1 ? (
-        <nav
-          style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }}
-          aria-label={t.common.pages}
-        >
-          {page > 1 ? (
-            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={pageHref(params, page - 1)}>
-              {t.questsPage.newer}
-            </Link>
-          ) : null}
-          <span className="sq-mono" style={{ alignSelf: "center", fontSize: 11, color: "var(--ink-3)" }}>
-            {t.questsPage.page(page, pages)}
-          </span>
-          {page < pages ? (
-            <Link className="sq-btn sq-btn-ghost sq-btn-sm" href={pageHref(params, page + 1)}>
-              {t.questsPage.older}
-            </Link>
-          ) : null}
-        </nav>
-      ) : null}
-    </>
+        {pages > 1 ? (
+          <nav className="flex items-center justify-center gap-3" aria-label={t.common.pages}>
+            {page > 1 ? (
+              <ButtonLink variant="secondary" size="sm" href={pageHref(params, page - 1)}>
+                <ArrowLeft aria-hidden="true" />
+                {t.app.quest.newer}
+              </ButtonLink>
+            ) : null}
+            <span className="text-caption tabular-nums text-muted">{t.questsPage.page(page, pages)}</span>
+            {page < pages ? (
+              <ButtonLink variant="secondary" size="sm" href={pageHref(params, page + 1)}>
+                {t.app.quest.older}
+                <ArrowRight aria-hidden="true" />
+              </ButtonLink>
+            ) : null}
+          </nav>
+        ) : null}
+      </div>
+    </PageStack>
   );
 }
 
@@ -313,23 +306,4 @@ function pageHref(params: Record<string, string | undefined>, page: number): str
   }
   next.set("page", String(page));
   return `/quests?${next.toString()}`;
-}
-
-function uniqueMonths(dates: Date[], locale: Locale): { value: string; label: string }[] {
-  const seen = new Map<string, string>();
-  const format = new Intl.DateTimeFormat(tagFor(locale), {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-
-  for (const date of dates) {
-    const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-    if (!seen.has(key)) seen.set(key, format.format(date));
-  }
-  return [...seen].map(([value, label]) => ({ value, label }));
-}
-
-function title(value: string): string {
-  return value.charAt(0) + value.slice(1).toLowerCase();
 }
