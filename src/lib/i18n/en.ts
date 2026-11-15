@@ -23,11 +23,13 @@
  * the string for a screen means opening the screen's namespace.
  */
 import type { PluralForms } from "@/lib/i18n/format";
+import { appEn } from "@/lib/i18n/app";
 import { marketingEn } from "@/lib/i18n/marketing/en";
 
 export const en = {
   /* ---- landing, auth, legal and error pages: see ./marketing/en.ts ------ */
   ...marketingEn,
+  ...appEn,
 
   /* ---- words the whole app shares --------------------------------------- */
   common: {
@@ -69,12 +71,12 @@ export const en = {
   /* ---- the rail --------------------------------------------------------- */
   nav: {
     dashboard: "Dashboard",
-    monthly: "The monthly",
-    quests: "Quest database",
+    monthly: "Monthly quest",
+    quests: "Quests",
     leaderboard: "Leaderboard",
     stickers: "Stickers",
-    submissions: "Submissions",
-    people: "People & groups",
+    submissions: "Proof",
+    people: "People",
     settings: "Settings",
     signOut: "Sign out",
     menu: "Menu",

@@ -1,4 +1,5 @@
 import type { Messages } from "@/lib/i18n";
+import { appDe } from "@/lib/i18n/app";
 import { marketingDe } from "@/lib/i18n/marketing/de";
 
 /**
@@ -18,6 +19,7 @@ import { marketingDe } from "@/lib/i18n/marketing/de";
  */
 export const de: Messages = {
   ...marketingDe,
+  ...appDe,
 
   common: {
     published: "Veröffentlicht",
@@ -53,12 +55,12 @@ export const de: Messages = {
 
   nav: {
     dashboard: "Übersicht",
-    monthly: "Der Monatliche",
-    quests: "Quest-Datenbank",
+    monthly: "Monatsquest",
+    quests: "Quests",
     leaderboard: "Rangliste",
     stickers: "Sticker",
-    submissions: "Eingereicht",
-    people: "Leute & Gruppen",
+    submissions: "Nachweise",
+    people: "Leute",
     settings: "Einstellungen",
     signOut: "Abmelden",
     menu: "Menü",

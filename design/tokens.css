@@ -495,3 +495,6 @@
 @utility z-tooltip {
   z-index: var(--sq-z-tooltip);
 }
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

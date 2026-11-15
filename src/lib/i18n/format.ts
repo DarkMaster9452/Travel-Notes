@@ -25,7 +25,7 @@ export function tagFor(locale: Locale): string {
   return TAGS[locale] ?? TAGS.en;
 }
 
-export type DateShape = "day" | "dayMonth" | "full" | "monthYear" | "month" | "weekday" | "time";
+export type DateShape = "day" | "dayMonth" | "full" | "monthYear" | "month" | "weekday" | "time" | "opens";
 
 const DATE_SHAPES: Record<DateShape, Intl.DateTimeFormatOptions> = {
   /** "26 Aug 2026" */
@@ -42,6 +42,8 @@ const DATE_SHAPES: Record<DateShape, Intl.DateTimeFormatOptions> = {
   weekday: { weekday: "long" },
   /** "06:00" */
   time: { hour: "2-digit", minute: "2-digit" },
+  /** "Mon 16 Nov, 06:00" — the instant a slot opens */
+  opens: { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" },
 };
 
 const dateCache = new Map<string, Intl.DateTimeFormat>();

@@ -1,4 +1,5 @@
 import type { Messages } from "@/lib/i18n";
+import { appSk } from "@/lib/i18n/app";
 import { marketingSk } from "@/lib/i18n/marketing/sk";
 
 /**
@@ -19,6 +20,7 @@ import { marketingSk } from "@/lib/i18n/marketing/sk";
  */
 export const sk: Messages = {
   ...marketingSk,
+  ...appSk,
 
   common: {
     published: "Zverejnené",
@@ -54,12 +56,12 @@ export const sk: Messages = {
 
   nav: {
     dashboard: "Prehľad",
-    monthly: "Mesačný",
-    quests: "Databáza questov",
+    monthly: "Mesačný quest",
+    quests: "Questy",
     leaderboard: "Rebríček",
     stickers: "Nálepky",
-    submissions: "Odovzdané",
-    people: "Ľudia a skupiny",
+    submissions: "Dôkazy",
+    people: "Ľudia",
     settings: "Nastavenia",
     signOut: "Odhlásiť sa",
     menu: "Menu",

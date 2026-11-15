@@ -1,33 +1,33 @@
-import Link from "next/link";
-
-import { SqCountdown } from "@/components/sq/countdown";
-import { RailBar, RailCard, RailFigure, RailLine } from "@/components/sq/rail";
-import { SqSticker } from "@/components/sq/sticker";
+import { RailBar, RailCard, RailFigure, RailLine } from "@/components/app/rail";
+import { BoardList, BoardRow } from "@/components/domain/board";
+import { Countdown } from "@/components/domain/countdown";
+import { Sticker } from "@/components/domain/sticker";
+import { ButtonLink } from "@/components/ui/button";
 import { getAchievements } from "@/lib/achievements";
 import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { formatDate, formatNumber, plural } from "@/lib/i18n/format";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getReader } from "@/lib/i18n/server";
+import { formatDistance, formatHeight } from "@/lib/i18n/units";
 import { getLeaderboard } from "@/lib/leaderboard";
+import { slotTitle } from "@/lib/quest/labels";
 import { getUserStats } from "@/lib/quest/service";
 
 export const dynamic = "force-dynamic";
 
-
 /**
  * The column beside the dashboard.
  *
- * The dashboard answers "what is open"; this answers the four questions that
- * follow it and that were otherwise costing a page load each — when the next
- * one lands, where that has left you on the board, whether anything of yours
- * is still sitting on a reader's desk, and which sticker is closest.
+ * The dashboard answers "what is open"; this answers the questions that follow
+ * it and that were otherwise costing a page load each — when the next one
+ * lands, where that has left you on the board, whether anything of yours is
+ * still waiting, and which sticker is closest.
  *
- * Nothing here is decoration. A column of ornament would fill the window and
- * still leave the screen empty, so every card is a figure somebody would
- * otherwise have gone looking for, and a card with nothing to say says the
- * quiet true thing rather than being padded out.
+ * Nothing here is decoration: every card is a figure somebody would otherwise
+ * have gone looking for, and a card with nothing to say says the quiet true
+ * thing rather than being padded out.
  */
 export default async function DashboardRail() {
   const user = await requireClient();
@@ -41,23 +41,20 @@ export default async function DashboardRail() {
   const nextWeekly = slotFor("WEEKLY", nextWeek);
   const nextMonthly = slotFor("MONTHLY", nextMonth);
 
-  const [board, stats, entitlement, revocations, pending, t, locale] = await Promise.all([
+  const [board, stats, entitlement, revocations, pending, reader] = await Promise.all([
     getLeaderboard("MONTHLY", undefined, now),
     getUserStats(user.id),
     getEntitlement(user.id),
-    db.achievementRevocation.findMany({
-      where: { userId: user.id },
-      select: { achievementId: true },
-    }),
+    db.achievementRevocation.findMany({ where: { userId: user.id }, select: { achievementId: true } }),
     db.submission.findMany({
       where: { userId: user.id, status: "PENDING" },
       orderBy: { createdAt: "asc" },
       take: 3,
       select: { id: true, createdAt: true, quest: { select: { title: true } } },
     }),
-    getT(user.id),
-    getLocale(user.id),
+    getReader(user.id),
   ]);
+  const { t, locale, units } = reader;
 
   const achievements = getAchievements(
     stats,
@@ -76,43 +73,44 @@ export default async function DashboardRail() {
       ? board.rows.slice(0, 3)
       : board.rows.slice(Math.max(0, myIndex - 1), Math.max(0, myIndex - 1) + 3);
 
-  // The closest sticker is the nearest one the work could actually reach —
-  // a plan-locked sticker is not close, however far along its stat is, and
+  // The closest sticker is the nearest one the work could actually reach — a
+  // plan-locked sticker is not close, however far along its stat is, and
   // pointing at one would be selling rather than telling.
   const closest = achievements
     .filter((entry) => !entry.earned && !entry.planLocked && !entry.revoked)
     .sort((a, b) => b.progress - a.progress)[0];
 
+  const open = (href: string) => (
+    <ButtonLink href={href} variant="link" className="text-caption">
+      {t.rail.open}
+    </ButtonLink>
+  );
+
   return (
     <>
       <RailCard
         title={t.rail.nextDrop}
-        tone="dark"
-        index={0}
         foot={
-          <>
+          <span className="flex justify-between gap-3 text-muted">
             <span>{t.rail.thenMonthly}</span>
             <span>{formatDate(locale, nextMonthly.openAt, "dayMonth")}</span>
-          </>
+          </span>
         }
       >
         <RailFigure
-          value={<SqCountdown to={nextWeekly.openAt.toISOString()} closedLabel={t.rail.openNow} />}
+          value={<Countdown to={nextWeekly.openAt.toISOString()} closedLabel={t.rail.openNow} />}
           note={t.rail.untilWeekly(formatDate(locale, nextWeekly.openAt, "dayMonth"))}
         />
       </RailCard>
 
       <RailCard
         title={t.rail.standing}
-        meta={board.label}
-        index={1}
+        meta={slotTitle(slotFor("MONTHLY", now), locale, t)}
         foot={
-          <>
+          <span className="flex justify-between gap-3 text-muted">
             <span>{t.rail.fullBoard}</span>
-            <Link href="/leaderboard" style={{ color: "inherit" }}>
-              {t.rail.open}
-            </Link>
-          </>
+            {open("/leaderboard")}
+          </span>
         }
       >
         {myRow ? (
@@ -130,51 +128,33 @@ export default async function DashboardRail() {
             }
           />
         ) : (
-          <div className="sq-rail-body">
-            <p className="sq-rail-note">{t.rail.notOnBoard}</p>
-          </div>
+          <p className="text-body-sm text-muted">{t.rail.notOnBoard}</p>
         )}
 
-        {fragment.map((row) => (
-          <div
-            key={row.userId}
-            className="sq-rail-standing"
-            data-me={row.userId === user.id ? "1" : "0"}
-          >
-            <span className="sq-mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-              {row.rank}
-            </span>
-            <span
-              style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-            >
-              {row.username}
-            </span>
-            <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 14 }}>
-              {formatNumber(locale, row.score)}
-            </b>
-          </div>
-        ))}
+        {fragment.length > 0 ? (
+          <BoardList className="-mx-3 mt-3">
+            {fragment.map((row) => (
+              <BoardRow
+                key={row.userId}
+                rank={row.rank}
+                name={row.username}
+                score={formatNumber(locale, row.score)}
+                me={row.userId === user.id}
+              />
+            ))}
+          </BoardList>
+        ) : null}
       </RailCard>
 
-      <RailCard
-        title={t.rail.desk}
-        meta={pending.length > 0 ? String(pending.length) : undefined}
-        index={2}
-      >
+      <RailCard title={t.rail.desk} meta={pending.length > 0 ? String(pending.length) : undefined}>
         {pending.length === 0 ? (
-          <div className="sq-rail-body">
-            <p className="sq-rail-note">{t.rail.deskEmpty}</p>
-          </div>
+          <p className="text-body-sm text-muted">{t.rail.deskEmpty}</p>
         ) : (
           pending.map((submission) => (
             <RailLine
               key={submission.id}
               label={submission.quest.title}
-              value={
-                <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-                  {formatDate(locale, submission.createdAt)}
-                </span>
-              }
+              value={<span className="font-normal text-subtle">{formatDate(locale, submission.createdAt)}</span>}
             />
           ))
         )}
@@ -183,46 +163,32 @@ export default async function DashboardRail() {
       {closest ? (
         <RailCard
           title={t.rail.closest}
-          index={3}
           foot={
-            <>
+            <span className="flex justify-between gap-3 text-muted">
               <span>{t.rail.wholeSheet}</span>
-              <Link href="/stickers" style={{ color: "inherit" }}>
-                {t.rail.open}
-              </Link>
-            </>
+              {open("/stickers")}
+            </span>
           }
         >
-          <div className="sq-rail-body" style={{ display: "flex", gap: 13, alignItems: "flex-start" }}>
-            <SqSticker sticker={closest.sticker} earned={false} size={46} title={closest.label} />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <b style={{ display: "block", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 15 }}>
-                {closest.label}
-              </b>
-              <p className="sq-rail-note" style={{ marginTop: 4 }}>
-                {closest.description}
-              </p>
-              <RailBar pct={closest.progress * 100} />
-              <span
-                className="sq-mono"
-                style={{ display: "block", marginTop: 7, fontSize: 10, color: "var(--ink-3)" }}
-              >
-                {closest.progressLabel}
-              </span>
+          <div className="flex items-start gap-3">
+            <Sticker sticker={closest.sticker} state="open" size="sm" />
+            <div className="min-w-0 flex-1">
+              <b className="block text-body-sm font-semibold text-text">{closest.label}</b>
+              <p className="mt-1 text-caption text-muted">{closest.description}</p>
+              <RailBar pct={closest.progress * 100} label={t.app.dashboard.progress(closest.label)} />
+              <span className="mt-2 block text-caption tabular-nums text-subtle">{closest.progressLabel}</span>
             </div>
           </div>
         </RailCard>
       ) : null}
 
-      <RailCard title={t.rail.logbook} meta={t.rail.allTime} index={4}>
+      <RailCard title={t.rail.logbook} meta={t.rail.allTime}>
         <RailLine label={t.rail.questsLogged} value={formatNumber(locale, stats.completedCount)} />
-        <RailLine label={t.rail.kilometres} value={formatNumber(locale, stats.kmExplored)} />
-        <RailLine label={t.rail.metresClimbed} value={formatNumber(locale, stats.elevation)} />
+        <RailLine label={t.rail.kilometres} value={formatDistance(locale, stats.kmExplored, units)} />
+        <RailLine label={t.rail.metresClimbed} value={formatHeight(locale, stats.elevation, units)} />
         <RailLine
           label={t.rail.regions}
-          value={`${stats.regions}${
-            stats.countries > 1 ? ` · ${t.rail.countries(stats.countries)}` : ""
-          }`}
+          value={`${stats.regions}${stats.countries > 1 ? ` · ${t.rail.countries(stats.countries)}` : ""}`}
         />
       </RailCard>
     </>

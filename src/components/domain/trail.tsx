@@ -233,26 +233,13 @@ export function QuestFigures({
  * length of a title. The row gap lives on the card's margin, not on the grid:
  * a grid gap would be added between every one of a card's nine rows.
  */
-export function QuestGrid({
-  children,
-  className,
-  columns = 3,
-}: {
-  children: ReactNode;
-  className?: string;
-  /** The app's main column beside a rail is narrower: two across at most. */
-  columns?: 1 | 2 | 3;
-}) {
+export function QuestGrid({ children, className }: { children: ReactNode; className?: string }) {
+  // Columns follow the width of the column the grid sits in (a container
+  // query), not the viewport: the same grid is three across on the landing
+  // page, two beside the app's rail and one on a phone.
   return (
-    <div
-      className={cn(
-        "grid grid-cols-1 gap-x-4 lg:gap-x-6",
-        columns >= 2 && "md:grid-cols-2",
-        columns === 3 && "xl:grid-cols-3",
-        className,
-      )}
-    >
-      {children}
+    <div className={cn("@container", className)}>
+      <div className="grid grid-cols-1 gap-x-4 @2xl:grid-cols-2 @4xl:grid-cols-3 @4xl:gap-x-6">{children}</div>
     </div>
   );
 }
@@ -414,19 +401,18 @@ export function MonthlyHero({
   ];
 
   return (
-    <FeaturePanel
-      as="article"
-      aria-label={`${t.trail.monthly} · ${monthLabel}`}
-      className={cn("grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-center lg:gap-10", className)}
-    >
+    <FeaturePanel as="article" aria-label={`${t.trail.monthly} · ${monthLabel}`} className={cn("@container", className)}>
+      {/* 7 / 5 once the panel itself is wide enough, whatever the viewport:
+          beside the app's rail the photo goes on top, as on a phone. */}
+      <div className="grid grid-cols-1 gap-6 @3xl:grid-cols-12 @3xl:items-center @3xl:gap-10">
       <TrailPhoto
         src={quest.coverImage}
         alt=""
         eager
         tone="feature"
-        className="aspect-4/3 rounded-card lg:col-span-7"
+        className="aspect-4/3 rounded-card @lg:aspect-2/1 @3xl:col-span-7 @3xl:aspect-4/3"
       />
-      <div className="flex min-w-0 flex-col gap-4 lg:col-span-5">
+      <div className="flex min-w-0 flex-col gap-4 @3xl:col-span-5">
         <div className="flex flex-wrap gap-2">
           <Badge tone="monthly">
             {t.trail.monthly} · {monthLabel}
@@ -439,7 +425,7 @@ export function MonthlyHero({
           <TrailMarks marks={quest.trailMarks} t={t} ground="feature" />
           <DifficultyMeter level={quest.difficulty} t={t} ground="feature" />
         </div>
-        <dl className="grid grid-cols-2 gap-2">
+        <dl className="grid grid-cols-2 gap-2 @lg:grid-cols-4 @3xl:grid-cols-2">
           {tiles.map((tile) => (
             <div key={tile.label} className="flex min-w-0 flex-col-reverse rounded-control bg-feature-soft px-3 py-2">
               <dt className="text-caption">{tile.label}</dt>
@@ -470,6 +456,7 @@ export function MonthlyHero({
             ) : null}
           </div>
         ) : null}
+      </div>
       </div>
     </FeaturePanel>
   );
