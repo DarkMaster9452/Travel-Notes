@@ -1,4 +1,5 @@
 import { dashboardDe, dashboardEn, dashboardSk } from "./dashboard";
+import { proofDe, proofEn, proofSk } from "./proof";
 import { questDe, questEn, questSk } from "./quest";
 import { shellDe, shellEn, shellSk } from "./shell";
 
@@ -11,8 +12,8 @@ import { shellDe, shellEn, shellSk } from "./shell";
  * `t.app.<screen>`; `appSk` and `appDe` are typed against `appEn`, so a
  * missing translation is a build error here too.
  */
-export const appEn = { app: { ...shellEn, ...dashboardEn, ...questEn } };
+export const appEn = { app: { ...shellEn, ...dashboardEn, ...questEn, proofForm: proofEn.proof } };
 
-export const appSk: typeof appEn = { app: { ...shellSk, ...dashboardSk, ...questSk } };
+export const appSk: typeof appEn = { app: { ...shellSk, ...dashboardSk, ...questSk, proofForm: proofSk.proof } };
 
-export const appDe: typeof appEn = { app: { ...shellDe, ...dashboardDe, ...questDe } };
+export const appDe: typeof appEn = { app: { ...shellDe, ...dashboardDe, ...questDe, proofForm: proofDe.proof } };
