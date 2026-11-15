@@ -1,17 +1,12 @@
 @import "tailwindcss";
 
-/* Imported into Tailwind's `components` layer, not unlayered, so a utility can
-   still override a component class. Unlayered CSS beats every layered rule, so
-   without this the field-guide classes would silently win over any Tailwind
-   utility applied alongside them. */
-@import "../styles/field-guide.css" layer(components);
-
-/* The signed-in product (app + admin) is a separate, self-contained system,
-   scoped to `.sq` so it cannot reach the marketing page and the marketing
-   page cannot reach it. See the file header for why that scoping matters. */
+/* The admin panel's own component classes: the last legacy layer, scoped to
+   `.sq`. Imported into Tailwind's `components` layer, not unlayered, so a
+   utility can still override a component class. Removed when the panel is
+   rebuilt on the Trail primitives. */
 @import "../styles/summit.css" layer(components);
 
-/* Trail component classes. Last, so they win over the legacy rules above. */
+/* Trail component classes: the few things utilities cannot say. */
 @import "../styles/trail.css" layer(components);
 
 /* The Trail design system. Every value lives in design/tokens.css and every
@@ -19,31 +14,18 @@
 @import "../../design/tokens.css";
 
 /* ---------------------------------------------------------------------------
-   Legacy aliases.
+   Legacy aliases, for the admin panel only.
 
-   The component classes in `field-guide.css` and `summit.css` predate the
-   Trail system and read short names (`--paper`, `--ink`, `--pine`, …). They
-   are pointed at the Trail tokens here, so the whole product wears the new
-   system while the components are rebuilt one by one. New code never reads
-   these — it uses the semantic tokens (`bg-surface`, `text-muted`, …).
+   `summit.css` and the panel's inline styles predate the Trail system and read
+   short names (`--paper`, `--ink`, `--pine`, …). They are pointed at the Trail
+   tokens here, so the panel wears the new palette until it is rebuilt. New
+   code never reads these: it uses the semantic tokens (`bg-surface`,
+   `text-muted`, …).
 
    Declared on `:root` *and* on every `[data-theme]` subtree: custom
    properties inherit as computed values, so an alias resolved at `:root`
    would carry the light value into a dark subtree.
 --------------------------------------------------------------------------- */
-@theme inline {
-  --color-paper: var(--sq-bg);
-  --color-paper-2: var(--sq-surface-sunken);
-  --color-paper-3: var(--sq-border);
-  --color-card: var(--sq-surface);
-  --color-ink: var(--sq-text);
-  --color-ink-2: var(--sq-text-muted);
-  --color-ink-3: var(--sq-text-subtle);
-  --color-line: var(--sq-border);
-  --color-line-2: var(--sq-border-soft);
-  --font-serif: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
-}
-
 :root,
 [data-theme] {
   --paper: var(--sq-bg);

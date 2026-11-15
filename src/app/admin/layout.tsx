@@ -1,4 +1,5 @@
 import { logoutAction } from "@/app/(auth)/actions";
+import { I18nProvider } from "@/components/i18n";
 import { adminFootNav, adminNav } from "@/components/sq/nav";
 import { SqShell } from "@/components/sq/shell";
 import { SqSystemsPulse } from "@/components/sq/systems";
@@ -52,8 +53,13 @@ export default async function AdminLayout({
   const tabs = tabsFor(user.role);
 
   return (
+    // The panel is written in English throughout. The root layout now provides
+    // the reader's language to everything; this keeps the few translated words
+    // in the shared shell (sign out, the brand) in step with the rest of it.
+    <I18nProvider locale="en">
     <SqToastProvider>
       <SqShell
+        lang="en"
         flag={`Staff panel · ${ROLE_LABEL[user.role].toLowerCase()}`}
         nav={adminNav(tabs, desk.pending)}
         theme={user.theme === "DARK" ? "dark" : user.theme === "LIGHT" ? "light" : "system"}
@@ -72,5 +78,6 @@ export default async function AdminLayout({
         {children}
       </SqShell>
     </SqToastProvider>
+    </I18nProvider>
   );
 }
