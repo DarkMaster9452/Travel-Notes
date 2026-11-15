@@ -23,8 +23,12 @@
  * the string for a screen means opening the screen's namespace.
  */
 import type { PluralForms } from "@/lib/i18n/format";
+import { marketingEn } from "@/lib/i18n/marketing/en";
 
 export const en = {
+  /* ---- landing, auth, legal and error pages: see ./marketing/en.ts ------ */
+  ...marketingEn,
+
   /* ---- words the whole app shares --------------------------------------- */
   common: {
     published: "Published",
@@ -600,6 +604,8 @@ export const en = {
       YELLOW: "Yellow",
       EDUCATIONAL: "Nature trail",
     },
+    travel: "Travel time from you",
+    weekLabel: (week: string) => `Week ${week}`,
     tabQuests: "Quests",
     noMarks: "Trail marks not added yet",
     difficulty: { EASY: "Easy-going", MODERATE: "Moderate", HARD: "Hard", EXPERT: "Expert" },

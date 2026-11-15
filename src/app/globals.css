@@ -161,6 +161,11 @@
     margin: 0;
   }
 
+  /* A disclosure draws its own chevron; Safari's marker is not `::marker`. */
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

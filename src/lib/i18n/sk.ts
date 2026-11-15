@@ -1,4 +1,5 @@
 import type { Messages } from "@/lib/i18n";
+import { marketingSk } from "@/lib/i18n/marketing/sk";
 
 /**
  * Slovenčina.
@@ -17,6 +18,8 @@ import type { Messages } from "@/lib/i18n";
  *     where Slovak wants it.
  */
 export const sk: Messages = {
+  ...marketingSk,
+
   common: {
     published: "Zverejnené",
     displayNamePlaceholder: "Nechaj prázdne a použije sa meno z účtu",
@@ -625,6 +628,8 @@ export const sk: Messages = {
       YELLOW: "Žltá",
       EDUCATIONAL: "Náučný chodník",
     },
+    travel: "Cesta od teba",
+    weekLabel: (week: string) => `Týždeň ${week}`,
     tabQuests: "Questy",
     noMarks: "Značka zatiaľ nedoplnená",
     difficulty: { EASY: "Pohodová", MODERATE: "Stredná", HARD: "Náročná", EXPERT: "Expert" },

@@ -54,20 +54,10 @@
   /* Playful supporting colours: tags, stickers, illustrations, the monthly
      feature block. Each has a full tone (fills) and fg/soft pair (chips). */
   --color-sun: #ffd35c;
-  --color-sun-soft: #fff3c9;
-  --color-sun-fg: #7a5200;
   --color-sky: #4fb3f6;
-  --color-sky-soft: #e1f2fd;
-  --color-sky-fg: #0b5e96;
   --color-berry: #f0508c;
-  --color-berry-soft: #fde6ef;
-  --color-berry-fg: #b0245c;
   --color-lake: #1fb5a6;
-  --color-lake-soft: #dcf5f2;
-  --color-lake-fg: #0b6e65;
   --color-lilac: #9b7bea;
-  --color-lilac-soft: #eee8fc;
-  --color-lilac-fg: #5b3fb0;
 
   /* Difficulty — peak meter (EASY/MODERATE/HARD/EXPERT). NOT trail marks. */
   --color-diff-easy: #2fb36b;
@@ -81,6 +71,9 @@
   --color-mark-green: #00913f;
   --color-mark-yellow: #ffd500;
   --color-mark-white: #ffffff;
+
+  /* Sticker paper: the white die-cut edge. White in both themes, like paper. */
+  --color-sticker-paper: #ffffff;
 
   /* Medals */
   --color-medal-gold: #e8b92e;
@@ -152,6 +145,40 @@
   --duration-base: 200ms;
   --duration-slow: 320ms;
 
+  /* ---- Entrances: opacity and transform only (§8) ------------------------- */
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-enter) both;
+  --animate-rise-in: rise-in var(--duration-slow) var(--ease-enter) both;
+  --animate-pop-in: pop-in var(--duration-slow) var(--ease-enter) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+
+  /* ---- Container widths: `max-w-marketing`, `max-w-form`, … (§6.2, §7.9) -- */
+  --container-marketing: 75rem; /* 1200 landing, legal */
+  --container-app: 70rem;       /* 1120 customer app */
+  --container-admin: 90rem;     /* 1440 admin */
+  --container-text: 40rem;      /*  640 long text, single-column forms */
+  --container-form: 25rem;      /*  400 auth form */
+  --container-narrow: 35rem;    /*  560 onboarding column, dialog md */
+  --container-dialog-sm: 27.5rem; /* 440 */
+  --container-dialog-md: 35rem;   /* 560 */
+  --container-dialog-lg: 45rem;   /* 720 */
+
   /* ---- Breakpoints (Tailwind defaults, restated so nobody changes them) -- */
   --breakpoint-sm: 40rem;   /*  640 */
   --breakpoint-md: 48rem;   /*  768 */
@@ -196,6 +223,8 @@
   /* The monthly feature block (flat sun-yellow panel, dark text) */
   --color-feature: var(--sq-feature);
   --color-feature-fg: var(--sq-feature-fg);
+  /* A lighter tile inside the feature block (its stat tiles). */
+  --color-feature-soft: var(--sq-feature-soft);
 
   --color-success: var(--sq-success);
   --color-success-soft: var(--sq-success-soft);
@@ -209,6 +238,19 @@
 
   --color-ring: var(--sq-ring);
   --color-overlay: var(--sq-overlay);
+
+  /* Playful chips (tags, weekly badge, stickers): soft ground + readable ink,
+     theme-aware. The full tones above stay raw. */
+  --color-sun-soft: var(--sq-sun-soft);
+  --color-sun-fg: var(--sq-sun-fg);
+  --color-sky-soft: var(--sq-sky-soft);
+  --color-sky-fg: var(--sq-sky-fg);
+  --color-berry-soft: var(--sq-berry-soft);
+  --color-berry-fg: var(--sq-berry-fg);
+  --color-lake-soft: var(--sq-lake-soft);
+  --color-lake-fg: var(--sq-lake-fg);
+  --color-lilac-soft: var(--sq-lilac-soft);
+  --color-lilac-fg: var(--sq-lilac-fg);
 }
 
 /* ---- Layout constants (plain vars, used by shells and containers) ------- */
@@ -270,6 +312,7 @@
 
   --sq-feature: #ffd35c;
   --sq-feature-fg: #16241c;
+  --sq-feature-soft: #ffebb6;
 
   --sq-success: #157a47;
   --sq-success-soft: #e3f4e8;
@@ -283,6 +326,17 @@
 
   --sq-ring: #22a360;
   --sq-overlay: rgb(22 36 28 / 0.45);
+
+  --sq-sun-soft: #fff3c9;
+  --sq-sun-fg: #7a5200;
+  --sq-sky-soft: #e1f2fd;
+  --sq-sky-fg: #0b5e96;
+  --sq-berry-soft: #fde6ef;
+  --sq-berry-fg: #b0245c;
+  --sq-lake-soft: #dcf5f2;
+  --sq-lake-fg: #0b6e65;
+  --sq-lilac-soft: #eee8fc;
+  --sq-lilac-fg: #5b3fb0;
 }
 
 /* ---- Dark theme: soft "evening in the valley", never near-black ------- */
@@ -316,6 +370,7 @@
 
   --sq-feature: #ffd35c;
   --sq-feature-fg: #16241c;
+  --sq-feature-soft: #ffebb6;
 
   --sq-success: #6fdb9c;
   --sq-success-soft: #1d4a33;
@@ -329,6 +384,17 @@
 
   --sq-ring: #8fe0b0;
   --sq-overlay: rgb(10 16 13 / 0.55);
+
+  --sq-sun-soft: #4a3a12;
+  --sq-sun-fg: #ffd76b;
+  --sq-sky-soft: #173b57;
+  --sq-sky-fg: #8fcaf7;
+  --sq-berry-soft: #4d1f33;
+  --sq-berry-fg: #ffa3c4;
+  --sq-lake-soft: #123f3a;
+  --sq-lake-fg: #7ce3d7;
+  --sq-lilac-soft: #35285e;
+  --sq-lilac-fg: #cbb9fb;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -342,7 +408,6 @@
     --sq-border: #3a4b43;
     --sq-border-strong: #4e6258;
     --sq-border-soft: #33433c;
-  --sq-border-soft: #33433c;
 
     --sq-text: #f1f6ef;
     --sq-text-muted: #b9c7bd;
@@ -363,6 +428,7 @@
 
     --sq-feature: #ffd35c;
     --sq-feature-fg: #16241c;
+    --sq-feature-soft: #ffebb6;
 
     --sq-success: #6fdb9c;
     --sq-success-soft: #1d4a33;
@@ -376,6 +442,17 @@
 
     --sq-ring: #8fe0b0;
     --sq-overlay: rgb(10 16 13 / 0.55);
+
+    --sq-sun-soft: #4a3a12;
+    --sq-sun-fg: #ffd76b;
+    --sq-sky-soft: #173b57;
+    --sq-sky-fg: #8fcaf7;
+    --sq-berry-soft: #4d1f33;
+    --sq-berry-fg: #ffa3c4;
+    --sq-lake-soft: #123f3a;
+    --sq-lake-fg: #7ce3d7;
+    --sq-lilac-soft: #35285e;
+    --sq-lilac-fg: #cbb9fb;
   }
 }
 
@@ -385,4 +462,36 @@
     --duration-base: 0ms;
     --duration-slow: 0ms;
   }
+}
+
+/* ---- Utilities for tokens Tailwind has no theme namespace for ------------- */
+@utility duration-fast {
+  transition-duration: var(--duration-fast);
+}
+@utility duration-base {
+  transition-duration: var(--duration-base);
+}
+@utility duration-slow {
+  transition-duration: var(--duration-slow);
+}
+@utility z-sticky {
+  z-index: var(--sq-z-sticky);
+}
+@utility z-nav {
+  z-index: var(--sq-z-nav);
+}
+@utility z-dropdown {
+  z-index: var(--sq-z-dropdown);
+}
+@utility z-overlay {
+  z-index: var(--sq-z-overlay);
+}
+@utility z-modal {
+  z-index: var(--sq-z-modal);
+}
+@utility z-toast {
+  z-index: var(--sq-z-toast);
+}
+@utility z-tooltip {
+  z-index: var(--sq-z-tooltip);
 }

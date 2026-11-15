@@ -1,4 +1,5 @@
 import type { Messages } from "@/lib/i18n";
+import { marketingDe } from "@/lib/i18n/marketing/de";
 
 /**
  * Deutsch.
@@ -16,6 +17,8 @@ import type { Messages } from "@/lib/i18n";
  * `Sie` would make it sound like a bank.
  */
 export const de: Messages = {
+  ...marketingDe,
+
   common: {
     published: "Veröffentlicht",
     displayNamePlaceholder: "Leer lassen, dann gilt der Name aus dem Konto",
@@ -627,6 +630,8 @@ export const de: Messages = {
       YELLOW: "Gelb",
       EDUCATIONAL: "Lehrpfad",
     },
+    travel: "Anfahrt von dir",
+    weekLabel: (week: string) => `Woche ${week}`,
     tabQuests: "Quests",
     noMarks: "Markierung noch nicht eingetragen",
     difficulty: { EASY: "Gemütlich", MODERATE: "Mittel", HARD: "Schwer", EXPERT: "Experte" },

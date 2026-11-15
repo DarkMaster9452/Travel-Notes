@@ -734,3 +734,25 @@ a.trail-qcard:hover {
 .paper-grain {
   display: none;
 }
+
+/* --- sticker die-cuts (§7.11) ----------------------------------------------- */
+/* The six cuts a sticker is punched in. Shape only: ink, paper edge, shadow and
+   tilt are utilities on the element (components/domain/sticker.tsx). */
+.sticker-cut[data-cut="disc"] {
+  border-radius: var(--radius-pill);
+}
+.sticker-cut[data-cut="leaf"] {
+  border-radius: 60% 60% 60% 12%;
+}
+.sticker-cut[data-cut="leafFlipped"] {
+  border-radius: 12% 60% 60% 60%;
+}
+.sticker-cut[data-cut="arch"] {
+  border-radius: 50% 50% 22% 22%;
+}
+.sticker-cut[data-cut="blob"] {
+  border-radius: 45% 55% 60% 40% / 55% 45% 50% 50%;
+}
+.sticker-cut[data-cut="shield"] {
+  border-radius: 24% 24% 50% 50%;
+}

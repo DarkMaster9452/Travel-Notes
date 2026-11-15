@@ -1,13 +1,37 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 /**
  * The 500 of last resort.
  *
- * This replaces the root layout, so it cannot rely on the app's stylesheet
- * being present — every rule here is inline for that reason. It is deliberately
- * the plainest page in the product: whatever broke, broke underneath
- * everything else.
+ * This replaces the root layout, so it cannot rely on the app's stylesheet,
+ * fonts or dictionaries being present. Every rule here is inline for that
+ * reason, and the values are the Trail tokens written out by hand
+ * (design/tokens.css, light theme). It is deliberately the plainest page in
+ * the product: whatever broke, broke underneath everything else.
  */
+
+const COPY = {
+  sk: {
+    title: "Niečo sa pod nami prepadlo.",
+    body: "Nič z toho, čo si odovzdal, sa nestratilo. Skús to znova. Ak sa to opakuje, pošli nám kód nižšie.",
+    retry: "Skúsiť znova",
+  },
+  en: {
+    title: "Something underneath gave way.",
+    body: "Nothing you filed has been lost. Try again. If it keeps happening, quote the reference below.",
+    retry: "Try again",
+  },
+  de: {
+    title: "Darunter hat etwas nachgegeben.",
+    body: "Nichts von dem, was du eingereicht hast, ist verloren. Versuch es noch einmal. Wenn es wieder passiert, nenne uns den Code unten.",
+    retry: "Noch einmal versuchen",
+  },
+} as const;
+
+type Lang = keyof typeof COPY;
+
 export default function GlobalError({
   error,
   reset,
@@ -15,85 +39,99 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // No dictionary and no cookie reader down here; the browser's own language
+  // is the only thing left to ask. Slovak until it has answered.
+  const [lang, setLang] = useState<Lang>("sk");
+  useEffect(() => {
+    const wanted = navigator.language.slice(0, 2).toLowerCase();
+    if (wanted === "en" || wanted === "de") setLang(wanted);
+  }, []);
+  const copy = COPY[lang];
+
   return (
-    <html lang="en">
+    <html lang={lang}>
       <body
         style={{
           margin: 0,
           minHeight: "100vh",
           display: "grid",
           placeItems: "center",
-          padding: "32px 20px",
-          background: "#eff0e5",
-          color: "#141a16",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          padding: "32px 16px",
+          background: "#f4f8f1",
+          color: "#16241c",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
         }}
       >
-        <main style={{ maxWidth: 460, textAlign: "center" }}>
-          <svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true" style={{ marginBottom: 20 }}>
+        <main style={{ maxWidth: 440, textAlign: "center" }}>
+          <svg width="48" height="48" viewBox="0 0 64 64" aria-hidden="true" style={{ margin: "0 auto 24px" }}>
+            <rect width="64" height="64" rx="16" fill="#157a47" />
             <path
-              d="M2 25 L11 10 L16.5 19 L20 13.5 L30 25 Z"
-              fill="none"
-              stroke="#1e3b2c"
-              strokeWidth="1.7"
+              d="M9 49 26.5 17.5 37 36.5 43 27.5 55 49Z"
+              fill="#fff"
+              stroke="#fff"
+              strokeWidth="3"
               strokeLinejoin="round"
             />
-            <path d="M11 10 L14.6 16 L7.4 16 Z" fill="#c4481b" />
-            <path d="M2 29 H30" fill="none" stroke="#1e3b2c" strokeWidth="1.7" strokeLinecap="round" opacity="0.35" />
+            <path
+              d="M26.5 17.5 33.4 30 29.6 27.2 26.6 31.4 23.6 27.6 19.9 29.4Z"
+              fill="#ff6a3d"
+              stroke="#ff6a3d"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
           </svg>
 
           <p
             style={{
-              margin: "0 0 12px",
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-              fontSize: 10.5,
-              letterSpacing: "0.1em",
+              margin: "0 0 8px",
+              fontSize: 12,
+              lineHeight: "16px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "#848a78",
+              color: "#5e6e62",
             }}
           >
             500
           </p>
           <h1
             style={{
-              margin: "0 0 14px",
-              fontFamily: "Georgia, 'Iowan Old Style', serif",
-              fontWeight: 600,
+              margin: "0 0 12px",
+              fontWeight: 700,
               fontSize: 32,
-              lineHeight: 1.1,
+              lineHeight: "38px",
               letterSpacing: "-0.02em",
             }}
           >
-            Something underneath gave way.
+            {copy.title}
           </h1>
-          <p style={{ margin: "0 0 22px", fontSize: 15, lineHeight: 1.6, color: "#47544b" }}>
-            Nothing you filed has been lost. Try again — if it keeps happening, quote the reference
-            below.
-          </p>
+          <p style={{ margin: "0 0 24px", fontSize: 16, lineHeight: "24px", color: "#4a5a4f" }}>{copy.body}</p>
 
           <button
             type="button"
             onClick={reset}
             style={{
               border: 0,
-              borderRadius: 8,
-              padding: "11px 18px",
-              background: "#2c5540",
-              color: "#f9faf3",
-              font: "600 14px/1 inherit",
+              borderRadius: 12,
+              minHeight: 48,
+              padding: "12px 20px",
+              background: "#157a47",
+              color: "#ffffff",
+              font: "600 16px/24px inherit",
               cursor: "pointer",
             }}
           >
-            Try again
+            {copy.retry}
           </button>
 
           {error.digest ? (
             <p
               style={{
-                margin: "18px 0 0",
+                margin: "20px 0 0",
                 fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                fontSize: 11,
-                color: "#848a78",
+                fontSize: 13,
+                lineHeight: "18px",
+                color: "#5e6e62",
               }}
             >
               {error.digest}
