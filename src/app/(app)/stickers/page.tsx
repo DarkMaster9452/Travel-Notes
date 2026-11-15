@@ -1,21 +1,26 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Mail, MailWarning, Monitor } from "lucide-react";
 
-import { Glyph, LockGlyph } from "@/components/sq/icons";
-import { SqSticker } from "@/components/sq/sticker";
-import { SqStickersSeen } from "@/components/sq/sticker-seen";
-import { PageHeader, Stat } from "@/components/sq/ui";
+import { StickersSeen } from "@/components/app/sticker-seen";
+import { Sticker } from "@/components/domain/sticker";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/feedback";
+import { PageHeader, PageStack, Section, Stat } from "@/components/ui/page";
 import { getAchievements, stickerAllowance } from "@/lib/achievements";
 import { requireClient } from "@/lib/auth/guards";
+import { planCopy } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
 import { getT } from "@/lib/i18n/server";
-import { planCopy } from "@/lib/config";
 import { getUserStats } from "@/lib/quest/service";
-import { SHAPE_RADIUS, stickerStyle } from "@/lib/stickers";
+import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Stickers" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).stickers.heading };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -59,190 +64,110 @@ export default async function StickersPage() {
   const reachable = achievements.filter((entry) => !entry.planLocked);
   const beyond = achievements.filter((entry) => entry.planLocked);
 
+  const envelopeWords = envelopeCopy(t, envelope.reason);
+
   return (
-    <>
-      <PageHeader
-        kicker={t.stickers.kicker}
-        title={t.stickers.heading}
-        lede={t.stickers.lede}
-        right={
-          <>
-            <Stat
-              count={earned.length}
-              countId="stickers-earned"
-              value={earned.length}
-              label={t.stickers.earned}
-            />
-            <Stat
-              count={stickerAllowance(entitlement.plan)}
-              countId="stickers-plan"
-              value={reachable.length}
-              label={t.stickers.onYourPlan}
-            />
-            <Stat value={achievements.length} label={t.stickers.printedInAll} />
-          </>
-        }
-      />
+    <PageStack>
+      <div>
+        <PageHeader
+          title={t.stickers.heading}
+          lede={t.stickers.lede}
+          actions={
+            <>
+              <Stat count={earned.length} countId="stickers-earned" label={t.stickers.earned} />
+              <Stat
+                count={stickerAllowance(entitlement.plan)}
+                countId="stickers-plan"
+                label={t.stickers.onYourPlan}
+              />
+              <Stat value={achievements.length} label={t.stickers.printedInAll} />
+            </>
+          }
+        />
 
-      {/* Whether these actually reach a letterbox is decided in one place —
-          `lib/envelope` — and said out loud here, because the page above
-          promises real post and the promise has a condition on it. */}
-      <aside
-        className={envelope.posts ? "sq-tinted" : "sq-card-flat"}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          padding: "13px 18px",
-          marginBottom: 16,
-          borderColor: envelope.reason === "no_address" ? "var(--signal)" : undefined,
-        }}
-      >
-        <span style={{ color: envelope.posts ? "var(--moss)" : "var(--signal)" }}>
-          <Glyph name="envelope" size={18} strokeWidth={1.9} />
-        </span>
-        <span style={{ minWidth: 0, flex: 1 }}>
-          <b style={{ display: "block", fontSize: 13.5, fontWeight: 600 }}>
-            {envelopeCopy(t, envelope.reason).title}
-          </b>
-          <span style={{ display: "block", marginTop: 2, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-2)" }}>
-            {envelopeCopy(t, envelope.reason).detail}
-          </span>
-        </span>
-        {envelope.reason === "no_address" ? (
-          <Link href="/settings/address" className="sq-btn sq-btn-primary sq-btn-sm">
-            {t.stickers.addAddress}
-          </Link>
-        ) : null}
-      </aside>
+        {/* Whether these actually reach a letterbox is decided in one place —
+            `lib/envelope` — and said out loud here, because the page above
+            promises real post and the promise has a condition on it. */}
+        <Alert
+          tone={envelope.posts ? "success" : envelope.reason === "no_address" ? "warning" : "info"}
+          title={envelopeWords.title}
+          action={
+            envelope.reason === "no_address" ? (
+              <ButtonLink href="/settings/address" size="sm">
+                {t.stickers.addAddress}
+              </ButtonLink>
+            ) : undefined
+          }
+        >
+          {envelopeWords.detail}
+        </Alert>
+      </div>
 
-      <SqStickersSeen
+      <StickersSeen
         ids={reachable.filter((entry) => entry.earned && !seenSet.has(entry.id)).map((entry) => entry.id)}
       />
 
-      <section
-        className="sq-stagger"
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 12 }}
-      >
-        {reachable.map((entry, index) => {
+      {/* Sticker grid: 2 · 3 · 4 across (§6.4). */}
+      <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+        {reachable.map((entry) => {
           const fresh = entry.earned && !seenSet.has(entry.id);
           return (
-            <article
+            <Card
+              as="li"
               key={entry.id}
-              className="sq-card"
-              style={{
-                padding: 16,
-                display: "flex",
-                gap: 13,
-                alignItems: "center",
-                minHeight: 109,
-                boxShadow: entry.earned ? "var(--shadow-sm)" : "none",
-                borderColor: entry.revoked ? "var(--signal)" : "var(--line-2)",
-                background: entry.earned ? "var(--card)" : "var(--paper-2)",
-                ["--i" as string]: index,
-              }}
+              pad="sm"
+              tone={entry.earned ? "surface" : "sunken"}
+              className={cn("flex flex-col items-center gap-3 text-center", entry.revoked && "border-danger")}
             >
-              <SqSticker
-                sticker={entry.sticker}
-                earned={entry.earned}
-                fresh={fresh}
-                index={index}
-                title={entry.label}
-              />
-              <span style={{ minWidth: 0 }}>
-                <b
-                  style={{
-                    display: "block",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    lineHeight: 1.25,
-                    color: entry.earned ? "var(--lg-text)" : "var(--ink-2)",
-                  }}
-                >
-                  {entry.label}
-                </b>
-                <span style={{ display: "block", marginTop: 4, fontSize: 11.5, lineHeight: 1.4, color: "var(--ink-3)" }}>
+              <Sticker sticker={entry.sticker} state={entry.earned ? "earned" : "open"} size="lg" fresh={fresh} />
+              <div className="min-w-0">
+                <h2 className={cn("text-body-sm font-semibold", !entry.earned && "text-muted")}>{entry.label}</h2>
+                <p className="mt-1 text-caption text-muted">
                   {entry.revoked ? t.stickers.withdrawn : entry.earned ? entry.description : entry.progressLabel}
-                </span>
-                {/* Most of the sheet is ink on a screen. Saying which ones are
-                    really cut and posted is the difference between "thirty
-                    stickers" and "thirty stickers you will hold". */}
-                <span
-                  className="sq-mono"
-                  style={{
-                    display: "block",
-                    marginTop: 7,
-                    fontSize: 9,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: entry.printed ? "var(--moss)" : "var(--ink-3)",
-                  }}
-                >
-                  {entry.printed ? t.stickers.posted : t.stickers.onScreen}
-                </span>
-              </span>
-            </article>
+                </p>
+              </div>
+              {/* Most of the sheet is ink on a screen. Saying which ones are
+                  really cut and posted is the difference between "thirty
+                  stickers" and "thirty stickers you will hold". */}
+              <Badge
+                tone={entry.printed ? "primary" : "neutral"}
+                icon={entry.printed ? (envelope.posts ? Mail : MailWarning) : Monitor}
+                size="sm"
+                className="mt-auto"
+              >
+                {entry.printed ? t.stickers.posted : t.stickers.onScreen}
+              </Badge>
+            </Card>
           );
         })}
-      </section>
+      </ul>
 
       {beyond.length > 0 ? (
-        <section className="sq-tinted sq-pad" style={{ marginTop: 26 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              gap: 20,
-              flexWrap: "wrap",
-              marginBottom: 18,
-            }}
-          >
-            <div>
-              <h2 className="sq-h2" style={{ fontSize: 22, marginBottom: 8 }}>
-                {t.stickers.beyondHeading(beyond.length)}
-              </h2>
-              <p style={{ maxWidth: "58ch", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink-2)" }}>
-                {t.stickers.beyondBody(
-                  planCopy(t, entitlement.plan).name,
-                  reachable.length,
-                  achievements.length,
-                )}
-              </p>
-            </div>
-            <Link
-              href="/settings/billing"
-              className="sq-btn sq-btn-primary"
-              style={{ background: "var(--pine)" }}
-            >
+        <Section
+          title={t.stickers.beyondHeading(beyond.length)}
+          note={t.stickers.beyondBody(planCopy(t, entitlement.plan).name, reachable.length, achievements.length)}
+          action={
+            <ButtonLink href="/settings/billing" variant="secondary">
               {t.stickers.seePlans}
-            </Link>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(56px,1fr))", gap: 10 }}>
-            {beyond.map((entry, index) => (
-              <span
-                key={entry.id}
-                aria-label={t.common.locked}
-                title={`${entry.label} · ${planNameFor(entry.requiredPlan)}`}
-                className="sq-sticker sq-sticker-sealed"
-                data-locked="1"
-                style={{
-                  borderRadius: SHAPE_RADIUS[stickerStyle(entry.sticker).shape],
-                  ["--i" as string]: index,
-                }}
-              >
-                <LockGlyph size={18} />
-              </span>
-            ))}
-          </div>
-        </section>
+            </ButtonLink>
+          }
+        >
+          <Card tone="sunken">
+            <ul className="flex flex-wrap gap-3">
+              {beyond.map((entry) => (
+                <li key={entry.id}>
+                  <Sticker
+                    sticker={entry.sticker}
+                    state="locked"
+                    size="sm"
+                    title={`${t.common.locked} · ${planCopy(t, entry.requiredPlan).name}`}
+                  />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </Section>
       ) : null}
-    </>
+    </PageStack>
   );
-}
-
-/** "Explorer" / "Ultra Explorer" — what a sealed sticker is waiting on. */
-function planNameFor(plan: string): string {
-  return plan === "ultra" ? "Ultra Explorer" : plan === "explorer" ? "Explorer" : "Free";
 }

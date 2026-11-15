@@ -1,228 +1,171 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { ArrowRight, ClipboardCheck } from "lucide-react";
 
-import { EmptyState, PageHeader, Tag } from "@/components/sq/ui";
+import { Badge, SubmissionBadge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert, EmptyState } from "@/components/ui/feedback";
+import { PageHeader } from "@/components/ui/page";
+import { type } from "@/components/ui/typography";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { getEntitlement } from "@/lib/entitlements";
 import { formatDate, plural } from "@/lib/i18n/format";
-import { getLocale, getT } from "@/lib/i18n/server";
-import { planCopy } from "@/lib/config";
+import { getReader } from "@/lib/i18n/server";
+import { formatDistance, formatHeight, formatMinutes } from "@/lib/i18n/units";
+import { slotTitle } from "@/lib/quest/labels";
+import { slotFromKey } from "@/lib/admin/schedule";
 
-export const metadata: Metadata = { title: "Your submissions" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.submissions.title };
+}
 export const dynamic = "force-dynamic";
-
 
 /**
  * Everything this account has filed, newest first.
  *
- * The verdict is the point of the card, so it gets a tinted block of its own
- * rather than a chip in a corner. A decline carries the reader's note in their
- * own words, quoted — a reason somebody can act on is the difference between a
- * decline and a rejection.
+ * The verdict is the point of the card, so it gets a block of its own rather
+ * than a chip in a corner. A decline carries the reviewer's note in their own
+ * words — a reason somebody can act on is the difference between a decline
+ * and a rejection.
  */
 export default async function SubmissionsPage() {
   const user = await requireClient();
 
-  const [submissions, entitlement, t, locale] = await Promise.all([
+  const [submissions, reader] = await Promise.all([
     db.submission.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       include: {
-        quest: {
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            region: true,
-            distance: true,
-            elevationGain: true,
-            duration: true,
-          },
-        },
+        quest: { select: { id: true, title: true, location: true, region: true } },
       },
     }),
-    getEntitlement(user.id),
-    getT(user.id),
-    getLocale(user.id),
+    getReader(user.id),
   ]);
+  const { t, locale, units } = reader;
 
   const approved = submissions.filter((entry) => entry.status === "APPROVED").length;
   const waiting = submissions.filter((entry) => entry.status === "PENDING").length;
 
   return (
     <>
-      <PageHeader
-        kicker={t.submissions.filed}
-        title={t.submissions.title}
-        lede={t.submissions.summary(submissions.length, approved, waiting)}
-        right={
-          <Tag tone="green" small>
-            {planCopy(t, entitlement.plan).name.toUpperCase()}
-          </Tag>
-        }
-      />
+      <PageHeader title={t.submissions.title} lede={t.submissions.summary(submissions.length, approved, waiting)} />
 
       {submissions.length === 0 ? (
-        <EmptyState
-          glyph="book"
-          title={t.submissions.empty}
-          body={t.submissions.emptyBody}
-          action={
-            <Link href="/monthly" className="sq-btn sq-btn-primary sq-btn-sm">
-              Open the monthly
-            </Link>
-          }
-        />
+        <Card>
+          <EmptyState
+            icon={ClipboardCheck}
+            title={t.submissions.empty}
+            action={
+              <ButtonLink href="/monthly" variant="monthly">
+                {t.questCard.openMonthly}
+              </ButtonLink>
+            }
+          >
+            {t.submissions.emptyBody}
+          </EmptyState>
+        </Card>
       ) : (
-        <div className="sq-stagger" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {submissions.map((entry, index) => {
+        <ul className="flex flex-col gap-4">
+          {submissions.map((entry) => {
             const declined = entry.status === "REJECTED";
             const settled = entry.status !== "PENDING";
+            const slot = entry.period && entry.slotKey ? slotFromKey(entry.period, entry.slotKey) : null;
+
             return (
-              <article
-                key={entry.id}
-                className="sq-card"
-                style={{
-                  overflow: "hidden",
-                  borderColor: declined ? "var(--signal)" : "var(--line-2)",
-                  ["--i" as string]: index,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 14,
-                    padding: "15px 22px",
-                    borderBottom: "1px solid var(--line-2)",
-                  }}
-                >
-                  <h2 className="sq-h2" style={{ fontSize: 19 }}>
-                    {entry.quest.title}
-                  </h2>
-                  <Tag
-                    tone={entry.status === "APPROVED" ? "green" : declined ? "stamp" : "plain"}
-                    small
-                  >
+              <Card as="li" key={entry.id} className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className={type.h3}>{entry.quest.title}</h2>
+                    <p className="mt-1 text-caption text-muted">
+                      {entry.quest.location} · {entry.quest.region}
+                    </p>
+                  </div>
+                  <SubmissionBadge status={entry.status}>
                     {entry.status === "APPROVED"
                       ? t.submissions.approvedTag
                       : declined
                         ? t.questCard.sentBack
                         : t.submissions.inReview}
-                  </Tag>
+                  </SubmissionBadge>
                 </div>
 
-                <div style={{ padding: "18px 22px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-                  <p className="sq-mono" style={{ fontSize: 10.5, letterSpacing: "0.05em", color: "var(--ink-3)" }}>
-                    {entry.quest.location} · {entry.quest.region}
-                    {entry.period ? ` · ${entry.period === "MONTHLY" ? "monthly" : "weekly"} ${entry.slotKey ?? ""}` : ""}
-                    {entry.retreated ? ` · ${t.submissions.retreat}` : ""}
-                  </p>
-
-                  <p
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      fontStyle: "italic",
-                      color: "var(--ink-2)",
-                      textWrap: "pretty",
-                    }}
-                  >
-                    {entry.note}
-                  </p>
-
-                  <div
-                    className="sq-mono"
-                    style={{
-                      display: "flex",
-                      gap: 16,
-                      flexWrap: "wrap",
-                      fontSize: 11,
-                      letterSpacing: "0.05em",
-                      color: "var(--ink-2)",
-                    }}
-                  >
-                    <span>{entry.distance != null ? `${entry.distance.toFixed(1)} km` : "— km"}</span>
-                    <span>{entry.elevation != null ? `${entry.elevation} m ↑` : "— m ↑"}</span>
-                    <span>{entry.movingTime != null ? `${entry.movingTime} min` : "— moving"}</span>
-                    <span>{plural(locale, entry.photos.length, t.submissions.photos)}</span>
-                    {entry.stravaUrl ? <span style={{ color: "var(--signal)" }}>{t.submissions.stravaAttached}</span> : null}
-                  </div>
-
-                  <div
-                    style={{
-                      padding: "14px 16px",
-                      borderRadius: 10,
-                      background: declined
-                        ? "var(--signal-wash)"
-                        : entry.status === "APPROVED"
-                          ? "var(--lg-green-100)"
-                          : "var(--paper-2)",
-                    }}
-                  >
-                    <p style={{ fontSize: 13, lineHeight: 1.55 }}>
-                      <b>
-                        {entry.status === "APPROVED"
-                          ? t.submissions.approved
-                          : declined
-                            ? t.submissions.sentBack
-                            : t.submissions.waiting}
-                      </b>{" "}
-                      {settled && entry.reviewedAt
-                        ? t.submissions.readOn(formatDate(locale, entry.reviewedAt))
-                        : t.submissions.unread}
-                    </p>
-                    {declined && entry.reviewNote ? (
-                      <p
-                        style={{
-                          marginTop: 10,
-                          paddingLeft: 12,
-                          borderLeft: "2px solid var(--signal)",
-                          fontSize: 13,
-                          lineHeight: 1.55,
-                          fontStyle: "italic",
-                          color: "var(--ink-2)",
-                        }}
-                      >
-                        {entry.reviewNote}
-                      </p>
+                {slot || entry.retreated ? (
+                  <div className="flex flex-wrap gap-2">
+                    {slot ? (
+                      <Badge tone={slot.period === "MONTHLY" ? "monthlySoft" : "weekly"}>
+                        {(slot.period === "MONTHLY" ? t.app.quest.wasMonthly : t.app.quest.wasWeekly)(
+                          slotTitle(slot, locale, t),
+                        )}
+                      </Badge>
                     ) : null}
+                    {entry.retreated ? <Badge>{t.submissions.retreat}</Badge> : null}
                   </div>
+                ) : null}
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                    }}
-                  >
-                    <span className="sq-kicker-sm">
-                      {t.submissions.filed} {formatDate(locale, entry.createdAt)}
-                    </span>
-                    <Link
-                      href={
-                        entry.status === "APPROVED"
-                          ? `/quests/${entry.quest.id}`
-                          : `/quests/${entry.quest.id}/proof`
-                      }
-                      style={{ fontSize: 13, whiteSpace: "nowrap" }}
-                    >
-                      {entry.status === "APPROVED"
-                        ? t.submissions.seeQuest
-                        : declined
-                          ? t.submissions.addAndRefile
-                          : t.submissions.editWhileWaiting}{" "}
-                      →
-                    </Link>
+                <p className="max-w-text text-body-sm text-muted text-pretty">{entry.note}</p>
+
+                <dl className="flex flex-wrap gap-x-6 gap-y-1 text-caption tabular-nums text-muted">
+                  <div>
+                    <dt className="sr-only">{t.proof.distance}</dt>
+                    <dd>{entry.distance != null ? formatDistance(locale, entry.distance, units) : t.common.none}</dd>
                   </div>
+                  <div>
+                    <dt className="sr-only">{t.proof.ascent}</dt>
+                    <dd>{entry.elevation != null ? `${formatHeight(locale, entry.elevation, units)} ↑` : t.common.none}</dd>
+                  </div>
+                  <div>
+                    <dt className="sr-only">{t.proof.movingTime}</dt>
+                    <dd>{entry.movingTime != null ? formatMinutes(entry.movingTime) : t.common.none}</dd>
+                  </div>
+                  <div>
+                    <dd>{plural(locale, entry.photos.length, t.submissions.photos)}</dd>
+                  </div>
+                  {entry.stravaUrl ? (
+                    <div>
+                      <dd>{t.submissions.stravaAttached}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+
+                <Alert
+                  tone={entry.status === "APPROVED" ? "success" : declined ? "warning" : "info"}
+                  title={
+                    entry.status === "APPROVED"
+                      ? t.submissions.approved
+                      : declined
+                        ? t.submissions.sentBack
+                        : t.submissions.waiting
+                  }
+                >
+                  {settled && entry.reviewedAt
+                    ? t.submissions.readOn(formatDate(locale, entry.reviewedAt))
+                    : t.submissions.unread}
+                  {declined && entry.reviewNote ? (
+                    <span className="mt-2 block border-l-2 border-warning pl-3 text-text">{entry.reviewNote}</span>
+                  ) : null}
+                </Alert>
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-caption text-subtle">
+                    {t.submissions.filed} {formatDate(locale, entry.createdAt)}
+                  </span>
+                  <ButtonLink
+                    variant={declined ? "primary" : "secondary"}
+                    size="sm"
+                    href={entry.status === "APPROVED" ? `/quests/${entry.quest.id}` : `/quests/${entry.quest.id}/proof`}
+                  >
+                    {entry.status === "APPROVED"
+                      ? t.submissions.seeQuest
+                      : declined
+                        ? t.submissions.addAndRefile
+                        : t.submissions.editWhileWaiting}
+                    <ArrowRight aria-hidden="true" />
+                  </ButtonLink>
                 </div>
-              </article>
+              </Card>
             );
           })}
-        </div>
+        </ul>
       )}
     </>
   );

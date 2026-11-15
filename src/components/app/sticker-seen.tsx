@@ -18,7 +18,7 @@ import { markStickersSeenAction } from "@/app/(app)/actions";
  * after the animation has had its moment, and is guarded by a ref so the
  * revalidation the action triggers cannot bounce it into a loop.
  */
-export function SqStickersSeen({ ids }: { ids: string[] }) {
+export function StickersSeen({ ids }: { ids: string[] }) {
   const sent = useRef(false);
 
   useEffect(() => {

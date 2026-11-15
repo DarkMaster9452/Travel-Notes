@@ -44,7 +44,7 @@ import { db } from "@/lib/db";
  * filed the most short walks, which is the opposite of what the product asks
  * people to do.
  */
-const GRADE_POINTS: Record<Difficulty, number> = {
+export const GRADE_POINTS: Record<Difficulty, number> = {
   EASY: 10,
   MODERATE: 20,
   HARD: 35,

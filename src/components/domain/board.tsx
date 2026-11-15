@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 export function BoardRow({
   rank,
   name,
+  leading,
   score,
   meta,
   me,
@@ -22,6 +23,8 @@ export function BoardRow({
 }: {
   rank: number;
   name: ReactNode;
+  /** An avatar in front of the name. */
+  leading?: ReactNode;
   score: ReactNode;
   /** A quiet figure between the name and the score ("2 quests"). */
   meta?: ReactNode;
@@ -52,6 +55,7 @@ export function BoardRow({
           {rank}
         </span>
       )}
+      {leading}
       <span className={cn("min-w-0 flex-1 truncate text-body-sm", me && "font-semibold")}>
         {href ? (
           <a href={href} className="no-underline hover:underline">
@@ -62,12 +66,26 @@ export function BoardRow({
         )}
         {me && meLabel ? <span className="font-normal"> · {meLabel}</span> : null}
       </span>
-      {meta ? <span className={cn("shrink-0 text-caption", !me && "text-muted")}>{meta}</span> : null}
+      {meta ? (
+        <span className={cn("hidden shrink-0 text-caption sm:inline", !me && "text-muted")}>{meta}</span>
+      ) : null}
       <b className="shrink-0 text-body font-semibold tabular-nums">{score}</b>
     </li>
   );
 }
 
-export function BoardList({ children, className }: { children: ReactNode; className?: string }) {
-  return <ol className={cn("flex flex-col gap-1", className)}>{children}</ol>;
+export function BoardList({
+  children,
+  className,
+  "aria-label": label,
+}: {
+  children: ReactNode;
+  className?: string;
+  "aria-label"?: string;
+}) {
+  return (
+    <ol aria-label={label} className={cn("flex flex-col gap-1", className)}>
+      {children}
+    </ol>
+  );
 }
