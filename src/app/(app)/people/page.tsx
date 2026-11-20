@@ -1,20 +1,27 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Users } from "lucide-react";
 
-import { GroupStarter } from "@/components/sq/group-starter";
-import { SqSegmentedLinks } from "@/components/sq/controls";
-import { SqLocked } from "@/components/sq/locked";
-import { Avatar, EmptyState, PageHeader } from "@/components/sq/ui";
-import { accentInk } from "@/lib/accents";
+import { GroupStarter } from "@/components/app/group";
+import { Locked } from "@/components/app/locked";
+import { Avatar } from "@/components/ui/avatar";
+import { ButtonLink } from "@/components/ui/button";
+import { Card, CardLink } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/feedback";
+import { TabsNav } from "@/components/ui/nav";
+import { PageHeader } from "@/components/ui/page";
+import { type } from "@/components/ui/typography";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { getMyGroups } from "@/lib/groups";
 import { getEntitlement } from "@/lib/entitlements";
-import { getT } from "@/lib/i18n/server";
 import type { Messages } from "@/lib/i18n";
+import { plural } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
+import { getMyGroups } from "@/lib/groups";
 import { getDirectory, type DirectoryEntry } from "@/lib/profile";
 
-export const metadata: Metadata = { title: "People & groups" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.people.title };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -26,22 +33,20 @@ export const dynamic = "force-dynamic";
  * account — the directory is a list of people who chose to be listed, and a
  * count that included the unlisted would give the rest away.
  */
-export default async function PeoplePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>;
-}) {
+export default async function PeoplePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const user = await requireClient();
   const params = await searchParams;
   const tab = params.tab === "groups" ? "groups" : "people";
 
-  const [directory, groups, mine, entitlement, t] = await Promise.all([
+  const [directory, groups, mine, entitlement, reader] = await Promise.all([
     getDirectory(),
     getMyGroups(user.id),
     db.profile.findUnique({ where: { userId: user.id }, select: { published: true } }),
     getEntitlement(user.id),
-    getT(user.id),
+    getReader(user.id),
   ]);
+  const { t, locale } = reader;
+  const words = t.app.people;
 
   // Two different gates, because they are two different promises: the
   // directory is Explorer's partner matching, and a group is Ultra's private
@@ -53,108 +58,84 @@ export default async function PeoplePage({
   return (
     <>
       <PageHeader
-        kicker={t.people.directory}
         title={tab === "groups" ? t.people.groupsTitle : t.people.peopleTitle}
-        lede={
-          tab === "groups"
-            ? t.people.groupsNote
-            : t.people.directoryLede
-        }
-        right={
-          <Link href="/settings/profile" className="sq-btn sq-btn-ghost">
+        lede={tab === "groups" ? t.people.groupsNote : t.people.directoryLede}
+        actions={
+          <ButtonLink href="/settings/profile" variant="secondary">
             {mine?.published ? t.people.editYours : t.people.publishYours}
-          </Link>
+          </ButtonLink>
         }
       />
 
-      <div style={{ marginBottom: 18 }}>
-        <SqSegmentedLinks
-          label={t.people.tabs}
-          active={tab}
-          options={[
-            { key: "people", label: "People", href: "/people" },
-            { key: "groups", label: `Groups${groups.length ? ` · ${groups.length}` : ""}`, href: "/people?tab=groups" },
-          ]}
-        />
-      </div>
+      <TabsNav
+        className="mb-6"
+        label={t.people.tabs}
+        active={tab}
+        options={[
+          { key: "people", label: words.people, href: "/people" },
+          {
+            key: "groups",
+            label: groups.length ? `${words.groups} · ${groups.length}` : words.groups,
+            href: "/people?tab=groups",
+          },
+        ]}
+      />
 
       {tab === "people" ? (
         !canMatch ? (
-          <SqLocked capability="matching" plan="explorer">
-            <PeopleGrid t={t} people={directory.slice(0, 8)} />
-          </SqLocked>
+          <Locked capability="matching" plan="explorer">
+            <PeopleGrid t={t} people={directory.slice(0, 6)} />
+          </Locked>
         ) : directory.length === 0 ? (
-          <EmptyState
-            glyph="users"
-            title={t.people.nobodyYet}
-            body={t.people.nobodyYetBody}
-            action={
-              <Link href="/settings/profile" className="sq-btn sq-btn-primary sq-btn-sm">
-                {t.people.publishYours}
-              </Link>
-            }
-          />
+          <Card>
+            <EmptyState
+              icon={Users}
+              title={t.people.nobodyYet}
+              action={<ButtonLink href="/settings/profile">{t.people.publishYours}</ButtonLink>}
+            >
+              {t.people.nobodyYetBody}
+            </EmptyState>
+          </Card>
         ) : (
           <PeopleGrid t={t} people={directory} />
         )
       ) : !canCrew ? (
-        <SqLocked capability="crews" plan="ultra">
-          <section className="sq-grid sq-grid-fit-md" style={{ alignItems: "start" }}>
-            <div className="sq-card sq-pad-sm">
-              <h2 className="sq-h2" style={{ fontSize: 19 }}>
-                Tuesday nights
-              </h2>
-              <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.55, color: "var(--ink-2)" }}>
-                Short ones after work, all year.
-              </p>
-            </div>
-            <div className="sq-tinted sq-pad-sm">
-              <h2 className="sq-h2" style={{ fontSize: 19 }}>
-                Start a group
-              </h2>
-              <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.55, color: "var(--ink-2)" }}>
-                Whoever you send the link to is in it.
-              </p>
-            </div>
-          </section>
-        </SqLocked>
+        <Locked capability="crews" plan="ultra">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <h2 className={type.h3}>{t.groups.namePlaceholder}</h2>
+              <p className="mt-2 text-body-sm text-muted">{t.groups.blurbPlaceholder}</p>
+            </Card>
+            <Card>
+              <h2 className={type.h3}>{words.starter.title}</h2>
+              <p className="mt-2 text-body-sm text-muted">{words.starter.body}</p>
+            </Card>
+          </div>
+        </Locked>
       ) : (
-        <section className="sq-grid sq-grid-fit-md" style={{ alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="grid gap-4 md:grid-cols-2 md:items-start lg:gap-6">
+          <div className="flex flex-col gap-4">
             {groups.length === 0 ? (
-              <EmptyState
-                glyph="users"
-                title={t.people.noGroup}
-                body={t.people.noGroupBody}
-              />
+              <Card>
+                <EmptyState icon={Users} title={t.people.noGroup}>
+                  {t.people.noGroupBody}
+                </EmptyState>
+              </Card>
             ) : (
               groups.map((group) => (
-                <Link
-                  key={group.id}
-                  href={`/people/groups/${group.slug}`}
-                  className="sq-card sq-lift sq-pad-sm"
-                  style={{ color: "var(--lg-text)", display: "block" }}
-                >
-                  <div className="sq-section-head">
-                    <h2 className="sq-h2" style={{ fontSize: 19 }}>
-                      {group.name}
-                    </h2>
-                    <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-                      {group.members} {group.members === 1 ? "member" : "members"}
-                    </span>
+                <CardLink key={group.id} href={`/people/groups/${group.slug}`}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h2 className={type.h3}>{group.name}</h2>
+                    <span className="text-caption text-muted">{plural(locale, group.members, words.members)}</span>
                   </div>
-                  {group.blurb ? (
-                    <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.55, color: "var(--ink-2)" }}>
-                      {group.blurb}
-                    </p>
-                  ) : null}
-                </Link>
+                  {group.blurb ? <p className="mt-2 text-body-sm text-muted">{group.blurb}</p> : null}
+                </CardLink>
               ))
             )}
           </div>
 
           <GroupStarter />
-        </section>
+        </div>
       )}
     </>
   );
@@ -163,84 +144,25 @@ export default async function PeoplePage({
 /** The directory grid, shared by the real list and the locked preview. */
 function PeopleGrid({ people, t }: { people: DirectoryEntry[]; t: Messages }) {
   return (
-    <section
-      className="sq-stagger"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill,minmax(216px,1fr))",
-        gap: 14,
-      }}
-    >
-      {people.map((person, index) => {
-        const accent = accentInk(person.accent);
-        return (
-        <Link
-          key={person.handle}
-          href={`/people/${person.handle}`}
-          className="sq-card sq-lift"
-          style={{
-            padding: 18,
-            color: "var(--lg-text)",
-            // The accent is how somebody is recognisable in a grid of faces,
-            // so it has to be on the card and not only on the page behind it.
-            borderTop: `4px solid ${accent.ink}`,
-            ["--i" as string]: index,
-          }}
-        >
-          <span
-            style={{
-              display: "inline-flex",
-              padding: 4,
-              borderRadius: 999,
-              background: accent.wash,
-              border: `1px solid ${accent.edge}`,
-            }}
-          >
-            <Avatar name={person.name} size={44} />
-          </span>
-          <b
-            style={{
-              display: "block",
-              marginTop: 12,
-              fontFamily: "var(--font-heading)",
-              fontWeight: 600,
-              fontSize: 17,
-              lineHeight: 1.2,
-            }}
-          >
-            {person.name}
-          </b>
-          {person.headline ? (
-            <span
-              style={{
-                display: "block",
-                marginTop: 5,
-                fontSize: 12.5,
-                lineHeight: 1.45,
-                color: "var(--ink-2)",
-              }}
-            >
-              {person.headline}
-            </span>
-          ) : null}
-          <span
-            className="sq-kicker-sm"
-            style={{
-              display: "flex",
-              gap: 12,
-              marginTop: 14,
-              paddingTop: 11,
-              borderTop: "1px solid var(--line-2)",
-              fontSize: 9.5,
-              letterSpacing: "0.07em",
-            }}
-          >
-            <i style={{ fontStyle: "normal" }}>{person.country ?? "—"}</i>
-            <i style={{ fontStyle: "normal" }}>{t.people.logged(person.logged)}</i>
-          </span>
-        </Link>
-        );
-      })}
-    </section>
+    <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {people.map((person) => (
+        <li key={person.handle} className="flex">
+          <CardLink href={`/people/${person.handle}`} className="flex w-full flex-col gap-3">
+            {/* The profile colour is how somebody is recognisable in a grid of
+                faces, so it is on the card and not only on the page behind it. */}
+            <Avatar name={person.name} accent={person.accent} size="lg" />
+            <div className="min-w-0">
+              <h2 className={type.h4}>{person.name}</h2>
+              {person.headline ? <p className="mt-1 text-body-sm text-muted">{person.headline}</p> : null}
+            </div>
+            <p className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3 text-caption text-muted">
+              <span>{person.country ?? t.common.none}</span>
+              <span>{t.people.logged(person.logged)}</span>
+            </p>
+          </CardLink>
+        </li>
+      ))}
+    </ul>
   );
 }
+

@@ -1,21 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Trophy, Users } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { GroupMembership } from "@/components/sq/group-membership";
-import { SqSegmentedLinks } from "@/components/sq/controls";
-import { Avatar, Bar, EmptyState, PageHeader, Tag } from "@/components/sq/ui";
-import { getT } from "@/lib/i18n/server";
+import { GroupMembership } from "@/components/app/group";
+import { BoardList, BoardRow } from "@/components/domain/board";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/feedback";
+import { SegmentedLinks } from "@/components/ui/nav";
+import { DetailGrid, PageHeader } from "@/components/ui/page";
 import { requireClient } from "@/lib/auth/guards";
 import { getGroup, getGroupBoard } from "@/lib/groups";
+import { formatNumber, plural } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
+import { resolveSlot } from "@/lib/leaderboard";
+import { slotDates, slotTitle } from "@/lib/quest/labels";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   return { title: slug };
 }
@@ -36,7 +40,8 @@ export default async function GroupPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const user = await requireClient();
-  const t = await getT(user.id);
+  const { t, locale } = await getReader(user.id);
+  const words = t.app.people;
   const { slug } = await params;
   const query = await searchParams;
   const period = query.period === "WEEKLY" ? "WEEKLY" : "MONTHLY";
@@ -47,13 +52,12 @@ export default async function GroupPage({
   if (!group.isMember) {
     return (
       <>
-        <PageHeader kicker={t.groups.kicker} title={group.name} lede={group.blurb ?? undefined} />
-        <EmptyState
-          glyph="users"
-          title={t.groups.notIn}
-          body={t.groups.notInBody}
-          action={<GroupMembership slug={group.slug} joined={false} />}
-        />
+        <PageHeader overline={t.groups.kicker} title={group.name} lede={group.blurb ?? undefined} />
+        <Card>
+          <EmptyState icon={Users} title={t.groups.notIn} action={<GroupMembership slug={group.slug} joined={false} />}>
+            {t.groups.notInBody}
+          </EmptyState>
+        </Card>
       </>
     );
   }
@@ -62,131 +66,81 @@ export default async function GroupPage({
     group.members.map((member) => member.userId),
     period,
   );
-
-  const leader = board.rows[0]?.score ?? 0;
+  // The group board is always the current window; no slot is picked here.
+  const slot = resolveSlot(period);
 
   return (
     <>
       <PageHeader
-        kicker={`Group · ${group.members.length} ${group.members.length === 1 ? "member" : "members"}`}
+        overline={`${t.groups.kicker} · ${plural(locale, group.members.length, words.members)}`}
         title={group.name}
         lede={group.blurb ?? undefined}
-        right={<GroupMembership slug={group.slug} joined isOwner={group.isOwner} />}
+        actions={<GroupMembership slug={group.slug} joined isOwner={group.isOwner} />}
       />
 
-      <section className="sq-grid sq-grid-fit-md" style={{ alignItems: "start" }}>
-        <article className="sq-card" style={{ overflow: "hidden" }}>
-          <div className="sq-section-head sq-rule-head">
-            <h2 className="sq-h2">
-              {board.label} · {board.dates}
-            </h2>
-            <SqSegmentedLinks
-              label={t.groups.cadence}
-              active={period}
-              options={[
-                { key: "MONTHLY", label: "Monthly", href: `/people/groups/${group.slug}` },
-                { key: "WEEKLY", label: "Weekly", href: `/people/groups/${group.slug}?period=WEEKLY` },
-              ]}
-            />
-          </div>
-
-          {board.rows.length === 0 ? (
-            <div style={{ padding: 26 }}>
-              <EmptyState
-                glyph="laurel"
-                title={t.groups.nothingScored}
-                body={t.groups.nothingScoredBody}
-              />
-            </div>
-          ) : (
-            <ul className="sq-stagger">
-              {board.rows.map((row, index) => (
-                <li
-                  key={row.userId}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "30px 32px minmax(120px,1fr) minmax(50px,110px) 56px",
-                    gap: 12,
-                    alignItems: "center",
-                    padding: "11px 22px",
-                    borderTop: "1px solid var(--line-2)",
-                    background: row.userId === user.id ? "var(--paper-2)" : "transparent",
-                    borderLeft: `2px solid ${row.userId === user.id ? "var(--signal)" : "transparent"}`,
-                    ["--i" as string]: index,
-                  }}
-                >
-                  <span className="sq-mono" style={{ fontSize: 14, color: "var(--ink-3)" }}>
-                    {row.rank}
-                  </span>
-                  <Avatar name={row.username} size={32} square />
-                  <span style={{ minWidth: 0 }}>
-                    {row.handle ? (
-                      <Link href={`/people/${row.handle}`} style={{ color: "var(--lg-text)" }}>
-                        <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{row.username}</b>
-                      </Link>
+      <DetailGrid
+        aside={
+          <Card>
+            <CardHeader title={words.group.roster} note={words.group.membersOnly} />
+            <ul className="divide-y divide-border">
+              {group.members.map((member) => (
+                <li key={member.userId} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <Avatar name={member.name} size="sm" />
+                  <span className="min-w-0 flex-1 truncate text-body-sm">
+                    {member.handle ? (
+                      <a href={`/people/${member.handle}`} className="font-medium text-text no-underline hover:underline">
+                        {member.name}
+                      </a>
                     ) : (
-                      <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{row.username}</b>
+                      member.name
                     )}
-                    <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
-                      {row.quests} {row.quests === 1 ? "quest" : "quests"}
-                      {row.tookFeatured ? " · took the featured one" : ""}
-                    </span>
                   </span>
-                  <Bar pct={leader === 0 ? 0 : (row.score / leader) * 100} />
-                  <b
-                    style={{
-                      fontFamily: "var(--font-heading)",
-                      fontWeight: 600,
-                      fontSize: 19,
-                      textAlign: "right",
-                    }}
-                  >
-                    {row.score}
-                  </b>
+                  {member.role === "OWNER" ? <Badge size="sm">{words.group.owner}</Badge> : null}
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-caption text-subtle">{words.group.linkNote}</p>
+          </Card>
+        }
+      >
+        <Card>
+          <CardHeader
+            title={slotTitle(slot, locale, t)}
+            note={slotDates(slot, locale)}
+            action={
+              <SegmentedLinks
+                label={t.groups.cadence}
+                active={period}
+                options={[
+                  { key: "MONTHLY", label: t.leaderboard.monthlyTab, href: `/people/groups/${group.slug}` },
+                  { key: "WEEKLY", label: t.leaderboard.weeklyTab, href: `/people/groups/${group.slug}?period=WEEKLY` },
+                ]}
+              />
+            }
+          />
+          {board.rows.length === 0 ? (
+            <EmptyState icon={Trophy} title={t.groups.nothingScored}>
+              {t.groups.nothingScoredBody}
+            </EmptyState>
+          ) : (
+            <BoardList aria-label={words.group.board}>
+              {board.rows.map((row) => (
+                <BoardRow
+                  key={row.userId}
+                  rank={row.rank}
+                  name={row.username}
+                  href={row.handle ? `/people/${row.handle}` : undefined}
+                  leading={<Avatar name={row.username} size="sm" />}
+                  score={formatNumber(locale, row.score)}
+                  meta={`${plural(locale, row.quests, t.common.quests)}${row.tookFeatured ? ` · ${t.leaderboard.tookFeatured}` : ""}`}
+                  me={row.userId === user.id}
+                  meLabel={t.app.dashboard.you}
+                />
+              ))}
+            </BoardList>
           )}
-        </article>
-
-        <article className="sq-card-flat">
-          <div className="sq-section-head sq-rule-head">
-            <h2 className="sq-h2">Who is in it</h2>
-            <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-              Members only
-            </span>
-          </div>
-          <ul>
-            {group.members.map((member) => (
-              <li
-                key={member.userId}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "12px 22px",
-                  borderTop: "1px solid var(--line-2)",
-                }}
-              >
-                <Avatar name={member.name} size={32} square />
-                <span style={{ flex: 1, minWidth: 0, fontSize: 13.5 }}>
-                  {member.handle ? (
-                    <Link href={`/people/${member.handle}`} style={{ color: "var(--lg-text)" }}>
-                      {member.name}
-                    </Link>
-                  ) : (
-                    member.name
-                  )}
-                </span>
-                {member.role === "OWNER" ? <Tag small>Owner</Tag> : null}
-              </li>
-            ))}
-          </ul>
-          <p style={{ padding: "14px 22px", fontSize: 12.5, color: "var(--ink-3)" }}>
-            Anybody with this page&rsquo;s link can join. Send it to whoever you walk with.
-          </p>
-        </article>
-      </section>
+        </Card>
+      </DetailGrid>
     </>
   );
 }

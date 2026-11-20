@@ -1,25 +1,26 @@
-import type { CSSProperties } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { SqActivityGrid } from "@/components/sq/activity-grid";
-import { SqSticker } from "@/components/sq/sticker";
-import { Avatar } from "@/components/sq/ui";
-import { accentInk, FIGURE_INKS, terrainInk } from "@/lib/accents";
+import { ActivityGrid } from "@/components/domain/activity-grid";
+import { Sticker } from "@/components/domain/sticker";
+import { tagLabel } from "@/components/domain/trail";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge, tagTone } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { PageStack, StatCard, StatRow } from "@/components/ui/page";
+import { Overline, type } from "@/components/ui/typography";
+import { accentInk } from "@/lib/accents";
 import { requireClient } from "@/lib/auth/guards";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getReader } from "@/lib/i18n/server";
+import { formatDistance, formatHeight, formatMinutes } from "@/lib/i18n/units";
 import { getPublicProfile } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ handle: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }): Promise<Metadata> {
   const { handle } = await params;
   return { title: `@${handle}` };
 }
@@ -33,320 +34,190 @@ export async function generateMetadata({
  * shown as a blank, because an empty profile should read as private rather
  * than as unfinished.
  *
- * It is also the one screen in the product that is allowed to be *theirs*.
- * The rest of the app is one house style on one paper; here the account's
- * `accent` prints the band behind their name, the figures come in four
- * different inks, a year of days shows how often they are actually here, and
- * the ground each quest crossed is a colour rather than another grey word. A
- * page about a person that looked like a table row was the thing to fix.
+ * It is the one screen that is allowed to be *theirs*: the account's profile
+ * colour prints the band behind their name and their avatar
+ * (design/DESIGN-SYSTEM.md §1.5).
  *
  * An unpublished handle and a handle that does not exist are indistinguishable
  * from here, on purpose: the directory must not be usable to confirm that
  * somebody has an account.
  */
-export default async function PublicProfilePage({
-  params,
-}: {
-  params: Promise<{ handle: string }>;
-}) {
+export default async function PublicProfilePage({ params }: { params: Promise<{ handle: string }> }) {
   const user = await requireClient();
   const { handle } = await params;
+  const { t, locale, units } = await getReader(user.id);
 
-  const locale = await getLocale(user.id);
-  const [profile, t] = await Promise.all([
-    getPublicProfile(handle, user.id, locale),
-    getT(user.id),
-  ]);
+  const profile = await getPublicProfile(handle, user.id, locale);
   if (!profile) notFound();
 
   const accent = accentInk(profile.accent);
+  const first = profile.name.trim().split(/\s+/)[0] ?? profile.name;
   const walked = profile.months.reduce((sum, month) => sum + month.count, 0);
 
-  const figures = profile.stats
-    ? [
-        { k: t.profile.logged, v: formatNumber(locale, profile.stats.logged) },
-        { k: t.profile.kilometres, v: formatNumber(locale, Math.round(profile.stats.km)) },
-        { k: t.profile.metresUp, v: formatNumber(locale, Math.round(profile.stats.up)) },
-        { k: t.profile.regions, v: formatNumber(locale, profile.stats.regions) },
-      ]
-    : [];
-
   return (
-    <>
-      <section className="sq-card" style={{ overflow: "hidden", padding: 0 }}>
+    <PageStack>
+      {/* --- who ------------------------------------------------------------- */}
+      <Card pad="none" className="overflow-hidden">
         <div
-          className="sq-profile-band"
-          style={{ ["--band" as string]: accent.deep } as CSSProperties}
+          className="flex h-24 items-start justify-between gap-3 border-b border-(--accent-edge) bg-(--accent-wash) p-5 text-(--accent-deep) md:h-32"
+          style={{
+            ["--accent-wash" as string]: accent.wash,
+            ["--accent-edge" as string]: accent.edge,
+            ["--accent-deep" as string]: accent.deep,
+          }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
-            <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.11em" }}>
-              @{profile.handle}
-              {profile.country ? ` · ${profile.country}` : ""}
-            </span>
-            <span className="sq-mono" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
-              {t.profile.since(formatDate(locale, profile.joinedAt, "monthYear"))}
-            </span>
-          </div>
-
-          <div className="sq-profile-face">
-            <Avatar name={profile.name} size={104} />
-          </div>
+          <Overline className="text-(--accent-deep)">
+            {t.app.people.profile.handleLine(profile.handle)}
+            {profile.country ? ` · ${profile.country}` : ""}
+          </Overline>
+          <span className="text-caption">{t.profile.since(formatDate(locale, profile.joinedAt, "monthYear"))}</span>
         </div>
 
-        <div style={{ padding: "18px 26px 0", display: "flex", gap: 22, flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <h1 style={{ fontSize: 34, lineHeight: 1.05, marginBottom: 8 }}>{profile.name}</h1>
-            {profile.headline ? (
-              <p style={{ fontSize: 15, lineHeight: 1.5, maxWidth: "46ch", color: "var(--ink-2)" }}>
-                {profile.headline}
-              </p>
-            ) : null}
+        <div className="flex flex-col gap-4 p-5 md:flex-row md:items-end md:justify-between">
+          <div className="flex min-w-0 flex-col gap-3">
+            <Avatar
+              name={profile.name}
+              accent={profile.accent}
+              size="xl"
+              className="-mt-16 ring-4 ring-surface md:-mt-20"
+            />
+            <div>
+              <h1 className={type.h1}>{profile.name}</h1>
+              {profile.headline ? <p className="mt-1 max-w-text text-body text-muted">{profile.headline}</p> : null}
+            </div>
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 150 }}>
-            {profile.isSelf ? (
-              <Link href="/settings/profile" className="sq-btn sq-btn-primary">
-                {t.profile.editYourPage}
-              </Link>
-            ) : (
-              <Link href="/people?tab=groups" className="sq-btn sq-btn-ghost">
-                {t.profile.walkTogether}
-              </Link>
-            )}
-          </div>
+          {profile.isSelf ? (
+            <ButtonLink href="/settings/profile">{t.profile.editYourPage}</ButtonLink>
+          ) : (
+            <ButtonLink href="/people?tab=groups" variant="secondary">
+              {t.profile.walkTogether}
+            </ButtonLink>
+          )}
         </div>
+      </Card>
 
-        {figures.length > 0 ? (
-          <div className="sq-figure-row">
-            {figures.map((figure, index) => {
-              const pen = FIGURE_INKS[index % FIGURE_INKS.length];
-              return (
-                <div
-                  key={figure.k}
-                  className="sq-figure-tile"
-                  style={
-                    {
-                      "--ink": pen.ink,
-                      "--wash": pen.wash,
-                      "--edge": pen.edge,
-                      "--i": index,
-                    } as CSSProperties
-                  }
-                >
-                  <b>{figure.v}</b>
-                  <span>{figure.k}</span>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
-      </section>
-
-      {profile.activityGrid ? (
-        <article className="sq-card-flat" style={{ marginTop: 16, overflow: "hidden" }}>
-          <div className="sq-section-head sq-rule-head">
-            <h2 className="sq-h2">{t.profile.yearHeading}</h2>
-            <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-              {walked === 0 ? t.profile.nothingApproved : t.profile.walked(walked)}
-            </span>
-          </div>
-          <SqActivityGrid
-            grid={profile.activityGrid}
-            accent={accent}
-            name={firstName(profile.name)}
-            locale={locale}
-            t={t}
-          />
-        </article>
+      {profile.stats ? (
+        <StatRow>
+          <StatCard value={formatNumber(locale, profile.stats.logged)} label={t.profile.logged} />
+          <StatCard value={formatDistance(locale, Math.round(profile.stats.km), units)} label={t.profile.kilometres} />
+          <StatCard value={formatHeight(locale, profile.stats.up, units)} label={t.profile.metresUp} />
+          <StatCard value={formatNumber(locale, profile.stats.regions)} label={t.profile.regions} />
+        </StatRow>
       ) : null}
 
-      <div className="sq-grid sq-grid-fit-md" style={{ marginTop: 16, alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {profile.activityGrid ? (
+        <Card>
+          <CardHeader
+            title={t.profile.yearHeading}
+            note={walked === 0 ? t.profile.nothingApproved : t.profile.walked(walked)}
+          />
+          <ActivityGrid grid={profile.activityGrid} name={first} locale={locale} t={t} />
+        </Card>
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-2 md:items-start lg:gap-6">
+        <div className="flex flex-col gap-4 lg:gap-6">
           {profile.bio ? (
-            <article className="sq-card-flat">
-              <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
-                <h2 className="sq-h2">{t.profile.about}</h2>
-              </div>
-              <p
-                style={{
-                  padding: "18px 22px",
-                  fontSize: 14,
-                  lineHeight: 1.65,
-                  color: "var(--ink-2)",
-                  textWrap: "pretty",
-                }}
-              >
-                {profile.bio}
-              </p>
-            </article>
+            <Card>
+              <CardHeader title={t.profile.about} />
+              <p className="text-body-sm text-muted text-pretty">{profile.bio}</p>
+            </Card>
           ) : null}
 
           {profile.socials.length > 0 ? (
-            <article className="sq-card-flat">
-              <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
-                <h2 className="sq-h2">{t.profile.elsewhere}</h2>
-              </div>
-              <ul>
+            <Card>
+              <CardHeader title={t.profile.elsewhere} />
+              <ul className="divide-y divide-border">
                 {profile.socials.map((social) => (
-                  <li
-                    key={social.key}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      padding: "13px 22px",
-                      borderTop: "1px solid var(--line-2)",
-                    }}
-                  >
-                    <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
-                      {social.key}
-                    </span>
-                    <a href={social.href} rel="noreferrer noopener nofollow" target="_blank">
-                      <b style={{ fontSize: 13.5, fontWeight: 600 }}>{social.handle}</b>
+                  <li key={social.key} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <span className="text-overline font-semibold uppercase text-subtle">{social.key}</span>
+                    <a
+                      href={social.href}
+                      rel="noreferrer noopener nofollow"
+                      target="_blank"
+                      className="inline-flex min-w-0 items-center gap-1 text-body-sm font-semibold text-primary underline underline-offset-2"
+                    >
+                      <span className="truncate">{social.handle}</span>
+                      <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
                     </a>
                   </li>
                 ))}
               </ul>
-            </article>
+            </Card>
           ) : null}
 
           {profile.stickers.length > 0 ? (
-            <article className="sq-card-flat" style={{ overflow: "hidden" }}>
-              <div className="sq-section-head sq-rule-head">
-                <h2 className="sq-h2">{t.profile.earnedHeading}</h2>
-                <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-                  {profile.stickers.length}
-                </span>
-              </div>
-              <div className="sq-sticker-scatter">
-                {profile.stickers.map((sticker, index) => (
-                  <span
-                    key={sticker.id}
-                    style={{ ["--tilt" as string]: tiltFor(index), display: "inline-flex" }}
-                  >
-                    <SqSticker
-                      sticker={sticker.sticker}
-                      size={58}
-                      index={index}
-                      title={sticker.label}
-                    />
-                  </span>
+            <Card>
+              <CardHeader title={t.profile.earnedHeading} note={formatNumber(locale, profile.stickers.length)} />
+              <ul className="flex flex-wrap gap-3">
+                {profile.stickers.map((sticker) => (
+                  <li key={sticker.id}>
+                    <Sticker sticker={sticker.sticker} size="md" title={sticker.label} />
+                  </li>
                 ))}
-              </div>
-            </article>
+              </ul>
+            </Card>
           ) : null}
         </div>
 
-        <article className="sq-card" style={{ overflow: "hidden" }}>
-          <div className="sq-section-head sq-rule-head">
-            <h2 className="sq-h2">{t.profile.walkedHeading(firstName(profile.name))}</h2>
-            <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-              {t.profile.approvedOnly}
-            </span>
-          </div>
-
+        <Card>
+          <CardHeader title={t.profile.walkedHeading(first)} note={t.profile.approvedOnly} />
           {profile.activities.length === 0 ? (
-            <p style={{ padding: "18px 22px", fontSize: 13, color: "var(--ink-3)" }}>
-              {t.profile.nothingHere}
-            </p>
+            <p className="text-body-sm text-muted">{t.profile.nothingHere}</p>
           ) : (
-            <ul className="sq-stagger">
-              {profile.activities.map((activity, index) => (
-                <li
-                  key={activity.id}
-                  style={{
-                    padding: "18px 22px",
-                    borderTop: "1px solid var(--line-2)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 11,
-                    ["--i" as string]: index,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                    <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, lineHeight: 1.2 }}>
-                      {activity.title}
-                    </b>
-                    <span
-                      className="sq-mono"
-                      style={{ fontSize: 10, letterSpacing: "0.06em", whiteSpace: "nowrap", color: "var(--ink-3)" }}
-                    >
+            <ul className="divide-y divide-border">
+              {profile.activities.map((activity) => (
+                <li key={activity.id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h3 className={type.h4}>{activity.title}</h3>
+                    <span className="shrink-0 text-caption tabular-nums text-subtle">
                       {formatDate(locale, activity.loggedAt)}
                     </span>
                   </div>
-                  <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.07em" }}>
+                  <p className="text-caption text-muted">
                     {activity.location} · {activity.region}
                     {activity.retreated ? ` · ${t.profile.retreat}` : ""}
-                  </span>
-
+                  </p>
                   {activity.tags.length > 0 ? (
-                    <div className="sq-terrain">
+                    <ul className="flex flex-wrap gap-1">
                       {[...new Set(activity.tags)].slice(0, 5).map((tag) => {
-                        const pen = terrainInk(tag);
+                        const label = tagLabel(tag, t);
                         return (
-                          <span
-                            key={tag}
-                            style={
-                              {
-                                "--ink": pen.ink,
-                                "--wash": pen.wash,
-                                "--edge": pen.edge,
-                              } as CSSProperties
-                            }
-                          >
-                            {tag}
-                          </span>
+                          <li key={tag}>
+                            <Badge tone={tagTone(label)}>{label}</Badge>
+                          </li>
                         );
                       })}
-                    </div>
+                    </ul>
                   ) : null}
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3,minmax(0,1fr))",
-                      gap: 1,
-                      background: "var(--line-2)",
-                      borderRadius: 8,
-                      overflow: "hidden",
-                    }}
-                  >
+                  <dl className="grid grid-cols-3 divide-x divide-border rounded-control bg-surface-sunken">
                     {[
-                      { k: "km", v: activity.distance != null ? activity.distance.toFixed(1) : "—" },
-                      { k: "m ↑", v: activity.elevation != null ? String(activity.elevation) : "—" },
-                      { k: "moving", v: activity.movingTime != null ? `${activity.movingTime}m` : "—" },
+                      {
+                        label: t.trail.distance,
+                        value: activity.distance != null ? formatDistance(locale, activity.distance, units) : t.common.none,
+                      },
+                      {
+                        label: t.trail.ascent,
+                        value: activity.elevation != null ? formatHeight(locale, activity.elevation, units) : t.common.none,
+                      },
+                      {
+                        label: t.trail.time,
+                        value: activity.movingTime != null ? formatMinutes(activity.movingTime) : t.common.none,
+                      },
                     ].map((fact) => (
-                      <span key={fact.k} style={{ background: "var(--paper-2)", padding: "9px 11px" }}>
-                        <b style={{ display: "block", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16 }}>
-                          {fact.v}
-                        </b>
-                        <span className="sq-kicker-sm" style={{ fontSize: 8.5, letterSpacing: "0.07em" }}>
-                          {fact.k}
-                        </span>
-                      </span>
+                      <div key={fact.label} className="flex min-w-0 flex-col-reverse px-3 py-2">
+                        <dt className="text-caption text-muted">{fact.label}</dt>
+                        <dd className="text-body-sm font-semibold tabular-nums">{fact.value}</dd>
+                      </div>
                     ))}
-                  </div>
-
-                  <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink-2)", textWrap: "pretty" }}>
-                    {activity.note}
-                  </p>
+                  </dl>
+                  <p className="text-body-sm text-muted text-pretty">{activity.note}</p>
                 </li>
               ))}
             </ul>
           )}
-        </article>
+        </Card>
       </div>
-    </>
+    </PageStack>
   );
-}
-
-function firstName(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name;
-}
-
-/** A fixed wobble rather than a random one, so a page does not reshuffle
- *  itself between the server's render and the browser's. */
-function tiltFor(index: number): number {
-  return [-5, 3, -2, 6, -4, 2][index % 6];
 }

@@ -231,7 +231,9 @@ function SideLink({
       )}
     >
       <Icon className="size-5 shrink-0" aria-hidden="true" />
-      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      {/* With a note beside it (the plan beside Settings), the note gives way
+          first: the label is where the link goes, the note is a detail. */}
+      <span className={cn("truncate", item.note ? "shrink-0" : "min-w-0 flex-1")}>{item.label}</span>
       {item.feature ? (
         <span className="size-2 shrink-0 rounded-pill bg-accent" title={t.app.shell.monthlyOpen} aria-hidden="true" />
       ) : null}
@@ -243,7 +245,9 @@ function SideLink({
           {item.badge}
         </span>
       ) : null}
-      {item.note ? <span className="shrink-0 text-caption font-normal text-subtle">{item.note}</span> : null}
+      {item.note ? (
+        <span className="min-w-0 flex-1 truncate text-right text-caption font-normal text-subtle">{item.note}</span>
+      ) : null}
     </Link>
   );
 }
