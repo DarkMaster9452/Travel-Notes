@@ -15,7 +15,24 @@ import { rateLimit } from "@/lib/rate-limit";
 import { loginSchema, PASSWORD_MIN, signupSchema } from "@/lib/validation";
 import type { z } from "zod";
 
-export type AuthState = { errors?: Record<string, string> } | undefined;
+export type AuthState =
+  | {
+      errors?: Record<string, string>;
+      /**
+       * What was typed, handed back with an error. React resets a form after
+       * its action runs, so without this a mistyped password would also wipe
+       * the name and the email somebody had just entered.
+       */
+      values?: { name?: string; email?: string };
+    }
+  | undefined;
+
+function typed(formData: FormData): { name?: string; email?: string } {
+  return {
+    name: String(formData.get("name") ?? "").slice(0, 80),
+    email: String(formData.get("email") ?? "").slice(0, 254),
+  };
+}
 
 /**
  * Prisma's duplicate-key code. Checked structurally rather than by importing
@@ -84,7 +101,7 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     password: formData.get("password"),
   });
 
-  if (!parsed.success) return { errors: localisedErrors(parsed.error, t) };
+  if (!parsed.success) return { errors: localisedErrors(parsed.error, t), values: typed(formData) };
   const { name, email, password } = parsed.data;
 
   const limit = await rateLimit(
@@ -93,12 +110,12 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     AUTH_RATE_LIMIT.windowSeconds,
   );
   if (!limit.ok) {
-    return { errors: { form: t.auth.errors.tooMany } };
+    return { errors: { form: t.auth.errors.tooMany }, values: typed(formData) };
   }
 
   const existing = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) {
-    return { errors: { email: t.auth.errors.emailTaken } };
+    return { errors: { email: t.auth.errors.emailTaken }, values: typed(formData) };
   }
 
   let userId: string;
@@ -127,10 +144,10 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     // isn't P2002 is a real fault: log it and say so, rather than blaming the
     // person typing.
     if (isUniqueViolation(error)) {
-      return { errors: { email: t.auth.errors.emailTaken } };
+      return { errors: { email: t.auth.errors.emailTaken }, values: typed(formData) };
     }
     console.error("[auth] signup failed", error);
-    return { errors: { form: t.auth.errors.signupFailed } };
+    return { errors: { form: t.auth.errors.signupFailed }, values: typed(formData) };
   }
 
   await createSession(userId);
@@ -147,7 +164,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     password: formData.get("password"),
   });
 
-  if (!parsed.success) return { errors: localisedErrors(parsed.error, t) };
+  if (!parsed.success) return { errors: localisedErrors(parsed.error, t), values: typed(formData) };
   const { email, password } = parsed.data;
 
   const limit = await rateLimit(
@@ -156,7 +173,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     AUTH_RATE_LIMIT.windowSeconds,
   );
   if (!limit.ok) {
-    return { errors: { form: t.auth.errors.tooMany } };
+    return { errors: { form: t.auth.errors.tooMany }, values: typed(formData) };
   }
 
   const user = await db.user.findUnique({
@@ -167,11 +184,11 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   if (!user) {
     // Spend comparable time so a missing account isn't detectable by timing.
     await burnPasswordCycle(password);
-    return { errors: { form: t.auth.errors.mismatch } };
+    return { errors: { form: t.auth.errors.mismatch }, values: typed(formData) };
   }
 
   const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) return { errors: { form: t.auth.errors.mismatch } };
+  if (!valid) return { errors: { form: t.auth.errors.mismatch }, values: typed(formData) };
 
   await createSession(user.id);
 

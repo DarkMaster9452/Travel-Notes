@@ -36,6 +36,7 @@ export function AuthForm({
   const [state, formAction] = useActionState<AuthState, FormData>(action, undefined);
   const next = useSearchParams().get("next");
   const errors = state?.errors ?? {};
+  const values = state?.values ?? {};
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,6 +62,7 @@ export function AuthForm({
                 id={`${id}-name`}
                 name="name"
                 type="text"
+                defaultValue={values.name}
                 autoComplete="given-name"
                 aria-invalid={errors.name ? true : undefined}
                 required
@@ -73,6 +75,7 @@ export function AuthForm({
               id={`${id}-email`}
               name="email"
               type="email"
+              defaultValue={values.email}
               inputMode="email"
               autoComplete="email"
               aria-invalid={errors.email ? true : undefined}
