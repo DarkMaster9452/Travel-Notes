@@ -1,24 +1,21 @@
 import type { Metadata } from "next";
+import { Check } from "lucide-react";
 
 import { disconnectStravaAction } from "@/app/(app)/actions";
-import { SqConfirmButton } from "@/components/sq/forms";
-import { StravaMark } from "@/components/sq/icons";
-import { Tag } from "@/components/sq/ui";
+import { ConfirmButton } from "@/components/app/forms";
+import { Pane } from "@/components/app/pane";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Alert } from "@/components/ui/feedback";
 import { requireClient } from "@/lib/auth/guards";
-import { getT } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
 import { getStravaConnection, stravaEnabled } from "@/lib/strava";
 
-export const metadata: Metadata = { title: "Connected apps" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.settings.items.connected };
+}
 export const dynamic = "force-dynamic";
-
-const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
-
-const ERRORS: Record<string, string> = {
-  unconfigured: "Strava is not configured on this deployment.",
-  declined: "Strava was not given permission.",
-  state: "That handshake did not match — start it again from here.",
-  exchange: "Strava would not complete the handshake. Try once more.",
-};
 
 /**
  * Connected apps.
@@ -33,95 +30,64 @@ export default async function ConnectedAppsPage({
   searchParams: Promise<{ connected?: string; error?: string }>;
 }) {
   const user = await requireClient();
-  const t = await getT(user.id);
+  const { t, locale } = await getReader(user.id);
+  const words = t.app.settingsPane.connected;
   const params = await searchParams;
-
   const connection = await getStravaConnection(user.id);
-  const error = params.error ? (ERRORS[params.error] ?? "That connection did not complete.") : null;
+
+  const errors: Record<string, string> = {
+    unconfigured: t.panes.connected.notConfigured,
+    declined: t.panes.connected.denied,
+    state: words.stateMismatch,
+    exchange: t.panes.connected.handshakeFailed,
+  };
+  const error = params.error ? (errors[params.error] ?? words.failed) : null;
 
   return (
-    <section className="sq-card" style={{ overflow: "hidden" }}>
-      <div className="sq-section-head sq-rule-head">
-        <h2 className="sq-h2" style={{ fontSize: 19 }}>
-          Connected apps
-        </h2>
-        {params.connected ? (
-          <Tag tone="green" small>
-            Connected
-          </Tag>
-        ) : null}
-      </div>
-
+    <Pane
+      title={t.panes.connected.heading}
+      action={
+        params.connected ? (
+          <Badge tone="success" icon={Check}>
+            {words.connected}
+          </Badge>
+        ) : undefined
+      }
+      padded
+    >
       {error ? (
-        <p
-          style={{
-            padding: "12px 24px",
-            background: "var(--signal-wash)",
-            color: "var(--lg-warm-700)",
-            fontSize: 13,
-          }}
-        >
+        <Alert tone="danger" role="alert" className="w-full">
           {error}
-        </p>
+        </Alert>
       ) : null}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) auto",
-          gap: 18,
-          alignItems: "center",
-          padding: "18px 24px",
-        }}
-      >
-        <span style={{ minWidth: 0 }}>
-          <b style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14.5, fontWeight: 600 }}>
-            <span style={{ color: "var(--signal)" }}>
-              <StravaMark size={14} />
-            </span>
-            Strava
-          </b>
-          <span style={{ display: "block", marginTop: 5, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-2)" }}>
+      <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <b className="block text-body-sm font-semibold text-text">Strava</b>
+          <p className="mt-1 text-caption text-muted">
             {connection
-              ? `Connected as ${connection.athleteName ?? connection.athleteId} since ${DATE.format(connection.connectedAt)}. The proof form can read distance, ascent and moving time straight off an activity.`
-              : "Read distance, ascent and moving time straight off an activity instead of typing them. Read-only access, and only to activities."}
-          </span>
-        </span>
-
+              ? words.connectedAs(
+                  connection.athleteName ?? String(connection.athleteId),
+                  formatDate(locale, connection.connectedAt),
+                )
+              : t.panes.connected.stravaDetail}
+          </p>
+        </div>
         {!stravaEnabled() ? (
-          <span className="sq-mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-            Not configured
-          </span>
+          <Badge>{words.notConfigured}</Badge>
         ) : connection ? (
-          <SqConfirmButton
-            action={async () => {
-              const result = await disconnectStravaAction();
-              return { ok: result.ok, message: "Strava disconnected." };
-            }}
+          <ConfirmButton
+            tone="danger"
+            action={disconnectStravaAction}
             label={t.panes.connected.disconnect}
-            confirmLabel="Disconnect it"
-            tone="stamp"
+            confirmLabel={t.panes.connected.disconnectIt}
           />
         ) : (
-          <a href="/api/strava/connect" className="sq-btn sq-btn-primary">
-            Connect Strava
-          </a>
+          <ButtonLink href="/api/strava/connect">{words.connect}</ButtonLink>
         )}
       </div>
 
-      <p
-        style={{
-          padding: "14px 24px",
-          borderTop: "1px solid var(--line-2)",
-          background: "var(--paper-2)",
-          fontSize: 12.5,
-          lineHeight: 1.5,
-          color: "var(--ink-2)",
-        }}
-      >
-        Nothing is pushed to Strava, and nothing is read from it unless you paste an activity link
-        into a proof form.
-      </p>
-    </section>
+      <p className="w-full border-t border-border pt-4 text-caption text-subtle">{words.footer}</p>
+    </Pane>
   );
 }

@@ -1,90 +1,61 @@
 import type { Metadata } from "next";
+import { Receipt } from "lucide-react";
 
-import { SqPortalButton } from "@/components/sq/plan-actions";
-import { EmptyState } from "@/components/sq/ui";
+import { PortalButton } from "@/components/app/plan-actions";
+import { Pane } from "@/components/app/pane";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/feedback";
 import { requireClient } from "@/lib/auth/guards";
-import { getT } from "@/lib/i18n/server";
 import { listInvoices } from "@/lib/billing";
 import { isPaddleEnabled } from "@/lib/env";
+import { formatDate } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Invoices" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.settings.items.invoices };
+}
 export const dynamic = "force-dynamic";
-
-const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 /** Paddle's record, read live. Nothing here is a copy kept on our side. */
 export default async function InvoicesSettingsPage() {
   const user = await requireClient();
-  const t = await getT(user.id);
-  const invoices = isPaddleEnabled() ? await listInvoices(user.id) : [];
+  const { t, locale } = await getReader(user.id);
+  const enabled = isPaddleEnabled();
+  const invoices = enabled ? await listInvoices(user.id) : [];
 
   return (
-    <section className="sq-card" style={{ overflow: "hidden" }}>
-      <div className="sq-section-head sq-rule-head">
-        <h2 className="sq-h2" style={{ fontSize: 19 }}>
-          Invoices
-        </h2>
-        {isPaddleEnabled() ? <SqPortalButton label={t.panes.invoices.openPortal} /> : null}
-      </div>
-
+    <Pane
+      title={t.settings.items.invoices}
+      action={enabled ? <PortalButton label={t.panes.invoices.openPortal} /> : undefined}
+    >
       {invoices.length === 0 ? (
-        <div style={{ padding: 26 }}>
-          <EmptyState
-            glyph="coin"
-            title={isPaddleEnabled() ? t.panes.invoices.none : t.panes.invoices.notConfigured}
-            body={
-              isPaddleEnabled()
-                ? t.panes.invoices.noneBody
-                : t.panes.invoices.notConfiguredBody
-            }
-          />
-        </div>
+        <EmptyState icon={Receipt} title={enabled ? t.panes.invoices.none : t.panes.invoices.notConfigured}>
+          {enabled ? t.panes.invoices.noneBody : t.panes.invoices.notConfiguredBody}
+        </EmptyState>
       ) : (
-        <ul>
+        <ul className="divide-y divide-border border-t border-border">
           {invoices.map((invoice) => (
-            <li
-              key={invoice.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "auto minmax(0,1fr) auto auto",
-                gap: 12,
-                alignItems: "center",
-                padding: "13px 22px",
-                borderTop: "1px solid var(--line-2)",
-                fontSize: 13.5,
-              }}
-            >
-              <span className="sq-mono" style={{ fontSize: 12, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
-                {DATE.format(invoice.date)}
-              </span>
-              <span style={{ minWidth: 0 }}>
+            <li key={invoice.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-body-sm">
+              <span className="w-28 shrink-0 tabular-nums text-muted">{formatDate(locale, invoice.date)}</span>
+              <span className="min-w-0 flex-1">
                 {invoice.href ? (
-                  <a href={invoice.href} target="_blank" rel="noreferrer noopener">
+                  <a href={invoice.href} target="_blank" rel="noreferrer noopener" className="text-primary underline underline-offset-2">
                     {invoice.what}
                   </a>
                 ) : (
                   invoice.what
                 )}
               </span>
-              <span
-                className="sq-mono"
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  whiteSpace: "nowrap",
-                  color: invoice.state === "paid" ? "var(--moss)" : "var(--signal)",
-                }}
-              >
-                {invoice.state}
-              </span>
-              <b className="sq-mono" style={{ fontWeight: 500, whiteSpace: "nowrap" }}>
-                {invoice.amount}
-              </b>
+              <Badge tone={invoice.state === "paid" || invoice.state === "completed" ? "success" : "warning"} size="sm">
+                {invoice.state === "paid" || invoice.state === "completed"
+                  ? t.app.settingsPane.invoices.paid
+                  : t.app.settingsPane.invoices.open}
+              </Badge>
+              <b className="shrink-0 font-semibold tabular-nums">{invoice.amount}</b>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Pane>
   );
 }

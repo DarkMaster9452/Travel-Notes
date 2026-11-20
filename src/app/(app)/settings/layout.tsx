@@ -1,30 +1,26 @@
 import type { Metadata } from "next";
 
-import { SqSettingsNav } from "@/components/sq/settings-nav";
+import { SettingsNav } from "@/components/app/settings-nav";
+import { PageHeader } from "@/components/ui/page";
 import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: { default: "Settings", template: "%s · Settings" } };
 
-/** The settings shell: one header, one rail, and whichever pane was asked for. */
+/**
+ * The settings shell (design/DESIGN-SYSTEM.md §6.4): one header, a 220 px rail
+ * and a 640 px pane from `lg`; tabs above the pane below that.
+ */
 export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
   const t = await getT();
 
   return (
     <>
-      <header className="sq-head">
-        <span className="sq-kicker" style={{ display: "block", marginBottom: 10 }}>
-          {t.settings.kicker}
-        </span>
-        <h1 className="sq-h1" style={{ fontSize: 38, maxWidth: "none" }}>
-          {t.settings.heading}
-        </h1>
-      </header>
-
-      <div className="sq-settings-grid">
-        <SqSettingsNav />
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-          {children}
+      <PageHeader title={t.settings.heading} />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        <div className="lg:w-56 lg:shrink-0">
+          <SettingsNav />
         </div>
+        <div className="flex min-w-0 max-w-text flex-1 flex-col gap-4 lg:gap-6">{children}</div>
       </div>
     </>
   );

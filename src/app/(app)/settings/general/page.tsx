@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
 
-import { SqSaveForm, SqToggleRow } from "@/components/sq/forms";
-import { saveDisplayAction } from "@/app/(app)/settings/actions";
 import { setThemeAction } from "@/app/(app)/actions";
+import { saveDisplayAction } from "@/app/(app)/settings/actions";
+import { SaveForm, ToggleRow } from "@/components/app/forms";
+import { Pane } from "@/components/app/pane";
+import { ThemePicker } from "@/components/app/theme-picker";
 import { requireClient } from "@/lib/auth/guards";
-import { getT } from "@/lib/i18n/server";
+import { planCopy } from "@/lib/config";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import { ThemePicker } from "@/components/sq/theme-picker";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "General" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).settings.items.general };
+}
 export const dynamic = "force-dynamic";
 
 /**
- * The switches that apply to every quest.
+ * The switches that apply to every quest, and the palette.
  *
  * Expert figures is plan-gated, and the gate is shown rather than hidden: a
  * switch you can see and cannot move is what tells you the plan is the reason.
@@ -27,61 +31,31 @@ export default async function GeneralSettingsPage() {
     getEntitlement(user.id),
     getT(user.id),
   ]);
+  const words = t.settingsPages.general;
 
   return (
     <>
-      <section className="sq-card" style={{ overflow: "hidden" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 14,
-            padding: "15px 24px",
-            borderBottom: "1px solid var(--line-2)",
-          }}
-        >
-          <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            {t.settingsPages.general.heading}
-          </h2>
-          <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
-            {t.settingsPages.general.kicker}
-          </span>
-        </div>
-
-        <SqSaveForm
-          action={saveDisplayAction}
-          footer={t.settingsPages.general.expertFooter}
-        >
+      <Pane title={words.heading} note={words.kicker}>
+        <SaveForm action={saveDisplayAction} footer={words.expertFooter} flush>
           <input type="hidden" name="units" value={display?.units ?? "METRIC"} />
-          <input type="hidden" name="language" value={display?.language ?? "en"} />
+          <input type="hidden" name="language" value={display?.language ?? "sk"} />
           <ul>
-            <SqToggleRow
+            <ToggleRow
               name="expertStats"
-              label={t.settingsPages.general.expertFigures}
-              tag={entitlement.isSubscribed ? undefined : "EXPLORER"}
-              description={t.settingsPages.general.expertDetail}
+              label={words.expertFigures}
+              tag={entitlement.isSubscribed ? undefined : planCopy(t, "explorer").name}
+              description={words.expertDetail}
               defaultOn={display?.expertStats ?? false}
               disabled={!entitlement.isSubscribed}
             />
           </ul>
-        </SqSaveForm>
-      </section>
+        </SaveForm>
+      </Pane>
 
-      <section className="sq-card" style={{ overflow: "hidden" }}>
-        <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--line-2)" }}>
-          <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            {t.settingsPages.general.palette}
-          </h2>
-        </div>
-        <div style={{ padding: "18px 24px" }}>
-          <ThemePicker current={user.theme} save={setThemeAction} />
-          <p className="sq-hint" style={{ marginTop: 10 }}>
-            Stored on the account rather than in the browser, so the first paint on a new device is
-            already the one you chose.
-          </p>
-        </div>
-      </section>
+      <Pane title={words.palette} padded>
+        <ThemePicker current={user.theme} save={setThemeAction} />
+        <p className="text-caption text-subtle">{t.app.theme.note}</p>
+      </Pane>
     </>
   );
 }
