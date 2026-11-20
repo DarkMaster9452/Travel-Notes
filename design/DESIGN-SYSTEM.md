@@ -5,9 +5,11 @@
 > chýba, najprv doplň pravidlo sem, až potom kóduj. Keď sa kód a tento súbor
 > rozchádzajú, platí tento súbor a kód sa opraví.
 
-Tento systém **nahrádza** pôvodný „field guide“ vzhľad (`design/index.html`,
-`src/styles/field-guide.css`, `src/styles/summit.css`). Tie sú už len legacy —
-nič nové z nich nepreberaj.
+Tento systém **nahrádza** pôvodný „field guide“ vzhľad. Landing, prihlásenie,
+právne a chybové stránky aj celá zákaznícka appka už bežia len na ňom.
+Poslednou legacy vrstvou je **admin panel** (`src/app/admin`, `src/components/sq`,
+`src/styles/summit.css`) — nič nové z neho nepreberaj. `design/index.html` je
+už len historická referencia.
 
 ---
 
@@ -109,8 +111,9 @@ ide človek v teréne. Zobrazuje ju vždy komponent `<TrailMarks>`.
 - Trasa môže meniť značku: zobraz poradie `▬ → ▬` (max 3, potom „+2“) a
   pri detaile aj úsek: „červená 4,2 km → modrá 8,2 km“.
 - Vždy s textom („Červená“), farby značiek sa nesmú použiť na nič iné.
-- Dátový model: pole značiek na queste (poradie + farba + typ + km úseku) ešte
-  neexistuje, treba ho pridať do `Quest` pred prestavbou kariet.
+- Dátový model: `Quest.trailMarks` (poradie značiek v smere chôdze, `lib/trail-marks.ts`),
+  vypĺňa sa v admine. Kým je prázdne, karta ukáže „Značka zatiaľ nedoplnená“ — značky
+  sa nikdy nedomýšľajú, ľudia sa podľa nich orientujú v teréne.
 
 **Obtiažnosť (enum `Difficulty`) — merač vrcholov.** Obtiažnosť sa **nesmie** vizuálne
 podobať na značku. Komponent `<DifficultyMeter>`: 4 malé trojuholníky (vrcholy)
@@ -296,17 +299,21 @@ Quest grid nikdy neobsahuje mesačný quest ako bežnú kartu, ten má vždy vla
 
 ## 7. Komponenty
 
-Zdieľané komponenty: **`src/components/ui/`** (primitívy) a **`src/components/domain/`**
-(quest, značka, obtiažnosť, sticker…). Hotové: `domain/trail.tsx` (`TrailMarks`,
-`DifficultyMeter`, `QuestCard`, `MonthlyHero`, `toTrailQuest`) a `domain/trail-photo.tsx`.
-Ich triedy sú v `src/styles/trail.css` (prefix `trail-`).
+Zdieľané komponenty — **jeden vzor = jeden komponent**, najprv hľadaj tu:
 
-**Legacy vrstva.** `src/styles/field-guide.css` a `summit.css` sú staré komponenty.
-Ich premenné (`--paper`, `--ink`, `--pine`, `--signal`, `--lg-*`…) sú v `globals.css`
-a `summit.css` napojené na Trail tokeny, takže celý web už nosí nový vzhľad.
-Nový kód ich nepoužíva. Pri prerábaní obrazovky ju prepíš na `trail-*` / tokeny. Varianty cez `cva`, triedy cez `cn()`,
-interaktívne primitívy na Radix, ikony **len `lucide-react`**.
-Stavy: default · hover · active · focus-visible · disabled · loading.
+| Kde | Čo |
+| --- | --- |
+| `src/components/ui/` | primitívy: `button` (`Button`, `ButtonLink`), `badge` (+ `SubmissionBadge`, `PlanBadge`, `tagTone`), `card`, `field` (Field, Input, Textarea, Select), `toggle` (Checkbox, Switch, Chip), `nav` (TabsNav, SegmentedLinks), `feedback` (Alert, EmptyState, Skeleton, Progress), `page` (PageHeader, Section, Stat, StatRow, DetailGrid), `dialog`, `dropdown`, `toast`, `avatar`, `logo`, `typography`, `container`, `locale-switcher` |
+| `src/components/domain/` | doména: `trail` (TrailMarks, DifficultyMeter, QuestFigures, QuestCard, QuestGrid, MonthlyHero, MonthlyEmpty, FeaturePanel), `trail-photo`, `sticker`, `medal`, `board`, `activity-grid`, `countdown`, `quest-map`, `quest-detail` |
+| `src/components/app/` | zákaznícka appka: shell, navigácia, formuláre nastavení, dôkaz, onboarding, filtre, rail |
+| `src/components/marketing/` | landing, auth formulár, právne texty |
+
+Texty idú cez `src/lib/i18n` (SK / EN / DE, `getReader()` vráti `t`, `locale`, `units`),
+čísla cez `i18n/format.ts`, dĺžky a výšky cez `i18n/units.ts` (metrické aj imperiálne).
+Varianty cez `cva`, triedy cez `cn()` (pozná všetky názvy tokenov), interaktívne primitívy
+na Radix, ikony **len `lucide-react`**. Stavy: default · hover · active · focus-visible ·
+disabled · loading. `src/styles/trail.css` drží už len tvary výsekov nálepiek a to, čo
+potrebuje admin shell.
 
 ### 7.1 Button
 | Variant | Vzhľad | Kedy |
@@ -411,6 +418,23 @@ Tabs: podčiarknutie 2 px `primary`. Segmented: koľajnica `surface-sunken`, akt
 - Fallback pri chybe načítania: plná farba `surface-sunken` + ikona `Mountain` v `subtle`. Žiadny gradient.
 - `next/image`, vždy `alt`, vždy definovaný pomer.
 
+### 7.14 Logo
+- Značka: zaoblená dlaždica **Meadow 600**, biely dvojvrchol, čiapočka **Sunset 500** na
+  vrchole. Kreslí ju `ui/logo.tsx` (`LogoMark`, `Logo` so slovom „Summit Quest“ v Bricolage
+  800, `LogoPeak` bez dlaždice pre medaily). Rovnaká kresba je v `src/app/icon.svg`;
+  PNG ikony generuje `npm run icons` (`scripts/build-icons.mjs`).
+- Farby značky sú pevné v oboch témach — je to logo, nie téma. Oranžová čiapočka je jediná
+  výnimka z pravidla „accent len pre mesačný quest“, schválená majiteľom produktu.
+- Minimálna veľkosť 16 px (favicon), ochranná zóna okolo = ¼ šírky dlaždice. Nikdy
+  neobrysovať, nenakláňať, neprefarbovať, nedávať na fotku.
+
+### 7.15 Jazyk
+- Prihlásený člen číta v jazyku svojho účtu (`DisplaySettings.language`). Návštevník
+  (landing, prihlásenie, právne stránky) v jazyku z prepínača SK / EN / DE (cookie
+  `sq_locale`), potom podľa prehliadača, inak **slovensky**. Registrácia uloží jazyk, v
+  ktorom človek prišiel.
+- Admin panel je zatiaľ len po anglicky.
+
 ---
 
 ## 8. Pohyb
@@ -453,6 +477,8 @@ Tabs: podčiarknutie 2 px `primary`. Segmented: koľajnica `surface-sunken`, akt
 5. Stránka = shell + `PageHeader` + bloky zo sekcie 6.4.
 
 ### Checklist pred dokončením UI úlohy
+- [ ] `npm run lint:design` prechádza (hexy, gradienty, arbitrary hodnoty, default farby
+      a rádiusy, legacy triedy a importy, inline štýly)
 - [ ] Iba sémantické tokeny, žiadne hexy, arbitrary hodnoty ani gradienty
 - [ ] Medzery zo stupnice, rádius zo sekcie 4
 - [ ] Mesačný quest je na obrazovke prvý (ak na nej je) a accent/feature nepoužíva nič iné

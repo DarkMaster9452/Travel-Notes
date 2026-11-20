@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
-import { ArrowLeft, ArrowRight, Check, Lock, SearchX } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, SearchX } from "lucide-react";
 
 import { FilterBar, ParamSearch, ParamSelect } from "@/components/app/filters";
 import { PaidChip } from "@/components/app/locked";
@@ -14,8 +14,7 @@ import { slotFor } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import type { Locale } from "@/lib/i18n";
-import { formatNumber, tagFor } from "@/lib/i18n/format";
+import { formatNumber } from "@/lib/i18n/format";
 import { getReader } from "@/lib/i18n/server";
 import { slotTitle } from "@/lib/quest/labels";
 import { glanceFeaturedSlot } from "@/lib/quest/slot";

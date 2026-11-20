@@ -19,7 +19,7 @@ export const cardVariants = cva("min-w-0 rounded-card border border-border bg-su
       ground: "bg-bg",
     },
     interactive: {
-      true: "block no-underline transition-[border-color,box-shadow] duration-fast ease-standard hover:border-border-strong hover:shadow-1",
+      true: "block no-underline transition duration-fast ease-standard hover:border-border-strong hover:shadow-1",
     },
   },
   defaultVariants: { pad: "md", tone: "surface" },

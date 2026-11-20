@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 
 import { updatePreferencesAction, type ProfileState } from "@/app/(app)/profile/actions";
 import { saveDisplayAction } from "@/app/(app)/settings/actions";
@@ -60,16 +60,16 @@ export function Onboarding({
   const [units, setUnits] = useState(current.units);
   const [language, setLanguage] = useState(current.language);
   const [saving, start] = useTransition();
-  const [regionState, saveRegion, regionPending] = useActionState<ProfileState, FormData>(
-    updatePreferencesAction,
-    undefined,
-  );
-
   // A saved country moves the flow on. (The old form saved and then stayed
   // put, which read as if nothing had happened.)
-  useEffect(() => {
-    if (regionState?.saved) setStep(1);
-  }, [regionState]);
+  const [regionState, saveRegion, regionPending] = useActionState<ProfileState, FormData>(
+    async (previous, data) => {
+      const result = await updatePreferencesAction(previous, data);
+      if (result?.saved) setStep(1);
+      return result;
+    },
+    undefined,
+  );
 
   // Country names in the reader's language; the value posted is the code.
   const regionName = new Intl.DisplayNames([tagFor(locale)], { type: "region" });

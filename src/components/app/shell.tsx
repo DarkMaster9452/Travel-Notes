@@ -139,11 +139,7 @@ export function AppShell({ nav, footNav, account, signOut, rail, notice, childre
         <div className="mx-auto flex w-full max-w-app flex-col gap-8 px-4 pb-24 pt-6 md:px-6 lg:px-8 lg:pb-12 lg:pt-8 xl:flex-row xl:items-start">
           <main key={pathname} id="main" className="min-w-0 flex-1 animate-fade-in">
             {notice}
-            {/* TEMPORARY: screens not yet rebuilt still use the panel's legacy
-                classes, which read variables defined on `.sq`. `contents`
-                keeps this wrapper out of the layout. Removed with the last
-                legacy screen. */}
-            <div className="sq contents">{children}</div>
+            {children}
           </main>
           {/* Always rendered, often empty: a route with no rail renders nothing
               into the slot, and an empty column takes no space. */}

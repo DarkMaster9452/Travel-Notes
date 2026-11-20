@@ -44,6 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = {
   themeColor: [
+    // `--sq-bg`, light and dark: browser chrome cannot read a CSS variable.
     { media: "(prefers-color-scheme: light)", color: "#f4f8f1" },
     { media: "(prefers-color-scheme: dark)", color: "#1f2a26" },
   ],

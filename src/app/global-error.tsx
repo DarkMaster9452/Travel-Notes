@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 /**
  * The 500 of last resort.
@@ -40,12 +40,13 @@ export default function GlobalError({
   reset: () => void;
 }) {
   // No dictionary and no cookie reader down here; the browser's own language
-  // is the only thing left to ask. Slovak until it has answered.
-  const [lang, setLang] = useState<Lang>("sk");
-  useEffect(() => {
+  // is the only thing left to ask. This page only ever renders in the
+  // browser, after something underneath has failed; Slovak if it cannot ask.
+  const [lang] = useState<Lang>(() => {
+    if (typeof navigator === "undefined") return "sk";
     const wanted = navigator.language.slice(0, 2).toLowerCase();
-    if (wanted === "en" || wanted === "de") setLang(wanted);
-  }, []);
+    return wanted === "en" || wanted === "de" ? wanted : "sk";
+  });
   const copy = COPY[lang];
 
   return (

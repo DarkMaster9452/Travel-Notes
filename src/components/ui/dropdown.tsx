@@ -33,7 +33,7 @@ export function DropdownItem({ className, ...props }: ComponentProps<typeof Drop
     <DropdownPrimitive.Item
       className={cn(
         "flex min-h-9 cursor-pointer select-none items-center gap-2 rounded-xs px-3 text-body-sm outline-none",
-        "data-highlighted:bg-surface-sunken data-[state=checked]:font-semibold [&_svg]:size-4",
+        "data-highlighted:bg-surface-sunken [&_svg]:size-4",
         className,
       )}
       {...props}

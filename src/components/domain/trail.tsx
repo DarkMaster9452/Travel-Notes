@@ -321,7 +321,7 @@ export function QuestCard({
       href={href}
       className={cn(
         shell,
-        "transition-[border-color,box-shadow] duration-fast ease-standard hover:border-border-strong hover:shadow-1",
+        "transition duration-fast ease-standard hover:border-border-strong hover:shadow-1",
       )}
     >
       {body}
