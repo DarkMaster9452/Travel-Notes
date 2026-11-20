@@ -19,7 +19,7 @@ import { Alert } from "@/components/ui/feedback";
 import { DetailGrid, PageHeader, PageStack } from "@/components/ui/page";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { plural } from "@/lib/i18n/format";
+import { countryName, plural } from "@/lib/i18n/format";
 import { getReader } from "@/lib/i18n/server";
 import { formatMinutes } from "@/lib/i18n/units";
 import { slotTitle } from "@/lib/quest/labels";
@@ -106,7 +106,7 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
             .filter(Boolean)
             .join(" · ")}
           title={quest.title}
-          lede={[quest.location, quest.region, quest.country].join(" · ")}
+          lede={[quest.location, quest.region, countryName(locale, quest.country)].join(" · ")}
           actions={
             bookingLabel ? (
               <Badge tone={booking?.period === "MONTHLY" ? (live ? "monthly" : "monthlySoft") : "weekly"}>
@@ -145,7 +145,7 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
               </ButtonLink>
               <p className="mt-3 flex items-center gap-2 text-caption text-muted">
                 <Footprints className="size-4 shrink-0" aria-hidden="true" />
-                {t.app.quest.walkedBy(plural(locale, walked, t.common.people))}
+                {walked > 0 ? t.app.quest.walkedBy(plural(locale, walked, t.common.people)) : t.app.quest.walkedByNobody}
               </p>
             </Card>
 

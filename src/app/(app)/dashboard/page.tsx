@@ -143,7 +143,11 @@ export default async function DashboardPage() {
                     <Lock className="size-4" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1 text-body-sm text-muted">
-                    {t.app.dashboard.opens(slotTitle(slot, locale, t), formatDate(locale, slot.openAt, "opens"))}
+                    {t.app.dashboard.opens(
+                      slotTitle(slot, locale, t),
+                      formatDate(locale, slot.openAt, "dayMonth"),
+                      formatDate(locale, slot.openAt, "time"),
+                    )}
                   </span>
                   <Badge tone={slot.period === "MONTHLY" ? "monthlySoft" : "weekly"}>
                     {slot.period === "MONTHLY" ? t.dashboard.theMonthly : t.dashboard.theWeekly}
@@ -160,7 +164,7 @@ export default async function DashboardPage() {
         <StatCard
           count={myRow?.score ?? 0}
           countId="dash-points"
-          label={t.dashboard.pointsLabel(slotMonth(monthSlot, locale))}
+          label={t.dashboard.pointsLabel(slotMonth(monthSlot, locale, { inline: true }))}
         />
         <StatCard
           value={myRow ? undefined : "—"}

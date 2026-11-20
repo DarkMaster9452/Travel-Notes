@@ -119,8 +119,8 @@ export default async function DashboardRail() {
             note={
               above ? (
                 <>
-                  {t.rail.behind(above.score - myRow.score, above.username)}{" "}
-                  {t.rail.youAreOn(myRow.score, plural(locale, myRow.quests, t.common.quests))}
+                  {t.rail.behind(plural(locale, above.score - myRow.score, t.common.pointCount), above.username)}{" "}
+                  {t.rail.youAreOn(plural(locale, myRow.score, t.common.pointCount), plural(locale, myRow.quests, t.common.quests))}
                 </>
               ) : (
                 t.rail.topOfBoard(myRow.score)

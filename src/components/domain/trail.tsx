@@ -397,7 +397,9 @@ export function MonthlyHero({
     { value: formatDistance(locale, quest.distance, units), label: t.trail.distance },
     { value: formatHeight(locale, quest.elevationGain, units), label: t.trail.ascent },
     { value: formatMinutes(quest.duration), label: t.trail.time },
-    { value: quest.location, label: t.trail.start },
+    // A place name is a phrase, not a figure: it gets the whole row so it
+    // never has to break inside a word.
+    { value: quest.location, label: t.trail.start, wide: true },
   ];
 
   return (
@@ -425,9 +427,15 @@ export function MonthlyHero({
           <TrailMarks marks={quest.trailMarks} t={t} ground="feature" />
           <DifficultyMeter level={quest.difficulty} t={t} ground="feature" />
         </div>
-        <dl className="grid grid-cols-2 gap-2 @lg:grid-cols-4 @3xl:grid-cols-2">
+        <dl className="grid grid-cols-3 gap-2">
           {tiles.map((tile) => (
-            <div key={tile.label} className="flex min-w-0 flex-col-reverse rounded-control bg-feature-soft px-3 py-2">
+            <div
+              key={tile.label}
+              className={cn(
+                "flex min-w-0 flex-col-reverse rounded-control bg-feature-soft px-3 py-2",
+                tile.wide && "col-span-full",
+              )}
+            >
               <dt className="text-caption">{tile.label}</dt>
               <dd className="text-h4 font-bold tabular-nums wrap-break-word">{tile.value}</dd>
             </div>

@@ -13,7 +13,7 @@ import { PageStack, StatCard, StatRow } from "@/components/ui/page";
 import { Overline, type } from "@/components/ui/typography";
 import { accentInk } from "@/lib/accents";
 import { requireClient } from "@/lib/auth/guards";
-import { formatDate, formatNumber } from "@/lib/i18n/format";
+import { countryName, formatDate, formatNumber } from "@/lib/i18n/format";
 import { getReader } from "@/lib/i18n/server";
 import { formatDistance, formatHeight, formatMinutes } from "@/lib/i18n/units";
 import { getPublicProfile } from "@/lib/profile";
@@ -68,7 +68,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         >
           <Overline className="text-(--accent-deep)">
             {t.app.people.profile.handleLine(profile.handle)}
-            {profile.country ? ` · ${profile.country}` : ""}
+            {profile.country ? ` · ${countryName(locale, profile.country)}` : ""}
           </Overline>
           <span className="text-caption">{t.profile.since(formatDate(locale, profile.joinedAt, "monthYear"))}</span>
         </div>

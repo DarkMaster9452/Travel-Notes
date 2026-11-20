@@ -19,8 +19,10 @@ export function slotTitle(slot: SlotLike, locale: Locale, t: Messages): string {
 }
 
 /** "November" — the month a monthly slot belongs to. */
-export function slotMonth(slot: SlotLike, locale: Locale): string {
-  return capitalise(new Intl.DateTimeFormat(tagFor(locale), { month: "long" }).format(slot.openAt));
+export function slotMonth(slot: SlotLike, locale: Locale, { inline = false } = {}): string {
+  const name = new Intl.DateTimeFormat(tagFor(locale), { month: "long" }).format(slot.openAt);
+  // Inside a sentence the language's own case stands: "Body za november".
+  return inline ? name : capitalise(name);
 }
 
 /** The days a slot runs over: "9–15 Nov 2026". `closeAt` is the next slot's opening. */

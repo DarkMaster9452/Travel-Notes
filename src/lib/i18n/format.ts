@@ -1,3 +1,4 @@
+import { findCountry } from "@/lib/geo";
 import type { Locale } from "@/lib/i18n";
 
 /**
@@ -25,7 +26,7 @@ export function tagFor(locale: Locale): string {
   return TAGS[locale] ?? TAGS.en;
 }
 
-export type DateShape = "day" | "dayMonth" | "full" | "monthYear" | "month" | "weekday" | "time" | "opens";
+export type DateShape = "day" | "dayMonth" | "full" | "monthYear" | "month" | "weekday" | "time";
 
 const DATE_SHAPES: Record<DateShape, Intl.DateTimeFormatOptions> = {
   /** "26 Aug 2026" */
@@ -42,8 +43,6 @@ const DATE_SHAPES: Record<DateShape, Intl.DateTimeFormatOptions> = {
   weekday: { weekday: "long" },
   /** "06:00" */
   time: { hour: "2-digit", minute: "2-digit" },
-  /** "Mon 16 Nov, 06:00" — the instant a slot opens */
-  opens: { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" },
 };
 
 const dateCache = new Map<string, Intl.DateTimeFormat>();
@@ -129,4 +128,14 @@ export function plural(locale: Locale, count: number, forms: PluralForms): strin
     forms.other;
 
   return word.replace("#", formatNumber(locale, count));
+}
+
+/**
+ * A stored country ("Slovakia", "SK") in the reader's language: "Slovensko",
+ * "Slowakei". Anything the country list does not know is shown as stored.
+ */
+export function countryName(locale: Locale, stored: string): string {
+  const code = findCountry(stored)?.code;
+  if (!code) return stored;
+  return new Intl.DisplayNames([tagFor(locale)], { type: "region" }).of(code) ?? stored;
 }

@@ -9,6 +9,7 @@ import { destroySession } from "@/lib/auth/session";
 import { DELETE_PHRASE } from "@/lib/config";
 import { findCountry } from "@/lib/geo";
 import { getEntitlement } from "@/lib/entitlements";
+import { getT } from "@/lib/i18n/server";
 import { fieldErrors, profileSchema } from "@/lib/validation";
 import { redirect } from "next/navigation";
 
@@ -28,7 +29,7 @@ export async function updateProfileAction(
 }
 
 const preferencesSchema = z.object({
-  country: z.string().trim().min(2, "Pick a country.").max(60),
+  country: z.string().trim().min(2).max(60),
 });
 
 /**
@@ -49,18 +50,19 @@ export async function updatePreferencesAction(
 ): Promise<ProfileState> {
   const user = await requireClient();
 
+  const words = (await getT(user.id)).app.actions;
   const parsed = preferencesSchema.safeParse({ country: formData.get("country") });
-  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+  if (!parsed.success) return { errors: { country: words.countryPick } };
 
   const country = findCountry(parsed.data.country);
-  if (!country) return { errors: { country: "That isn't a country we cover yet." } };
+  if (!country) return { errors: { country: words.countryUnknown } };
 
   // Worldwide is Ultra's. Anyone else picking a non-European country is
   // refused here rather than in the form, because the form is not the
   // authority on what a plan reaches.
   const entitlement = await getEntitlement(user.id);
   if (!country.europe && !entitlement.can("worldwide")) {
-    return { errors: { country: "Outside Europe is Ultra. Your plan stops at Europe." } };
+    return { errors: { country: words.countryUltra } };
   }
 
   await db.userPreferences.update({
@@ -92,7 +94,7 @@ export async function deleteAccountAction(formData: FormData): Promise<ProfileSt
   const user = await requireClient();
 
   if (String(formData.get("confirm") ?? "").trim() !== DELETE_PHRASE) {
-    return { errors: { confirm: `Type ${DELETE_PHRASE} exactly.` } };
+    return { errors: { confirm: (await getT(user.id)).app.actions.typePhrase(DELETE_PHRASE) } };
   }
 
   await db.user.delete({ where: { id: user.id } });
@@ -112,7 +114,7 @@ export async function clearMyDataAction(formData: FormData): Promise<ProfileStat
   const user = await requireClient();
 
   if (String(formData.get("confirm") ?? "").trim() !== DELETE_PHRASE) {
-    return { errors: { confirm: `Type ${DELETE_PHRASE} exactly.` } };
+    return { errors: { confirm: (await getT(user.id)).app.actions.typePhrase(DELETE_PHRASE) } };
   }
 
   // One transaction: a half-erased account — submissions gone but the history

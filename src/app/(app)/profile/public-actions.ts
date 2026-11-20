@@ -6,6 +6,7 @@ import { z } from "zod";
 import { touch } from "@/lib/activity";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { getT } from "@/lib/i18n/server";
 import { normaliseHandle, normaliseSocial, uniqueHandle } from "@/lib/profile";
 
 /**
@@ -18,7 +19,7 @@ import { normaliseHandle, normaliseSocial, uniqueHandle } from "@/lib/profile";
  */
 
 const publicProfileSchema = z.object({
-  handle: z.string().trim().min(2, "A handle needs at least two characters.").max(30),
+  handle: z.string().trim().min(2).max(30),
   published: z.coerce.boolean().optional(),
   displayName: z.string().trim().max(60).optional().or(z.literal("")),
   headline: z.string().trim().max(90).optional().or(z.literal("")),
@@ -62,10 +63,12 @@ export async function savePublicProfileAction(
     showActivityGrid: formData.get("showActivityGrid") === "true",
   });
 
+  const words = (await getT(user.id)).app.actions;
   if (!parsed.success) {
     const errors: Record<string, string> = {};
     for (const issue of parsed.error.issues) {
-      errors[issue.path.join(".") || "form"] ??= issue.message;
+      const field = issue.path.join(".") || "form";
+      errors[field] ??= field === "handle" ? words.handleShort : words.checkField;
     }
     return { ok: false, errors };
   }
@@ -76,13 +79,13 @@ export async function savePublicProfileAction(
   if (handle.length < 2) {
     return {
       ok: false,
-      errors: { handle: "That reduces to nothing usable — try letters and numbers." },
+      errors: { handle: words.handleUnusable },
     };
   }
 
   const clash = await db.profile.findUnique({ where: { handle }, select: { userId: true } });
   if (clash && clash.userId !== user.id) {
-    return { ok: false, errors: { handle: "Somebody already walks under that one." } };
+    return { ok: false, errors: { handle: words.handleTaken } };
   }
 
   const values = {

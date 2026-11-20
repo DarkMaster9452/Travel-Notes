@@ -63,6 +63,7 @@ export const en = {
        Annotated rather than inferred so Slovak can supply the `few` form
        (2–4) that English simply does not have. */
     quests: { one: "# quest", other: "# quests" } as PluralForms,
+    pointCount: { one: "# point", other: "# points" } as PluralForms,
     days: { one: "# day", other: "# days" } as PluralForms,
     people: { one: "# person", other: "# people" } as PluralForms,
     things: { one: "# thing", other: "# things" } as PluralForms,
@@ -307,7 +308,7 @@ export const en = {
       oneRunning: "One quest open, and its window is closing.",
       oneFiled: "One quest open, already filed.",
     },
-    pointsLabel: (period: string) => `Points, ${period}`,
+    pointsLabel: (period: string) => `Points in ${period}`,
     rankLabel: (total: number) => `Of ${total} on the board`,
     coming: "What's coming",
     comingNote: "Weeklies drop Monday 06:00 · the monthly on the 1st",
@@ -360,8 +361,8 @@ export const en = {
     standing: "Where you stand",
     fullBoard: "Full board",
     open: "Open →",
-    behind: (points: number, name: string) => `${points} points behind ${name}.`,
-    youAreOn: (points: number, quests: string) => `You are on ${points} from ${quests}.`,
+    behind: (points: string, name: string) => `${points} behind ${name}.`,
+    youAreOn: (points: string, quests: string) => `You are on ${points} from ${quests}.`,
     topOfBoard: (points: number) =>
       `Top of the board on ${points} points. There is a month left to hold it.`,
     notOnBoard:

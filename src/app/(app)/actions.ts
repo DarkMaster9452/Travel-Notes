@@ -10,6 +10,8 @@ import { requireClient, requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { isWithinRefundWindow } from "@/lib/config";
 import { getEntitlement } from "@/lib/entitlements";
+import type { Messages } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { getPaddle } from "@/lib/paddle";
 import { LOCATIONS } from "@/lib/quest/locations";
 import { getFeaturedQuest, materialiseFeatured } from "@/lib/quest/featured";
@@ -103,7 +105,7 @@ function shuffle<T>(items: readonly T[]): T[] {
 }
 
 const proofSchema = z.object({
-  note: z.string().trim().min(10, "Tell us what happened.").max(2000),
+  note: z.string().trim().min(10).max(2000),
   stravaUrl: z.string().trim().url().max(300).optional().or(z.literal("")),
   distance: z.coerce.number().min(0).max(500).optional(),
   elevation: z.coerce.number().int().min(0).max(20000).optional(),
@@ -167,7 +169,10 @@ type Proof = z.infer<typeof proofSchema> & { photos: string[] };
  * be missing its photograph would leave a quest in somebody's history that
  * they never filed anything against.
  */
-function readProof(formData: FormData): { ok: true; proof: Proof } | { ok: false; message: string } {
+function readProof(
+  formData: FormData,
+  words: Messages["app"]["actions"],
+): { ok: true; proof: Proof } | { ok: false; message: string } {
   const parsed = proofSchema.safeParse({
     note: formData.get("note"),
     stravaUrl: formData.get("stravaUrl") || undefined,
@@ -184,14 +189,14 @@ function readProof(formData: FormData): { ok: true; proof: Proof } | { ok: false
     saveDetails: formData.get("saveDetails") === "true",
   });
   if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the form." };
+    return { ok: false, message: parsed.error.issues[0]?.path[0] === "note" ? words.proofNote : words.checkForm };
   }
 
   // A day in the future is a typo, not a walk. Rejected rather than clamped:
   // the date decides which leaderboard the quest lands on, so quietly moving
   // it would put somebody on a board they never asked for.
   if (parsed.data.startedAt && parsed.data.startedAt.getTime() > Date.now()) {
-    return { ok: false, message: "That date hasn't happened yet." };
+    return { ok: false, message: words.proofFutureDate };
   }
 
   const photos = readPhotos(formData);
@@ -200,7 +205,7 @@ function readProof(formData: FormData): { ok: true; proof: Proof } | { ok: false
   // somebody can approve, and this is checked here rather than left to the
   // form, since the form is not the authority on what a submission needs.
   if (photos.length === 0) {
-    return { ok: false, message: "Add at least one photo link before filing." };
+    return { ok: false, message: words.proofPhoto };
   }
 
   return { ok: true, proof: { ...parsed.data, photos } };
@@ -240,11 +245,12 @@ async function fileProof(
       history: { where: { userId }, select: { id: true }, take: 1 },
     },
   });
-  if (!quest) return { ok: false, message: "That quest is gone." };
+  const words = (await getT(userId)).app.actions;
+  if (!quest) return { ok: false, message: words.questGone };
 
   const owned = quest.history.length > 0;
   if (!owned && !(quest.published && quest.isShowcase)) {
-    return { ok: false, message: "That quest isn't open to file against." };
+    return { ok: false, message: words.questClosed };
   }
 
   const stamp = cadence === undefined ? await cadenceForFiling(questId) : cadence;
@@ -324,11 +330,12 @@ async function fileProof(
 export async function submitProofAction(formData: FormData): Promise<ProofResult> {
   const user = await requireClient();
 
-  const read = readProof(formData);
+  const words = (await getT(user.id)).app.actions;
+  const read = readProof(formData, words);
   if (!read.ok) return { ok: false, message: read.message };
 
   const questId = String(formData.get("questId") ?? "").trim();
-  if (!questId || questId.length > 60) return { ok: false, message: "Unknown quest." };
+  if (!questId || questId.length > 60) return { ok: false, message: words.questUnknown };
 
   return fileProof(user.id, questId, read.proof);
 }
@@ -350,16 +357,14 @@ export async function submitProofAction(formData: FormData): Promise<ProofResult
 export async function submitFeaturedProofAction(formData: FormData): Promise<ProofResult> {
   const user = await requireClient();
 
-  const read = readProof(formData);
+  const words = (await getT(user.id)).app.actions;
+  const read = readProof(formData, words);
   if (!read.ok) return { ok: false, message: read.message };
 
   const period = formData.get("period") === "month" ? "month" : "week";
   const featured = await getFeaturedQuest(user.id, period);
   if (!featured) {
-    return {
-      ok: false,
-      message: "There's no quest placed for this period — widen your range in settings.",
-    };
+    return { ok: false, message: words.noFeatured };
   }
 
   const questId = await materialiseFeatured(user.id, featured);
@@ -388,14 +393,14 @@ export type LogResult = {
 export async function logQuestAction(rawQuestId: string): Promise<LogResult> {
   const user = await requireClient();
   const parsed = questIdSchema.safeParse(rawQuestId);
-  if (!parsed.success) return { ok: false, error: "Unknown quest." };
+  if (!parsed.success) return { ok: false, error: (await getT(user.id)).app.actions.questUnknown };
   const questId = parsed.data;
 
   const history = await db.questHistory.findUnique({
     where: { userId_questId: { userId: user.id, questId } },
     select: { id: true, completed: true },
   });
-  if (!history) return { ok: false, error: "That quest isn't yours." };
+  if (!history) return { ok: false, error: (await getT(user.id)).app.actions.questNotYours };
 
   // Snapshot what was already earned, so the difference afterwards is exactly
   // what this log unlocked. Recomputing thresholds by hand here would drift
@@ -495,6 +500,7 @@ export type CancelResult = {
  */
 export async function cancelPlanAction(): Promise<CancelResult> {
   const user = await requireClient();
+  const words = (await getT(user.id)).app.actions;
 
   const subscription = await db.subscription.findUnique({
     where: { userId: user.id },
@@ -510,10 +516,10 @@ export async function cancelPlanAction(): Promise<CancelResult> {
   });
 
   if (!subscription || subscription.plan === "FREE") {
-    return { ok: false, message: "There's no paid plan on this account." };
+    return { ok: false, message: words.noPaidPlan };
   }
   if (subscription.cancelAtPeriodEnd) {
-    return { ok: false, message: "That plan is already set to stop." };
+    return { ok: false, message: words.alreadyStopping };
   }
 
   const withinGuarantee = isWithinRefundWindow(subscription.currentPeriodStart);
@@ -560,10 +566,7 @@ export async function cancelPlanAction(): Promise<CancelResult> {
         });
       }
     } catch {
-      return {
-        ok: false,
-        message: "Paddle wouldn't accept that just now. Nothing was changed — try again.",
-      };
+      return { ok: false, message: words.paddleRefused };
     }
   }
 
@@ -582,9 +585,7 @@ export async function cancelPlanAction(): Promise<CancelResult> {
   return {
     ok: true,
     refunded: withinGuarantee,
-    message: withinGuarantee
-      ? "Cancelled. The refund has been filed with Paddle."
-      : "Cancelled. You keep everything until the period ends.",
+    message: withinGuarantee ? words.cancelledRefund : words.cancelledAtEnd,
   };
 }
 
@@ -655,17 +656,18 @@ export async function importStravaActivityAction(url: string): Promise<{
   movingTime?: number;
 }> {
   const user = await requireClient();
+  const words = (await getT(user.id)).app.actions;
 
   if (!activityIdFrom(url)) {
-    return { ok: false, message: "That is not a Strava activity link." };
+    return { ok: false, message: words.stravaLink };
   }
   if (!(await getStravaConnection(user.id))) {
-    return { ok: false, message: "Connect Strava in Settings first." };
+    return { ok: false, message: words.stravaConnect };
   }
 
   const activity = await getActivity(user.id, url);
   if (!activity) {
-    return { ok: false, message: "Strava would not hand that activity over." };
+    return { ok: false, message: words.stravaRefused };
   }
 
   return {

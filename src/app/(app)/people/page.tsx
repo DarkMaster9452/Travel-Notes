@@ -13,8 +13,8 @@ import { type } from "@/components/ui/typography";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
-import type { Messages } from "@/lib/i18n";
-import { plural } from "@/lib/i18n/format";
+import type { Locale, Messages } from "@/lib/i18n";
+import { countryName, plural } from "@/lib/i18n/format";
 import { getReader } from "@/lib/i18n/server";
 import { getMyGroups } from "@/lib/groups";
 import { getDirectory, type DirectoryEntry } from "@/lib/profile";
@@ -84,7 +84,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
       {tab === "people" ? (
         !canMatch ? (
           <Locked capability="matching" plan="explorer">
-            <PeopleGrid t={t} people={directory.slice(0, 6)} />
+            <PeopleGrid t={t} locale={locale} people={directory.slice(0, 6)} />
           </Locked>
         ) : directory.length === 0 ? (
           <Card>
@@ -97,7 +97,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
             </EmptyState>
           </Card>
         ) : (
-          <PeopleGrid t={t} people={directory} />
+          <PeopleGrid t={t} locale={locale} people={directory} />
         )
       ) : !canCrew ? (
         <Locked capability="crews" plan="ultra">
@@ -142,7 +142,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
 }
 
 /** The directory grid, shared by the real list and the locked preview. */
-function PeopleGrid({ people, t }: { people: DirectoryEntry[]; t: Messages }) {
+function PeopleGrid({ people, t, locale }: { people: DirectoryEntry[]; t: Messages; locale: Locale }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {people.map((person) => (
@@ -156,7 +156,7 @@ function PeopleGrid({ people, t }: { people: DirectoryEntry[]; t: Messages }) {
               {person.headline ? <p className="mt-1 text-body-sm text-muted">{person.headline}</p> : null}
             </div>
             <p className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3 text-caption text-muted">
-              <span>{person.country ?? t.common.none}</span>
+              <span>{person.country ? countryName(locale, person.country) : t.common.none}</span>
               <span>{t.people.logged(person.logged)}</span>
             </p>
           </CardLink>

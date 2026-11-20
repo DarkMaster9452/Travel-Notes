@@ -4,7 +4,7 @@ export const dashboardEn = {
     weekly: "This week's quest",
     noWeekly: "No weekly quest is open right now. The next one opens on Monday at 06:00.",
     /** "Week 47 opens Mon 16 Nov, 06:00" */
-    opens: (label: string, when: string) => `${label} opens ${when}`,
+    opens: (label: string, date: string, time: string) => `${label} opens ${date} at ${time}`,
     stickers: "stickers earned",
     you: "you",
     proofWaiting: "Your proof is waiting for approval",
@@ -21,7 +21,7 @@ export const dashboardSk: typeof dashboardEn = {
   dashboard: {
     weekly: "Quest tohto týždňa",
     noWeekly: "Práve nie je otvorený žiadny týždenný quest. Ďalší sa otvorí v pondelok o 6:00.",
-    opens: (label: string, when: string) => `${label} sa otvorí ${when}`,
+    opens: (label: string, date: string, time: string) => `${label} sa otvorí ${date} o ${time}`,
     stickers: "získaných nálepiek",
     you: "ty",
     proofWaiting: "Tvoj dôkaz čaká na schválenie",
@@ -38,7 +38,7 @@ export const dashboardDe: typeof dashboardEn = {
   dashboard: {
     weekly: "Der Quest dieser Woche",
     noWeekly: "Gerade ist kein Wochenquest offen. Der nächste öffnet am Montag um 6:00 Uhr.",
-    opens: (label: string, when: string) => `${label} öffnet ${when}`,
+    opens: (label: string, date: string, time: string) => `${label} öffnet am ${date} um ${time}`,
     stickers: "Sticker verdient",
     you: "du",
     proofWaiting: "Dein Nachweis wartet auf Freigabe",

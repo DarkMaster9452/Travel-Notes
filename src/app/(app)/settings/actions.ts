@@ -9,8 +9,11 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { isPostable } from "@/lib/envelope";
+import { formatDate } from "@/lib/i18n/format";
+import { getReader, getT } from "@/lib/i18n/server";
 import { completeNudge } from "@/lib/nudges";
 import { getPaddle } from "@/lib/paddle";
+import { PASSWORD_MIN } from "@/lib/validation";
 
 export type SettingsResult = { ok: boolean; message?: string };
 
@@ -39,7 +42,7 @@ export async function saveDisplayAction(formData: FormData): Promise<SettingsRes
     language: formData.get("language"),
     expertStats: formData.get("expertStats") === "true",
   });
-  if (!parsed.success) return { ok: false, message: "Those settings didn't make sense." };
+  if (!parsed.success) return { ok: false, message: (await getT(user.id)).app.actions.displayInvalid };
 
   const entitlement = await getEntitlement(user.id);
   const expertStats = parsed.data.expertStats === true && entitlement.isSubscribed;
@@ -74,7 +77,7 @@ export async function saveAddressAction(formData: FormData): Promise<SettingsRes
   const user = await requireClient();
 
   const parsed = addressSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, message: "That address didn't save." };
+  if (!parsed.success) return { ok: false, message: (await getT(user.id)).app.actions.addressInvalid };
 
   const values = {
     recipient: parsed.data.recipient || null,
@@ -133,8 +136,8 @@ export async function saveNotificationsAction(formData: FormData): Promise<Setti
 /* -------------------------------------------------------------------------- */
 
 const passwordSchema = z.object({
-  current: z.string().min(1, "Type your current password."),
-  next: z.string().min(10, "A new password needs at least ten characters.").max(200),
+  current: z.string().min(1),
+  next: z.string().min(PASSWORD_MIN).max(200),
 });
 
 /**
@@ -147,23 +150,27 @@ const passwordSchema = z.object({
  */
 export async function changePasswordAction(formData: FormData): Promise<SettingsResult> {
   const user = await requireClient();
+  const words = (await getT(user.id)).app.actions;
 
   const parsed = passwordSchema.safeParse({
     current: formData.get("current"),
     next: formData.get("next"),
   });
   if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? "That won't do." };
+    const field = parsed.error.issues[0]?.path[0];
+    const message =
+      field === "current" ? words.passwordCurrent : field === "next" ? words.passwordShort(PASSWORD_MIN) : words.checkForm;
+    return { ok: false, message };
   }
 
   const record = await db.user.findUnique({
     where: { id: user.id },
     select: { passwordHash: true },
   });
-  if (!record) return { ok: false, message: "That account is gone." };
+  if (!record) return { ok: false, message: words.accountGone };
 
   if (!(await verifyPassword(parsed.data.current, record.passwordHash))) {
-    return { ok: false, message: "That is not your current password." };
+    return { ok: false, message: words.passwordWrong };
   }
 
   await db.$transaction([
@@ -174,7 +181,7 @@ export async function changePasswordAction(formData: FormData): Promise<Settings
     db.session.deleteMany({ where: { userId: user.id } }),
   ]);
 
-  return { ok: true, message: "Password changed. Every session has been signed out." };
+  return { ok: true, message: words.passwordChanged };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -193,15 +200,17 @@ export async function changePasswordAction(formData: FormData): Promise<Settings
  */
 export async function pausePlanAction(months = 1): Promise<SettingsResult> {
   const user = await requireClient();
+  const { t, locale } = await getReader(user.id);
+  const words = t.app.actions;
   const paddle = getPaddle();
-  if (!paddle) return { ok: false, message: "Billing isn't configured on this deployment." };
+  if (!paddle) return { ok: false, message: words.billingOff };
 
   const subscription = await db.subscription.findUnique({
     where: { userId: user.id },
     select: { paddleSubscriptionId: true },
   });
   if (!subscription?.paddleSubscriptionId) {
-    return { ok: false, message: "There is no live subscription to pause." };
+    return { ok: false, message: words.nothingToPause };
   }
 
   const resumesAt = new Date();
@@ -224,20 +233,21 @@ export async function pausePlanAction(months = 1): Promise<SettingsResult> {
 
   revalidatePath("/settings/cancel");
   revalidatePath("/settings/billing");
-  return { ok: true, message: `Paused until ${resumesAt.toLocaleDateString("en-GB")}.` };
+  return { ok: true, message: words.pausedUntil(formatDate(locale, resumesAt, "day")) };
 }
 
 export async function resumePlanAction(): Promise<SettingsResult> {
   const user = await requireClient();
+  const words = (await getT(user.id)).app.actions;
   const paddle = getPaddle();
-  if (!paddle) return { ok: false, message: "Billing isn't configured on this deployment." };
+  if (!paddle) return { ok: false, message: words.billingOff };
 
   const subscription = await db.subscription.findUnique({
     where: { userId: user.id },
     select: { paddleSubscriptionId: true },
   });
   if (!subscription?.paddleSubscriptionId) {
-    return { ok: false, message: "There is nothing paused." };
+    return { ok: false, message: words.nothingPaused };
   }
 
   await paddle.subscriptions.resume(subscription.paddleSubscriptionId, {
@@ -247,5 +257,5 @@ export async function resumePlanAction(): Promise<SettingsResult> {
 
   revalidatePath("/settings/cancel");
   revalidatePath("/settings/billing");
-  return { ok: true, message: "Billing resumed." };
+  return { ok: true, message: words.resumed };
 }

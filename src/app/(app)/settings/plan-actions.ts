@@ -13,6 +13,7 @@ import {
   type PlanId,
 } from "@/lib/config";
 import { db } from "@/lib/db";
+import { getT } from "@/lib/i18n/server";
 import { queueNudge } from "@/lib/nudges";
 import { priceIdFor } from "@/lib/paddle";
 
@@ -43,19 +44,20 @@ export async function startCheckoutAction(
   intervalId: string,
 ): Promise<CheckoutIntent> {
   const user = await requireClient();
+  const words = (await getT(user.id)).app.actions;
 
   if (isStaffRole(user.role)) {
-    return { ok: false, message: "Staff accounts can't hold a subscription." };
+    return { ok: false, message: words.staffNoPlan };
   }
 
   if (planId !== "explorer" && planId !== "ultra") {
-    return { ok: false, message: "That isn't a plan you can buy." };
+    return { ok: false, message: words.planUnknown };
   }
   const interval: BillingInterval = intervalId === "yearly" ? "yearly" : "monthly";
 
   const priceId = priceIdFor(planId, interval);
   if (!priceId) {
-    return { ok: false, message: "That plan isn't available right now." };
+    return { ok: false, message: words.planUnavailable };
   }
 
   // Reuse the customer Paddle already knows about, so a second purchase does
