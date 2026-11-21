@@ -8,11 +8,31 @@ import { isStaffRole } from "@/lib/admin/access";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { AUTH_RATE_LIMIT } from "@/lib/config";
 import { db } from "@/lib/db";
+import type { Messages } from "@/lib/i18n";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { DEFAULT_PREFERENCES } from "@/lib/preferences";
 import { rateLimit } from "@/lib/rate-limit";
-import { fieldErrors, loginSchema, signupSchema } from "@/lib/validation";
+import { loginSchema, PASSWORD_MIN, signupSchema } from "@/lib/validation";
+import type { z } from "zod";
 
-export type AuthState = { errors?: Record<string, string> } | undefined;
+export type AuthState =
+  | {
+      errors?: Record<string, string>;
+      /**
+       * What was typed, handed back with an error. React resets a form after
+       * its action runs, so without this a mistyped password would also wipe
+       * the name and the email somebody had just entered.
+       */
+      values?: { name?: string; email?: string };
+    }
+  | undefined;
+
+function typed(formData: FormData): { name?: string; email?: string } {
+  return {
+    name: String(formData.get("name") ?? "").slice(0, 80),
+    email: String(formData.get("email") ?? "").slice(0, 254),
+  };
+}
 
 /**
  * Prisma's duplicate-key code. Checked structurally rather than by importing
@@ -26,6 +46,34 @@ function isUniqueViolation(error: unknown): boolean {
     "code" in error &&
     (error as { code?: unknown }).code === "P2002"
   );
+}
+
+/**
+ * Validation messages in the visitor's language.
+ *
+ * The schemas in `lib/validation` carry English messages for the callers that
+ * have no reader to ask. Here there is one, so each issue is reworded from
+ * what it is about (the field and the kind of failure), not from its English.
+ */
+function localisedErrors(error: z.ZodError, t: Messages): Record<string, string> {
+  const words = t.auth.errors;
+  const result: Record<string, string> = {};
+
+  for (const issue of error.issues) {
+    const field = String(issue.path[0] ?? "form");
+    if (result[field]) continue;
+
+    if (field === "name") result.name = words.nameRequired;
+    else if (field === "email") {
+      result.email = issue.code === "too_small" || issue.code === "invalid_type" ? words.emailRequired : words.emailInvalid;
+    } else if (field === "password") {
+      if (issue.code === "too_big") result.password = words.passwordLong;
+      else if (issue.code === "too_small" && issue.minimum === PASSWORD_MIN) {
+        result.password = words.passwordShort(PASSWORD_MIN);
+      } else result.password = words.passwordRequired;
+    } else result[field] = issue.message;
+  }
+  return result;
 }
 
 /** Only allow relative paths, so `?next=` can't be used as an open redirect. */
@@ -43,13 +91,17 @@ async function clientKey(scope: string, identifier: string): Promise<string> {
 }
 
 export async function signupAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  // Read before the account exists: this is the visitor's language, the one
+  // they chose on the landing page, and the one the account is created in.
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+
   const parsed = signupSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
   });
 
-  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+  if (!parsed.success) return { errors: localisedErrors(parsed.error, t), values: typed(formData) };
   const { name, email, password } = parsed.data;
 
   const limit = await rateLimit(
@@ -58,12 +110,12 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     AUTH_RATE_LIMIT.windowSeconds,
   );
   if (!limit.ok) {
-    return { errors: { form: "Too many attempts. Try again in a few minutes." } };
+    return { errors: { form: t.auth.errors.tooMany }, values: typed(formData) };
   }
 
   const existing = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) {
-    return { errors: { email: "There's already an account with this email." } };
+    return { errors: { email: t.auth.errors.emailTaken }, values: typed(formData) };
   }
 
   let userId: string;
@@ -77,6 +129,8 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
         name,
         passwordHash: await hashPassword(password),
         preferences: { create: DEFAULT_PREFERENCES },
+        // The app continues in the language the landing page was read in.
+        display: { create: { language: locale } },
       },
       select: { id: true },
     });
@@ -90,25 +144,27 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     // isn't P2002 is a real fault: log it and say so, rather than blaming the
     // person typing.
     if (isUniqueViolation(error)) {
-      return { errors: { email: "There's already an account with this email." } };
+      return { errors: { email: t.auth.errors.emailTaken }, values: typed(formData) };
     }
     console.error("[auth] signup failed", error);
-    return {
-      errors: { form: "We couldn't create your account. Please try again in a moment." },
-    };
+    return { errors: { form: t.auth.errors.signupFailed }, values: typed(formData) };
   }
 
   await createSession(userId);
-  redirect("/dashboard");
+  // A new account answers the four set-up questions first; that page ends on
+  // the dashboard, and leaving it early loses nothing.
+  redirect("/onboarding");
 }
 
 export async function loginAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const t = await getT();
+
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
   });
 
-  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+  if (!parsed.success) return { errors: localisedErrors(parsed.error, t), values: typed(formData) };
   const { email, password } = parsed.data;
 
   const limit = await rateLimit(
@@ -117,7 +173,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     AUTH_RATE_LIMIT.windowSeconds,
   );
   if (!limit.ok) {
-    return { errors: { form: "Too many attempts. Try again in a few minutes." } };
+    return { errors: { form: t.auth.errors.tooMany }, values: typed(formData) };
   }
 
   const user = await db.user.findUnique({
@@ -128,11 +184,11 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   if (!user) {
     // Spend comparable time so a missing account isn't detectable by timing.
     await burnPasswordCycle(password);
-    return { errors: { form: "That email and password don't match." } };
+    return { errors: { form: t.auth.errors.mismatch }, values: typed(formData) };
   }
 
   const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) return { errors: { form: "That email and password don't match." } };
+  if (!valid) return { errors: { form: t.auth.errors.mismatch }, values: typed(formData) };
 
   await createSession(user.id);
 

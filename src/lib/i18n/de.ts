@@ -1,4 +1,6 @@
 import type { Messages } from "@/lib/i18n";
+import { appDe } from "@/lib/i18n/app";
+import { marketingDe } from "@/lib/i18n/marketing/de";
 
 /**
  * Deutsch.
@@ -16,6 +18,9 @@ import type { Messages } from "@/lib/i18n";
  * `Sie` would make it sound like a bank.
  */
 export const de: Messages = {
+  ...marketingDe,
+  ...appDe,
+
   common: {
     published: "Veröffentlicht",
     displayNamePlaceholder: "Leer lassen, dann gilt der Name aus dem Konto",
@@ -43,6 +48,7 @@ export const de: Messages = {
     somethingWrong: "Das hat nicht geklappt. Versuch es noch einmal.",
     ofTotal: (held, total) => `${held} von ${total}`,
     quests: { one: "# Quest", other: "# Quests" },
+    pointCount: { one: "# Punkt", other: "# Punkte" },
     days: { one: "# Tag", other: "# Tage" },
     people: { one: "# Person", other: "# Personen" },
     things: { one: "# Sache", other: "# Sachen" },
@@ -50,12 +56,12 @@ export const de: Messages = {
 
   nav: {
     dashboard: "Übersicht",
-    monthly: "Der Monatliche",
-    quests: "Quest-Datenbank",
+    monthly: "Monatsquest",
+    quests: "Quests",
     leaderboard: "Rangliste",
     stickers: "Sticker",
-    submissions: "Eingereicht",
-    people: "Leute & Gruppen",
+    submissions: "Nachweise",
+    people: "Leute",
     settings: "Einstellungen",
     signOut: "Abmelden",
     menu: "Menü",
@@ -335,7 +341,7 @@ export const de: Messages = {
       oneRunning: "Ein Quest offen, und das Fenster schließt sich.",
       oneFiled: "Ein Quest offen, schon eingereicht.",
     },
-    pointsLabel: (period) => `Punkte, ${period}`,
+    pointsLabel: (period) => `Punkte im ${period}`,
     rankLabel: (total) => `von ${total} in der Rangliste`,
     coming: "Was kommt",
     comingNote: "Wöchentliche montags um 06:00 · der monatliche am 1.",
@@ -387,7 +393,7 @@ export const de: Messages = {
     standing: "Wo du stehst",
     fullBoard: "Ganze Rangliste",
     open: "Öffnen →",
-    behind: (points, name) => `${points} Punkte hinter ${name}.`,
+    behind: (points, name) => `${points} hinter ${name}.`,
     youAreOn: (points, quests) => `Du hast ${points} aus ${quests}.`,
     topOfBoard: (points) =>
       `An der Spitze mit ${points} Punkten. Ein Monat bleibt, um sie zu halten.`,
@@ -627,6 +633,8 @@ export const de: Messages = {
       YELLOW: "Gelb",
       EDUCATIONAL: "Lehrpfad",
     },
+    travel: "Anfahrt von dir",
+    weekLabel: (week: string) => `Woche ${week}`,
     tabQuests: "Quests",
     noMarks: "Markierung noch nicht eingetragen",
     difficulty: { EASY: "Gemütlich", MODERATE: "Mittel", HARD: "Schwer", EXPERT: "Experte" },

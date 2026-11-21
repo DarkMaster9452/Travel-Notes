@@ -1,36 +1,34 @@
-import Link from "next/link";
+import { MapPinOff } from "lucide-react";
 
-import { EmptyState } from "@/components/sq/ui";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/feedback";
+import { PageHeader } from "@/components/ui/page";
 import { getT } from "@/lib/i18n/server";
 
-/** A member-side 404, inside the shell rather than dumped outside it. */
+/** A 404 inside the app: the shell stays, and there are two ways on. */
 export default async function AppNotFound() {
   const t = await getT();
 
   return (
     <>
-      <header className="sq-head">
-        <span className="sq-kicker" style={{ display: "block", marginBottom: 10 }}>
-          404
-        </span>
-        <h1 className="sq-h1">This one isn&rsquo;t on the map.</h1>
-      </header>
-
-      <EmptyState
-        glyph="map"
-        title={t.errors.notFound}
-        body={t.errors.notFoundBody}
-        action={
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-            <Link href="/dashboard" className="sq-btn sq-btn-primary sq-btn-sm">
-              {t.nav.dashboard}
-            </Link>
-            <Link href="/quests" className="sq-btn sq-btn-ghost sq-btn-sm">
-              {t.nav.quests}
-            </Link>
-          </div>
-        }
-      />
+      <PageHeader overline={t.app.state.notFoundOverline} title={t.app.state.notFoundTitle} />
+      <Card>
+        <EmptyState
+          icon={MapPinOff}
+          title={t.errors.notFound}
+          action={
+            <div className="flex flex-wrap justify-center gap-3">
+              <ButtonLink href="/dashboard">{t.nav.dashboard}</ButtonLink>
+              <ButtonLink href="/quests" variant="secondary">
+                {t.nav.quests}
+              </ButtonLink>
+            </div>
+          }
+        >
+          {t.errors.notFoundBody}
+        </EmptyState>
+      </Card>
     </>
   );
 }

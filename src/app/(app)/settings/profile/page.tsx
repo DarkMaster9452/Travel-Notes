@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 
 import { ensureProfileAction } from "@/app/(app)/profile/public-actions";
-import { SqProfileForm } from "@/components/sq/profile-form";
+import { ProfileForm } from "@/components/app/profile-form";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Profile" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).settings.items.profile };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -19,11 +22,10 @@ export const dynamic = "force-dynamic";
 export default async function ProfileSettingsPage() {
   const user = await requireClient();
   await ensureProfileAction();
-
   const profile = await db.profile.findUnique({ where: { userId: user.id } });
 
   return (
-    <SqProfileForm
+    <ProfileForm
       draft={{
         handle: profile?.handle ?? "",
         published: profile?.published ?? false,

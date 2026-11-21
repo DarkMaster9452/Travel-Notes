@@ -6,11 +6,12 @@ import { z } from "zod";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { uniqueSlug } from "@/lib/groups";
+import { getT } from "@/lib/i18n/server";
 
 export type GroupResult = { ok: boolean; message?: string; slug?: string };
 
 const groupSchema = z.object({
-  name: z.string().trim().min(2, "Give it a name.").max(60),
+  name: z.string().trim().min(2).max(60),
   blurb: z.string().trim().max(240).optional().or(z.literal("")),
 });
 
@@ -23,7 +24,8 @@ export async function createGroupAction(formData: FormData): Promise<GroupResult
     blurb: formData.get("blurb"),
   });
   if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? "That won't do." };
+    const words = (await getT(user.id)).app.actions;
+    return { ok: false, message: parsed.error.issues[0]?.path[0] === "name" ? words.groupName : words.checkForm };
   }
 
   const slug = await uniqueSlug(parsed.data.name);
@@ -54,7 +56,7 @@ export async function joinGroupAction(slug: string): Promise<GroupResult> {
   const user = await requireClient();
 
   const group = await db.group.findUnique({ where: { slug }, select: { id: true } });
-  if (!group) return { ok: false, message: "There is no group at that link." };
+  if (!group) return { ok: false, message: (await getT(user.id)).app.actions.groupMissing };
 
   await db.groupMembership.upsert({
     where: { groupId_userId: { groupId: group.id, userId: user.id } },
@@ -80,14 +82,14 @@ export async function leaveGroupAction(slug: string): Promise<GroupResult> {
     where: { slug },
     select: { id: true, members: { select: { userId: true, role: true } } },
   });
-  if (!group) return { ok: false, message: "There is no group at that link." };
+  if (!group) return { ok: false, message: (await getT(user.id)).app.actions.groupMissing };
 
   const mine = group.members.find((member) => member.userId === user.id);
   if (!mine) return { ok: true, slug };
 
   const owners = group.members.filter((member) => member.role === "OWNER");
   if (mine.role === "OWNER" && owners.length === 1 && group.members.length > 1) {
-    return { ok: false, message: "Hand the group to somebody else before you leave it." };
+    return { ok: false, message: (await getT(user.id)).app.actions.groupHandOver };
   }
 
   await db.groupMembership.delete({

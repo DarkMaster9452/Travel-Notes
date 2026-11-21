@@ -1,31 +1,37 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Trophy } from "lucide-react";
 
-import { SqParamSelect, SqSegmentedLinks } from "@/components/sq/controls";
-import { LogoSilhouette } from "@/components/sq/icons";
-import { Avatar, Bar, EmptyState, Tag } from "@/components/sq/ui";
-import { slotLabel } from "@/lib/admin/schedule";
+import { ParamSelect } from "@/components/app/filters";
+import { BoardList, BoardRow } from "@/components/domain/board";
+import { MEDAL_ORDER, MedalDisc } from "@/components/domain/medal";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Alert, EmptyState, Progress } from "@/components/ui/feedback";
+import { TabsNav } from "@/components/ui/nav";
+import { PageHeader, PageStack } from "@/components/ui/page";
+import { type } from "@/components/ui/typography";
 import { requireClient } from "@/lib/auth/guards";
-import { plural } from "@/lib/i18n/format";
-import { getLocale, getT } from "@/lib/i18n/server";
-import { getLeaderboard, pastSlots, SCORING_NOTES } from "@/lib/leaderboard";
+import { formatNumber, plural } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
+import { FEATURED_BONUS, GRADE_POINTS, getLeaderboard, pastSlots, resolveSlot } from "@/lib/leaderboard";
+import { slotDates, slotTitle } from "@/lib/quest/labels";
+import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Leaderboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.leaderboard.title };
+}
 export const dynamic = "force-dynamic";
 
-const MEDAL_COLOUR = ["var(--gold)", "#c6ccbf", "#c08552"];
-const PODIUM_HEIGHT = [200, 168, 148];
-
 /**
- * The board.
+ * The board (design/DESIGN-SYSTEM.md §12): tabs with the month first, the
+ * reader's own standing, the podium and then everyone.
  *
  * Points for approved proof, on the same clock as everything else. The podium
- * is drawn from the same rows as the table rather than from a separate query:
- * one board, read twice, cannot disagree with itself.
- *
- * A sealed board keeps its podium for good — see `LeaderboardAward` — so the
- * medals here are whatever was written down, not whatever the arithmetic says
- * today.
+ * is drawn from the same rows as the list rather than from a separate query:
+ * one board, read twice, cannot disagree with itself. A sealed board keeps its
+ * podium for good — see `LeaderboardAward`.
  */
 export default async function LeaderboardPage({
   searchParams,
@@ -36,288 +42,175 @@ export default async function LeaderboardPage({
   const params = await searchParams;
   const period = params.period === "WEEKLY" ? "WEEKLY" : "MONTHLY";
 
-  const [board, t, locale] = await Promise.all([
-    getLeaderboard(period, params.slot),
-    getT(user.id),
-    getLocale(user.id),
-  ]);
+  const [board, reader] = await Promise.all([getLeaderboard(period, params.slot), getReader(user.id)]);
+  const { t, locale } = reader;
+  const words = t.app.board;
   const slots = pastSlots(period, 8);
+  const slot = resolveSlot(period, board.slotKey);
 
   const mine = board.rows.find((row) => row.userId === user.id) ?? null;
   const leader = board.rows[0]?.score ?? 0;
   const podium = board.rows.slice(0, 3);
-  const rest = board.rows;
+  const places = [t.leaderboard.first, t.leaderboard.second, t.leaderboard.third];
+
+  const grades = (["EASY", "MODERATE", "HARD", "EXPERT"] as const)
+    .map((grade) => `${t.trail.difficulty[grade]} ${GRADE_POINTS[grade]}`)
+    .join(" · ");
 
   return (
-    <>
-      <header className="sq-head">
-        <div className="sq-head-row">
-          <div style={{ minWidth: 0 }}>
-            <span className="sq-kicker" style={{ display: "block", marginBottom: 10 }}>
-              {t.leaderboard.everybodyRanked}
-            </span>
-            <h1 className="sq-h1" style={{ fontSize: 40, maxWidth: "none", marginBottom: 12 }}>
-              {t.leaderboard.title}
-            </h1>
-            <p className="sq-lede">
-              {t.leaderboard.lede}
-            </p>
-          </div>
-          <SqSegmentedLinks
-            label={t.leaderboard.cadence}
-            active={period}
-            options={[
-              { key: "MONTHLY", label: t.leaderboard.monthlyTab, href: "/leaderboard" },
-              { key: "WEEKLY", label: t.leaderboard.weeklyTab, href: "/leaderboard?period=WEEKLY" },
-            ]}
-          />
-        </div>
-      </header>
+    <PageStack>
+      <div>
+        <PageHeader title={t.leaderboard.title} lede={t.leaderboard.lede} />
+        <TabsNav
+          label={t.leaderboard.cadence}
+          active={period}
+          options={[
+            { key: "MONTHLY", label: t.leaderboard.monthlyTab, href: "/leaderboard" },
+            { key: "WEEKLY", label: t.leaderboard.weeklyTab, href: "/leaderboard?period=WEEKLY" },
+          ]}
+        />
+      </div>
 
-      <section
-        className="sq-slab"
-        style={{
-          padding: "24px 28px",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-          gap: 24,
-          alignItems: "center",
-        }}
-      >
-        <div>
-          <span className="sq-kicker">
-            Your standing · {board.label} · {board.state === "live" ? "open" : board.sealed ? "sealed" : "closed"}
-          </span>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 16, margin: "14px 0 16px" }}>
-            <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 50, lineHeight: 0.85 }}>
-              {mine ? `#${mine.rank}` : "—"}
+      {/* --- where the reader stands ---------------------------------------- */}
+      <Card className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className={type.h3}>{words.standing}</h2>
+          <Badge tone={board.state === "live" ? "success" : "neutral"}>
+            {board.state === "live" ? words.open : board.sealed ? t.leaderboard.sealed : t.leaderboard.closed}
+          </Badge>
+        </div>
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+          {mine ? (
+            <b className="font-display text-display-xl font-extrabold tabular-nums">#{mine.rank}</b>
+          ) : null}
+          <span className={mine ? "pb-2" : undefined}>
+            <b className="block font-display text-h2 font-bold tabular-nums">
+              {t.leaderboard.yourPoints(mine?.score ?? 0)}
             </b>
-            <span style={{ paddingBottom: 6 }}>
-              <b
-                style={{
-                  display: "block",
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: 600,
-                  fontSize: 24,
-                  lineHeight: 1,
-                }}
-              >
-                {t.leaderboard.yourPoints(mine?.score ?? 0)}
-              </b>
-              <span style={{ fontSize: 13, color: "var(--forest-ink-3)" }}>
-                {mine
-                  ? `${plural(locale, mine.quests, t.common.quests)}${
-                      mine.tookFeatured ? ` · ${t.leaderboard.tookFeatured}` : ""
-                    }`
-                  : t.leaderboard.emptyWindow}
-              </span>
+            <span className="text-body-sm text-muted">
+              {mine
+                ? `${plural(locale, mine.quests, t.common.quests)}${mine.tookFeatured ? ` · ${t.leaderboard.tookFeatured}` : ""}`
+                : words.notRanked}
             </span>
-          </div>
-          <div style={{ maxWidth: 460 }}>
-            <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.14)", overflow: "hidden" }}>
-              <span
-                style={{
-                  display: "block",
-                  height: "100%",
-                  width: `${leader === 0 ? 0 : Math.round(((mine?.score ?? 0) / leader) * 100)}%`,
-                  background: "var(--signal-2)",
-                }}
-              />
-            </div>
-            <p style={{ marginTop: 10, fontSize: 13, color: "var(--forest-ink-3)" }}>
-              {mine && mine.rank > 1 ? (
-                <>
-                  <b style={{ color: "var(--forest-ink)" }}>
-                    {t.leaderboard.toOvertake(mine.toOvertake)}
-                  </b>{" "}
-                  {t.leaderboard.takesPlaceAbove} {t.leaderboard.offTheLead(mine.behindLeader)}
-                </>
-              ) : mine ? (
-                t.leaderboard.leading
-              ) : (
-                t.leaderboard.emptyBody
-              )}
-            </p>
-          </div>
+          </span>
         </div>
+        <Progress
+          value={leader === 0 ? 0 : ((mine?.score ?? 0) / leader) * 100}
+          label={words.againstLeader}
+          className="max-w-form"
+        />
+        <p className="text-body-sm text-muted">
+          {mine && mine.rank > 1 ? (
+            <>
+              <b className="font-semibold text-text">{t.leaderboard.toOvertake(mine.toOvertake)}</b>{" "}
+              {t.leaderboard.takesPlaceAbove} {t.leaderboard.offTheLead(mine.behindLeader)}
+            </>
+          ) : mine ? (
+            t.leaderboard.leading
+          ) : (
+            t.leaderboard.emptyBody
+          )}
+        </p>
+      </Card>
 
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
-          {["Gold", "Silver", "Bronze"].map((label, index) => (
-            <span
-              key={label}
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 999,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 5,
-                background: MEDAL_COLOUR[index],
-                color: "#14251b",
-              }}
-            >
-              <LogoSilhouette size={22} />
-              <b className="sq-mono" style={{ fontSize: 9, letterSpacing: "0.09em", textTransform: "uppercase" }}>
-                {label}
-              </b>
-            </span>
-          ))}
-        </div>
-      </section>
-
-      <section className="sq-card sq-pad" style={{ marginTop: 18 }}>
-        <div className="sq-section-head" style={{ marginBottom: 22 }}>
-          <h2 className="sq-h2" style={{ fontSize: 21 }}>
-            {board.label} · {board.dates}
-          </h2>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <Tag tone={board.state === "live" ? "stamp" : "plain"} small>
-              {board.state === "live"
-                ? t.leaderboard.openNow(board.rows.length)
-                : board.sealed
-                  ? t.leaderboard.sealed
-                  : t.leaderboard.closed}
-            </Tag>
-            <SqParamSelect
+      {/* --- the board itself -------------------------------------------------- */}
+      <Card>
+        <CardHeader
+          title={slotTitle(slot, locale, t)}
+          note={slotDates(slot, locale)}
+          action={
+            <ParamSelect
               name="slot"
               label={t.leaderboard.window}
               value={board.slotKey}
-              options={slots.map((slot) => ({ value: slot.key, label: slotLabel(slot) }))}
+              options={slots.map((entry) => ({ value: entry.key, label: slotTitle(entry, locale, t) }))}
+              className="w-48"
             />
-          </div>
-        </div>
+          }
+        />
 
         {board.rows.length === 0 ? (
           <EmptyState
-            glyph="laurel"
+            icon={Trophy}
             title={t.leaderboard.empty}
-            body={t.leaderboard.approvedOnly}
             action={
-              <Link href="/monthly" className="sq-btn sq-btn-primary sq-btn-sm">
+              <ButtonLink href="/monthly" variant="monthly">
                 {t.leaderboard.openMonthly}
-              </Link>
+              </ButtonLink>
             }
-          />
+          >
+            {t.leaderboard.approvedOnly}
+          </EmptyState>
         ) : (
-          <>
+          <div className="flex flex-col gap-6">
             {podium.length === 3 ? (
-              <div className="sq-podium">
-                {[podium[1], podium[0], podium[2]].map((row, position) => {
-                  const place = position === 1 ? 0 : position === 0 ? 1 : 2;
+              <ol aria-label={words.podium} className="grid grid-cols-3 items-end gap-2 sm:gap-4">
+                {[1, 0, 2].map((place) => {
+                  const row = podium[place];
                   return (
-                    <div
+                    <li
                       key={row.userId}
-                      className="sq-podium-col"
-                      style={{
-                        height: PODIUM_HEIGHT[place],
-                        borderBottom: `4px solid ${MEDAL_COLOUR[place]}`,
-                        ["--i" as string]: position,
-                      }}
+                      className={cn(
+                        "flex min-w-0 flex-col items-center gap-2 rounded-card bg-surface-sunken p-3 text-center sm:p-4",
+                        place === 0 ? "pt-8 sm:pt-10" : place === 1 ? "pt-5 sm:pt-6" : "",
+                      )}
                     >
-                      <span
-                        className="sq-podium-medal"
-                        style={{ background: MEDAL_COLOUR[place], ["--i" as string]: position }}
-                      >
-                        <LogoSilhouette size={26} />
+                      <MedalDisc medal={MEDAL_ORDER[place]} size="lg" />
+                      <span className="text-overline font-semibold uppercase text-subtle">{places[place]}</span>
+                      <b className="max-w-full truncate text-body-sm font-semibold sm:text-body">{row.username}</b>
+                      <span className="font-display text-h2 font-bold tabular-nums">
+                        {formatNumber(locale, row.score)}
                       </span>
-                      <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 18, lineHeight: 1.15 }}>
-                        {row.username}
-                      </b>
-                      <span style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, lineHeight: 1 }}>
-                        {row.score}
-                      </span>
-                      <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
-                        {plural(locale, row.quests, t.common.quests)}
-                      </span>
-                      <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-                        {[t.leaderboard.first, t.leaderboard.second, t.leaderboard.third][place]}
-                      </span>
-                    </div>
+                      <span className="text-caption text-muted">{plural(locale, row.quests, t.common.quests)}</span>
+                    </li>
                   );
                 })}
-              </div>
+              </ol>
             ) : null}
 
-            <ul className="sq-stagger" style={{ marginTop: 22 }}>
-              {rest.map((row, index) => (
-                <li
+            <BoardList aria-label={words.everyone}>
+              {board.rows.map((row) => (
+                <BoardRow
                   key={row.userId}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "30px 32px minmax(120px,1fr) minmax(50px,110px) auto 56px",
-                    gap: 12,
-                    alignItems: "center",
-                    padding: "11px 12px",
-                    borderTop: "1px solid var(--line-2)",
-                    background: row.userId === user.id ? "var(--paper-2)" : "transparent",
-                    borderLeft: `2px solid ${row.userId === user.id ? "var(--signal)" : "transparent"}`,
-                    ["--i" as string]: index,
-                  }}
-                >
-                  <span className="sq-mono" style={{ fontSize: 14, color: "var(--ink-3)" }}>
-                    {row.rank}
-                  </span>
-                  <Avatar name={row.username} size={32} square />
-                  <span style={{ minWidth: 0 }}>
-                    {row.handle ? (
-                      <Link href={`/people/${row.handle}`} style={{ color: "var(--lg-text)" }}>
-                        <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{row.username}</b>
-                      </Link>
-                    ) : (
-                      <b style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{row.username}</b>
-                    )}
-                    <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
-                      {row.quests} {row.quests === 1 ? "quest" : "quests"}
-                      {row.tookFeatured ? " · took the featured one" : ""}
-                    </span>
-                  </span>
-                  <Bar pct={leader === 0 ? 0 : (row.score / leader) * 100} />
-                  <span className="sq-mono" style={{ fontSize: 11, color: "var(--ink-3)" }}>
-                    {row.medal ?? ""}
-                  </span>
-                  <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 19, textAlign: "right" }}>
-                    {row.score}
-                  </b>
-                </li>
+                  rank={row.rank}
+                  name={row.username}
+                  href={row.handle ? `/people/${row.handle}` : undefined}
+                  leading={<Avatar name={row.username} size="sm" />}
+                  score={formatNumber(locale, row.score)}
+                  meta={`${plural(locale, row.quests, t.common.quests)}${row.tookFeatured ? ` · ${t.leaderboard.tookFeatured}` : ""}`}
+                  me={row.userId === user.id}
+                  meLabel={t.app.dashboard.you}
+                />
               ))}
-            </ul>
-          </>
+            </BoardList>
+          </div>
         )}
-      </section>
+      </Card>
 
-      <section className="sq-grid sq-grid-fit-md" style={{ marginTop: 18, alignItems: "start" }}>
-        <article className="sq-tinted sq-pad-sm">
-          <h2 className="sq-h2" style={{ fontSize: 20, marginBottom: 16 }}>
-            How the score works
-          </h2>
-          <ol style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {SCORING_NOTES.map((note, index) => (
-              <li key={note} style={{ display: "flex", gap: 13, alignItems: "flex-start" }}>
-                <b
-                  className="sq-mono"
-                  style={{ fontWeight: 400, fontSize: 12, color: "var(--ink-3)", flex: "0 0 24px", paddingTop: 3 }}
-                >
-                  {String(index + 1).padStart(2, "0")}
-                </b>
-                <span style={{ fontSize: 13.5, lineHeight: 1.55 }}>{note}</span>
+      <div className="grid gap-4 md:grid-cols-2 md:items-start lg:gap-6">
+        <Card>
+          <CardHeader title={words.howTitle} />
+          <ol className="flex flex-col gap-3">
+            {[
+              words.grades(grades),
+              words.perUnit,
+              words.bonuses(FEATURED_BONUS.WEEKLY, FEATURED_BONUS.MONTHLY),
+              words.retreat,
+            ].map((note, index) => (
+              <li key={note} className="flex items-start gap-3 text-body-sm text-muted">
+                <span className="grid size-6 shrink-0 place-items-center rounded-pill bg-primary-soft text-caption font-semibold tabular-nums text-primary-soft-fg">
+                  {index + 1}
+                </span>
+                {note}
               </li>
             ))}
           </ol>
-        </article>
+        </Card>
 
-        <article className="sq-card sq-pad-sm" style={{ borderColor: "var(--line)", boxShadow: "none" }}>
-          <h2 className="sq-h2" style={{ fontSize: 20, marginBottom: 10 }}>
-            Sealed boards keep their podium
-          </h2>
-          <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--ink-2)" }}>
-            Once a window closes the top three are fixed for good — a verdict changed three weeks
-            later moves the points, never the medal. Winners&rsquo; stickers go out with the next
-            envelope.
-          </p>
-        </article>
-      </section>
-    </>
+        <Alert tone="info" title={words.sealedTitle}>
+          {words.sealedBody}
+        </Alert>
+      </div>
+    </PageStack>
   );
 }

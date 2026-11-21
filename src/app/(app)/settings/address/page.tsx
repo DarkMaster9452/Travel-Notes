@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 
 import { saveAddressAction } from "@/app/(app)/settings/actions";
-import { SqSaveForm } from "@/components/sq/forms";
+import { SaveForm } from "@/components/app/forms";
+import { Pane } from "@/components/app/pane";
+import { Field, Input } from "@/components/ui/field";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Shipping address" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).settings.items.address };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -22,48 +26,51 @@ export default async function AddressSettingsPage() {
     db.shippingAddress.findUnique({ where: { userId: user.id } }),
     getT(user.id),
   ]);
+  const words = t.settingsPages.address;
 
   return (
-    <section className="sq-card" style={{ overflow: "hidden" }}>
-      <div style={{ padding: "15px 24px", borderBottom: "1px solid var(--line-2)" }}>
-        <h2 className="sq-h2" style={{ fontSize: 19 }}>
-          {t.settingsPages.address.heading}
-        </h2>
-      </div>
-
-      <SqSaveForm
-        action={saveAddressAction}
-        footer={t.settingsPages.address.footer}
-      >
-        <div style={{ padding: "18px 24px", display: "grid", gap: 14 }}>
-          <label className="sq-field">
-            <span className="sq-label">{t.settingsPages.address.recipient}</span>
-            <input className="sq-input" name="recipient" defaultValue={address?.recipient ?? user.name} maxLength={80} />
-          </label>
-          <label className="sq-field">
-            <span className="sq-label">{t.settingsPages.address.line1}</span>
-            <input className="sq-input" name="line1" defaultValue={address?.line1 ?? ""} maxLength={120} />
-          </label>
-          <label className="sq-field">
-            <span className="sq-label">{t.settingsPages.address.line2}</span>
-            <input className="sq-input" name="line2" defaultValue={address?.line2 ?? ""} maxLength={120} />
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 140px", gap: 14 }}>
-            <label className="sq-field">
-              <span className="sq-label">{t.settingsPages.address.city}</span>
-              <input className="sq-input" name="city" defaultValue={address?.city ?? ""} maxLength={80} />
-            </label>
-            <label className="sq-field">
-              <span className="sq-label">{t.settingsPages.address.postcode}</span>
-              <input className="sq-input" name="postcode" defaultValue={address?.postcode ?? ""} maxLength={20} />
-            </label>
-          </div>
-          <label className="sq-field">
-            <span className="sq-label">{t.settingsPages.address.country}</span>
-            <input className="sq-input" name="country" defaultValue={address?.country ?? "Slovakia"} maxLength={60} required />
-          </label>
+    <Pane title={words.heading}>
+      <SaveForm action={saveAddressAction} footer={words.footer}>
+        <Field label={words.recipient} htmlFor="recipient">
+          <Input
+            id="recipient"
+            name="recipient"
+            autoComplete="name"
+            defaultValue={address?.recipient ?? user.name}
+            maxLength={80}
+          />
+        </Field>
+        <Field label={words.line1} htmlFor="line1">
+          <Input id="line1" name="line1" autoComplete="address-line1" defaultValue={address?.line1 ?? ""} maxLength={120} />
+        </Field>
+        <Field label={words.line2} htmlFor="line2" optional={t.ui.optional}>
+          <Input id="line2" name="line2" autoComplete="address-line2" defaultValue={address?.line2 ?? ""} maxLength={120} />
+        </Field>
+        <div className="grid gap-5 sm:grid-cols-3">
+          <Field label={words.city} htmlFor="city" className="sm:col-span-2">
+            <Input id="city" name="city" autoComplete="address-level2" defaultValue={address?.city ?? ""} maxLength={80} />
+          </Field>
+          <Field label={words.postcode} htmlFor="postcode">
+            <Input
+              id="postcode"
+              name="postcode"
+              autoComplete="postal-code"
+              defaultValue={address?.postcode ?? ""}
+              maxLength={20}
+            />
+          </Field>
         </div>
-      </SqSaveForm>
-    </section>
+        <Field label={words.country} htmlFor="country">
+          <Input
+            id="country"
+            name="country"
+            autoComplete="country-name"
+            defaultValue={address?.country ?? "Slovakia"}
+            maxLength={60}
+            required
+          />
+        </Field>
+      </SaveForm>
+    </Pane>
   );
 }

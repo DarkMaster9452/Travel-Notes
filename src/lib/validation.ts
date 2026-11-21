@@ -15,9 +15,12 @@ export const emailSchema = z
   .email("That doesn't look like an email address")
   .transform((value) => value.toLowerCase());
 
+/** The shortest password an account may have. The signup form states it too. */
+export const PASSWORD_MIN = 10;
+
 export const passwordSchema = z
   .string()
-  .min(10, "Use at least 10 characters")
+  .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters`)
   .max(200, "That's longer than we can hash sensibly");
 
 export const signupSchema = z.object({

@@ -1,36 +1,38 @@
 import Link from "next/link";
 
-import { Contours, LogoMark } from "@/components/field";
+import { AuthSide } from "@/components/marketing/auth-side";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { Logo } from "@/components/ui/logo";
+import { getMessages } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 
 /**
- * The shell around login and signup.
- *
- * Same paper, same contour backdrop as the landing hero — arriving at the
- * login form should feel like walking further into the same building, not
- * leaving it.
+ * The shell around login and signup: split 6 / 6 from `lg` up
+ * (design/DESIGN-SYSTEM.md §6.4). The form sits on the left in a column no
+ * wider than 400 px; the right half shows this month's quest.
  */
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const t = getMessages(locale);
+
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-paper text-ink">
-      <div className="paper-grain" aria-hidden="true" />
-      <Contours />
+    <div className="grid min-h-dvh lg:grid-cols-2">
+      <div className="flex min-h-dvh flex-col px-4 md:px-6 lg:px-8">
+        <header className="flex h-16 shrink-0 items-center justify-between">
+          <Link href="/" aria-label={t.ui.home} className="rounded-control no-underline">
+            <Logo />
+          </Link>
+          <LocaleSwitcher />
+        </header>
 
-      <header className="wrap flex h-[70px] shrink-0 items-center">
-        <Link href="/" className="logo" aria-label="Summit Quest home">
-          <LogoMark />
-          Summit&nbsp;Quest
-        </Link>
-      </header>
+        <main className="flex flex-1 items-center justify-center py-10">
+          <div className="w-full max-w-form">{children}</div>
+        </main>
 
-      <main className="wrap flex flex-1 items-center justify-center py-10">
-        <div className="w-full max-w-[420px]">{children}</div>
-      </main>
+        <footer className="shrink-0 pb-6 text-center text-caption text-subtle">{t.landing.footer.motto}</footer>
+      </div>
 
-      <footer className="wrap shrink-0 pb-8">
-        <p className="note text-center">
-          Go outside · Leave no trace · Tell someone where you went
-        </p>
-      </footer>
+      <AuthSide t={t} locale={locale} />
     </div>
   );
 }

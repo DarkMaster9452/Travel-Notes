@@ -4,8 +4,11 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 // files under Turbopack, so the variable face ships with the bundle instead.
 import "@fontsource-variable/bricolage-grotesque";
 
-import { ToastProvider } from "@/components/field/toast";
-import { PressFeedback } from "@/components/motion/interactions";
+import { I18nProvider } from "@/components/i18n";
+import { ToastProvider } from "@/components/ui/toast";
+import { getCurrentUser } from "@/lib/auth/session";
+import { getMessages } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 
 import "./globals.css";
 
@@ -29,42 +32,50 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Summit Quest — Your next adventure, assigned.",
-    template: "%s · Summit Quest",
-  },
-  description:
-    "Summit Quest turns your preferences into a real hiking assignment: a place, an objective, a bonus challenge — and, if you want, someone to go with. Try it online. Subscribe and it arrives in your inbox.",
-  openGraph: {
-    title: "Summit Quest — Your next adventure, assigned.",
-    description:
-      "A place to be, an objective to complete, one bonus challenge you didn't ask for. Never the same one twice.",
-    type: "website",
-  },
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = getMessages(await getLocale());
+  return {
+    title: { default: t.meta.title, template: "%s · Summit Quest" },
+    description: t.meta.description,
+    openGraph: { title: t.meta.title, description: t.meta.description, type: "website" },
+    robots: { index: true, follow: true },
+  };
+}
 
 export const viewport: Viewport = {
-  themeColor: "#f4f8f1",
+  themeColor: [
+    // `--sq-bg`, light and dark: browser chrome cannot read a CSS variable.
+    { media: "(prefers-color-scheme: light)", color: "#f4f8f1" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f2a26" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Language and theme are decided here, once, for the whole document: the
+ * language from the account or the visitor (see `lib/i18n/server`), the theme
+ * from the account, falling back to the system's. Both sit on `<html>` so that
+ * portalled surfaces — dialogs, menus, toasts — read the same ones as the page.
+ */
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
+  const theme = user?.theme === "DARK" ? "dark" : user?.theme === "LIGHT" ? "light" : "system";
+  const t = getMessages(locale);
+
   return (
     // The landing page scrolls smoothly to its anchors. `data-scroll-behavior`
     // tells the router that is deliberate, so route transitions still jump.
     <html
-      lang="en"
+      lang={locale}
+      data-theme={theme}
       data-scroll-behavior="smooth"
       className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-dvh">
-        {/* Press feedback is mounted once, for the whole product: the landing
-            page, the app and the panel all press the same way. */}
-        <PressFeedback />
-        <ToastProvider>{children}</ToastProvider>
+        <I18nProvider locale={locale}>
+          <ToastProvider dismissLabel={t.ui.dismiss}>{children}</ToastProvider>
+        </I18nProvider>
       </body>
     </html>
   );

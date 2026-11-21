@@ -1,28 +1,30 @@
 import type { Metadata } from "next";
+import { Check, Clock, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 
-import { SqCheckoutButton, SqCheckoutListener, SqPortalButton } from "@/components/sq/plan-actions";
-import { Tag } from "@/components/sq/ui";
+import { PaidChip } from "@/components/app/locked";
+import { CheckoutButton, CheckoutListener, PortalButton } from "@/components/app/plan-actions";
+import { Pane } from "@/components/app/pane";
+import { Badge, PlanBadge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/feedback";
+import { type } from "@/components/ui/typography";
+import { stickerAllowance } from "@/lib/achievements";
 import { requireClient } from "@/lib/auth/guards";
-import { Glyph, LockGlyph } from "@/components/sq/icons";
-import { SqPaidChip } from "@/components/sq/locked";
-import {
-  ALL_CAPABILITIES,
-  capabilityCopy,
-  lowestPlanWith,
-  planCopy,
-  PLANS,
-} from "@/lib/config";
-import { db } from "@/lib/db";
 import { reconcileSubscription } from "@/lib/billing";
+import { ALL_CAPABILITIES, capabilityCopy, lowestPlanWith, planCopy, PLANS } from "@/lib/config";
+import { db } from "@/lib/db";
 import { getEntitlement } from "@/lib/entitlements";
 import { envelopeCopy, getEnvelopeStatus } from "@/lib/envelope";
-import { formatDate, formatMoney } from "@/lib/i18n/format";
-import { getLocale, getT } from "@/lib/i18n/server";
 import { isPaddleEnabled, isUltraEnabled } from "@/lib/env";
+import { formatDate, formatMoney } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
 import { intervalForPriceId } from "@/lib/paddle";
+import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Plan & billing" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.settings.items.billing };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -30,251 +32,190 @@ export const dynamic = "force-dynamic";
  *
  * The current plan is stated as a fact — name, price, renewal date — and the
  * tiers below it are the offer. Both read from the same `PLANS` definition and
- * the same entitlement, so the card can never advertise a capability the
+ * the same entitlement, so the page can never advertise a capability the
  * account would then be refused.
  */
 export default async function BillingSettingsPage() {
   const user = await requireClient();
-
   // Before reading anything, make sure our idea of this account matches
-  // Paddle's. Normally a no-op that returns on the first query; when it is not,
-  // it is because a purchase went through and never reached us, and this is
-  // the screen where that would be most obvious and most upsetting.
+  // Paddle's. Normally a no-op; when it is not, it is because a purchase went
+  // through and never reached us, and this is where that would be most obvious.
   await reconcileSubscription(user.id, user.email);
 
-  const [entitlement, subscription, address, envelope, t, locale] = await Promise.all([
+  const [entitlement, subscription, address, envelope, reader] = await Promise.all([
     getEntitlement(user.id),
     db.subscription.findUnique({ where: { userId: user.id } }),
     db.shippingAddress.findUnique({ where: { userId: user.id } }),
     getEnvelopeStatus(user.id, user.name),
-    getT(user.id),
-    getLocale(user.id),
+    getReader(user.id),
   ]);
+  const { t, locale } = reader;
+  const words = t.billing;
 
   const current = entitlement.definition;
   const currentCopy = planCopy(t, entitlement.plan);
   const held = ALL_CAPABILITIES.filter((capability) => entitlement.can(capability));
   const yearly = intervalForPriceId(subscription?.paddlePriceId) === "yearly";
+  const paddle = isPaddleEnabled();
+  const envelopeWords = envelopeCopy(t, envelope.reason);
+
+  const facts = [
+    { label: words.facts.stickers, value: String(stickerAllowance(entitlement.plan)) },
+    {
+      label: words.facts.quests,
+      value: entitlement.isSubscribed
+        ? words.facts.unlimited
+        : words.facts.questsLeft(entitlement.freeQuestsRemaining),
+    },
+    {
+      label: words.facts.reach,
+      value: current.capabilities.includes("worldwide")
+        ? words.facts.worldwide
+        : current.capabilities.includes("europe")
+          ? words.facts.europe
+          : words.facts.homeCountry,
+    },
+    {
+      label: words.facts.post,
+      value: current.capabilities.includes("mail") ? words.facts.envelope : words.facts.screenOnly,
+    },
+  ];
 
   return (
     <>
-      {/* The overlay is opened by the buttons below but completing it is the
-          page's business, not any one button's: a purchase that finishes after
-          the button has re-rendered still has to be recorded. */}
-      <SqCheckoutListener />
+      {/* Completing a purchase is the page's business, not any one button's. */}
+      <CheckoutListener />
 
-      <section className="sq-card sq-pad">
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
-          <div>
-            <span className="sq-kicker">{t.billing.currentPlan}</span>
-            <h2 style={{ margin: "10px 0 6px", fontSize: 28, lineHeight: 1.1 }}>
+      {/* --- the plan this account is on ------------------------------------ */}
+      <Card className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-overline font-semibold uppercase text-subtle">{words.currentPlan}</p>
+            <h2 className={cn(type.h2, "mt-2")}>
               {currentCopy.name}
-              {entitlement.isSubscribed ? (yearly ? t.billing.yearly : t.billing.monthly) : ""}
+              {entitlement.isSubscribed ? (yearly ? words.yearly : words.monthly) : ""}
             </h2>
-            <p style={{ fontSize: 13.5, color: "var(--ink-2)" }}>
+            <p className="mt-1 text-body-sm text-muted">
               {entitlement.isSubscribed
                 ? [
                     yearly
-                      ? t.billing.aYear(formatMoney(locale, current.price.yearly))
-                      : t.billing.aMonth(formatMoney(locale, current.price.monthly)),
+                      ? words.aYear(formatMoney(locale, current.price.yearly))
+                      : words.aMonth(formatMoney(locale, current.price.monthly)),
                     entitlement.currentPeriodEnd
-                      ? (entitlement.cancelAtPeriodEnd ? t.billing.ends : t.billing.renews)(
+                      ? (entitlement.cancelAtPeriodEnd ? words.ends : words.renews)(
                           formatDate(locale, entitlement.currentPeriodEnd, "dayMonth"),
                         )
                       : null,
                   ]
                     .filter(Boolean)
                     .join(" · ")
-                : t.billing.freeLeft(
-                    entitlement.freeQuestsRemaining,
-                    entitlement.freeQuestAllowance,
-                  )}
+                : words.freeLeft(entitlement.freeQuestsRemaining, entitlement.freeQuestAllowance)}
             </p>
             {entitlement.inGrace ? (
-              <p style={{ marginTop: 10 }}>
-                <Tag tone="stamp" small>
-                  {t.billing.retrying}
-                </Tag>
-              </p>
+              <Badge tone="warning" icon={Clock} className="mt-3">
+                {words.retrying}
+              </Badge>
             ) : null}
           </div>
-
-          {entitlement.isSubscribed && isPaddleEnabled() ? (
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {entitlement.isSubscribed && paddle ? (
+            <div className="flex flex-wrap gap-2">
               {!yearly ? (
-                <SqCheckoutButton
+                <CheckoutButton
                   plan={entitlement.plan === "ultra" ? "ultra" : "explorer"}
                   interval="yearly"
-                  label={t.billing.switchToYearly}
-                  variant="ghost"
+                  label={words.switchToYearly}
+                  variant="secondary"
                 />
               ) : null}
-              <SqPortalButton label={t.billing.managePayment} />
+              <PortalButton label={words.managePayment} />
             </div>
           ) : null}
         </div>
 
-        <div
-          style={{
-            marginTop: 22,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
-            gap: 1,
-            background: "var(--line-2)",
-            borderRadius: 8,
-            overflow: "hidden",
-          }}
-        >
-          {[
-            {
-              k: t.billing.facts.stickers,
-              v: String(current.capabilities.length > 0 ? stickersFor(current.id) : 6),
-            },
-            {
-              k: t.billing.facts.quests,
-              v: entitlement.isSubscribed
-                ? t.billing.facts.unlimited
-                : t.billing.facts.questsLeft(entitlement.freeQuestsRemaining),
-            },
-            {
-              k: t.billing.facts.reach,
-              v: current.capabilities.includes("worldwide")
-                ? t.billing.facts.worldwide
-                : current.capabilities.includes("europe")
-                  ? t.billing.facts.europe
-                  : t.billing.facts.homeCountry,
-            },
-            {
-              k: t.billing.facts.post,
-              v: current.capabilities.includes("mail")
-                ? t.billing.facts.envelope
-                : t.billing.facts.screenOnly,
-            },
-          ].map((fact) => (
-            <div key={fact.k} style={{ background: "var(--paper-2)", padding: "13px 15px" }}>
-              <p className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
-                {fact.k}
-              </p>
-              <b style={{ display: "block", marginTop: 5, fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 19 }}>
-                {fact.v}
-              </b>
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-control bg-border sm:grid-cols-4">
+          {facts.map((fact) => (
+            <div key={fact.label} className="flex flex-col-reverse bg-surface-sunken px-3 py-3">
+              <dt className="text-caption text-muted">{fact.label}</dt>
+              <dd className="text-body font-semibold">{fact.value}</dd>
             </div>
           ))}
-        </div>
-      </section>
+        </dl>
+      </Card>
 
-      <section className="sq-card" style={{ overflow: "hidden" }}>
-        <div className="sq-section-head sq-rule-head">
-          <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            {t.billing.includesHeading}
-          </h2>
-          <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-            {held.length} of {ALL_CAPABILITIES.length}
-          </span>
-        </div>
-        <ul>
+      {/* --- what the plan includes ----------------------------------------- */}
+      <Pane title={words.includesHeading} note={t.common.ofTotal(held.length, ALL_CAPABILITIES.length)}>
+        <ul className="divide-y divide-border border-t border-border">
           {ALL_CAPABILITIES.map((capability) => {
             const yours = entitlement.can(capability);
             const from = lowestPlanWith(capability);
+            const copy = capabilityCopy(t, capability);
             return (
-              <li
-                key={capability}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto minmax(0,1fr) auto",
-                  gap: 14,
-                  alignItems: "center",
-                  padding: "13px 24px",
-                  borderTop: "1px solid var(--line-2)",
-                  opacity: yours ? 1 : 0.72,
-                }}
-              >
-                <span style={{ color: yours ? "var(--moss)" : "var(--ink-3)" }}>
-                  {yours ? <Glyph name="check" size={16} strokeWidth={2.4} /> : <LockGlyph size={14} />}
+              <li key={capability} className="flex items-start gap-3 px-5 py-3">
+                <span
+                  className={cn(
+                    "mt-0.5 grid size-6 shrink-0 place-items-center rounded-pill",
+                    yours ? "bg-success-soft text-success" : "bg-surface-sunken text-subtle",
+                  )}
+                >
+                  {yours ? <Check className="size-4" aria-hidden="true" /> : <Lock className="size-3.5" aria-hidden="true" />}
                 </span>
-                <span style={{ minWidth: 0 }}>
-                  <b style={{ display: "block", fontSize: 14, fontWeight: 600 }}>
-                    {capabilityCopy(t, capability).title}
-                  </b>
-                  <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink-2)" }}>
-                    {capabilityCopy(t, capability).detail}
-                  </span>
+                <span className="min-w-0 flex-1">
+                  <b className={cn("block text-body-sm font-semibold", !yours && "text-muted")}>{copy.title}</b>
+                  <span className="text-caption text-muted">{copy.detail}</span>
                 </span>
                 {yours ? (
-                  <span className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
+                  <Badge tone="success" size="sm">
                     {t.common.yours}
-                  </span>
+                  </Badge>
                 ) : from ? (
-                  <SqPaidChip plan={from} />
+                  <PaidChip plan={from} />
                 ) : null}
               </li>
             );
           })}
         </ul>
-      </section>
+      </Pane>
 
-      <section className="sq-card" style={{ overflow: "hidden" }}>
-        <div className="sq-section-head sq-rule-head">
-          <h2 className="sq-h2" style={{ fontSize: 19 }}>
-            {t.billing.plansHeading}
-          </h2>
-          <span className="sq-kicker-sm" style={{ fontSize: 10 }}>
-            {isPaddleEnabled() ? t.billing.cancelAnyTime : t.billing.notConfigured}
-          </span>
-        </div>
-        <ul>
+      {/* --- the plans ------------------------------------------------------ */}
+      <Pane title={words.plansHeading} note={paddle ? words.cancelAnyTime : words.notConfigured}>
+        <ul className="divide-y divide-border border-t border-border">
           {PLANS.map((plan) => {
             const isCurrent = plan.id === entitlement.plan;
             const buyable =
-              isPaddleEnabled() &&
-              !isCurrent &&
-              (plan.id === "explorer" || (plan.id === "ultra" && isUltraEnabled()));
+              paddle && !isCurrent && (plan.id === "explorer" || (plan.id === "ultra" && isUltraEnabled()));
             const copy = planCopy(t, plan.id);
-
             return (
               <li
                 key={plan.id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0,1fr) auto",
-                  gap: 18,
-                  alignItems: "center",
-                  padding: "16px 24px",
-                  borderTop: "1px solid var(--line-2)",
-                  background: isCurrent ? "var(--paper-2)" : "transparent",
-                }}
+                className={cn(
+                  "flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
+                  isCurrent && "bg-primary-soft/40",
+                )}
               >
-                <span style={{ minWidth: 0 }}>
-                  <b style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14.5, fontWeight: 600 }}>
-                    {copy.name}
-                    {copy.badge ? (
-                      <span className="sq-tag sq-tag-xs" style={{ fontSize: 9 }}>
-                        {copy.badge}
-                      </span>
-                    ) : null}
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <PlanBadge plan={plan.id}>{copy.name}</PlanBadge>
+                    {copy.badge ? <Badge tone="outline" size="sm">{copy.badge}</Badge> : null}
                     {isCurrent ? (
-                      <span className="sq-tag sq-tag-green sq-tag-xs" style={{ fontSize: 9 }}>
+                      <Badge tone="success" size="sm" icon={Check}>
                         {t.common.yours}
-                      </span>
+                      </Badge>
                     ) : null}
-                  </b>
-                  <span style={{ display: "block", marginTop: 5, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-2)" }}>
-                    {copy.description}
                   </span>
+                  <span className="mt-2 block text-caption text-muted">{copy.description}</span>
                 </span>
-
-                <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span className="sq-mono" style={{ fontSize: 12, whiteSpace: "nowrap", color: "var(--ink-2)" }}>
+                <span className="flex shrink-0 items-center gap-3">
+                  <span className="text-body-sm font-semibold tabular-nums">
                     {plan.price.monthly === 0
                       ? t.common.free
-                      : `${formatMoney(locale, plan.price.monthly)}${t.common.perMonth}`}
+                      : `${formatMoney(locale, plan.price.monthly)} ${t.landing.pricing.perMonth}`}
                   </span>
                   {buyable ? (
-                    <SqCheckoutButton
+                    <CheckoutButton
                       plan={plan.id === "ultra" ? "ultra" : "explorer"}
                       interval="monthly"
-                      label={plan.tier > entitlement.tier ? t.billing.upgrade : t.billing.switch}
-                      variant={plan.tier > entitlement.tier ? "primary" : "ghost"}
+                      label={plan.tier > entitlement.tier ? words.upgrade : words.switch}
+                      variant={plan.tier > entitlement.tier ? "primary" : "secondary"}
                     />
                   ) : null}
                 </span>
@@ -282,60 +223,50 @@ export default async function BillingSettingsPage() {
             );
           })}
         </ul>
-      </section>
+      </Pane>
 
-      {/* One place decides whether post actually goes out — `lib/envelope` — so
-          this card, the sticker sheet and the address form cannot each reach
-          their own conclusion about somebody's envelope. */}
-      <section className="sq-tinted sq-pad-sm">
-        <div className="sq-section-head" style={{ marginBottom: 14 }}>
-          <h3 className="sq-h2" style={{ fontSize: 19 }}>
-            {t.billing.envelopeHeading}
-          </h3>
-          <Link href="/settings/address" style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
-            {envelope.posts ? t.billing.editAddress : t.billing.addAddress}
+      {/* --- where the envelope goes ----------------------------------------
+          One place decides whether post actually goes out — `lib/envelope` —
+          so this card, the sticker sheet and the address form agree. */}
+      <Pane
+        title={words.envelopeHeading}
+        action={
+          <Link href="/settings/address" className="text-body-sm font-medium text-primary underline underline-offset-2">
+            {(envelope.posts ? words.editAddress : words.addAddress).replace(" →", "")}
           </Link>
-        </div>
-
-        <p style={{ marginBottom: 14 }}>
-          <Tag tone={envelope.posts ? "green" : envelope.reason === "no_address" ? "stamp" : "plain"} small>
-            {envelopeCopy(t, envelope.reason).title}
-          </Tag>
+        }
+        padded
+      >
+        <Alert
+          tone={envelope.posts ? "success" : envelope.reason === "no_address" ? "warning" : "info"}
+          title={envelopeWords.title}
+          className="w-full"
+        >
+          {envelopeWords.detail}
+        </Alert>
+        <p className="flex items-start gap-3 text-body-sm">
+          <Mail className="mt-0.5 size-5 shrink-0 text-subtle" aria-hidden="true" />
+          {envelope.posts ? (
+            <span>
+              {envelope.address.recipient}
+              <br />
+              {envelope.address.line1}
+              <br />
+              {envelope.address.line2 ? (
+                <>
+                  {envelope.address.line2}
+                  <br />
+                </>
+              ) : null}
+              {[envelope.address.postcode, envelope.address.city].filter(Boolean).join(" ")}
+              <br />
+              {envelope.address.country}
+            </span>
+          ) : (
+            <span className="text-muted">{address ? words.partialAddress : words.noAddress}</span>
+          )}
         </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
-          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            {envelope.posts ? (
-              <>
-                {envelope.address.recipient}
-                <br />
-                {envelope.address.line1}
-                <br />
-                {envelope.address.line2 ? (
-                  <>
-                    {envelope.address.line2}
-                    <br />
-                  </>
-                ) : null}
-                {[envelope.address.postcode, envelope.address.city].filter(Boolean).join(" ")}
-                <br />
-                {envelope.address.country}
-              </>
-            ) : (
-              <span style={{ color: "var(--ink-3)" }}>
-                {address ? t.billing.partialAddress : t.billing.noAddress}
-              </span>
-            )}
-          </p>
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
-            {envelopeCopy(t, envelope.reason).detail}
-          </p>
-        </div>
-      </section>
+      </Pane>
     </>
   );
-}
-
-function stickersFor(plan: string): number {
-  return plan === "ultra" ? 30 : plan === "explorer" ? 10 : 6;
 }

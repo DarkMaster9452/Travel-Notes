@@ -44,7 +44,7 @@ import { db } from "@/lib/db";
  * filed the most short walks, which is the opposite of what the product asks
  * people to do.
  */
-const GRADE_POINTS: Record<Difficulty, number> = {
+export const GRADE_POINTS: Record<Difficulty, number> = {
   EASY: 10,
   MODERATE: 20,
   HARD: 35,
@@ -111,7 +111,14 @@ export function scoreEntry(entry: ScoredEntry): number {
  * first time a constant moved. So the breakdown comes from here, and the total
  * it reports is the total the board will actually use.
  */
-export type ScoreLine = { what: string; points: number; muted?: boolean };
+export type ScoreLine = {
+  /** What the points are for, so a page can word the line in its own language. */
+  kind: "grade" | "distance" | "ascent" | "bonus" | "retreat";
+  /** The same thing in English, for the panel. */
+  what: string;
+  points: number;
+  muted?: boolean;
+};
 
 export function scoreBreakdown(entry: ScoredEntry): { lines: ScoreLine[]; total: number } {
   const grade = GRADE_POINTS[entry.difficulty];
@@ -120,13 +127,14 @@ export function scoreBreakdown(entry: ScoredEntry): { lines: ScoreLine[]; total:
   const bonus = entry.featuredPeriod ? FEATURED_BONUS[entry.featuredPeriod] : 0;
 
   const lines: ScoreLine[] = [
-    { what: `${title(entry.difficulty)} grade`, points: grade },
-    { what: `${entry.distance.toFixed(1)} km`, points: distance },
-    { what: `${Math.round(entry.elevationGain)} m of ascent`, points: ascent },
+    { kind: "grade", what: `${title(entry.difficulty)} grade`, points: grade },
+    { kind: "distance", what: `${entry.distance.toFixed(1)} km`, points: distance },
+    { kind: "ascent", what: `${Math.round(entry.elevationGain)} m of ascent`, points: ascent },
   ];
 
   if (bonus > 0) {
     lines.push({
+      kind: "bonus",
       what: entry.featuredPeriod === "MONTHLY" ? "The monthly bonus" : "The weekly bonus",
       points: bonus,
     });
@@ -134,7 +142,7 @@ export function scoreBreakdown(entry: ScoredEntry): { lines: ScoreLine[]; total:
 
   const total = scoreEntry(entry);
   if (entry.retreated) {
-    lines.push({ what: "Honest retreat · half", points: total - (grade + distance + ascent + bonus), muted: true });
+    lines.push({ kind: "retreat", what: "Honest retreat · half", points: total - (grade + distance + ascent + bonus), muted: true });
   }
 
   return { lines, total };

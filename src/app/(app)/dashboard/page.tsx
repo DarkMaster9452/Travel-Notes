@@ -1,34 +1,37 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Check, Clock, Lock, Undo2 } from "lucide-react";
 
-import { LockGlyph } from "@/components/sq/icons";
-import { SqSticker } from "@/components/sq/sticker";
-import { MonthlyHero, QuestCard, toTrailQuest } from "@/components/domain/trail";
-import type { QuestCardData } from "@/components/sq/quest-card";
-import { PageHeader, QuietLink, Stat, Tag } from "@/components/sq/ui";
-import { slotFor } from "@/lib/admin/schedule";
+import { BoardList, BoardRow } from "@/components/domain/board";
+import { Sticker } from "@/components/domain/sticker";
+import { MonthlyEmpty, MonthlyHero, QuestCard, QuestGrid, toTrailQuest } from "@/components/domain/trail";
+import { Badge, SubmissionBadge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { PageHeader, PageStack, Section, StatCard, StatRow } from "@/components/ui/page";
+import { getAchievements } from "@/lib/achievements";
+import { slotFor, slotState, type Slot } from "@/lib/admin/schedule";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
-import { getLeaderboard, scoreEntry } from "@/lib/leaderboard";
-import { getAchievements } from "@/lib/achievements";
 import { getEntitlement } from "@/lib/entitlements";
-import { formatDate } from "@/lib/i18n/format";
-import { getLocale, getT } from "@/lib/i18n/server";
 import type { Messages } from "@/lib/i18n";
+import { formatDate, formatNumber, plural } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
+import { getLeaderboard } from "@/lib/leaderboard";
+import { slotMonth, slotTitle } from "@/lib/quest/labels";
 import { getUserStats } from "@/lib/quest/service";
-import { getOpenSlots, getSealedSlots } from "@/lib/quest/upcoming";
 import { glanceFeaturedSlot } from "@/lib/quest/slot";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getReader()).t.nav.dashboard };
+}
 export const dynamic = "force-dynamic";
 
 /**
- * The dashboard.
+ * The dashboard (design/DESIGN-SYSTEM.md §12): the monthly quest first, then
+ * this week's quest beside what is coming, then where that has put you.
  *
- * Three questions in the order they matter: what is open and running, what is
- * coming and still shut, and where that has put you. Nothing here writes —
- * glancing at a summary card is not accepting a quest, so the featured slots
- * are read without being materialised (see `glanceFeaturedSlot`).
+ * Nothing here writes — glancing at a summary is not accepting a quest, so the
+ * featured slots are read without being materialised (`glanceFeaturedSlot`).
  *
  * The headline is written from what is actually outstanding rather than from
  * the time of day. "Two quests open, one clock running" is a fact about this
@@ -38,30 +41,16 @@ export default async function DashboardPage() {
   const user = await requireClient();
   const now = new Date();
 
-  const [monthly, weekly, openSlots, sealed, board, stats, entitlement, revocations, t, locale] =
-    await Promise.all([
-      glanceFeaturedSlot(user.id, "month", now),
-      glanceFeaturedSlot(user.id, "week", now),
-      getOpenSlots(now),
-      getSealedSlots(3, now),
-      getLeaderboard("MONTHLY", undefined, now),
-      getUserStats(user.id),
-      getEntitlement(user.id),
-      db.achievementRevocation.findMany({
-        where: { userId: user.id },
-        select: { achievementId: true },
-      }),
-      getT(user.id),
-      getLocale(user.id),
-    ]);
-
-  // The extra figures are a setting, not a variant: the switch on Settings →
-  // General is what decides whether the forest slab appears at all.
-  const display = await db.displaySettings.findUnique({
-    where: { userId: user.id },
-    select: { expertStats: true },
-  });
-  const expertStats = (display?.expertStats ?? false) && entitlement.isSubscribed;
+  const [monthly, weekly, board, stats, entitlement, revocations, reader] = await Promise.all([
+    glanceFeaturedSlot(user.id, "month", now),
+    glanceFeaturedSlot(user.id, "week", now),
+    getLeaderboard("MONTHLY", undefined, now),
+    getUserStats(user.id),
+    getEntitlement(user.id),
+    db.achievementRevocation.findMany({ where: { userId: user.id }, select: { achievementId: true } }),
+    getReader(user.id),
+  ]);
+  const { t, locale, units } = reader;
 
   const achievements = getAchievements(
     stats,
@@ -69,333 +58,204 @@ export default async function DashboardPage() {
     revocations.map((row) => row.achievementId),
     t,
   );
+  const earned = achievements.filter((entry) => entry.earned);
+  const reachable = achievements.filter((entry) => !entry.planLocked);
+
+  const monthSlot = slotFor("MONTHLY", now);
+  const monthlyOpen = monthly.featured && !monthly.closed ? monthly.featured : null;
+  const weeklyOpen = weekly.featured && !weekly.closed ? weekly.featured : null;
+
+  const open = [monthlyOpen ? monthly : null, weeklyOpen ? weekly : null].filter((glance) => glance !== null);
+  const running = open.filter((glance) => glance.status === "NONE" || glance.status === "REJECTED").length;
 
   const myRow = board.rows.find((row) => row.userId === user.id) ?? null;
-
-  const cards: QuestCardData[] = [];
-  for (const [slot, glance] of [
-    ["MONTHLY", monthly] as const,
-    ["WEEKLY", weekly] as const,
-  ]) {
-    if (!glance.featured || glance.closed) continue;
-    const summary = glance.featured.summary;
-    const open = openSlots.find((entry) => entry.period === slot);
-    cards.push({
-      id: summary.id,
-      kicker: `${slot === "MONTHLY" ? t.dashboard.theMonthly : t.dashboard.theWeekly} · ${open?.label ?? ""}`,
-      grade: summary.difficulty,
-      title: summary.title,
-      where: `${summary.location} · ${summary.region}`,
-      distance: summary.distance,
-      elevationGain: summary.elevationGain,
-      duration: summary.duration,
-      latitude: summary.latitude,
-      longitude: summary.longitude,
-      parkingLat: summary.parkingLat,
-      parkingLng: summary.parkingLng,
-      parkingName: summary.parkingName,
-      openAt: slotFor(slot, now).openAt.toISOString(),
-      closeAt: glance.closesAt.toISOString(),
-      status: glance.status,
-      points: scoreEntry({
-        difficulty: summary.difficulty,
-        distance: summary.distance,
-        elevationGain: summary.elevationGain,
-        retreated: false,
-        featuredPeriod: slot,
-      }),
-      filedAt: glance.filedAt?.toISOString() ?? null,
-      expert: expertStats
-        ? [
-            {
-              k: "m per km",
-              v: String(Math.round(summary.elevationGain / Math.max(1, summary.distance))),
-            },
-            {
-              k: "km per hour asked",
-              v: (summary.distance / Math.max(1, summary.duration / 60)).toFixed(1),
-            },
-            { k: "Travel", v: summary.travelTime ? `${summary.travelTime}m` : "—" },
-          ]
-        : null,
-      cta:
-        glance.status === "NONE" || glance.status === "REJECTED"
-          ? { label: t.questCard.fileProof, href: `/quests/${summary.id}/proof` }
-          : slot === "MONTHLY"
-            ? { label: t.questCard.openMonthly, href: "/monthly" }
-            : { label: t.questCard.seeQuest, href: `/quests/${summary.id}` },
-    });
-  }
-
-  const running = cards.filter((card) => card.status === "NONE" || card.status === "REJECTED").length;
-
   const nearby = neighbours(board.rows, user.id);
-  const earned = achievements.filter((entry) => entry.earned);
+  const ahead = slotsAhead(now);
 
   return (
-    <>
-      <PageHeader
-        kicker={`${openSlots.find((slot) => slot.period === "WEEKLY")?.label ?? ""} · ${formatDate(
-          locale,
-          now,
-          "full",
-        )}`}
-        title={headline(cards.length, running, t)}
-        right={
-          <>
-            <Stat
-              count={myRow?.score ?? 0}
-              countId="dash-points"
-              value={myRow?.score ?? 0}
-              label={t.dashboard.pointsLabel(board.label.split(" ")[0])}
-            />
-            <Stat
-              value={myRow ? `#${myRow.rank}` : "—"}
-              count={myRow ? myRow.rank : undefined}
-              countId="dash-rank"
-              prefix="#"
-              label={t.dashboard.rankLabel(board.rows.length)}
-            />
-          </>
-        }
-      />
+    <PageStack>
+      <div>
+        <PageHeader
+          overline={`${capitalise(formatDate(locale, now, "full"))} · ${slotTitle(slotFor("WEEKLY", now), locale, t)}`}
+          title={headline(open.length, running, t)}
+        />
 
-      {/* The monthly quest leads the page (design/DESIGN-SYSTEM.md §0, §6.4). */}
-      <div style={{ marginBottom: 24 }}>
-        {monthly.featured && !monthly.closed ? (
+        {/* The monthly quest leads the page (§0, §6.4). */}
+        {monthlyOpen ? (
           <MonthlyHero
-            quest={toTrailQuest(monthly.featured.summary, t)}
+            quest={toTrailQuest(monthlyOpen.summary, t)}
             t={t}
             locale={locale}
-            monthLabel={openSlots.find((slot) => slot.period === "MONTHLY")?.label ?? ""}
+            units={units}
+            monthLabel={slotTitle(monthSlot, locale, t)}
             closesAt={monthly.closesAt}
-            lede={monthly.featured.summary.subtitle}
+            lede={monthlyOpen.summary.subtitle}
             primary={{
               label: monthly.status === "REJECTED" ? t.questCard.fileAgain : t.trail.fileProof,
-              href: `/quests/${monthly.featured.summary.id}/proof`,
+              href: `/quests/${monthlyOpen.summary.id}/proof`,
             }}
             secondary={{ label: t.trail.routeDetail, href: "/monthly" }}
             status={
-              monthly.status === "PENDING" || monthly.status === "APPROVED" ? (
-                <span className="trail-pill" data-tone="photo" style={{ height: 40, padding: "0 16px" }}>
-                  {monthly.status === "PENDING" ? t.questCard.waiting : t.questCard.readByHuman}
-                </span>
+              monthly.status === "PENDING" ? (
+                <Badge tone="onFeature" size="lg" icon={Clock}>
+                  {t.app.dashboard.proofWaiting}
+                </Badge>
+              ) : monthly.status === "APPROVED" ? (
+                <Badge tone="onFeature" size="lg" icon={Check}>
+                  {t.app.dashboard.proofApproved}
+                </Badge>
               ) : undefined
             }
           />
         ) : (
-          <section className="trail-monthly" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
-            <div className="trail-monthly-body">
-              <span className="trail-pill" data-tone="monthly" style={{ alignSelf: "flex-start" }}>
-                {t.trail.monthly}
-              </span>
-              <h2 className="trail-monthly-title">{t.trail.noMonthly}</h2>
-              <p className="trail-monthly-lede">{t.trail.noMonthlyBody}</p>
-              <div className="trail-monthly-actions">
-                <Link className="trail-btn" data-variant="on-feature" href="/quests">
-                  {t.dashboard.openDatabase}
-                </Link>
-              </div>
-            </div>
-          </section>
+          <MonthlyEmpty t={t} action={{ label: t.dashboard.openDatabase, href: "/quests" }} />
         )}
       </div>
 
-      <section className="sq-grid sq-grid-fit-md" style={{ alignItems: "start" }}>
-        {weekly.featured && !weekly.closed ? (
-          <div className="trail-qgrid" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
-            <QuestCard
-              quest={toTrailQuest(weekly.featured.summary, t)}
-              t={t}
-              locale={locale}
-              period="WEEKLY"
-              href={`/quests/${weekly.featured.summary.id}`}
-              foot={
-                <>
-                  <span>
-                    {weekly.status === "PENDING"
-                      ? t.questCard.waiting
-                      : weekly.status === "APPROVED"
-                        ? t.questCard.readByHuman
-                        : weekly.status === "REJECTED"
-                          ? t.questCard.sentBack
-                          : t.trail.notStarted}
-                  </span>
-                  <span className="trail-btn" data-variant="secondary" data-size="sm">
-                    {t.trail.detail}
-                  </span>
-                </>
-              }
-            />
-          </div>
-        ) : null}
-
-        <section className="sq-card-flat">
-        <div className="sq-section-head sq-rule-head">
-          <h2 className="sq-h2">{t.dashboard.coming}</h2>
-          <span className="sq-meta">{t.dashboard.comingNote}</span>
-        </div>
-
-        <div
-          className="sq-grid sq-grid-fit-sm"
-          style={{ gap: 10, padding: "16px 22px" }}
-        >
-          {openSlots.map((slot) => (
-            <div
-              key={`${slot.period}-${slot.key}`}
-              style={{
-                borderRadius: 8,
-                padding: "14px 16px",
-                background: slot.period === "MONTHLY" ? "var(--sq-accent-soft)" : "var(--color-sky-soft)",
-                color: slot.period === "MONTHLY" ? "var(--sq-accent-soft-fg)" : "var(--color-sky-fg)",
-              }}
-            >
-              <p className="sq-kicker-sm" style={{ marginBottom: 8 }}>
-                {slot.period === "MONTHLY" ? t.dashboard.theMonthly : t.dashboard.theWeekly} ·{" "}
-                {slot.label}
-              </p>
-              <b style={{ display: "block", fontSize: 15, lineHeight: 1.3, fontWeight: 700 }}>
-                {slot.title ?? t.dashboard.generatedForYou}
-              </b>
-              <p style={{ marginTop: 8, fontSize: 12, color: "var(--ink-2)" }}>
-                {slot.dates} · {slot.state}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <ul>
-          {sealed.map((slot) => (
-            <li
-              key={`${slot.period}-${slot.key}`}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "auto minmax(0,1fr) auto",
-                gap: 14,
-                alignItems: "center",
-                padding: "12px 22px",
-                borderTop: "1px solid var(--line-2)",
-              }}
-            >
-              <span
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 6,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "var(--paper-2)",
-                  color: "var(--ink-3)",
-                }}
-              >
-                <LockGlyph />
-              </span>
-              <span style={{ minWidth: 0, fontSize: 13.5, color: "var(--ink-2)" }}>{slot.text}</span>
-              <span
-                className="sq-mono"
-                style={{ fontSize: 10.5, whiteSpace: "nowrap", color: "var(--ink-3)" }}
-              >
-                {slot.when}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      </section>
-
-      <section
-        className="sq-grid sq-grid-fit-md"
-        style={{ marginTop: 18, alignItems: "start" }}
-      >
-        <article className="sq-tinted sq-pad-sm">
-          <div className="sq-section-head" style={{ marginBottom: 14 }}>
-            <h2 className="sq-h2" style={{ fontSize: 20 }}>
-              {t.dashboard.board}
-            </h2>
-            <QuietLink href="/leaderboard">{t.dashboard.fullBoard}</QuietLink>
-          </div>
-          <ul className="sq-stagger">
-            {nearby.map((row, index) => (
-              <li
-                key={row.userId}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "10px 12px",
-                  borderRadius: 6,
-                  background: row.userId === user.id ? "var(--card)" : "transparent",
-                  borderLeft: `2px solid ${row.userId === user.id ? "var(--signal)" : "transparent"}`,
-                  ["--i" as string]: index,
-                }}
-              >
-                <span className="sq-mono" style={{ fontSize: 13, width: 24, color: "var(--ink-3)" }}>
-                  {row.rank}
-                </span>
-                <span
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    fontSize: 14,
-                    fontWeight: row.userId === user.id ? 600 : 400,
-                  }}
-                >
-                  {row.username}
-                </span>
-                <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
-                  {row.quests} {row.quests === 1 ? "quest" : "quests"}
-                </span>
-                <b style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17 }}>
-                  {row.score}
-                </b>
-              </li>
-            ))}
-            {nearby.length === 0 ? (
-              <li style={{ fontSize: 13, color: "var(--ink-3)", padding: "10px 12px" }}>
-                {t.dashboard.boardEmpty}
-              </li>
-            ) : null}
-          </ul>
-        </article>
-
-        <article className="sq-card sq-pad-sm">
-          <div className="sq-section-head" style={{ marginBottom: 6 }}>
-            <h2 className="sq-h2" style={{ fontSize: 20 }}>
-              {t.dashboard.sheet}
-            </h2>
-            <span className="sq-mono" style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
-              {t.dashboard.sheetCount(earned.length, achievements.length)}
-            </span>
-          </div>
-          <p style={{ fontSize: 12.5, color: "var(--ink-2)", marginBottom: 18 }}>
-            {t.dashboard.sheetNote}
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {achievements.slice(0, 10).map((entry, index) => (
-              <SqSticker
-                key={entry.id}
-                sticker={entry.sticker}
-                earned={entry.earned}
-                size={52}
-                index={index}
-                title={entry.earned ? entry.label : `${entry.label} — ${entry.progressLabel}`}
+      {/* Then the weekly, beside what is still sealed. */}
+      <div className="grid gap-4 md:grid-cols-2 md:items-start lg:gap-6">
+        <Section title={t.app.dashboard.weekly}>
+          {weeklyOpen ? (
+            <QuestGrid>
+              <QuestCard
+                quest={toTrailQuest(weeklyOpen.summary, t)}
+                t={t}
+                locale={locale}
+                units={units}
+                period="WEEKLY"
+                href={`/quests/${weeklyOpen.summary.id}`}
+                foot={<ProofStatus status={weekly.status} t={t} />}
               />
-            ))}
-          </div>
-          <Link href="/stickers" className="sq-btn sq-btn-ghost sq-btn-sm" style={{ marginTop: 18 }}>
-            {t.dashboard.wholeSheet}
-          </Link>
-        </article>
-      </section>
+            </QuestGrid>
+          ) : (
+            <Card>
+              <p className="text-body-sm text-muted">{t.app.dashboard.noWeekly}</p>
+            </Card>
+          )}
+        </Section>
 
-      {cards.some((card) => card.status === "PENDING") ? (
-        <p style={{ marginTop: 18 }}>
-          <Tag tone="stamp">{t.dashboard.waitingTag}</Tag>
-        </p>
-      ) : null}
-    </>
+        <Section title={t.dashboard.coming} note={t.dashboard.comingNote}>
+          <Card pad="none">
+            <ul className="divide-y divide-border">
+              {ahead.map((slot) => (
+                <li key={`${slot.period}-${slot.key}`} className="flex items-center gap-3 p-4">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-pill bg-surface-sunken text-subtle">
+                    <Lock className="size-4" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1 text-body-sm text-muted">
+                    {t.app.dashboard.opens(
+                      slotTitle(slot, locale, t),
+                      formatDate(locale, slot.openAt, "dayMonth"),
+                      formatDate(locale, slot.openAt, "time"),
+                    )}
+                  </span>
+                  <Badge tone={slot.period === "MONTHLY" ? "monthlySoft" : "weekly"}>
+                    {slot.period === "MONTHLY" ? t.dashboard.theMonthly : t.dashboard.theWeekly}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </Section>
+      </div>
+
+      {/* Where that has put you. */}
+      <StatRow>
+        <StatCard
+          count={myRow?.score ?? 0}
+          countId="dash-points"
+          label={t.dashboard.pointsLabel(slotMonth(monthSlot, locale, { inline: true }))}
+        />
+        <StatCard
+          value={myRow ? undefined : "—"}
+          count={myRow ? myRow.rank : undefined}
+          countId="dash-rank"
+          prefix="#"
+          label={t.dashboard.rankLabel(board.rows.length)}
+        />
+        <StatCard count={stats.completedCount} countId="dash-quests" label={t.rail.questsLogged} />
+        <StatCard
+          value={t.common.ofTotal(earned.length, reachable.length)}
+          label={t.app.dashboard.stickers}
+        />
+      </StatRow>
+
+      <div className="grid gap-4 md:grid-cols-2 md:items-start lg:gap-6">
+        <Card>
+          <CardHeader
+            title={t.dashboard.board}
+            action={
+              <ButtonLink href="/leaderboard" variant="link">
+                {t.dashboard.fullBoard}
+              </ButtonLink>
+            }
+          />
+          {nearby.length === 0 ? (
+            <p className="text-body-sm text-muted">{t.dashboard.boardEmpty}</p>
+          ) : (
+            <BoardList>
+              {nearby.map((row) => (
+                <BoardRow
+                  key={row.userId}
+                  rank={row.rank}
+                  name={row.username}
+                  score={formatNumber(locale, row.score)}
+                  meta={plural(locale, row.quests, t.common.quests)}
+                  me={row.userId === user.id}
+                  meLabel={t.app.dashboard.you}
+                />
+              ))}
+            </BoardList>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader
+            title={t.dashboard.sheet}
+            note={t.dashboard.sheetCount(earned.length, achievements.length)}
+          />
+          <p className="text-body-sm text-muted">{t.dashboard.sheetNote}</p>
+          <ul className="mt-4 flex flex-wrap gap-3">
+            {achievements.slice(0, 8).map((entry) => (
+              <li key={entry.id}>
+                <Sticker
+                  sticker={entry.sticker}
+                  size="sm"
+                  state={entry.earned ? "earned" : entry.planLocked ? "locked" : "open"}
+                  title={entry.earned ? entry.label : `${entry.label} · ${entry.progressLabel}`}
+                />
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4">
+            <ButtonLink href="/stickers" variant="secondary" size="sm">
+              {t.dashboard.wholeSheet}
+            </ButtonLink>
+          </div>
+        </Card>
+      </div>
+    </PageStack>
   );
+}
+
+/** Where a proof stands, as a badge: icon, word and colour (§7.6). */
+function ProofStatus({
+  status,
+  t,
+}: {
+  status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+  t: Messages;
+}) {
+  if (status === "PENDING") return <SubmissionBadge status="PENDING">{t.questCard.waiting}</SubmissionBadge>;
+  if (status === "APPROVED") return <SubmissionBadge status="APPROVED">{t.questCard.readByHuman}</SubmissionBadge>;
+  if (status === "REJECTED") {
+    return (
+      <Badge tone="danger" icon={Undo2}>
+        {t.questCard.sentBack}
+      </Badge>
+    );
+  }
+  return <span>{t.trail.notStarted}</span>;
 }
 
 /** The one sentence the page opens with, decided by what is actually running. */
@@ -414,3 +274,30 @@ function neighbours<T extends { userId: string }>(rows: T[], userId: string): T[
   if (index === -1) return rows.slice(0, 5);
   return rows.slice(Math.max(0, index - 2), Math.max(0, index - 2) + 5);
 }
+
+/**
+ * The next three slots, weeks and the coming month interleaved by opening
+ * time. They carry a label and an opening time and nothing else: a future
+ * slot deliberately does not say what is in it.
+ */
+function slotsAhead(now: Date, count = 3): Slot[] {
+  const ahead: Slot[] = [];
+  for (let offset = 1; offset <= count; offset += 1) {
+    const cursor = new Date(now);
+    cursor.setDate(cursor.getDate() + offset * 7);
+    ahead.push(slotFor("WEEKLY", cursor));
+  }
+  const nextMonth = new Date(now);
+  nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
+  ahead.push(slotFor("MONTHLY", nextMonth));
+
+  return ahead
+    .filter((slot) => slotState(slot, now) === "future")
+    .sort((a, b) => a.openAt.getTime() - b.openAt.getTime())
+    .slice(0, count);
+}
+
+function capitalise(value: string): string {
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1);
+}
+

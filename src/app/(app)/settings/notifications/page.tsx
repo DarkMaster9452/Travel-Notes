@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 
 import { saveNotificationsAction } from "@/app/(app)/settings/actions";
-import { SqSaveForm, SqToggleRow } from "@/components/sq/forms";
+import { SaveForm, ToggleRow } from "@/components/app/forms";
+import { Pane } from "@/components/app/pane";
 import { requireClient } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Notifications" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).settings.items.notifications };
+}
 export const dynamic = "force-dynamic";
 
 /**
@@ -22,58 +25,38 @@ export default async function NotificationSettingsPage() {
     db.notificationSettings.findUnique({ where: { userId: user.id } }),
     getT(user.id),
   ]);
+  const words = t.settingsPages.notifications;
 
   return (
-    <section className="sq-card" style={{ overflow: "hidden" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 14,
-          padding: "15px 24px",
-          borderBottom: "1px solid var(--line-2)",
-        }}
-      >
-        <h2 className="sq-h2" style={{ fontSize: 19 }}>
-          {t.settingsPages.notifications.heading}
-        </h2>
-        <span className="sq-kicker-sm" style={{ fontSize: 10, letterSpacing: "0.08em" }}>
-          {user.email}
-        </span>
-      </div>
-
-      <SqSaveForm
-        action={saveNotificationsAction}
-        footer={t.settingsPages.notifications.footer}
-      >
+    <Pane title={words.heading} note={user.email}>
+      <SaveForm action={saveNotificationsAction} footer={words.footer} flush>
         <ul>
-          <SqToggleRow
+          <ToggleRow
             name="questDrop"
-            label={t.settingsPages.notifications.questDrop}
-            description={t.settingsPages.notifications.questDropDetail}
+            label={words.questDrop}
+            description={words.questDropDetail}
             defaultOn={settings?.questDrop ?? true}
           />
-          <SqToggleRow
+          <ToggleRow
             name="verdict"
-            label={t.settingsPages.notifications.verdict}
-            description={t.settingsPages.notifications.verdictDetail}
+            label={words.verdict}
+            description={words.verdictDetail}
             defaultOn={settings?.verdict ?? true}
           />
-          <SqToggleRow
+          <ToggleRow
             name="boardSealed"
-            label={t.settingsPages.notifications.boardSealed}
-            description={t.settingsPages.notifications.boardSealedDetail}
+            label={words.boardSealed}
+            description={words.boardSealedDetail}
             defaultOn={settings?.boardSealed ?? true}
           />
-          <SqToggleRow
+          <ToggleRow
             name="productNews"
-            label={t.settingsPages.notifications.productNews}
-            description={t.settingsPages.notifications.productNewsDetail}
+            label={words.productNews}
+            description={words.productNewsDetail}
             defaultOn={settings?.productNews ?? false}
           />
         </ul>
-      </SqSaveForm>
-    </section>
+      </SaveForm>
+    </Pane>
   );
 }

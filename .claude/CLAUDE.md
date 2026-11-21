@@ -24,5 +24,10 @@ Pravidlá v skratke:
 - Pred ukončením UI úlohy prejdi checklist v sekcii 11 dizajnového systému.
 - Ak pravidlo chýba, najprv ho doplň do `DESIGN-SYSTEM.md`, potom kóduj.
 
-`design/index.html`, `src/styles/field-guide.css` a `src/styles/summit.css`
-sú legacy vzhľad — nepreberaj z nich nič.
+- Pred dokončením spusti `npm run lint:design` (aj `npm run typecheck` a `npm run lint`).
+- Komponenty hľadaj v `src/components/ui` (primitívy) a `src/components/domain` (quest,
+  značka, obtiažnosť, nálepka…); texty v `src/lib/i18n` (SK / EN / DE).
+
+Admin panel (`src/app/admin`, `src/components/sq`, `src/styles/summit.css`) a
+`design/index.html` sú posledný legacy vzhľad — nepreberaj z nich nič. Keď sa bude
+admin prerábať, postav ho na tých istých `ui/` a `domain/` komponentoch.

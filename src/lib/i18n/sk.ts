@@ -1,4 +1,6 @@
 import type { Messages } from "@/lib/i18n";
+import { appSk } from "@/lib/i18n/app";
+import { marketingSk } from "@/lib/i18n/marketing/sk";
 
 /**
  * Slovenčina.
@@ -17,6 +19,9 @@ import type { Messages } from "@/lib/i18n";
  *     where Slovak wants it.
  */
 export const sk: Messages = {
+  ...marketingSk,
+  ...appSk,
+
   common: {
     published: "Zverejnené",
     displayNamePlaceholder: "Nechaj prázdne a použije sa meno z účtu",
@@ -44,6 +49,7 @@ export const sk: Messages = {
     somethingWrong: "Nepodarilo sa. Skús to znova.",
     ofTotal: (held, total) => `${held} z ${total}`,
     quests: { one: "# quest", few: "# questy", other: "# questov" },
+    pointCount: { one: "# bod", few: "# body", other: "# bodov" },
     days: { one: "# deň", few: "# dni", other: "# dní" },
     people: { one: "# človek", few: "# ľudia", other: "# ľudí" },
     things: { one: "# vec", few: "# veci", other: "# vecí" },
@@ -51,12 +57,12 @@ export const sk: Messages = {
 
   nav: {
     dashboard: "Prehľad",
-    monthly: "Mesačný",
-    quests: "Databáza questov",
+    monthly: "Mesačný quest",
+    quests: "Questy",
     leaderboard: "Rebríček",
     stickers: "Nálepky",
-    submissions: "Odovzdané",
-    people: "Ľudia a skupiny",
+    submissions: "Dôkazy",
+    people: "Ľudia",
     settings: "Nastavenia",
     signOut: "Odhlásiť sa",
     menu: "Menu",
@@ -338,10 +344,10 @@ export const sk: Messages = {
       oneRunning: "Jeden quest otvorený a okno sa zatvára.",
       oneFiled: "Jeden quest otvorený, už odovzdaný.",
     },
-    pointsLabel: (period) => `Body, ${period}`,
+    pointsLabel: (period) => `Body za ${period}`,
     rankLabel: (total) => `Z ${total} v rebríčku`,
     coming: "Čo prichádza",
-    comingNote: "Týždenné v pondelok o 06:00 · mesačný 1.",
+    comingNote: "Týždenné v pondelok o 06:00 · mesačné vždy 1. v mesiaci",
     theMonthly: "Mesačný",
     theWeekly: "Týždenný",
     generatedForYou: "Vygeneruje sa ti",
@@ -389,8 +395,8 @@ export const sk: Messages = {
     standing: "Kde stojíš",
     fullBoard: "Celý rebríček",
     open: "Otvoriť →",
-    behind: (points, name) => `${points} bodov za tebou je ${name}.`,
-    youAreOn: (points, quests) => `Máš ${points} z ${quests}.`,
+    behind: (points, name) => `${name} je pred tebou o ${points}.`,
+    youAreOn: (points, quests) => `Máš ${points} za ${quests}.`,
     topOfBoard: (points) => `Na čele rebríčka s ${points} bodmi. Zostáva mesiac, aby si to udržal.`,
     notOnBoard:
       "Tento mesiac nie si v rebríčku. Dostane ťa doň schválený dôkaz — stačí jeden zapísaný quest.",
@@ -625,6 +631,8 @@ export const sk: Messages = {
       YELLOW: "Žltá",
       EDUCATIONAL: "Náučný chodník",
     },
+    travel: "Cesta od teba",
+    weekLabel: (week: string) => `Týždeň ${week}`,
     tabQuests: "Questy",
     noMarks: "Značka zatiaľ nedoplnená",
     difficulty: { EASY: "Pohodová", MODERATE: "Stredná", HARD: "Náročná", EXPERT: "Expert" },

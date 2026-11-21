@@ -1,35 +1,45 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { ArrowLeft, Footprints } from "lucide-react";
 import { notFound } from "next/navigation";
 
-import { SqMap, type MapPoint } from "@/components/sq/map";
-import { Tag } from "@/components/sq/ui";
+import { BriefCard, ScoreCard } from "@/components/domain/quest-detail";
+import { QuestMap, type MapPoint } from "@/components/domain/quest-map";
+import {
+  DifficultyMeter,
+  QuestFigures,
+  TrailMarks,
+  TrailPhoto,
+  tagLabel,
+  toTrailQuest,
+} from "@/components/domain/trail";
+import { Badge, SubmissionBadge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Alert } from "@/components/ui/feedback";
+import { DetailGrid, PageHeader, PageStack } from "@/components/ui/page";
 import { requireClient } from "@/lib/auth/guards";
-import { formatNumber } from "@/lib/i18n/format";
-import { getLocale, getT } from "@/lib/i18n/server";
 import { db } from "@/lib/db";
-import { scoreBreakdown } from "@/lib/leaderboard";
+import { countryName, plural } from "@/lib/i18n/format";
+import { getReader } from "@/lib/i18n/server";
+import { formatMinutes } from "@/lib/i18n/units";
+import { slotTitle } from "@/lib/quest/labels";
 
 export const dynamic = "force-dynamic";
 
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const quest = await db.quest.findUnique({ where: { id }, select: { title: true } });
   return { title: quest?.title ?? "Quest" };
 }
 
 /**
- * One quest.
+ * One quest (design/DESIGN-SYSTEM.md §12, "detail 8 / 4").
  *
- * The page the database rows and the dashboard cards both lead to: the brief,
- * the ground, what it is worth and — if it has ever been booked — which window
- * it belonged to. Everything here is readable whether or not this account was
- * ever issued it, because filing proof does not require having been issued it.
+ * The page the quest cards lead to: the photograph, the marks and the three
+ * figures, the brief and the map on the left; what it is worth and the one
+ * action on the right. Everything here is readable whether or not this
+ * account was ever issued the quest, because filing proof does not require
+ * having been issued it.
  */
 export default async function QuestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireClient();
@@ -44,26 +54,20 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
 
   if (!quest || (!quest.published && !quest.isShowcase)) notFound();
 
-  const [submission, walked, t, locale] = await Promise.all([
+  const [submission, walked, reader] = await Promise.all([
     db.submission.findUnique({
       where: { userId_questId: { userId: user.id, questId: quest.id } },
       select: { status: true, reviewNote: true, createdAt: true },
     }),
     db.submission.count({ where: { questId: quest.id, status: "APPROVED" } }),
-    getT(user.id),
-    getLocale(user.id),
+    getReader(user.id),
   ]);
+  const { t, locale, units } = reader;
 
   const booking = quest.schedules[0] ?? null;
-  const live = booking ? booking.openAt <= new Date() && booking.closeAt > new Date() : false;
-
-  const { lines, total } = scoreBreakdown({
-    difficulty: quest.difficulty,
-    distance: quest.distance,
-    elevationGain: quest.elevationGain,
-    retreated: false,
-    featuredPeriod: live ? booking!.period : null,
-  });
+  const now = new Date();
+  const live = booking ? booking.openAt <= now && booking.closeAt > now : false;
+  const trailQuest = toTrailQuest(quest, t);
 
   const points: MapPoint[] = [];
   if (quest.parkingLat != null && quest.parkingLng != null) {
@@ -76,183 +80,129 @@ export default async function QuestDetailPage({ params }: { params: Promise<{ id
   }
   points.push({ lat: quest.latitude, lng: quest.longitude, label: quest.title, kind: "summit" });
 
-  const hard = quest.difficulty === "HARD" || quest.difficulty === "EXPERT";
+  const bookingLabel = booking
+    ? (booking.period === "MONTHLY" ? t.app.quest.wasMonthly : t.app.quest.wasWeekly)(
+        slotTitle({ period: booking.period, key: booking.slotKey, openAt: booking.openAt }, locale, t),
+      )
+    : null;
+
+  const statusWords = { PENDING: t.questPage.waiting, APPROVED: t.app.quest.approved, REJECTED: t.questPage.sentBack };
 
   return (
-    <>
-      <header className="sq-head">
-        <div className="sq-head-row">
-          <div style={{ minWidth: 0 }}>
-            <span className="sq-kicker" style={{ display: "block", marginBottom: 10 }}>
-              {quest.number ? `Quest № ${String(quest.number).padStart(4, "0")} · ` : ""}
-              {quest.category ?? t.questPage.fromCatalogue}
-            </span>
-            <h1 className="sq-h1" style={{ fontSize: 40, maxWidth: "22ch", marginBottom: 10 }}>
-              {quest.title}
-            </h1>
-            <p style={{ fontSize: 15, color: "var(--ink-2)" }}>
-              {quest.location} · {quest.region} · {quest.country}
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <Tag tone={hard ? "stamp" : "green"}>{quest.difficulty}</Tag>
-            {booking ? (
-              <Tag small>
-                {booking.period === "MONTHLY" ? "Monthly" : "Weekly"} · {booking.slotKey}
-              </Tag>
-            ) : null}
-            {submission ? (
-              <Tag tone={submission.status === "APPROVED" ? "green" : submission.status === "REJECTED" ? "stamp" : "plain"} small>
-                {submission.status === "APPROVED"
-                  ? "Approved"
-                  : submission.status === "REJECTED"
-                    ? t.questPage.sentBack
-                    : t.questPage.waiting}
-              </Tag>
-            ) : null}
-          </div>
+    <PageStack>
+      <div className="flex flex-col gap-4">
+        <div>
+          <ButtonLink href="/quests" variant="link">
+            <ArrowLeft aria-hidden="true" />
+            {t.app.quest.backToList}
+          </ButtonLink>
         </div>
-      </header>
+        <PageHeader
+          className="mb-0"
+          overline={[
+            quest.number ? t.app.quest.number(String(quest.number).padStart(4, "0")) : null,
+            quest.category ?? t.questPage.fromCatalogue,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          title={quest.title}
+          lede={[quest.location, quest.region, countryName(locale, quest.country)].join(" · ")}
+          actions={
+            bookingLabel ? (
+              <Badge tone={booking?.period === "MONTHLY" ? (live ? "monthly" : "monthlySoft") : "weekly"}>
+                {bookingLabel}
+              </Badge>
+            ) : undefined
+          }
+        />
+        <TrailPhoto src={quest.coverImage} alt="" eager className="aspect-video rounded-card md:aspect-21/9" />
+      </div>
 
-      <section className="sq-grid sq-grid-fit" style={{ alignItems: "start" }}>
-        <article className="sq-card" style={{ overflow: "hidden" }}>
-          <SqMap points={points} height={280} style={{ borderRadius: 0, border: 0 }} />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))",
-              gap: 1,
-              background: "var(--line-2)",
-            }}
-          >
-            {[
-              { k: "Distance", v: `${quest.distance.toFixed(1)} km` },
-              { k: "Ascent", v: `${formatNumber(locale, quest.elevationGain)} m` },
-              { k: "Moving", v: hours(quest.duration) },
-              { k: t.questPage.walkedBy, v: String(walked) },
-            ].map((fact) => (
-              <div key={fact.k} style={{ background: "var(--paper-2)", padding: "13px 15px" }}>
-                <p className="sq-kicker-sm" style={{ fontSize: 9.5 }}>
-                  {fact.k}
-                </p>
-                <b
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 600,
-                    fontSize: 19,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {fact.v}
-                </b>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <article className="sq-card sq-pad-sm">
-            <h2 className="sq-h2" style={{ fontSize: 20, marginBottom: 12 }}>
-              The brief
-            </h2>
-            <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ink-2)", textWrap: "pretty" }}>
-              {quest.description}
-            </p>
-            <ul style={{ marginTop: 14 }}>
-              {[
-                { k: t.questPage.objective, text: quest.objective },
-                ...(quest.bonus ? [{ k: "Bonus", text: quest.bonus }] : []),
-                ...(quest.safetyNotes ? [{ k: "Safety", text: quest.safetyNotes }] : []),
-                ...(quest.terrain.length > 0 ? [{ k: "Ground", text: quest.terrain.join(", ") }] : []),
-                ...(quest.features.length > 0 ? [{ k: "Look for", text: quest.features.join(", ") }] : []),
-              ].map((line) => (
-                <li
-                  key={line.k}
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "baseline",
-                    padding: "10px 0",
-                    borderTop: "1px solid var(--line-2)",
-                    fontSize: 13.5,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <b
-                    className="sq-mono"
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: "0.07em",
-                      textTransform: "uppercase",
-                      color: line.k === "Safety" ? "var(--signal)" : "var(--moss)",
-                      flex: "0 0 62px",
-                    }}
-                  >
-                    {line.k}
-                  </b>
-                  <span>{line.text}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="sq-card-flat">
-            <div style={{ padding: "15px 22px", borderBottom: "1px solid var(--line-2)" }}>
-              <h2 className="sq-h2">How it scores</h2>
-            </div>
-            <ul>
-              {lines.map((line) => (
-                <li
-                  key={line.what}
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    padding: "11px 22px",
-                    borderTop: "1px solid var(--line-2)",
-                    fontSize: 13.5,
-                  }}
-                >
-                  <span>{line.what}</span>
-                  <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12.5 }}>
-                    +{line.points}
-                  </b>
-                </li>
-              ))}
-              <li
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: "11px 22px",
-                  borderTop: "1px solid var(--line-2)",
-                  fontSize: 13.5,
-                  color: "var(--signal)",
-                }}
+      <DetailGrid
+        asideFirst
+        aside={
+          <>
+            <Card>
+              {submission ? (
+                <div className="mb-4 flex flex-col items-start gap-3">
+                  <SubmissionBadge status={submission.status} size="lg">
+                    {statusWords[submission.status]}
+                  </SubmissionBadge>
+                  {submission.status === "REJECTED" && submission.reviewNote ? (
+                    <Alert tone="warning" title={t.app.quest.reviewNote} className="w-full">
+                      {submission.reviewNote}
+                    </Alert>
+                  ) : null}
+                </div>
+              ) : null}
+              <ButtonLink
+                href={`/quests/${quest.id}/proof`}
+                variant={submission?.status === "APPROVED" ? "secondary" : "primary"}
+                size="lg"
+                block
               >
-                <span>If it is approved</span>
-                <b className="sq-mono" style={{ fontWeight: 500, fontSize: 12.5 }}>
-                  {total} points
-                </b>
-              </li>
-            </ul>
-          </article>
+                {submission ? t.questPage.editProof : t.questPage.fileProof}
+              </ButtonLink>
+              <p className="mt-3 flex items-center gap-2 text-caption text-muted">
+                <Footprints className="size-4 shrink-0" aria-hidden="true" />
+                {walked > 0 ? t.app.quest.walkedBy(plural(locale, walked, t.common.people)) : t.app.quest.walkedByNobody}
+              </p>
+            </Card>
 
-          <Link href={`/quests/${quest.id}/proof`} className="sq-btn sq-btn-primary sq-btn-block">
-            {submission ? t.questPage.editProof : t.questPage.fileProof}
-          </Link>
-        </div>
-      </section>
-    </>
+            <ScoreCard
+              entry={{
+                difficulty: quest.difficulty,
+                distance: quest.distance,
+                elevationGain: quest.elevationGain,
+                retreated: false,
+                featuredPeriod: live ? booking!.period : null,
+              }}
+              t={t}
+              locale={locale}
+              units={units}
+            />
+          </>
+        }
+      >
+        <Card className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <TrailMarks marks={quest.trailMarks} t={t} />
+            <DifficultyMeter level={quest.difficulty} t={t} />
+            {quest.travelTime ? (
+              <span className="text-body-sm text-muted">
+                {t.trail.travel}: {formatMinutes(quest.travelTime)}
+              </span>
+            ) : null}
+          </div>
+          <QuestFigures quest={trailQuest} t={t} locale={locale} units={units} />
+        </Card>
+
+        <BriefCard
+          title={t.monthly.brief}
+          lede={quest.description}
+          lines={[
+            { label: t.questPage.objective, text: quest.objective },
+            ...(quest.bonus ? [{ label: t.app.quest.bonus, text: quest.bonus }] : []),
+            ...(quest.safetyNotes
+              ? [{ label: t.app.quest.safety, text: quest.safetyNotes, tone: "danger" as const }]
+              : []),
+            ...(quest.terrain.length > 0
+              ? [{ label: t.monthly.ground, text: quest.terrain.map((tag) => tagLabel(tag, t)).join(", ") }]
+              : []),
+            ...(quest.features.length > 0
+              ? [{ label: t.monthly.lookFor, text: quest.features.map((tag) => tagLabel(tag, t)).join(", ") }]
+              : []),
+          ]}
+          foot={locale === "en" ? undefined : t.questPage.briefInEnglish}
+        />
+
+        <Card pad="none" className="overflow-hidden">
+          <div className="p-5 pb-0">
+            <CardHeader title={t.app.quest.openMap} className="mb-4" />
+          </div>
+          <QuestMap points={points} className="h-72" />
+        </Card>
+      </DetailGrid>
+    </PageStack>
   );
-}
-
-function hours(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const rest = Math.round(minutes % 60);
-  return h > 0 ? `${h}h ${rest > 0 ? `${String(rest).padStart(2, "0")}m` : ""}`.trim() : `${rest}m`;
 }

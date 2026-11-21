@@ -1,19 +1,29 @@
+import { Car } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { TrailPhoto } from "@/components/domain/trail-photo";
+import { Badge, tagTone } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { type } from "@/components/ui/typography";
 import type { Locale, Messages } from "@/lib/i18n";
-import { formatNumber } from "@/lib/i18n/format";
+import { formatDistance, formatHeight, formatMinutes, type Units } from "@/lib/i18n/units";
 import { TRAIL_MARK_COLOR, TRAIL_MARKS_SHOWN, trailMarksOf, type TrailMark } from "@/lib/trail-marks";
+import { cn } from "@/lib/utils";
 
 /**
- * The Trail domain components (design/DESIGN-SYSTEM.md §1.5, §7.4, §7.5).
+ * The Trail domain components (design/DESIGN-SYSTEM.md §1.5, §7.4, §7.5):
+ * trail marks, the difficulty meter, the quest card and the monthly hero.
  *
  * Deliberately not client components: they hold no state, so the server
  * pages render them directly and a client component can render them too.
- * Words come in through `t`, numbers through `locale`.
+ * Words come in through `t`, figures through `locale` and `units`.
  */
 
 export type Difficulty = "EASY" | "MODERATE" | "HARD" | "EXPERT";
+
+/** Where the component sits: on a normal surface, or on the Sun feature panel. */
+type Ground = "surface" | "feature";
 
 const PEAKS: Record<Difficulty, { on: number; ink: string }> = {
   EASY: { on: 1, ink: "var(--color-diff-easy)" },
@@ -24,47 +34,72 @@ const PEAKS: Record<Difficulty, { on: number; ink: string }> = {
 
 /* --- trail marks ---------------------------------------------------------- */
 
-function Mark({ mark }: { mark: TrailMark }) {
-  if (mark === "EDUCATIONAL") return <span className="trail-mark" data-kind="EDUCATIONAL" aria-hidden="true" />;
+function Mark({ mark, ground }: { mark: TrailMark; ground: Ground }) {
+  // The outline keeps the white stripes visible on a white card, and darkens
+  // on the Sun panel for the same reason.
+  const edge = ground === "feature" ? "ring-feature-fg/35" : "ring-border-strong";
+
+  if (mark === "EDUCATIONAL") {
+    return (
+      <span
+        className={cn("relative inline-block size-4 shrink-0 overflow-hidden rounded-xs bg-mark-white ring-1", edge)}
+        aria-hidden="true"
+      >
+        <i className="absolute -left-1 top-1.5 h-1 w-6 -rotate-45 bg-mark-green" />
+      </span>
+    );
+  }
   return (
-    <span className="trail-mark" aria-hidden="true" style={{ ["--mark" as string]: TRAIL_MARK_COLOR[mark] }}>
+    <span
+      className={cn("inline-grid h-4 w-6 shrink-0 grid-rows-3 overflow-hidden rounded-xs bg-mark-white ring-1", edge)}
+      style={{ ["--mark" as string]: TRAIL_MARK_COLOR[mark] }}
+      aria-hidden="true"
+    >
       <i />
-      <i />
+      <i className="bg-(--mark)" />
       <i />
     </span>
   );
 }
 
 /** The marks in walking order, drawn and spelled out ("Red → Blue"). */
-export function TrailMarks({ marks, t }: { marks: readonly string[] | null | undefined; t: Messages }) {
+export function TrailMarks({
+  marks,
+  t,
+  ground = "surface",
+  className,
+}: {
+  marks: readonly string[] | null | undefined;
+  t: Messages;
+  ground?: Ground;
+  className?: string;
+}) {
   const known = trailMarksOf(marks);
+  const quiet = ground === "feature" ? "text-feature-fg/70" : "text-subtle";
+
   if (known.length === 0) {
-    return (
-      <span className="trail-marks">
-        <span className="trail-marks-empty">{t.trail.noMarks}</span>
-      </span>
-    );
+    return <span className={cn("inline-flex min-w-0 text-body-sm font-medium", quiet, className)}>{t.trail.noMarks}</span>;
   }
+
   const shown = known.slice(0, TRAIL_MARKS_SHOWN);
   const rest = known.length - shown.length;
-  const words = known.map((mark) => t.trail.marks[mark]).join(" → ");
 
   return (
-    <span className="trail-marks">
-      <span className="trail-marks-set">
+    <span className={cn("inline-flex min-w-0 items-center gap-2 text-body-sm font-medium", className)}>
+      <span className="inline-flex shrink-0 items-center gap-1">
         {shown.map((mark, index) => (
-          <span key={`${mark}-${index}`} style={{ display: "contents" }}>
+          <span key={`${mark}-${index}`} className="contents">
             {index > 0 ? (
-              <span className="trail-marks-arrow" aria-hidden="true">
+              <span className={cn("text-caption", quiet)} aria-hidden="true">
                 →
               </span>
             ) : null}
-            <Mark mark={mark} />
+            <Mark mark={mark} ground={ground} />
           </span>
         ))}
-        {rest > 0 ? <span className="trail-marks-more">+{rest}</span> : null}
+        {rest > 0 ? <span className={cn("text-caption", quiet)}>+{rest}</span> : null}
       </span>
-      <span className="trail-marks-text">{words}</span>
+      <span className="min-w-0 truncate">{known.map((mark) => t.trail.marks[mark]).join(" → ")}</span>
     </span>
   );
 }
@@ -72,14 +107,28 @@ export function TrailMarks({ marks, t }: { marks: readonly string[] | null | und
 /* --- difficulty ----------------------------------------------------------- */
 
 /** Four peaks, as many filled as the grade; the word beside it in text ink. */
-export function DifficultyMeter({ level, t }: { level: Difficulty; t: Messages }) {
+export function DifficultyMeter({
+  level,
+  t,
+  ground = "surface",
+  className,
+}: {
+  level: Difficulty;
+  t: Messages;
+  ground?: Ground;
+  className?: string;
+}) {
   const peaks = PEAKS[level];
+  const empty = ground === "feature" ? "stroke-feature-fg/35" : "stroke-border-strong";
   return (
-    <span className="trail-diff">
-      <span className="trail-diff-peaks" style={{ ["--peak" as string]: peaks.ink }} aria-hidden="true">
+    <span className={cn("inline-flex items-center gap-2 whitespace-nowrap text-body-sm font-medium", className)}>
+      <span className="inline-flex gap-0.5" style={{ ["--peak" as string]: peaks.ink }} aria-hidden="true">
         {[0, 1, 2, 3].map((index) => (
-          <svg key={index} viewBox="0 0 14 12">
-            <path className={index < peaks.on ? "on" : "off"} d="M7 1 13 11H1z" />
+          <svg key={index} viewBox="0 0 14 12" className="h-3 w-3.5">
+            <path
+              d="M7 1 13 11H1z"
+              className={index < peaks.on ? "fill-(--peak) stroke-(--peak)" : cn("fill-none", empty)}
+            />
           </svg>
         ))}
       </span>
@@ -88,24 +137,7 @@ export function DifficultyMeter({ level, t }: { level: Difficulty; t: Messages }
   );
 }
 
-/* --- figures -------------------------------------------------------------- */
-
-export function formatKm(locale: Locale, km: number): string {
-  return `${formatNumber(locale, Math.round(km * 10) / 10)} km`;
-}
-
-export function formatMetres(locale: Locale, metres: number): string {
-  return `${formatNumber(locale, Math.round(metres))} m`;
-}
-
-export function formatMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
-  if (h === 0) return `${m} min`;
-  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, "0")}`;
-}
-
-/* --- quest card (§7.4) ---------------------------------------------------- */
+/* --- quest facts ---------------------------------------------------------- */
 
 export type TrailQuest = {
   id: string;
@@ -153,102 +185,173 @@ export function toTrailQuest(
     coverImage: quest.coverImage,
     trailMarks: quest.trailMarks ?? [],
     travelTime: quest.travelTime ?? null,
-    tags: (quest.features ?? []).map((tag) => t.trail.tags[tag] ?? tag.replace(/_/g, " ")),
+    tags: (quest.features ?? []).map((tag) => tagLabel(tag, t)),
   };
 }
 
-const TAG_TONES = ["sky", "lake", "lilac", "berry", "sun"] as const;
+/** A category tag in the reader's language; an unknown tag prints as written. */
+export function tagLabel(tag: string, t: Messages): string {
+  return t.trail.tags[tag] ?? tag.replace(/_/g, " ");
+}
 
-/** A stable, playful tone per tag word, so "waterfall" is always the same colour. */
-function toneFor(tag: string): (typeof TAG_TONES)[number] {
-  let hash = 0;
-  for (const char of tag) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return TAG_TONES[hash % TAG_TONES.length];
+/** Distance · ascent · time: the three figures every quest shows, always in this order. */
+export function QuestFigures({
+  quest,
+  t,
+  locale,
+  units,
+  className,
+}: {
+  quest: Pick<TrailQuest, "distance" | "elevationGain" | "duration">;
+  t: Messages;
+  locale: Locale;
+  units?: Units;
+  className?: string;
+}) {
+  const figures = [
+    { value: formatDistance(locale, quest.distance, units), label: t.trail.distance },
+    { value: formatHeight(locale, quest.elevationGain, units), label: t.trail.ascent },
+    { value: formatMinutes(quest.duration), label: t.trail.time },
+  ];
+  return (
+    <dl className={cn("grid grid-cols-3 divide-x divide-border rounded-control bg-surface-sunken", className)}>
+      {figures.map((figure) => (
+        <div key={figure.label} className="flex min-w-0 flex-col-reverse px-3 py-2">
+          <dt className="text-caption text-muted">{figure.label}</dt>
+          <dd className="whitespace-nowrap text-body font-semibold tabular-nums">{figure.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/* --- quest card (§7.4) ---------------------------------------------------- */
+
+/**
+ * Quest grid: 1 · 2 · 3 columns. Cards share their rows through `subgrid`, so
+ * the marks, title, figures and footer line up across a row whatever the
+ * length of a title. The row gap lives on the card's margin, not on the grid:
+ * a grid gap would be added between every one of a card's nine rows.
+ */
+export function QuestGrid({ children, className }: { children: ReactNode; className?: string }) {
+  // Columns follow the width of the column the grid sits in (a container
+  // query), not the viewport: the same grid is three across on the landing
+  // page, two beside the app's rail and one on a phone.
+  return (
+    <div className={cn("@container", className)}>
+      <div className="grid grid-cols-1 gap-x-4 @2xl:grid-cols-2 @4xl:grid-cols-3 @4xl:gap-x-6">{children}</div>
+    </div>
+  );
 }
 
 export function QuestCard({
   quest,
   t,
   locale,
+  units,
   href,
   period,
+  badge,
   foot,
 }: {
   quest: TrailQuest;
   t: Messages;
   locale: Locale;
+  units?: Units;
   href?: string;
   /** Weekly quests carry the sky badge; the monthly never appears as a card. */
   period?: "WEEKLY" | null;
+  /** A second chip on the photo ("Yours", "Done"). */
+  badge?: ReactNode;
   /** The status pill or action in the footer. */
-  foot?: React.ReactNode;
+  foot?: ReactNode;
 }) {
+  const shell =
+    "row-span-9 mb-4 grid min-w-0 grid-rows-subgrid gap-y-0 rounded-card border border-border bg-surface text-text no-underline lg:mb-6";
+
   const body = (
     <>
-      <div className="trail-qcard-photo">
-        <div style={{ position: "relative" }}>
-          <TrailPhoto src={quest.coverImage} alt={quest.title} />
-          {period === "WEEKLY" ? (
-            <div className="trail-qcard-tags-top">
-              <span className="trail-pill" data-tone="weekly">
-                {t.trail.weekly}
-              </span>
+      <div className="p-2 pb-0">
+        <div className="relative">
+          <TrailPhoto src={quest.coverImage} alt="" className="aspect-4/3 rounded-control" />
+          {period === "WEEKLY" || badge ? (
+            <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+              {period === "WEEKLY" ? <Badge tone="weekly">{t.trail.weekly}</Badge> : null}
+              {badge}
             </div>
           ) : null}
         </div>
       </div>
-      <div className="trail-qcard-pad trail-qcard-marks">
-        <TrailMarks marks={quest.trailMarks} t={t} />
+      <div className="px-4 pt-3">
+        <TrailMarks marks={quest.trailMarks} t={t} className="max-w-full" />
       </div>
-      <h3 className="trail-qcard-pad trail-qcard-title">{quest.title}</h3>
-      <p className="trail-qcard-pad trail-qcard-where">
+      <h3 className={cn(type.h4, "line-clamp-2 px-4 pt-2 text-balance")}>{quest.title}</h3>
+      <p className="px-4 pt-1 text-caption text-muted">
         {quest.region} · {t.trail.start} {quest.location}
       </p>
-      <div className="trail-qcard-pad trail-qcard-stats">
-        <div className="trail-stats3">
-          <div>
-            <b>{formatKm(locale, quest.distance)}</b>
-            <span>{t.trail.distance}</span>
-          </div>
-          <div>
-            <b>{formatMetres(locale, quest.elevationGain)}</b>
-            <span>{t.trail.ascent}</span>
-          </div>
-          <div>
-            <b>{formatMinutes(quest.duration)}</b>
-            <span>{t.trail.time}</span>
-          </div>
-        </div>
+      <div className="px-4 pt-3">
+        <QuestFigures quest={quest} t={t} locale={locale} units={units} />
       </div>
-      <div className="trail-qcard-pad trail-qcard-diff">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3">
         <DifficultyMeter level={quest.difficulty} t={t} />
         {quest.travelTime ? (
-          <span className="trail-qcard-travel">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <path d="M5 16h14M6 16l1.5-5h9L18 16M7 16v2M17 16v2" />
-            </svg>
+          <span className="inline-flex items-center gap-1 text-caption tabular-nums text-muted">
+            <Car className="size-4" aria-hidden="true" />
+            <span className="sr-only">{t.trail.travel}</span>
             {formatMinutes(quest.travelTime)}
           </span>
         ) : null}
       </div>
-      <div className="trail-qcard-pad trail-qcard-tags">
+      <div className="flex flex-wrap content-start gap-1 px-4 pt-3">
         {(quest.tags ?? []).slice(0, 2).map((tag) => (
-          <span key={tag} className="trail-pill" data-tone={toneFor(tag)}>
+          <Badge key={tag} tone={tagTone(tag)}>
             {tag}
-          </span>
+          </Badge>
         ))}
       </div>
       <div aria-hidden="true" />
-      <div className="trail-qcard-foot">{foot ?? <span>{t.trail.notStarted}</span>}</div>
+      <div className="mt-4 flex min-h-12 items-center justify-between gap-3 border-t border-border px-4 py-2 text-caption text-muted">
+        {foot ?? <span>{t.trail.notStarted}</span>}
+      </div>
     </>
   );
 
   return href ? (
-    <Link href={href} className="trail-qcard">
+    <Link
+      href={href}
+      className={cn(
+        shell,
+        "transition duration-fast ease-standard hover:border-border-strong hover:shadow-1",
+      )}
+    >
       {body}
     </Link>
   ) : (
-    <article className="trail-qcard">{body}</article>
+    <article className={shell}>{body}</article>
+  );
+}
+
+/* --- the feature panel ---------------------------------------------------- */
+
+/**
+ * The Sun panel (§7.5): the one flat yellow block. It belongs to the monthly
+ * quest — its hero, its empty state and the landing's closing call to join it.
+ */
+export function FeaturePanel({
+  as: Tag = "section",
+  className,
+  children,
+  ...props
+}: {
+  as?: "section" | "article" | "div";
+  className?: string;
+  children: ReactNode;
+  "aria-label"?: string;
+}) {
+  return (
+    <Tag className={cn("rounded-dialog bg-feature p-6 text-feature-fg lg:p-10", className)} {...props}>
+      {children}
+    </Tag>
   );
 }
 
@@ -258,6 +361,7 @@ export function MonthlyHero({
   quest,
   t,
   locale,
+  units,
   monthLabel,
   closesAt,
   lede,
@@ -266,87 +370,132 @@ export function MonthlyHero({
   secondary,
   status,
   headingLevel = 2,
+  className,
 }: {
   quest: TrailQuest;
   t: Messages;
   locale: Locale;
+  units?: Units;
   /** "October 2026". */
   monthLabel: string;
   /** When the slot closes; drives the countdown. */
   closesAt?: Date | string | null;
   lede?: string | null;
-  /** A small photo-tone chip beside the badge ("Sticker no. 10"). */
+  /** A small chip beside the badge ("Sticker no. 10"). */
   stickerLabel?: string | null;
   primary?: { label: string; href: string } | null;
   secondary?: { label: string; href: string } | null;
   /** Replaces the primary action once the member has filed. */
-  status?: React.ReactNode;
+  status?: ReactNode;
   headingLevel?: 1 | 2;
+  className?: string;
 }) {
   const Heading = headingLevel === 1 ? "h1" : "h2";
   const left = closesAt ? timeLeft(new Date(closesAt)) : null;
 
+  const tiles = [
+    { value: formatDistance(locale, quest.distance, units), label: t.trail.distance },
+    { value: formatHeight(locale, quest.elevationGain, units), label: t.trail.ascent },
+    { value: formatMinutes(quest.duration), label: t.trail.time },
+    // A place name is a phrase, not a figure: it gets the whole row so it
+    // never has to break inside a word.
+    { value: quest.location, label: t.trail.start, wide: true },
+  ];
+
   return (
-    <article className="trail-monthly" aria-label={`${t.trail.monthly} · ${monthLabel}`}>
-      <TrailPhoto src={quest.coverImage} alt={quest.title} eager />
-      <div className="trail-monthly-body">
-        <div className="trail-monthly-badges">
-          <span className="trail-pill" data-tone="monthly">
+    <FeaturePanel as="article" aria-label={`${t.trail.monthly} · ${monthLabel}`} className={cn("@container", className)}>
+      {/* 7 / 5 once the panel itself is wide enough, whatever the viewport:
+          beside the app's rail the photo goes on top, as on a phone. */}
+      <div className="grid grid-cols-1 gap-6 @3xl:grid-cols-12 @3xl:items-center @3xl:gap-10">
+      <TrailPhoto
+        src={quest.coverImage}
+        alt=""
+        eager
+        tone="feature"
+        className="aspect-4/3 rounded-card @lg:aspect-2/1 @3xl:col-span-7 @3xl:aspect-4/3"
+      />
+      <div className="flex min-w-0 flex-col gap-4 @3xl:col-span-5">
+        <div className="flex flex-wrap gap-2">
+          <Badge tone="monthly">
             {t.trail.monthly} · {monthLabel}
-          </span>
-          {stickerLabel ? (
-            <span className="trail-pill" data-tone="photo">
-              {stickerLabel}
-            </span>
-          ) : null}
+          </Badge>
+          {stickerLabel ? <Badge tone="onFeature">{stickerLabel}</Badge> : null}
         </div>
-        <Heading className="trail-monthly-title">{quest.title}</Heading>
-        {lede ? <p className="trail-monthly-lede">{lede}</p> : null}
-        <div className="trail-monthly-facts">
-          <TrailMarks marks={quest.trailMarks} t={t} />
-          <DifficultyMeter level={quest.difficulty} t={t} />
+        <Heading className={cn(type.display, "font-extrabold")}>{quest.title}</Heading>
+        {lede ? <p className="max-w-text text-body">{lede}</p> : null}
+        <div className="flex flex-wrap gap-x-5 gap-y-3">
+          <TrailMarks marks={quest.trailMarks} t={t} ground="feature" />
+          <DifficultyMeter level={quest.difficulty} t={t} ground="feature" />
         </div>
-        <div className="trail-monthly-stats">
-          <div>
-            <b>{formatKm(locale, quest.distance)}</b>
-            <span>{t.trail.distance}</span>
-          </div>
-          <div>
-            <b>{formatMetres(locale, quest.elevationGain)}</b>
-            <span>{t.trail.ascent}</span>
-          </div>
-          <div>
-            <b>{formatMinutes(quest.duration)}</b>
-            <span>{t.trail.time}</span>
-          </div>
-          <div>
-            <b>{quest.location}</b>
-            <span>{t.trail.start}</span>
-          </div>
-        </div>
+        <dl className="grid grid-cols-3 gap-2">
+          {tiles.map((tile) => (
+            <div
+              key={tile.label}
+              className={cn(
+                "flex min-w-0 flex-col-reverse rounded-control bg-feature-soft px-3 py-2",
+                tile.wide && "col-span-full",
+              )}
+            >
+              <dt className="text-caption">{tile.label}</dt>
+              <dd className="text-h4 font-bold tabular-nums wrap-break-word">{tile.value}</dd>
+            </div>
+          ))}
+        </dl>
         {left ? (
-          <p className="trail-monthly-count">
-            {t.trail.endsIn}{" "}
-            <b>
+          <p className="flex flex-wrap items-baseline gap-2 text-body-sm font-medium">
+            {t.trail.endsIn}
+            <b className="font-display text-h3 font-bold tabular-nums">
               {left.days} {t.trail.days} {String(left.hours).padStart(2, "0")} {t.trail.hours}
             </b>
           </p>
         ) : null}
-        <div className="trail-monthly-actions">
-          {status ??
-            (primary ? (
-              <Link className="trail-btn" data-variant="monthly" data-size="lg" href={primary.href}>
-                {primary.label}
-              </Link>
-            ) : null)}
-          {secondary ? (
-            <Link className="trail-btn" data-variant="on-feature" data-size="lg" href={secondary.href}>
-              {secondary.label}
-            </Link>
-          ) : null}
-        </div>
+        {status || primary || secondary ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            {status ??
+              (primary ? (
+                <ButtonLink href={primary.href} variant="monthly" size="lg">
+                  {primary.label}
+                </ButtonLink>
+              ) : null)}
+            {secondary ? (
+              <ButtonLink href={secondary.href} variant="onFeature" size="lg">
+                {secondary.label}
+              </ButtonLink>
+            ) : null}
+          </div>
+        ) : null}
       </div>
-    </article>
+      </div>
+    </FeaturePanel>
+  );
+}
+
+/** The same panel when no monthly quest is open: words only, one way out. */
+export function MonthlyEmpty({
+  t,
+  title,
+  body,
+  action,
+  headingLevel = 2,
+}: {
+  t: Messages;
+  title?: string;
+  body?: string;
+  action?: { label: string; href: string } | null;
+  headingLevel?: 1 | 2;
+}) {
+  const Heading = headingLevel === 1 ? "h1" : "h2";
+  return (
+    <FeaturePanel className="flex flex-col items-start gap-4">
+      <Badge tone="monthly">{t.trail.monthly}</Badge>
+      <Heading className={cn(type.display, "font-extrabold")}>{title ?? t.trail.noMonthly}</Heading>
+      <p className="max-w-text text-body">{body ?? t.trail.noMonthlyBody}</p>
+      {action ? (
+        <ButtonLink href={action.href} variant="onFeature" size="lg">
+          {action.label}
+        </ButtonLink>
+      ) : null}
+    </FeaturePanel>
   );
 }
 

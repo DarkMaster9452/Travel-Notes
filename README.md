@@ -131,71 +131,76 @@ mechanism every other sticker is.
 
 ## Design system
 
-`index.html` (the finished landing page) is the source of truth. Nothing in the
-product invents a colour, a radius or a type size of its own.
+The rules live in [`design/DESIGN-SYSTEM.md`](design/DESIGN-SYSTEM.md) and every
+value in [`design/tokens.css`](design/tokens.css). Nothing in the product invents
+a colour, a radius, a type size or a spacing step of its own.
 
-- **Tokens** live in the `@theme` block of `src/app/globals.css` — the palette,
-  radii, the three faces and the two shadows, lifted from the landing page's
-  `:root`. This is a Tailwind v4 project, so tokens are declared in CSS rather
-  than in a `tailwind.config.ts`.
-- **Component classes** live in `src/styles/field-guide.css`, a near-verbatim
-  port of the landing page's stylesheet so the two can be diffed. It is imported
-  `layer(components)`, which matters: unlayered CSS beats every Tailwind
-  utility, so without the layer a component class would silently win over any
-  utility applied next to it.
-- **Components** live in `src/components/field/` — `QuestCard`, `Tag`, `Stat`,
-  `Panel`, `Pill`, `Avatar`, `Sticker`, `EmptyState`, `Modal`, `Toast`.
-  Marketing, app interior and admin all build from these.
+- **Tokens** are CSS custom properties exposed to Tailwind v4 through `@theme`,
+  so components only ever use semantic names (`bg-surface`, `text-muted`,
+  `bg-primary`, `rounded-card`). Light, dark and "follow the system" are the
+  same names with different values.
+- **Primitives** live in `src/components/ui/` (button, badge, card, field,
+  toggle, dialog, dropdown, toast, page header, stats, logo…), built with `cva`
+  and `cn()`, Radix underneath the interactive ones and `lucide-react` icons.
+- **Domain pieces** live in `src/components/domain/`: the quest card, the
+  monthly hero, KST trail marks, the difficulty meter, stickers, medals, the
+  board and the map. The landing, the member app and (eventually) the admin all
+  build from these two folders.
+- **Copy** lives in `src/lib/i18n` (Slovak, English, German). A member reads in
+  their account's language; a visitor picks one on the landing, otherwise the
+  browser decides, otherwise Slovak.
 
-Rules carried over from the landing page and enforced in the components rather
-than left to call sites:
+Rules the components enforce rather than leave to call sites:
 
-- Green is the structure; **orange is stamp ink only** — seals, bonus
-  challenges, "Most taken", hard/brutal difficulty. `DifficultyTag` decides
-  which grades earn it, so no page decides on its own.
-- Every quest renders as an **issued document**: quest number, dashed rules,
-  difficulty tag, seal watermark, expiry. That is `QuestCard`, everywhere.
-- Uppercase mono for all metadata; serif for anything handed to you.
-- Paper grain and contour lines are marketing surfaces only. The app interior
-  drops both and keeps the palette.
-- **Severity is weight, not a third hue.** The panel's notices need four levels
-  and the product has two colours, so `critical` is filled stamp ink, `warning`
-  is the same ink outlined, `info` is green and `clear` is paper. Each also
-  carries its own icon and its own word, so none of it is encoded by colour
-  alone.
+- The **monthly quest** is the core of the product: it always comes first and
+  biggest, and the Sunset accent and Sun feature colour belong to it alone.
+- Every quest shows its **trail mark**, its difficulty, length, ascent and time.
+  Trail marks are never guessed — people navigate by them.
+- No gradients, no repeated photo, one primary button per block.
 
-The mark is drawn twice on purpose. `LogoMark` is the outlined version used in
-the chrome; `src/app/icon.svg` is the same mountain as a silhouette, because at
-16px the outline's 1.7px strokes fall below a device pixel. That icon backs the
-favicon, the Apple touch icon and the web manifest, so the tab, the home screen
-and an installed window all show the same thing.
+`npm run lint:design` (`scripts/check-design.ts`) fails on hex and rgb colours,
+gradients, arbitrary values, Tailwind's default palette and radii, legacy
+classes and imports, and inline styles in every customer-facing folder.
+
+The mark is a Meadow-green tile with a white double peak and a Sunset cap on the
+summit. `ui/logo.tsx` draws it in the product, `src/app/icon.svg` backs the
+favicon, and `npm run icons` regenerates the PNG app icons from it.
+
+The admin panel (`src/app/admin`, `src/components/sq`, `src/styles/summit.css`)
+is the last part still on the old look; it is next in line to be rebuilt on the
+same components.
 
 ## Architecture
 
 ```
 src/
   app/
+    page.tsx          the landing
     (auth)/           login, signup, auth actions
     (app)/            everything behind authentication
-      dashboard/ history/ profile/ upgrade/ submissions/ people/ rules/
-      weekly/ monthly/ leaderboard/ achievements/ quests/ quests/[id]/
-    onboarding/       seven-step preference flow
-    api/
-      quests/generate stripe/{checkout,portal,webhook}
+      dashboard/ monthly/ quests/ quests/[id]/ quests/[id]/proof/
+      submissions/ leaderboard/ stickers/ people/ settings/ onboarding/
+    admin/            the staff panel
+    legal/ invite/
+    api/              auth, cron, paddle, strava, uploads
   components/
-    field/            the shared design-system library (see below)
-    landing/          the landing page, ported from index.html
-    quest/ app/ onboarding/ ui/
+    ui/               design-system primitives
+    domain/           quest, trail mark, difficulty, sticker, board, map
+    app/              the member app's shell, forms and flows
+    marketing/        landing sections, auth form, legal prose
+    sq/               the admin panel's (legacy) components
   styles/
-    field-guide.css   component classes, ported from index.html
+    trail.css         sticker cuts and the admin shell's navigation
+    summit.css        the admin panel's legacy stylesheet
   lib/
-    auth/ quest/ db, entitlements, billing, stripe, rate-limit, validation, geo, images
+    auth/ quest/ i18n/ admin/ db, entitlements, billing, paddle, leaderboard,
+    validation, geo, images
 prisma/
   schema.prisma, migrations/, seed.ts, seed-data.ts
 ```
 
 Server components do the data fetching; client components exist only where
-there is interaction (generation overlay, onboarding, toggles, forms). Prisma
+there is interaction (onboarding, proof upload, settings forms, the map). Prisma
 records are mapped to a `QuestSummary` projection before crossing to the
 client, so no database row is shipped to the browser.
 

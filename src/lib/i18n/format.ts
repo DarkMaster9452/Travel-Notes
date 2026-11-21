@@ -1,3 +1,4 @@
+import { findCountry } from "@/lib/geo";
 import type { Locale } from "@/lib/i18n";
 
 /**
@@ -127,4 +128,14 @@ export function plural(locale: Locale, count: number, forms: PluralForms): strin
     forms.other;
 
   return word.replace("#", formatNumber(locale, count));
+}
+
+/**
+ * A stored country ("Slovakia", "SK") in the reader's language: "Slovensko",
+ * "Slowakei". Anything the country list does not know is shown as stored.
+ */
+export function countryName(locale: Locale, stored: string): string {
+  const code = findCountry(stored)?.code;
+  if (!code) return stored;
+  return new Intl.DisplayNames([tagFor(locale)], { type: "region" }).of(code) ?? stored;
 }

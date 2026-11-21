@@ -1,30 +1,17 @@
-import { Skeleton, SkeletonRows } from "@/components/sq/ui";
+import { Skeleton } from "@/components/ui/feedback";
 
-/**
- * What a member sees while a page is still coming.
- *
- * Shaped like the page rather than a spinner: a header block, a stat cluster
- * and rows. A skeleton that matches the layout means nothing jumps when the
- * data lands.
- */
+/** Skeletons where the header and the first blocks will land, never a spinner. */
 export default function AppLoading() {
   return (
-    <div aria-busy="true" aria-label="Loading">
-      <header className="sq-head">
-        <div className="sq-head-row">
-          <div style={{ display: "grid", gap: 12, minWidth: 320, flex: 1 }}>
-            <Skeleton width={140} height={11} />
-            <Skeleton width="70%" height={38} radius={10} />
-          </div>
-          <div className="sq-stats">
-            <Skeleton width={90} height={44} radius={8} />
-            <Skeleton width={90} height={44} radius={8} />
-          </div>
-        </div>
-      </header>
-
-      <div className="sq-card" style={{ padding: 22 }}>
-        <SkeletonRows rows={6} columns={4} />
+    <div aria-busy="true" className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-10 w-2/3" />
+      </div>
+      <Skeleton className="h-64 rounded-dialog" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Skeleton className="h-40 rounded-card" />
+        <Skeleton className="h-40 rounded-card" />
       </div>
     </div>
   );

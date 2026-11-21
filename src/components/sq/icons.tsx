@@ -10,6 +10,8 @@
  * round caps and joins.
  */
 
+import { LogoMark as TrailLogoMark, LogoPeak } from "@/components/ui/logo";
+
 export type GlyphName = keyof typeof GLYPHS;
 
 export const GLYPHS = {
@@ -74,43 +76,24 @@ export function Glyph({
   );
 }
 
-/** The brand mark: pine outline peak, stamp-filled inner triangle, baseline rule. */
+/**
+ * The brand mark, at a pixel size. The drawing itself lives in
+ * `@/components/ui/logo`; this wrapper only keeps the panel's old call sites.
+ */
 export function LogoMark({ size = 30 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      aria-hidden="true"
-      style={{ flex: `0 0 ${size}px` }}
-    >
-      <path
-        d="M2 25 L11 10 L16.5 19 L20 13.5 L30 25 Z"
-        fill="none"
-        stroke="var(--pine)"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-      <path d="M11 10 L14.6 16 L7.4 16 Z" fill="var(--signal)" />
-      <path
-        d="M2 29 H30"
-        fill="none"
-        stroke="var(--pine)"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        opacity="0.35"
-      />
-    </svg>
+    <span style={{ display: "inline-flex", width: size, height: size, flex: `0 0 ${size}px` }}>
+      <TrailLogoMark className="size-full" />
+    </span>
   );
 }
 
-/** The filled silhouette of the same peak, used on medals and podium discs. */
+/** The peak without its tile, in dark ink: used on medals and podium discs. */
 export function LogoSilhouette({ size = 26 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M3 51 L22 15 L33 34 L40 22 L61 51 Z" fill="#1e3b2c" />
-      <path d="M22 15 L30.5 30 L13.5 30 Z" fill="#c4481b" />
-    </svg>
+    <span style={{ display: "inline-flex", width: size, height: size, flex: `0 0 ${size}px` }}>
+      <LogoPeak className="size-full" />
+    </span>
   );
 }
 

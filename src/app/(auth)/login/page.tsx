@@ -3,14 +3,18 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { loginAction } from "@/app/(auth)/actions";
-import { AuthForm } from "@/components/auth/auth-form";
+import { AuthForm } from "@/components/marketing/auth-form";
+import { homeFor } from "@/lib/auth/guards";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Log in" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).auth.login.submit };
+}
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect(homeFor(user));
 
   return (
     <Suspense fallback={null}>
